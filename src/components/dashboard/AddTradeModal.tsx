@@ -123,7 +123,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
 
         <ScrollArea className="h-[calc(90vh-140px)]">
           <form onSubmit={handleSubmit} className="px-6 pb-6">
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="w-[60%] mx-auto space-y-6">
               {/* Section A: Core Trade Details */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
