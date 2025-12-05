@@ -598,7 +598,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         </ScrollArea>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex justify-between items-center shrink-0">
+        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex justify-end gap-3 shrink-0">
           <Button
             type="button"
             variant="outline"
@@ -606,6 +606,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
               resetModal();
               onOpenChange(false);
             }}
+            className="w-28"
           >
             Cancel
           </Button>
@@ -613,10 +614,9 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
           <Button
             onClick={handleSaveAll}
             disabled={extractedTrades.length === 0}
-            className="gap-2"
+            className="w-28"
           >
-            <Save className="w-4 h-4" />
-            Save {extractedTrades.length > 0 ? `${extractedTrades.length} Trades` : 'Trades'}
+            Save All
           </Button>
         </div>
       </DialogContent>
