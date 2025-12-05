@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import { Trade, TradeDirection, TradeImage } from '@/types/trade';
 import { DynamicSelect } from '@/components/trade/DynamicSelect';
 import { SmartInput } from '@/components/trade/SmartInput';
 import { MistakeTagsInput } from '@/components/trade/MistakeTagsInput';
 import { ImageUploader } from '@/components/trade/ImageUploader';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AddTradeModalProps {
@@ -39,6 +40,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
   const [newsEvent, setNewsEvent] = useState('');
   const [mistakes, setMistakes] = useState<string[]>([]);
   const [keyLesson, setKeyLesson] = useState('');
+  const [tradeNotes, setTradeNotes] = useState('');
 
   // Visual Evidence
   const [images, setImages] = useState<TradeImage[]>([]);
@@ -111,19 +113,20 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
     setNewsEvent('');
     setMistakes([]);
     setKeyLesson('');
+    setTradeNotes('');
     setImages([]);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] p-0 bg-card border-border overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-4">
+      <DialogContent className="w-[60vw] max-w-[60vw] h-[85vh] max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-xl font-semibold">Add New Trade</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="h-[calc(90vh-140px)]">
+        <ScrollArea className="flex-1 min-h-0">
           <form onSubmit={handleSubmit} className="px-6 pb-6">
-            <div className="w-[60%] mx-auto space-y-6">
+            <div className="space-y-6">
               {/* Section A: Core Trade Details */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -337,7 +340,27 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
 
               <Separator className="bg-border" />
 
-              {/* Section D: Visual Evidence */}
+              {/* Section D: Trade Notes */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <FileText className="w-4 h-4" />
+                  Trade Notes
+                </div>
+
+                <div className="space-y-1.5">
+                  <Textarea
+                    value={tradeNotes}
+                    onChange={(e) => setTradeNotes(e.target.value)}
+                    placeholder="Add any additional notes about this trade..."
+                    rows={4}
+                    className="text-sm resize-none"
+                  />
+                </div>
+              </section>
+
+              <Separator className="bg-border" />
+
+              {/* Section E: Visual Evidence */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <Camera className="w-4 h-4" />
@@ -356,7 +379,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
         </ScrollArea>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex justify-center gap-3">
+        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex justify-center gap-3 shrink-0">
           <Button
             type="button"
             variant="outline"
