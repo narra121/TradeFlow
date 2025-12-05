@@ -1,6 +1,13 @@
 export type TradeDirection = 'LONG' | 'SHORT';
 export type TradeStatus = 'OPEN' | 'CLOSED';
 
+export interface TradeImage {
+  id: string;
+  url: string;
+  timeframe: string;
+  description: string;
+}
+
 export interface Trade {
   id: string;
   symbol: string;
@@ -19,9 +26,26 @@ export interface Trade {
   notes?: string;
   setup?: string;
   strategy?: string;
-  emotions?: string;
-  screenshot?: string;
+  session?: string;
+  marketCondition?: string;
+  newsEvents?: string[];
+  mistakes?: string[];
+  keyLesson?: string;
+  images?: TradeImage[];
   tags?: string[];
+  emotions?: string; // Legacy field for mock data compatibility
+}
+
+// Saved options for smart inputs (would be stored in DB)
+export interface SavedOptions {
+  symbols: string[];
+  strategies: string[];
+  sessions: string[];
+  marketConditions: string[];
+  newsEvents: string[];
+  mistakes: string[];
+  lessons: string[];
+  timeframes: string[];
 }
 
 export interface DailyStats {
