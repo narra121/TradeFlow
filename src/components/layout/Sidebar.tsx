@@ -26,7 +26,6 @@ const navItems: NavItem[] = [
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
   { icon: Calendar, label: 'Calendar', id: 'calendar' },
   { icon: Target, label: 'Goals', id: 'goals' },
-  { icon: User, label: 'Profile', id: 'profile' },
   { icon: Settings, label: 'Settings', id: 'settings' },
 ];
 
@@ -95,8 +94,32 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         </ul>
       </nav>
 
-      {/* Collapse Toggle */}
-      <div className="p-3 border-t border-sidebar-border">
+      {/* Bottom Section - Profile & Collapse */}
+      <div className="p-3 border-t border-sidebar-border space-y-1">
+        {/* Profile Button */}
+        <button
+          onClick={() => onViewChange('profile')}
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+            "hover:bg-sidebar-accent",
+            activeView === 'profile'
+              ? "bg-sidebar-accent text-sidebar-primary" 
+              : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+          )}
+        >
+          <User className={cn(
+            "w-5 h-5 shrink-0",
+            activeView === 'profile' && "text-sidebar-primary"
+          )} />
+          {!collapsed && (
+            <span className="font-medium">Profile</span>
+          )}
+          {activeView === 'profile' && !collapsed && (
+            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />
+          )}
+        </button>
+
+        {/* Collapse Toggle */}
         <Button
           variant="ghost"
           size="sm"
