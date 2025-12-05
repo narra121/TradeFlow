@@ -5,6 +5,7 @@ import { TradesView } from '@/components/views/TradesView';
 import { AnalyticsView } from '@/components/views/AnalyticsView';
 import { CalendarView } from '@/components/views/CalendarView';
 import { GoalsView } from '@/components/views/GoalsView';
+import { ProfileView } from '@/components/views/ProfileView';
 import { SettingsView } from '@/components/views/SettingsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
@@ -52,6 +53,8 @@ const Index = () => {
         return <CalendarView trades={trades} />;
       case 'goals':
         return <GoalsView />;
+      case 'profile':
+        return <ProfileView />;
       case 'settings':
         return <SettingsView />;
       default:
