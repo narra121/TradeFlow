@@ -122,249 +122,253 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
         </DialogHeader>
 
         <ScrollArea className="h-[calc(90vh-140px)]">
-          <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-6">
-            {/* Section A: Core Trade Details */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <TrendingUp className="w-4 h-4" />
-                Core Details
-              </div>
+          <form onSubmit={handleSubmit} className="px-6 pb-6">
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Section A: Core Trade Details */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <TrendingUp className="w-4 h-4" />
+                  Core Details
+                </div>
 
-              {/* Direction Toggle */}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDirection('LONG')}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all text-sm",
-                    direction === 'LONG'
-                      ? "bg-success text-success-foreground shadow-lg shadow-success/25"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <ArrowUpRight className="w-4 h-4" />
-                  Long
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDirection('SHORT')}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all text-sm",
-                    direction === 'SHORT'
-                      ? "bg-destructive text-destructive-foreground shadow-lg shadow-destructive/25"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <ArrowDownRight className="w-4 h-4" />
-                  Short
-                </button>
-              </div>
+                {/* Direction Toggle */}
+                <div className="flex gap-2 max-w-xs">
+                  <button
+                    type="button"
+                    onClick={() => setDirection('LONG')}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all text-sm",
+                      direction === 'LONG'
+                        ? "bg-success text-success-foreground shadow-lg shadow-success/25"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <ArrowUpRight className="w-4 h-4" />
+                    Long
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDirection('SHORT')}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all text-sm",
+                      direction === 'SHORT'
+                        ? "bg-destructive text-destructive-foreground shadow-lg shadow-destructive/25"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <ArrowDownRight className="w-4 h-4" />
+                    Short
+                  </button>
+                </div>
 
-              {/* Compact Grid */}
-              <div className="grid grid-cols-4 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Symbol</Label>
-                  <DynamicSelect
-                    value={symbol}
-                    onChange={setSymbol}
-                    options={options.symbols}
-                    onAddNew={addSymbol}
-                    placeholder="Select..."
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Entry Price</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={entryPrice}
-                    onChange={(e) => setEntryPrice(e.target.value)}
-                    placeholder="0.00"
-                    className="font-mono text-sm"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Exit Price</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={exitPrice}
-                    onChange={(e) => setExitPrice(e.target.value)}
-                    placeholder="0.00"
-                    className="font-mono text-sm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Size (lots)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={size}
-                    onChange={(e) => setSize(e.target.value)}
-                    className="font-mono text-sm"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Stop Loss</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={stopLoss}
-                    onChange={(e) => setStopLoss(e.target.value)}
-                    placeholder="0.00"
-                    className="font-mono text-sm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Take Profit</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={takeProfit}
-                    onChange={(e) => setTakeProfit(e.target.value)}
-                    placeholder="0.00"
-                    className="font-mono text-sm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Net PnL</Label>
-                  <div className={cn(
-                    "h-9 px-3 flex items-center rounded-md border border-input bg-secondary/50 font-mono text-sm",
-                    parseFloat(netPnl) > 0 && "text-success",
-                    parseFloat(netPnl) < 0 && "text-destructive"
-                  )}>
-                    {netPnl !== '—' ? `$${netPnl}` : netPnl}
+                {/* Compact Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Symbol</Label>
+                    <DynamicSelect
+                      value={symbol}
+                      onChange={setSymbol}
+                      options={options.symbols}
+                      onAddNew={addSymbol}
+                      placeholder="Select..."
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Entry Price</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={entryPrice}
+                      onChange={(e) => setEntryPrice(e.target.value)}
+                      placeholder="0.00"
+                      className="font-mono text-sm"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Exit Price</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={exitPrice}
+                      onChange={(e) => setExitPrice(e.target.value)}
+                      placeholder="0.00"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Size (lots)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={size}
+                      onChange={(e) => setSize(e.target.value)}
+                      className="font-mono text-sm"
+                      required
+                    />
                   </div>
                 </div>
-              </div>
-            </section>
 
-            <Separator className="bg-border" />
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Stop Loss</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={stopLoss}
+                      onChange={(e) => setStopLoss(e.target.value)}
+                      placeholder="0.00"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Take Profit</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={takeProfit}
+                      onChange={(e) => setTakeProfit(e.target.value)}
+                      placeholder="0.00"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Net PnL</Label>
+                    <div className={cn(
+                      "h-9 px-3 flex items-center rounded-md border border-input bg-secondary/50 font-mono text-sm",
+                      parseFloat(netPnl) > 0 && "text-success",
+                      parseFloat(netPnl) < 0 && "text-destructive"
+                    )}>
+                      {netPnl !== '—' ? `$${netPnl}` : netPnl}
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-            {/* Section B: Trade Context */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                Trade Context
-              </div>
+              <Separator className="bg-border" />
 
-              <div className="grid grid-cols-3 gap-3">
+              {/* Section B: Trade Context */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Clock className="w-4 h-4" />
+                  Trade Context
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Strategy / Setup</Label>
+                    <DynamicSelect
+                      value={strategy}
+                      onChange={setStrategy}
+                      options={options.strategies}
+                      onAddNew={addStrategy}
+                      placeholder="Select..."
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Session</Label>
+                    <DynamicSelect
+                      value={session}
+                      onChange={setSession}
+                      options={options.sessions}
+                      onAddNew={addSession}
+                      placeholder="Select..."
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Market Condition</Label>
+                    <DynamicSelect
+                      value={marketCondition}
+                      onChange={setMarketCondition}
+                      options={options.marketConditions}
+                      onAddNew={addMarketCondition}
+                      placeholder="Select..."
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <Separator className="bg-border" />
+
+              {/* Section C: Analysis */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <BarChart3 className="w-4 h-4" />
+                  Analysis
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">News / Events</Label>
+                    <SmartInput
+                      value={newsEvent}
+                      onChange={setNewsEvent}
+                      suggestions={options.newsEvents}
+                      onAddNew={addNewsEvent}
+                      placeholder="Type to search or add new..."
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Lightbulb className="w-3.5 h-3.5 text-warning" />
+                      <Label className="text-xs">Key Lesson</Label>
+                    </div>
+                    <SmartInput
+                      value={keyLesson}
+                      onChange={setKeyLesson}
+                      suggestions={options.lessons}
+                      onAddNew={addLesson}
+                      placeholder="What did you learn from this trade?"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Strategy / Setup</Label>
-                  <DynamicSelect
-                    value={strategy}
-                    onChange={setStrategy}
-                    options={options.strategies}
-                    onAddNew={addStrategy}
-                    placeholder="Select..."
+                  <Label className="text-xs">Mistakes</Label>
+                  <MistakeTagsInput
+                    selectedTags={mistakes}
+                    onChange={setMistakes}
+                    availableTags={options.mistakes}
+                    onAddNew={addMistake}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Session</Label>
-                  <DynamicSelect
-                    value={session}
-                    onChange={setSession}
-                    options={options.sessions}
-                    onAddNew={addSession}
-                    placeholder="Select..."
-                  />
+              </section>
+
+              <Separator className="bg-border" />
+
+              {/* Section D: Visual Evidence */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Camera className="w-4 h-4" />
+                  Visual Evidence
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Market Condition</Label>
-                  <DynamicSelect
-                    value={marketCondition}
-                    onChange={setMarketCondition}
-                    options={options.marketConditions}
-                    onAddNew={addMarketCondition}
-                    placeholder="Select..."
-                  />
-                </div>
-              </div>
-            </section>
 
-            <Separator className="bg-border" />
-
-            {/* Section C: Analysis */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <BarChart3 className="w-4 h-4" />
-                Analysis
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">News / Events</Label>
-                <SmartInput
-                  value={newsEvent}
-                  onChange={setNewsEvent}
-                  suggestions={options.newsEvents}
-                  onAddNew={addNewsEvent}
-                  placeholder="Type to search or add new..."
+                <ImageUploader
+                  images={images}
+                  onChange={setImages}
+                  timeframeOptions={options.timeframes}
+                  onAddTimeframe={addTimeframe}
                 />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">Mistakes</Label>
-                <MistakeTagsInput
-                  selectedTags={mistakes}
-                  onChange={setMistakes}
-                  availableTags={options.mistakes}
-                  onAddNew={addMistake}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Lightbulb className="w-3.5 h-3.5 text-warning" />
-                  <Label className="text-xs">Key Lesson</Label>
-                </div>
-                <SmartInput
-                  value={keyLesson}
-                  onChange={setKeyLesson}
-                  suggestions={options.lessons}
-                  onAddNew={addLesson}
-                  placeholder="What did you learn from this trade?"
-                />
-              </div>
-            </section>
-
-            <Separator className="bg-border" />
-
-            {/* Section D: Visual Evidence */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Camera className="w-4 h-4" />
-                Visual Evidence
-              </div>
-
-              <ImageUploader
-                images={images}
-                onChange={setImages}
-                timeframeOptions={options.timeframes}
-                onAddTimeframe={addTimeframe}
-              />
-            </section>
+              </section>
+            </div>
           </form>
         </ScrollArea>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex gap-3">
+        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex justify-center gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1"
+            className="w-32"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             onClick={handleSubmit}
-            className="flex-1"
+            className="w-32"
           >
             Add Trade
           </Button>

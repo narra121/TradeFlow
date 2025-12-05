@@ -27,18 +27,27 @@ export function ImageUploader({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
+    const fileArray = Array.from(files);
+    const newImages: TradeImage[] = [];
+    let loadedCount = 0;
+
+    fileArray.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const newImage: TradeImage = {
+        newImages.push({
           id: crypto.randomUUID(),
           url: event.target?.result as string,
           timeframe: '1H',
           description: '',
-        };
-        onChange([...images, newImage]);
+        });
+        loadedCount++;
+        
+        // Once all files are loaded, update state
+        if (loadedCount === fileArray.length) {
+          onChange([...images, ...newImages]);
+        }
       };
       reader.readAsDataURL(file);
     });
