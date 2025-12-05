@@ -53,7 +53,7 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
 
   const COLORS = ['hsl(160, 84%, 39%)', 'hsl(265, 89%, 62%)', 'hsl(45, 93%, 47%)', 'hsl(200, 95%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(320, 70%, 50%)'];
 
-  // Hourly win rate calculation
+  // Hourly win rate calculation (all 24 hours)
   const hourlyStats = Array.from({ length: 24 }, (_, hour) => {
     const tradesInHour = closedTrades.filter(t => {
       const entryHour = t.entryDate.getHours();
@@ -62,11 +62,24 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
     const wins = tradesInHour.filter(t => (t.pnl || 0) > 0).length;
     const total = tradesInHour.length;
     return {
-      hour: `${hour.toString().padStart(2, '0')}:00`,
+      hour: `${hour.toString().padStart(2, '0')}`,
       winRate: total > 0 ? (wins / total) * 100 : 0,
       trades: total,
     };
-  }).filter(h => h.trades > 0);
+  });
+
+  // Daily win rate calculation (by day of week)
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dailyWinRate = dayNames.map((day, index) => {
+    const tradesOnDay = closedTrades.filter(t => t.entryDate.getDay() === index);
+    const wins = tradesOnDay.filter(t => (t.pnl || 0) > 0).length;
+    const total = tradesOnDay.length;
+    return {
+      day,
+      winRate: total > 0 ? (wins / total) * 100 : 0,
+      trades: total,
+    };
+  });
 
   // Trade duration calculation (time to hit TP or SL)
   const tradeDurations = closedTrades.map(trade => {
@@ -218,17 +231,14 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
           </div>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hourlyStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <BarChart data={hourlyStats} margin={{ top: 10, right: 5, left: 0, bottom: 0 }} barCategoryGap="8%">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
                 <XAxis 
                   dataKey="hour" 
                   axisLine={false} 
                   tickLine={false}
-                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 10 }}
+                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 9 }}
                   interval={0}
-                  angle={-45}
-                  textAnchor="end"
-                  height={50}
                 />
                 <YAxis 
                   axisLine={false} 
@@ -236,6 +246,7 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
                   tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
                   tickFormatter={(value) => `${value}%`}
                   domain={[0, 100]}
+                  width={40}
                 />
                 <Tooltip
                   contentStyle={{
@@ -247,29 +258,62 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
                     if (name === 'winRate') return [`${value.toFixed(1)}%`, 'Win Rate'];
                     return [value, name];
                   }}
-                  labelFormatter={(label) => `Time: ${label}`}
+                  labelFormatter={(label) => `${label}:00`}
                 />
                 <Bar 
                   dataKey="winRate" 
-                  radius={[4, 4, 0, 0]}
-                  fill="hsl(265, 89%, 62%)"
+                  radius={[2, 2, 0, 0]}
+                  fill="hsl(var(--primary))"
+                  maxBarSize={20}
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex flex-wrap gap-4 mt-4 text-sm">
-            {hourlyStats.map(h => (
-              <div key={h.hour} className="flex items-center gap-2">
-                <span className="text-muted-foreground">{h.hour}:</span>
-                <span className={cn(
-                  "font-mono font-medium",
-                  h.winRate >= 50 ? "text-success" : "text-destructive"
-                )}>
-                  {h.winRate.toFixed(0)}%
-                </span>
-                <span className="text-muted-foreground/60">({h.trades})</span>
-              </div>
-            ))}
+        </div>
+
+        {/* Daily Win Rate - Horizontal Bar */}
+        <div className="glass-card p-5">
+          <div className="flex items-center gap-2 mb-6">
+            <Clock className="w-5 h-5 text-accent" />
+            <h3 className="font-semibold text-foreground">Daily Win Rate</h3>
+          </div>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyWinRate} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" horizontal={false} />
+                <XAxis 
+                  type="number"
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
+                  tickFormatter={(value) => `${value}%`}
+                  domain={[0, 100]}
+                />
+                <YAxis 
+                  type="category"
+                  dataKey="day"
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
+                  width={40}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: 'hsl(220, 18%, 10%)',
+                    border: '1px solid hsl(220, 16%, 18%)',
+                    borderRadius: '8px',
+                  }}
+                  formatter={(value: number) => [`${value.toFixed(1)}%`, 'Win Rate']}
+                  labelFormatter={(label) => `${label}`}
+                />
+                <Bar 
+                  dataKey="winRate" 
+                  radius={[0, 4, 4, 0]}
+                  fill="hsl(var(--accent))"
+                  maxBarSize={28}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
