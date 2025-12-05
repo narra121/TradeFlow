@@ -9,7 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
-  Target
+  Target,
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -25,6 +26,7 @@ const navItems: NavItem[] = [
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
   { icon: Calendar, label: 'Calendar', id: 'calendar' },
   { icon: Target, label: 'Goals', id: 'goals' },
+  { icon: User, label: 'Profile', id: 'profile' },
   { icon: Settings, label: 'Settings', id: 'settings' },
 ];
 
