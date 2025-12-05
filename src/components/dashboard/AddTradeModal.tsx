@@ -116,12 +116,12 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] p-0 bg-card border-border overflow-hidden">
+      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] p-0 bg-card border-border overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="text-xl font-semibold">Add New Trade</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-140px)]">
+        <ScrollArea className="h-[calc(90vh-140px)]">
           <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-6">
             {/* Section A: Core Trade Details */}
             <section className="space-y-4">
