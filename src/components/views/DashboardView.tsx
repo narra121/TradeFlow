@@ -5,15 +5,16 @@ import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { WinRateRing } from '@/components/dashboard/WinRateRing';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { Button } from '@/components/ui/button';
-import { Plus, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
+import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
 
 interface DashboardViewProps {
   trades: Trade[];
   stats: PortfolioStats;
   onAddTrade: () => void;
+  onImportTrades: () => void;
 }
 
-export function DashboardView({ trades, stats, onAddTrade }: DashboardViewProps) {
+export function DashboardView({ trades, stats, onAddTrade, onImportTrades }: DashboardViewProps) {
   const openTrades = trades.filter(t => t.status === 'OPEN');
 
   return (
@@ -24,10 +25,16 @@ export function DashboardView({ trades, stats, onAddTrade }: DashboardViewProps)
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Track your trading performance</p>
         </div>
-        <Button onClick={onAddTrade} size="lg" className="gap-2">
-          <Plus className="w-5 h-5" />
-          New Trade
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
+            <Upload className="w-5 h-5" />
+            Import
+          </Button>
+          <Button onClick={onAddTrade} size="lg" className="gap-2">
+            <Plus className="w-5 h-5" />
+            New Trade
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}

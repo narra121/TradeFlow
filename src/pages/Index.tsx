@@ -7,6 +7,7 @@ import { CalendarView } from '@/components/views/CalendarView';
 import { GoalsView } from '@/components/views/GoalsView';
 import { SettingsView } from '@/components/views/SettingsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
+import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { mockTrades, calculatePortfolioStats } from '@/data/mockTrades';
 import { Trade } from '@/types/trade';
@@ -17,7 +18,7 @@ const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
   const [trades, setTrades] = useState<Trade[]>(mockTrades);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
-
+  const [isImportTradesOpen, setIsImportTradesOpen] = useState(false);
   const stats = useMemo(() => calculatePortfolioStats(trades), [trades]);
 
   const handleAddTrade = (newTrade: Omit<Trade, 'id'>) => {
@@ -28,6 +29,13 @@ const Index = () => {
     setTrades(prev => [trade, ...prev]);
   };
 
+  const handleImportTrades = (newTrades: Omit<Trade, 'id'>[]) => {
+    const tradesWithIds: Trade[] = newTrades.map((trade, index) => ({
+      ...trade,
+      id: `${Date.now()}-${index}`,
+    }));
+    setTrades(prev => [...tradesWithIds, ...prev]);
+  };
   const handleLogin = () => {
     setIsAuthenticated(true);
   };
@@ -35,9 +43,9 @@ const Index = () => {
   const renderView = () => {
     switch (activeView) {
       case 'dashboard':
-        return <DashboardView trades={trades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} />;
+        return <DashboardView trades={trades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
       case 'trades':
-        return <TradesView trades={trades} onAddTrade={() => setIsAddTradeOpen(true)} />;
+        return <TradesView trades={trades} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
       case 'analytics':
         return <AnalyticsView trades={trades} stats={stats} />;
       case 'calendar':
@@ -47,7 +55,7 @@ const Index = () => {
       case 'settings':
         return <SettingsView />;
       default:
-        return <DashboardView trades={trades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} />;
+        return <DashboardView trades={trades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
     }
   };
 
@@ -72,6 +80,12 @@ const Index = () => {
         open={isAddTradeOpen} 
         onOpenChange={setIsAddTradeOpen}
         onAddTrade={handleAddTrade}
+      />
+
+      <ImportTradesModal
+        open={isImportTradesOpen}
+        onOpenChange={setIsImportTradesOpen}
+        onImportTrades={handleImportTrades}
       />
     </div>
   );
