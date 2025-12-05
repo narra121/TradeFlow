@@ -11,8 +11,14 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LineChart,
+  Line,
+  ScatterChart,
+  Scatter,
+  ZAxis
 } from 'recharts';
+import { Clock, Timer } from 'lucide-react';
 
 interface AnalyticsViewProps {
   trades: Trade[];
@@ -33,7 +39,79 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
     value,
   }));
 
-  const COLORS = ['hsl(160, 84%, 39%)', 'hsl(265, 89%, 62%)', 'hsl(45, 93%, 47%)', 'hsl(200, 95%, 50%)', 'hsl(0, 72%, 51%)'];
+  // Strategy distribution
+  const strategyDistribution = closedTrades.reduce((acc, trade) => {
+    const strategy = trade.strategy || 'Unknown';
+    acc[strategy] = (acc[strategy] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const strategyPieData = Object.entries(strategyDistribution).map(([name, value]) => ({
+    name,
+    value,
+  }));
+
+  const COLORS = ['hsl(160, 84%, 39%)', 'hsl(265, 89%, 62%)', 'hsl(45, 93%, 47%)', 'hsl(200, 95%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(320, 70%, 50%)'];
+
+  // Hourly win rate calculation
+  const hourlyStats = Array.from({ length: 24 }, (_, hour) => {
+    const tradesInHour = closedTrades.filter(t => {
+      const entryHour = t.entryDate.getHours();
+      return entryHour === hour;
+    });
+    const wins = tradesInHour.filter(t => (t.pnl || 0) > 0).length;
+    const total = tradesInHour.length;
+    return {
+      hour: `${hour.toString().padStart(2, '0')}:00`,
+      winRate: total > 0 ? (wins / total) * 100 : 0,
+      trades: total,
+    };
+  }).filter(h => h.trades > 0);
+
+  // Trade duration calculation (time to hit TP or SL)
+  const tradeDurations = closedTrades.map(trade => {
+    if (!trade.exitDate) return null;
+    const durationMs = trade.exitDate.getTime() - trade.entryDate.getTime();
+    const durationHours = durationMs / (1000 * 60 * 60);
+    return {
+      symbol: trade.symbol,
+      duration: durationHours,
+      pnl: trade.pnl || 0,
+      isWin: (trade.pnl || 0) > 0,
+    };
+  }).filter(Boolean) as { symbol: string; duration: number; pnl: number; isWin: boolean }[];
+
+  // Group durations for bar chart
+  const durationRanges = [
+    { range: '< 1h', min: 0, max: 1 },
+    { range: '1-4h', min: 1, max: 4 },
+    { range: '4-8h', min: 4, max: 8 },
+    { range: '8-24h', min: 8, max: 24 },
+    { range: '> 24h', min: 24, max: Infinity },
+  ];
+
+  const durationData = durationRanges.map(({ range, min, max }) => {
+    const tradesInRange = tradeDurations.filter(t => t.duration >= min && t.duration < max);
+    const wins = tradesInRange.filter(t => t.isWin).length;
+    const losses = tradesInRange.length - wins;
+    return {
+      range,
+      wins,
+      losses,
+      total: tradesInRange.length,
+    };
+  }).filter(d => d.total > 0);
+
+  // Max/Min/Avg duration stats
+  const maxDuration = Math.max(...tradeDurations.map(t => t.duration));
+  const minDuration = Math.min(...tradeDurations.map(t => t.duration));
+  const avgDuration = tradeDurations.reduce((sum, t) => sum + t.duration, 0) / tradeDurations.length;
+
+  const formatDuration = (hours: number) => {
+    if (hours < 1) return `${Math.round(hours * 60)}m`;
+    if (hours < 24) return `${hours.toFixed(1)}h`;
+    return `${(hours / 24).toFixed(1)}d`;
+  };
 
   // Daily P&L for bar chart
   const dailyPnL = [
@@ -130,7 +208,135 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
         </div>
       </div>
 
-      {/* Second Charts Row */}
+      {/* Hourly Win Rate & Trade Duration Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Hourly Win Rate */}
+        <div className="glass-card p-5">
+          <div className="flex items-center gap-2 mb-6">
+            <Clock className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold text-foreground">Hourly Win Rate</h3>
+          </div>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={hourlyStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
+                <XAxis 
+                  dataKey="hour" 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 10 }}
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={50}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
+                  tickFormatter={(value) => `${value}%`}
+                  domain={[0, 100]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: 'hsl(220, 18%, 10%)',
+                    border: '1px solid hsl(220, 16%, 18%)',
+                    borderRadius: '8px',
+                  }}
+                  formatter={(value: number, name: string) => {
+                    if (name === 'winRate') return [`${value.toFixed(1)}%`, 'Win Rate'];
+                    return [value, name];
+                  }}
+                  labelFormatter={(label) => `Time: ${label}`}
+                />
+                <Bar 
+                  dataKey="winRate" 
+                  radius={[4, 4, 0, 0]}
+                  fill="hsl(265, 89%, 62%)"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap gap-4 mt-4 text-sm">
+            {hourlyStats.map(h => (
+              <div key={h.hour} className="flex items-center gap-2">
+                <span className="text-muted-foreground">{h.hour}:</span>
+                <span className={cn(
+                  "font-mono font-medium",
+                  h.winRate >= 50 ? "text-success" : "text-destructive"
+                )}>
+                  {h.winRate.toFixed(0)}%
+                </span>
+                <span className="text-muted-foreground/60">({h.trades})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Trade Duration Chart */}
+        <div className="glass-card p-5">
+          <div className="flex items-center gap-2 mb-6">
+            <Timer className="w-5 h-5 text-accent" />
+            <h3 className="font-semibold text-foreground">Trade Duration (Time to TP/SL)</h3>
+          </div>
+          
+          {/* Duration Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="p-3 bg-secondary/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground">Fastest</p>
+              <p className="font-mono font-semibold text-success">{formatDuration(minDuration)}</p>
+            </div>
+            <div className="p-3 bg-secondary/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground">Average</p>
+              <p className="font-mono font-semibold text-foreground">{formatDuration(avgDuration)}</p>
+            </div>
+            <div className="p-3 bg-secondary/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground">Longest</p>
+              <p className="font-mono font-semibold text-warning">{formatDuration(maxDuration)}</p>
+            </div>
+          </div>
+
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={durationData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
+                <XAxis 
+                  dataKey="range" 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: 'hsl(220, 18%, 10%)',
+                    border: '1px solid hsl(220, 16%, 18%)',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Bar dataKey="wins" stackId="a" fill="hsl(160, 84%, 39%)" radius={[0, 0, 0, 0]} name="Wins" />
+                <Bar dataKey="losses" stackId="a" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} name="Losses" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex gap-4 mt-4 justify-center text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-success" />
+              <span className="text-muted-foreground">Wins</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-destructive" />
+              <span className="text-muted-foreground">Losses</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Distribution Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Symbol Distribution */}
         <div className="glass-card p-5">
@@ -174,10 +380,52 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
           </div>
         </div>
 
+        {/* Strategy Distribution */}
+        <div className="glass-card p-5">
+          <h3 className="font-semibold text-foreground mb-6">Strategy Distribution</h3>
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={strategyPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {strategyPieData.map((_, index) => (
+                    <Cell key={`cell-strat-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: 'hsl(220, 18%, 10%)',
+                    border: '1px solid hsl(220, 16%, 18%)',
+                    borderRadius: '8px',
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap gap-3 justify-center mt-4">
+            {strategyPieData.map((item, index) => (
+              <div key={item.name} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: COLORS[(index + 2) % COLORS.length] }}
+                />
+                <span className="text-sm text-muted-foreground">{item.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Trade Distribution by Time */}
-        <div className="glass-card p-5 lg:col-span-2">
+        <div className="glass-card p-5">
           <h3 className="font-semibold text-foreground mb-6">Performance by Session</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {[
               { name: 'Asian', trades: 8, winRate: 62.5, pnl: 420 },
               { name: 'London', trades: 15, winRate: 73.3, pnl: 1250 },

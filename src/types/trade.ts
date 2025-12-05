@@ -18,6 +18,7 @@ export interface Trade {
   riskRewardRatio: number;
   notes?: string;
   setup?: string;
+  strategy?: string;
   emotions?: string;
   screenshot?: string;
   tags?: string[];
