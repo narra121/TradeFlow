@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Trade } from '@/types/trade';
 import { cn } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, eachWeekOfInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -14,11 +14,12 @@ export function CalendarView({ trades }: CalendarViewProps) {
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
-  // Get day of week for first day (0 = Sunday)
-  const startDay = monthStart.getDay();
-  const paddingDays = Array(startDay).fill(null);
+  
+  // Get all weeks that overlap with this month
+  const weeks = eachWeekOfInterval(
+    { start: monthStart, end: monthEnd },
+    { weekStartsOn: 0 }
+  );
 
   // Calculate P&L for each day
   const getDayStats = (date: Date) => {
@@ -37,6 +38,35 @@ export function CalendarView({ trades }: CalendarViewProps) {
       pnl,
       wins,
       losses: dayTrades.length - wins,
+    };
+  };
+
+  // Calculate weekly stats
+  const getWeekStats = (weekStart: Date) => {
+    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+    const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    
+    let totalTrades = 0;
+    let totalPnl = 0;
+    let wins = 0;
+    let losses = 0;
+
+    weekDays.forEach(day => {
+      const stats = getDayStats(day);
+      if (stats) {
+        totalTrades += stats.trades;
+        totalPnl += stats.pnl;
+        wins += stats.wins;
+        losses += stats.losses;
+      }
+    });
+
+    return {
+      trades: totalTrades,
+      pnl: totalPnl,
+      wins,
+      losses,
+      winRate: totalTrades > 0 ? (wins / totalTrades) * 100 : 0,
     };
   };
 
@@ -74,63 +104,115 @@ export function CalendarView({ trades }: CalendarViewProps) {
         </div>
 
         {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-2 mb-2">
+        <div className="grid grid-cols-8 gap-2 mb-2">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
             <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
               {day}
             </div>
           ))}
+          <div className="text-center text-sm font-medium text-muted-foreground py-2">
+            Weekly
+          </div>
         </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2">
-          {/* Padding days */}
-          {paddingDays.map((_, index) => (
-            <div key={`padding-${index}`} className="aspect-square" />
-          ))}
+        {/* Calendar Grid with Weekly Summaries */}
+        {weeks.map((weekStart, weekIndex) => {
+          const weekDays = eachDayOfInterval({
+            start: weekStart,
+            end: endOfWeek(weekStart, { weekStartsOn: 0 }),
+          });
+          const weekStats = getWeekStats(weekStart);
 
-          {/* Actual days */}
-          {days.map((day, index) => {
-            const stats = getDayStats(day);
-            const isToday = isSameDay(day, new Date());
+          return (
+            <div key={weekStart.toISOString()} className="grid grid-cols-8 gap-2 mb-2">
+              {/* Days of the week */}
+              {weekDays.map((day, dayIndex) => {
+                const stats = getDayStats(day);
+                const isToday = isSameDay(day, new Date());
+                const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
 
-            return (
+                return (
+                  <div
+                    key={day.toISOString()}
+                    className={cn(
+                      "aspect-square p-2 rounded-xl transition-all cursor-pointer animate-fade-in",
+                      "hover:bg-secondary/50",
+                      !isCurrentMonth && "opacity-30",
+                      isToday && "ring-2 ring-primary",
+                      stats && (stats.pnl >= 0 ? "bg-success/10" : "bg-destructive/10")
+                    )}
+                    style={{ animationDelay: `${(weekIndex * 7 + dayIndex) * 0.01}s` }}
+                  >
+                    <div className="h-full flex flex-col">
+                      <span className={cn(
+                        "text-sm",
+                        isToday ? "text-primary font-semibold" : "text-muted-foreground"
+                      )}>
+                        {format(day, 'd')}
+                      </span>
+                      
+                      {stats && (
+                        <div className="flex-1 flex flex-col justify-end">
+                          <span className={cn(
+                            "text-xs font-semibold font-mono",
+                            stats.pnl >= 0 ? "text-success" : "text-destructive"
+                          )}>
+                            {stats.pnl >= 0 ? '+' : ''}{stats.pnl.toFixed(0)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {stats.trades} trade{stats.trades !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Weekly Summary */}
               <div
-                key={day.toISOString()}
                 className={cn(
-                  "aspect-square p-2 rounded-xl transition-all cursor-pointer animate-fade-in",
-                  "hover:bg-secondary/50",
-                  isToday && "ring-2 ring-primary",
-                  stats && (stats.pnl >= 0 ? "bg-success/10" : "bg-destructive/10")
+                  "p-2 rounded-xl transition-all animate-fade-in border border-border/50",
+                  weekStats.trades > 0 && (weekStats.pnl >= 0 ? "bg-success/5" : "bg-destructive/5")
                 )}
-                style={{ animationDelay: `${index * 0.01}s` }}
+                style={{ animationDelay: `${weekIndex * 0.05}s` }}
               >
-                <div className="h-full flex flex-col">
-                  <span className={cn(
-                    "text-sm",
-                    isToday ? "text-primary font-semibold" : "text-muted-foreground"
-                  )}>
-                    {format(day, 'd')}
-                  </span>
-                  
-                  {stats && (
-                    <div className="flex-1 flex flex-col justify-end">
+                {weekStats.trades > 0 ? (
+                  <div className="h-full flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">W{weekIndex + 1}</span>
                       <span className={cn(
                         "text-xs font-semibold font-mono",
-                        stats.pnl >= 0 ? "text-success" : "text-destructive"
+                        weekStats.pnl >= 0 ? "text-success" : "text-destructive"
                       )}>
-                        {stats.pnl >= 0 ? '+' : ''}{stats.pnl.toFixed(0)}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {stats.trades} trade{stats.trades !== 1 ? 's' : ''}
+                        {weekStats.pnl >= 0 ? '+' : ''}${weekStats.pnl.toFixed(0)}
                       </span>
                     </div>
-                  )}
-                </div>
+                    <div className="space-y-0.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Trades</span>
+                        <span className="font-mono">{weekStats.trades}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Win%</span>
+                        <span className="font-mono">{weekStats.winRate.toFixed(0)}%</span>
+                      </div>
+                      <div className="flex gap-1 text-xs">
+                        <span className="text-success">{weekStats.wins}W</span>
+                        <span className="text-muted-foreground">/</span>
+                        <span className="text-destructive">{weekStats.losses}L</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">—</span>
+                  </div>
+                )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
 
         {/* Legend */}
         <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-border/50">
@@ -152,10 +234,10 @@ export function CalendarView({ trades }: CalendarViewProps) {
       {/* Monthly Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Trading Days', value: days.filter(d => getDayStats(d)).length },
-          { label: 'Profitable Days', value: days.filter(d => { const s = getDayStats(d); return s && s.pnl > 0; }).length },
-          { label: 'Loss Days', value: days.filter(d => { const s = getDayStats(d); return s && s.pnl < 0; }).length },
-          { label: 'Monthly P&L', value: `$${days.reduce((sum, d) => sum + (getDayStats(d)?.pnl || 0), 0).toFixed(2)}` },
+          { label: 'Trading Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 0 }) })).filter(d => getDayStats(d)).length },
+          { label: 'Profitable Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 0 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl > 0; }).length },
+          { label: 'Loss Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 0 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl < 0; }).length },
+          { label: 'Monthly P&L', value: `$${weeks.reduce((sum, w) => sum + getWeekStats(w).pnl, 0).toFixed(2)}` },
         ].map((stat, index) => (
           <div 
             key={stat.label}

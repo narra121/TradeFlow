@@ -379,19 +379,19 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
         </ScrollArea>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex justify-center gap-3 shrink-0">
+        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex justify-end gap-3 shrink-0">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="w-32"
+            className="w-28"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             onClick={handleSubmit}
-            className="w-32"
+            className="w-28"
           >
             Add Trade
           </Button>
