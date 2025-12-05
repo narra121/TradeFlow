@@ -7,11 +7,13 @@ import { CalendarView } from '@/components/views/CalendarView';
 import { GoalsView } from '@/components/views/GoalsView';
 import { SettingsView } from '@/components/views/SettingsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
+import { AuthPage } from '@/components/auth/AuthPage';
 import { mockTrades, calculatePortfolioStats } from '@/data/mockTrades';
 import { Trade } from '@/types/trade';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
   const [trades, setTrades] = useState<Trade[]>(mockTrades);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
@@ -24,6 +26,10 @@ const Index = () => {
       id: Date.now().toString(),
     };
     setTrades(prev => [trade, ...prev]);
+  };
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
   };
 
   const renderView = () => {
@@ -44,6 +50,10 @@ const Index = () => {
         return <DashboardView trades={trades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} />;
     }
   };
+
+  if (!isAuthenticated) {
+    return <AuthPage onLogin={handleLogin} />;
+  }
 
   return (
     <div className="min-h-screen bg-background bg-glow">
