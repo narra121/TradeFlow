@@ -21,7 +21,10 @@ import {
 export function ProfileView() {
   const [isEditing, setIsEditing] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
+  const [customAnnualAmount, setCustomAnnualAmount] = useState('');
   const [selectedAmount, setSelectedAmount] = useState(1);
+  const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(12);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   
   // Mock user data - replace with actual user data from your API
   const [user, setUser] = useState({
@@ -43,15 +46,19 @@ export function ProfileView() {
     { amount: 5, label: 'Champion', description: 'Fuel new features' },
   ];
 
+  const annualTiers = [
+    { amount: 12, label: 'Basic', description: 'Cover hosting costs', monthly: 1 },
+    { amount: 36, label: 'Supporter', description: 'Help us grow', monthly: 3 },
+    { amount: 60, label: 'Champion', description: 'Fuel new features', monthly: 5 },
+  ];
+
   const handleSaveProfile = () => {
     setIsEditing(false);
     // Save logic here
   };
 
-  const handleSubscribe = (amount: number) => {
-    setSelectedAmount(amount);
-    // Trigger your custom payment integration here
-    console.log(`Subscribe with amount: $${amount}/month`);
+  const handleSubscribe = (amount: number, cycle: 'monthly' | 'annual') => {
+    console.log(`Subscribe with amount: $${amount}/${cycle === 'monthly' ? 'month' : 'year'}`);
   };
 
   return (
@@ -191,71 +198,159 @@ export function ProfileView() {
           </div>
           <CardTitle className="text-2xl">Support TradeFlow</CardTitle>
           <CardDescription className="max-w-xl mx-auto mt-2">
-            TradeFlow is built with passion by independent developers. Your monthly contribution 
+            TradeFlow is built with passion by independent developers. Your contribution 
             helps cover hosting costs, maintenance, and allows us to keep building new features.
             <span className="block mt-2 text-foreground/80 font-medium">
-              Choose $1/month or pay more if you'd like to support us further!
+              Choose a plan that works for you — every bit helps!
             </span>
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Support Tiers */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {supportTiers.map((tier) => (
+          {/* Billing Cycle Toggle */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex rounded-lg bg-muted/50 p-1">
               <button
-                key={tier.amount}
-                onClick={() => setSelectedAmount(tier.amount)}
-                className={`p-6 rounded-xl border-2 transition-all duration-200 text-left ${
-                  selectedAmount === tier.amount
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border/50 hover:border-primary/50 bg-background/30'
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                  billingCycle === 'monthly'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl font-bold text-foreground">${tier.amount}</span>
-                  <span className="text-sm text-muted-foreground">/month</span>
-                </div>
-                <h3 className="font-semibold text-foreground mb-1">{tier.label}</h3>
-                <p className="text-sm text-muted-foreground">{tier.description}</p>
-                {selectedAmount === tier.amount && (
-                  <div className="mt-3 flex items-center gap-1 text-primary text-sm">
-                    <Check className="w-4 h-4" />
-                    Selected
-                  </div>
-                )}
+                Monthly
               </button>
-            ))}
+              <button
+                onClick={() => setBillingCycle('annual')}
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                  billingCycle === 'annual'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Annual
+              </button>
+            </div>
           </div>
 
-          {/* Custom Amount */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-lg bg-background/30 border border-border/50 mb-6">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span className="text-sm text-foreground font-medium">Custom amount:</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">$</span>
-              <Input
-                type="number"
-                min="1"
-                placeholder="Enter amount"
-                value={customAmount}
-                onChange={(e) => {
-                  setCustomAmount(e.target.value);
-                  if (e.target.value) {
-                    setSelectedAmount(Number(e.target.value));
-                  }
-                }}
-                className="w-32 bg-background/50"
-              />
-              <span className="text-muted-foreground text-sm">/month</span>
-            </div>
-          </div>
+          {/* Monthly Tiers */}
+          {billingCycle === 'monthly' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {supportTiers.map((tier) => (
+                  <button
+                    key={tier.amount}
+                    onClick={() => setSelectedAmount(tier.amount)}
+                    className={`p-6 rounded-xl border-2 transition-all duration-200 text-left ${
+                      selectedAmount === tier.amount
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border/50 hover:border-primary/50 bg-background/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-2xl font-bold text-foreground">${tier.amount}</span>
+                      <span className="text-sm text-muted-foreground">/month</span>
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-1">{tier.label}</h3>
+                    <p className="text-sm text-muted-foreground">{tier.description}</p>
+                    {selectedAmount === tier.amount && (
+                      <div className="mt-3 flex items-center gap-1 text-primary text-sm">
+                        <Check className="w-4 h-4" />
+                        Selected
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Amount Monthly */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-lg bg-background/30 border border-border/50 mb-6">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <span className="text-sm text-foreground font-medium">Custom amount:</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Min $1"
+                    value={customAmount}
+                    onChange={(e) => {
+                      setCustomAmount(e.target.value);
+                      if (e.target.value && Number(e.target.value) >= 1) {
+                        setSelectedAmount(Number(e.target.value));
+                      }
+                    }}
+                    className="w-32 bg-background/50"
+                  />
+                  <span className="text-muted-foreground text-sm">/month</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Annual Tiers */}
+          {billingCycle === 'annual' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {annualTiers.map((tier) => (
+                  <button
+                    key={tier.amount}
+                    onClick={() => setSelectedAnnualAmount(tier.amount)}
+                    className={`p-6 rounded-xl border-2 transition-all duration-200 text-left ${
+                      selectedAnnualAmount === tier.amount
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border/50 hover:border-primary/50 bg-background/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-2xl font-bold text-foreground">${tier.amount}</span>
+                      <span className="text-sm text-muted-foreground">/year</span>
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-1">{tier.label}</h3>
+                    <p className="text-sm text-muted-foreground">{tier.description}</p>
+                    <p className="text-xs text-primary mt-1">(${tier.monthly}/month)</p>
+                    {selectedAnnualAmount === tier.amount && (
+                      <div className="mt-3 flex items-center gap-1 text-primary text-sm">
+                        <Check className="w-4 h-4" />
+                        Selected
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Amount Annual */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-lg bg-background/30 border border-border/50 mb-6">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <span className="text-sm text-foreground font-medium">Custom amount:</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min="12"
+                    placeholder="Min $12"
+                    value={customAnnualAmount}
+                    onChange={(e) => {
+                      setCustomAnnualAmount(e.target.value);
+                      if (e.target.value && Number(e.target.value) >= 12) {
+                        setSelectedAnnualAmount(Number(e.target.value));
+                      }
+                    }}
+                    className="w-32 bg-background/50"
+                  />
+                  <span className="text-muted-foreground text-sm">/year</span>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Info Box */}
           <div className="p-4 rounded-lg bg-muted/30 border border-border/50 mb-6">
             <p className="text-sm text-muted-foreground text-center">
-              <span className="text-foreground font-medium">Why $1 minimum?</span> This small amount helps us cover 
+              <span className="text-foreground font-medium">Why {billingCycle === 'monthly' ? '$1' : '$12'} minimum?</span> This small amount helps us cover 
               server hosting, database costs, and ongoing maintenance. Every contribution, big or small, 
               directly supports the continued development of TradeFlow. No hidden fees, no locked features — 
               just transparent support for a tool we all love.
@@ -267,10 +362,13 @@ export function ProfileView() {
             <Button 
               size="lg" 
               className="px-8 bg-gradient-primary hover:opacity-90 text-primary-foreground"
-              onClick={() => handleSubscribe(selectedAmount)}
+              onClick={() => handleSubscribe(
+                billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount,
+                billingCycle
+              )}
             >
               <Heart className="w-4 h-4 mr-2" />
-              Subscribe for ${selectedAmount}/month
+              Subscribe for ${billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount}/{billingCycle === 'monthly' ? 'month' : 'year'}
             </Button>
           </div>
 
