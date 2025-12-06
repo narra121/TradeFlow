@@ -3,7 +3,7 @@ import { Trade } from '@/types/trade';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, eachWeekOfInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, eachWeekOfInterval, subDays, isWithinInterval } from 'date-fns';
 import { 
   Plus, 
   Upload,
@@ -26,6 +26,7 @@ import {
 import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
 import { CalendarTradeModal } from '@/components/trade/CalendarTradeModal';
 import { AccountFilter } from '@/components/account/AccountFilter';
+import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 
 interface TradeLogViewProps {
   trades: Trade[];
@@ -38,6 +39,10 @@ type TabType = 'trades' | 'calendar';
 export function TradeLogView({ trades, onAddTrade, onImportTrades }: TradeLogViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>('trades');
   
+  // Date filter state
+  const [datePreset, setDatePreset] = useState<DatePreset>(30);
+  const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
+  
   // Trades table state
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
@@ -49,7 +54,16 @@ export function TradeLogView({ trades, onAddTrade, onImportTrades }: TradeLogVie
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
-  const filteredTrades = trades.filter(trade => {
+  // Filter trades by date range
+  const dateFilteredTrades = useMemo(() => {
+    const range = getDateRangeFromPreset(datePreset, customRange);
+    return trades.filter(trade => {
+      const tradeDate = trade.exitDate || trade.entryDate;
+      return isWithinInterval(tradeDate, { start: range.from, end: range.to });
+    });
+  }, [trades, datePreset, customRange]);
+
+  const filteredTrades = dateFilteredTrades.filter(trade => {
     const matchesSearch = trade.symbol.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || trade.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -82,7 +96,7 @@ export function TradeLogView({ trades, onAddTrade, onImportTrades }: TradeLogVie
   );
 
   const getTradesForDay = (date: Date) => {
-    return trades.filter(trade => {
+    return dateFilteredTrades.filter(trade => {
       if (trade.status !== 'CLOSED' || !trade.exitDate) return false;
       return isSameDay(trade.exitDate, date);
     });
@@ -114,14 +128,14 @@ export function TradeLogView({ trades, onAddTrade, onImportTrades }: TradeLogVie
 
   const tradingDays = useMemo(() => {
     const days: Date[] = [];
-    trades.forEach(trade => {
+    dateFilteredTrades.forEach(trade => {
       if (trade.status === 'CLOSED' && trade.exitDate) {
         const exists = days.some(d => isSameDay(d, trade.exitDate!));
         if (!exists) days.push(trade.exitDate);
       }
     });
     return days.sort((a, b) => a.getTime() - b.getTime());
-  }, [trades]);
+  }, [dateFilteredTrades]);
 
   const handleDayClick = (date: Date) => {
     const dayTrades = getTradesForDay(date);
@@ -159,6 +173,13 @@ export function TradeLogView({ trades, onAddTrade, onImportTrades }: TradeLogVie
           <p className="text-muted-foreground mt-1">Track and analyze your trading history</p>
         </div>
         <div className="flex items-center gap-3">
+          <DateRangeFilter
+            selectedPreset={datePreset}
+            onPresetChange={setDatePreset}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+            showCustomPicker
+          />
           <AccountFilter />
           <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
             <Upload className="w-5 h-5" />
