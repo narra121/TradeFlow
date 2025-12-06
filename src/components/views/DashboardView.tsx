@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Trade, PortfolioStats } from '@/types/trade';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { TradeList } from '@/components/dashboard/TradeList';
@@ -10,15 +10,27 @@ import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/component
 import { Button } from '@/components/ui/button';
 import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
 import { isWithinInterval } from 'date-fns';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchTrades } from '@/store/slices/tradesSlice';
+import { fetchStats, fetchDailyStats } from '@/store/slices/statsSlice';
 
 interface DashboardViewProps {
-  trades: Trade[];
-  stats: PortfolioStats;
   onAddTrade: () => void;
   onImportTrades: () => void;
 }
 
-export function DashboardView({ trades, stats, onAddTrade, onImportTrades }: DashboardViewProps) {
+export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps) {
+  const dispatch = useAppDispatch();
+  const { trades, loading: tradesLoading } = useAppSelector((state) => state.trades);
+  const { stats, loading: statsLoading } = useAppSelector((state) => state.stats);
+  const { selectedAccountId } = useAppSelector((state) => state.accounts);
+  
+  useEffect(() => {
+    dispatch(fetchTrades({ accountId: selectedAccountId }));
+    dispatch(fetchStats(selectedAccountId));
+    dispatch(fetchDailyStats({ accountId: selectedAccountId }));
+  }, [dispatch, selectedAccountId]);
+  
   const [datePreset, setDatePreset] = useState<DatePreset>(30);
 
   const filteredTrades = useMemo(() => {

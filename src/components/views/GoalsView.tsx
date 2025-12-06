@@ -1,11 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { useTradingRules } from '@/hooks/useTradingRules';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { 
+  fetchGoals, 
+  updateGoal as updateGoalAction,
+  fetchRules,
+  createRule as createRuleAction,
+  updateRule as updateRuleAction,
+  deleteRule as deleteRuleAction,
+  toggleRule as toggleRuleAction
+} from '@/store/slices/goalsRulesSlice';
 
 interface Goal {
   id: string;
@@ -67,14 +76,20 @@ const defaultGoals: Goal[] = [
 ];
 
 export function GoalsView() {
-  const [goals, setGoals] = useState<Goal[]>(defaultGoals);
+  const dispatch = useAppDispatch();
+  const { goals, rules, loading } = useAppSelector((state) => state.goalsRules);
+  
+  useEffect(() => {
+    dispatch(fetchGoals());
+    dispatch(fetchRules());
+  }, [dispatch]);
+  
   const [periodFilter, setPeriodFilter] = useState<'all' | 'weekly' | 'monthly'>('all');
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [savingGoalId, setSavingGoalId] = useState<string | null>(null);
 
   // Rules state
-  const { rules, addRule, updateRule, deleteRule, toggleRule } = useTradingRules();
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [editRuleValue, setEditRuleValue] = useState<string>('');
   const [newRuleValue, setNewRuleValue] = useState<string>('');
@@ -88,7 +103,7 @@ export function GoalsView() {
     ? goals 
     : goals.filter(g => g.period === periodFilter);
 
-  const handleEditStart = (goal: Goal) => {
+  const handleEditStart = (goal: any) => {
     setEditingGoalId(goal.id);
     setEditValue(goal.target.toString());
   };
@@ -97,10 +112,7 @@ export function GoalsView() {
     const newTarget = parseFloat(editValue);
     if (!isNaN(newTarget) && newTarget > 0) {
       setSavingGoalId(goalId);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setGoals(prev => prev.map(g => 
-        g.id === goalId ? { ...g, target: newTarget } : g
-      ));
+      await dispatch(updateGoalAction({ id: goalId, target: newTarget })).unwrap();
       setSavingGoalId(null);
     }
     setEditingGoalId(null);
@@ -121,8 +133,7 @@ export function GoalsView() {
   const handleRuleEditSave = async (ruleId: string) => {
     if (editRuleValue.trim()) {
       setSavingRuleId(ruleId);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      updateRule(ruleId, editRuleValue);
+      await dispatch(updateRuleAction({ id: ruleId, rule: editRuleValue })).unwrap();
       setSavingRuleId(null);
     }
     setEditingRuleId(null);
@@ -137,8 +148,7 @@ export function GoalsView() {
   const handleAddRule = async () => {
     if (newRuleValue.trim()) {
       setIsAddingRuleLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      addRule(newRuleValue);
+      await dispatch(createRuleAction({ rule: newRuleValue })).unwrap();
       setNewRuleValue('');
       setIsAddingRule(false);
       setIsAddingRuleLoading(false);
@@ -147,15 +157,13 @@ export function GoalsView() {
 
   const handleDeleteRule = async (ruleId: string) => {
     setDeletingRuleId(ruleId);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    deleteRule(ruleId);
+    await dispatch(deleteRuleAction(ruleId)).unwrap();
     setDeletingRuleId(null);
   };
 
   const handleToggleRule = async (ruleId: string) => {
     setTogglingRuleId(ruleId);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    toggleRule(ruleId);
+    await dispatch(toggleRuleAction(ruleId)).unwrap();
     setTogglingRuleId(null);
   };
 

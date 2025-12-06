@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Trade } from '@/types/trade';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,16 +27,24 @@ import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
 import { CalendarTradeModal } from '@/components/trade/CalendarTradeModal';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchTrades } from '@/store/slices/tradesSlice';
 
 interface TradeLogViewProps {
-  trades: Trade[];
   onAddTrade: () => void;
   onImportTrades: () => void;
 }
 
 type TabType = 'trades' | 'calendar';
 
-export function TradeLogView({ trades, onAddTrade, onImportTrades }: TradeLogViewProps) {
+export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) {
+  const dispatch = useAppDispatch();
+  const { trades, loading } = useAppSelector((state) => state.trades);
+  const { selectedAccountId } = useAppSelector((state) => state.accounts);
+  
+  useEffect(() => {
+    dispatch(fetchTrades({ accountId: selectedAccountId }));
+  }, [dispatch, selectedAccountId]);
   const [activeTab, setActiveTab] = useState<TabType>('trades');
   
   // Date filter state

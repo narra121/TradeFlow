@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,8 +18,23 @@ import {
   Camera,
   Loader2
 } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { 
+  fetchProfile, 
+  updateProfile as updateProfileAction,
+  fetchSubscription,
+  createSubscription as createSubscriptionAction
+} from '@/store/slices/userSlice';
 
 export function ProfileView() {
+  const dispatch = useAppDispatch();
+  const { profile, subscription, loading } = useAppSelector((state) => state.user);
+  
+  useEffect(() => {
+    dispatch(fetchProfile());
+    dispatch(fetchSubscription());
+  }, [dispatch]);
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -29,19 +44,43 @@ export function ProfileView() {
   const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(12);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   
-  // Mock user data - replace with actual user data from your API
+  // Local state for editing
   const [user, setUser] = useState({
-    name: 'John Trader',
-    email: 'john@example.com',
+    name: profile?.name || '',
+    email: profile?.email || '',
     avatar: '',
-    joinedDate: 'January 2024',
+    joinedDate: '',
     subscription: {
-      status: 'active',
+      status: subscription?.status || 'inactive',
       plan: 'Supporter',
-      amount: 1,
-      nextBilling: 'February 1, 2025'
+      amount: subscription?.amount || 0,
+      nextBilling: subscription?.nextBillingDate || ''
     }
   });
+  
+  useEffect(() => {
+    if (profile) {
+      setUser(prev => ({
+        ...prev,
+        name: profile.name || '',
+        email: profile.email || ''
+      }));
+    }
+  }, [profile]);
+  
+  useEffect(() => {
+    if (subscription) {
+      setUser(prev => ({
+        ...prev,
+        subscription: {
+          status: subscription.status,
+          plan: 'Supporter',
+          amount: subscription.amount,
+          nextBilling: subscription.nextBillingDate
+        }
+      }));
+    }
+  }, [subscription]);
 
   const supportTiers = [
     { amount: 1, label: 'Basic', description: 'Cover hosting costs' },
@@ -57,16 +96,24 @@ export function ProfileView() {
 
   const handleSaveProfile = async () => {
     setIsSavingProfile(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setIsEditing(false);
-    setIsSavingProfile(false);
+    try {
+      await dispatch(updateProfileAction({ name: user.name, email: user.email })).unwrap();
+      setIsEditing(false);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleSubscribe = async (amount: number, cycle: 'monthly' | 'annual') => {
     setIsSubscribing(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    console.log(`Subscribe with amount: $${amount}/${cycle === 'monthly' ? 'month' : 'year'}`);
-    setIsSubscribing(false);
+    try {
+      await dispatch(createSubscriptionAction({ 
+        amount, 
+        billingCycle: cycle 
+      })).unwrap();
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   return (

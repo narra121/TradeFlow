@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,16 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { 
+  login, 
+  signup, 
+  confirmSignup, 
+  forgotPassword, 
+  resetPassword,
+  clearError,
+  clearSignupSuccess
+} from "@/store/slices/authSlice";
 
 type AuthView =
   | "login"
@@ -33,15 +43,43 @@ interface AuthPageProps {
 }
 
 export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
-  const [view, setView] = useState<AuthView>(initialView);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { loading, error, isAuthenticated, signupSuccess } = useAppSelector((state) => state.auth);
+  
+  const [view, setView] = useState<AuthView>(initialView);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  // Handle authentication success
+  useEffect(() => {
+    if (isAuthenticated) {
+      toast.success("Welcome back!");
+      onLogin();
+    }
+  }, [isAuthenticated, onLogin]);
+
+  // Handle signup success
+  useEffect(() => {
+    if (signupSuccess) {
+      toast.success("Verification code sent to your email");
+      setView("otp");
+      dispatch(clearSignupSuccess());
+    }
+  }, [signupSuccess, dispatch]);
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +87,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Please fill in all fields");
       return;
     }
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsLoading(false);
-    toast.success("Welcome back!");
-    onLogin();
+    dispatch(login({ email, password }));
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -70,11 +104,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Password must be at least 8 characters");
       return;
     }
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsLoading(false);
-    toast.success("Verification code sent to your email");
-    setView("otp");
+    dispatch(signup({ name, email, password }));
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -83,21 +113,20 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Please enter your email");
       return;
     }
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsLoading(false);
-    toast.success("Reset code sent to your email");
-    setView("otp");
+    const result = await dispatch(forgotPassword({ email }));
+    if (forgotPassword.fulfilled.match(result)) {
+      toast.success("Reset code sent to your email");
+      setView("reset");
+    }
   };
 
   const handleOTPComplete = async (otp: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsLoading(false);
-    
-    if (view === "otp") {
+    setOtpCode(otp);
+    const result = await dispatch(confirmSignup({ email, code: otp }));
+    if (confirmSignup.fulfilled.match(result)) {
       toast.success("Email verified successfully!");
-      onLogin();
+      // Auto-login after verification
+      dispatch(login({ email, password }));
     }
   };
 
@@ -111,10 +140,14 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Passwords do not match");
       return;
     }
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsLoading(false);
-    setView("success");
+    if (!otpCode) {
+      toast.error("Please enter the reset code from your email");
+      return;
+    }
+    const result = await dispatch(resetPassword({ email, code: otpCode, newPassword: password }));
+    if (resetPassword.fulfilled.match(result)) {
+      setView("success");
+    }
   };
 
   const resetForm = () => {
@@ -122,6 +155,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
     setPassword("");
     setConfirmPassword("");
     setName("");
+    setOtpCode("");
   };
 
   return (
@@ -249,9 +283,9 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                 <Button
                   type="submit"
                   className="w-full h-12 text-base font-semibold"
-                  disabled={isLoading}
+                  disabled={loading}
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                       Signing in...
@@ -376,9 +410,9 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                 <Button
                   type="submit"
                   className="w-full h-12 text-base font-semibold"
-                  disabled={isLoading}
+                  disabled={loading}
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                       Creating account...
@@ -436,9 +470,9 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                 <Button
                   type="submit"
                   className="w-full h-12 text-base font-semibold"
-                  disabled={isLoading}
+                  disabled={loading}
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                       Sending...
@@ -488,7 +522,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                 </button>
               </p>
 
-              {isLoading && (
+              {loading && (
                 <div className="flex justify-center">
                   <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 </div>
@@ -499,9 +533,33 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
           {/* Reset Password View */}
           {view === "reset" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <button
+                onClick={() => { resetForm(); setView("forgot"); }}
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </button>
+
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                  <Mail className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Enter reset code</h2>
+                <p className="text-muted-foreground">
+                  We sent a code to
+                  <br />
+                  <span className="text-foreground font-medium">{email || "your email"}</span>
+                </p>
+              </div>
+
+              <div className="py-4">
+                <OTPInput onComplete={(otp) => setOtpCode(otp)} />
+              </div>
+
               <div className="text-center lg:text-left">
-                <h2 className="text-2xl font-bold text-foreground mb-2">Set new password</h2>
-                <p className="text-muted-foreground">Your new password must be different from previous passwords</p>
+                <h3 className="text-lg font-bold text-foreground mb-2">Set new password</h3>
+                <p className="text-muted-foreground text-sm">Your new password must be different from previous passwords</p>
               </div>
 
               <form onSubmit={handleResetPassword} className="space-y-5">
@@ -553,9 +611,9 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                 <Button
                   type="submit"
                   className="w-full h-12 text-base font-semibold"
-                  disabled={isLoading}
+                  disabled={loading || !otpCode}
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                       Resetting...
@@ -565,6 +623,16 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                   )}
                 </Button>
               </form>
+
+              <p className="text-center text-sm text-muted-foreground">
+                Didn't receive the code?{" "}
+                <button
+                  onClick={() => handleForgotPassword(new Event('submit') as any)}
+                  className="text-primary hover:text-primary/80 font-semibold transition-colors"
+                >
+                  Resend
+                </button>
+              </p>
             </div>
           )}
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { 
   User, 
@@ -18,11 +18,66 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { 
+  fetchProfile, 
+  updateProfile,
+  updatePreferences as updatePreferencesAction, 
+  updateNotifications as updateNotificationsAction
+} from '@/store/slices/userSlice';
 
 export function SettingsView() {
-  const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
-  const [currency, setCurrency] = useState('USD');
+  const dispatch = useAppDispatch();
+  const { profile, preferences, notifications: notificationsSettings, loading } = useAppSelector((state) => state.user);
+  
+  useEffect(() => {
+    dispatch(fetchProfile());
+  }, [dispatch]);
+  
+  const [notifications, setNotifications] = useState(notificationsSettings?.tradeReminders ?? true);
+  const [darkMode, setDarkMode] = useState(preferences?.theme === 'dark');
+  const [currency, setCurrency] = useState(preferences?.currency || 'USD');
+  const [displayName, setDisplayName] = useState(profile?.displayName || '');
+  const [email, setEmail] = useState(profile?.email || '');
+  
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.displayName || '');
+      setEmail(profile.email || '');
+    }
+  }, [profile]);
+  
+  useEffect(() => {
+    if (preferences) {
+      setDarkMode(preferences.theme === 'dark');
+      setCurrency(preferences.currency || 'USD');
+    }
+  }, [preferences]);
+  
+  useEffect(() => {
+    if (notificationsSettings) {
+      setNotifications(notificationsSettings.tradeReminders ?? true);
+    }
+  }, [notificationsSettings]);
+  
+  const handleUpdateProfile = async () => {
+    await dispatch(updateProfile({ displayName, email })).unwrap();
+  };
+  
+  const handleDarkModeChange = async (checked: boolean) => {
+    setDarkMode(checked);
+    await dispatch(updatePreferencesAction({ theme: checked ? 'dark' : 'light', currency, timezone: 'UTC' })).unwrap();
+  };
+  
+  const handleCurrencyChange = async (value: string) => {
+    setCurrency(value);
+    await dispatch(updatePreferencesAction({ theme: darkMode ? 'dark' : 'light', currency: value, timezone: 'UTC' })).unwrap();
+  };
+  
+  const handleNotificationsChange = async (checked: boolean) => {
+    setNotifications(checked);
+    await dispatch(updateNotificationsAction({ tradeReminders: checked, weeklyReport: true, goalAlerts: true })).unwrap();
+  };
 
   const settingSections = [
     {
@@ -55,13 +110,13 @@ export function SettingsView() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Display Name</Label>
-            <Input defaultValue="Trader Pro" />
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Email</Label>
-            <Input defaultValue="trader@example.com" type="email" />
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
           </div>
-          <Button variant="outline">Update Profile</Button>
+          <Button variant="outline" onClick={handleUpdateProfile}>Update Profile</Button>
         </div>
       </div>
 
@@ -83,7 +138,7 @@ export function SettingsView() {
                 <p className="text-sm text-muted-foreground">Use dark theme</p>
               </div>
             </div>
-            <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+            <Switch checked={darkMode} onCheckedChange={handleDarkModeChange} />
           </div>
 
           <div className="flex items-center justify-between">
@@ -94,7 +149,7 @@ export function SettingsView() {
                 <p className="text-sm text-muted-foreground">Display currency for P&L</p>
               </div>
             </div>
-            <Select value={currency} onValueChange={setCurrency}>
+            <Select value={currency} onValueChange={handleCurrencyChange}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -144,7 +199,7 @@ export function SettingsView() {
               <p className="font-medium text-foreground">Trade Reminders</p>
               <p className="text-sm text-muted-foreground">Get notified for open positions</p>
             </div>
-            <Switch checked={notifications} onCheckedChange={setNotifications} />
+            <Switch checked={notifications} onCheckedChange={handleNotificationsChange} />
           </div>
 
           <div className="flex items-center justify-between">

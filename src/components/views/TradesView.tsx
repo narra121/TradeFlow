@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Trade } from '@/types/trade';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,14 +22,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchTrades } from '@/store/slices/tradesSlice';
 
 interface TradesViewProps {
-  trades: Trade[];
   onAddTrade: () => void;
   onImportTrades: () => void;
 }
 
-export function TradesView({ trades, onAddTrade, onImportTrades }: TradesViewProps) {
+export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
+  const dispatch = useAppDispatch();
+  const { trades, loading } = useAppSelector((state) => state.trades);
+  const { selectedAccountId } = useAppSelector((state) => state.accounts);
+  
+  useEffect(() => {
+    dispatch(fetchTrades({ accountId: selectedAccountId }));
+  }, [dispatch, selectedAccountId]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number | null>(null);

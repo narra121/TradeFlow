@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useAccounts } from '@/hooks/useAccounts';
+import { useState, useEffect } from 'react';
 import { AccountCard } from '@/components/account/AccountCard';
 import { AddAccountModal } from '@/components/account/AddAccountModal';
 import { Button } from '@/components/ui/button';
@@ -15,17 +14,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { 
+  fetchAccounts, 
+  createAccount, 
+  updateAccount as updateAccountAction, 
+  deleteAccount as deleteAccountAction,
+  updateAccountStatus as updateAccountStatusAction,
+  setSelectedAccountId 
+} from '@/store/slices/accountsSlice';
 
 export function AccountsView() {
-  const { 
-    accounts, 
-    selectedAccountId, 
-    setSelectedAccountId, 
-    addAccount, 
-    updateAccount,
-    updateAccountStatus, 
-    deleteAccount 
-  } = useAccounts();
+  const dispatch = useAppDispatch();
+  const { accounts, selectedAccountId, loading } = useAppSelector((state) => state.accounts);
+  
+  useEffect(() => {
+    dispatch(fetchAccounts());
+  }, [dispatch]);
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
@@ -36,9 +41,7 @@ export function AccountsView() {
   const handleDeleteConfirm = async () => {
     if (deletingAccountId) {
       setIsDeleting(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      deleteAccount(deletingAccountId);
+      await dispatch(deleteAccountAction(deletingAccountId)).unwrap();
       setDeletingAccountId(null);
       setIsDeleting(false);
     }
@@ -46,15 +49,16 @@ export function AccountsView() {
 
   const handleAddAccount = async (account: Omit<TradingAccount, 'id' | 'createdAt'>) => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    if (editingAccount) {
-      updateAccount(editingAccount.id, account);
-      setEditingAccount(null);
-    } else {
-      addAccount(account);
+    try {
+      if (editingAccount) {
+        await dispatch(updateAccountAction({ id: editingAccount.id, data: account })).unwrap();
+        setEditingAccount(null);
+      } else {
+        await dispatch(createAccount(account)).unwrap();
+      }
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleEdit = (account: TradingAccount) => {
@@ -63,7 +67,7 @@ export function AccountsView() {
   };
 
   const handleStatusChange = (id: string, status: AccountStatus) => {
-    updateAccountStatus(id, status);
+    dispatch(updateAccountStatusAction({ id, status }));
   };
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
@@ -119,7 +123,7 @@ export function AccountsView() {
             key={account.id}
             account={account}
             isSelected={selectedAccountId === account.id}
-            onSelect={() => setSelectedAccountId(selectedAccountId === account.id ? null : account.id)}
+            onSelect={() => dispatch(setSelectedAccountId(selectedAccountId === account.id ? null : account.id))}
             onEdit={() => handleEdit(account)}
             onDelete={() => setDeletingAccountId(account.id)}
             onStatusChange={(status) => handleStatusChange(account.id, status)}

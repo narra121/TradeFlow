@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Trade, PortfolioStats } from '@/types/trade';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { cn } from '@/lib/utils';
@@ -22,13 +22,35 @@ import {
 import { Clock, Timer } from 'lucide-react';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { subDays, isWithinInterval } from 'date-fns';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchTrades } from '@/store/slices/tradesSlice';
+import { 
+  fetchHourlyStats, 
+  fetchDailyWinRate, 
+  fetchSymbolDistribution, 
+  fetchStrategyDistribution 
+} from '@/store/slices/analyticsSlice';
 
-interface AnalyticsViewProps {
-  trades: Trade[];
-  stats: PortfolioStats;
-}
-
-export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
+export function AnalyticsView() {
+  const dispatch = useAppDispatch();
+  const { trades, loading: tradesLoading } = useAppSelector((state) => state.trades);
+  const { stats, loading: statsLoading } = useAppSelector((state) => state.stats);
+  const { 
+    hourlyStats, 
+    dailyWinRate, 
+    symbolDistribution, 
+    strategyDistribution,
+    loading: analyticsLoading 
+  } = useAppSelector((state) => state.analytics);
+  const { selectedAccountId } = useAppSelector((state) => state.accounts);
+  
+  useEffect(() => {
+    dispatch(fetchTrades({ accountId: selectedAccountId }));
+    dispatch(fetchHourlyStats(selectedAccountId));
+    dispatch(fetchDailyWinRate(selectedAccountId));
+    dispatch(fetchSymbolDistribution(selectedAccountId));
+    dispatch(fetchStrategyDistribution(selectedAccountId));
+  }, [dispatch, selectedAccountId]);
   const [datePreset, setDatePreset] = useState<DatePreset>(30);
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
 
