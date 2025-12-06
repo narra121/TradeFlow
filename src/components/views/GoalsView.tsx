@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check } from 'lucide-react';
+import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { useTradingRules } from '@/hooks/useTradingRules';
 
 interface Goal {
   id: string;
@@ -65,21 +66,18 @@ const defaultGoals: Goal[] = [
   },
 ];
 
-const tradingRules = [
-  { id: '1', rule: 'Never risk more than 1% per trade', completed: true },
-  { id: '2', rule: 'Always set stop loss before entry', completed: true },
-  { id: '3', rule: 'No trading during high-impact news', completed: false },
-  { id: '4', rule: 'Wait for confirmation before entry', completed: true },
-  { id: '5', rule: 'Review trades weekly', completed: false },
-  { id: '6', rule: 'Stick to my trading plan', completed: true },
-];
-
 export function GoalsView() {
   const [goals, setGoals] = useState<Goal[]>(defaultGoals);
-  const [rules] = useState(tradingRules);
   const [periodFilter, setPeriodFilter] = useState<'all' | 'weekly' | 'monthly'>('all');
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+
+  // Rules state
+  const { rules, addRule, updateRule, deleteRule, toggleRule } = useTradingRules();
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [editRuleValue, setEditRuleValue] = useState<string>('');
+  const [newRuleValue, setNewRuleValue] = useState<string>('');
+  const [isAddingRule, setIsAddingRule] = useState(false);
 
   const filteredGoals = periodFilter === 'all' 
     ? goals 
@@ -106,6 +104,33 @@ export function GoalsView() {
     setEditValue('');
   };
 
+  // Rule editing handlers
+  const handleRuleEditStart = (ruleId: string, ruleText: string) => {
+    setEditingRuleId(ruleId);
+    setEditRuleValue(ruleText);
+  };
+
+  const handleRuleEditSave = (ruleId: string) => {
+    if (editRuleValue.trim()) {
+      updateRule(ruleId, editRuleValue);
+    }
+    setEditingRuleId(null);
+    setEditRuleValue('');
+  };
+
+  const handleRuleEditCancel = () => {
+    setEditingRuleId(null);
+    setEditRuleValue('');
+  };
+
+  const handleAddRule = () => {
+    if (newRuleValue.trim()) {
+      addRule(newRuleValue);
+      setNewRuleValue('');
+      setIsAddingRule(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -127,7 +152,7 @@ export function GoalsView() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredGoals.map((goal, index) => {
           const Icon = goal.icon;
-          const isInverse = goal.id === '3'; // Drawdown - lower is better
+          const isInverse = goal.id === '3';
           const progress = isInverse 
             ? Math.max(0, ((goal.target - goal.current + goal.target) / goal.target) * 50)
             : Math.min((goal.current / goal.target) * 100, 100);
@@ -259,39 +284,150 @@ export function GoalsView() {
       <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-foreground">Trading Rules</h2>
-          <span className="text-sm text-muted-foreground">
-            {rules.filter(r => r.completed).length}/{rules.length} followed today
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">
+              {rules.filter(r => r.completed).length}/{rules.length} followed today
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setIsAddingRule(true)}
+            >
+              <Plus className="w-4 h-4" />
+              Add Rule
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {rules.map((item, index) => (
-            <div 
-              key={item.id}
-              className={cn(
-                "flex items-center gap-3 p-4 rounded-xl transition-colors animate-fade-in",
-                item.completed 
-                  ? "bg-success/5 border border-success/20" 
-                  : "bg-secondary/30 border border-transparent"
-              )}
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <div className={cn(
-                "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
-                item.completed 
-                  ? "bg-success text-success-foreground" 
-                  : "bg-secondary border-2 border-muted-foreground/30"
-              )}>
-                {item.completed && <CheckCircle2 className="w-4 h-4" />}
+          {rules.map((item, index) => {
+            const isEditingThis = editingRuleId === item.id;
+            
+            return (
+              <div 
+                key={item.id}
+                className={cn(
+                  "flex items-center gap-3 p-4 rounded-xl transition-colors animate-fade-in group",
+                  item.completed 
+                    ? "bg-success/5 border border-success/20" 
+                    : "bg-secondary/30 border border-transparent"
+                )}
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleRule(item.id)}
+                  className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                    item.completed 
+                      ? "bg-success text-success-foreground" 
+                      : "bg-secondary border-2 border-muted-foreground/30 hover:border-primary"
+                  )}
+                >
+                  {item.completed && <CheckCircle2 className="w-4 h-4" />}
+                </button>
+                
+                {isEditingThis ? (
+                  <div className="flex-1 flex items-center gap-2">
+                    <Input
+                      value={editRuleValue}
+                      onChange={(e) => setEditRuleValue(e.target.value)}
+                      className="h-8 text-sm"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRuleEditSave(item.id);
+                        if (e.key === 'Escape') handleRuleEditCancel();
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => handleRuleEditSave(item.id)}
+                    >
+                      <Check className="w-3.5 h-3.5 text-success" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={handleRuleEditCancel}
+                    >
+                      <X className="w-3.5 h-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <span className={cn(
+                      "text-sm flex-1",
+                      item.completed ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                      {item.rule}
+                    </span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleRuleEditStart(item.id, item.rule)}
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => deleteRule(item.id)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
-              <span className={cn(
-                "text-sm",
-                item.completed ? "text-foreground" : "text-muted-foreground"
-              )}>
-                {item.rule}
-              </span>
+            );
+          })}
+
+          {/* Add New Rule Input */}
+          {isAddingRule && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-secondary/30 border border-primary/30 animate-fade-in">
+              <div className="w-6 h-6 rounded-full bg-secondary border-2 border-dashed border-muted-foreground/30 shrink-0" />
+              <Input
+                value={newRuleValue}
+                onChange={(e) => setNewRuleValue(e.target.value)}
+                placeholder="Enter new rule..."
+                className="h-8 text-sm flex-1"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddRule();
+                  if (e.key === 'Escape') {
+                    setIsAddingRule(false);
+                    setNewRuleValue('');
+                  }
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={handleAddRule}
+              >
+                <Check className="w-3.5 h-3.5 text-success" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={() => {
+                  setIsAddingRule(false);
+                  setNewRuleValue('');
+                }}
+              >
+                <X className="w-3.5 h-3.5 text-destructive" />
+              </Button>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
