@@ -35,6 +35,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
   const [size, setSize] = useState('0.1');
+  const [manualPnl, setManualPnl] = useState('');
 
   // Trade Context
   const [strategy, setStrategy] = useState('');
@@ -76,11 +77,13 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
   // Accounts hook
   const { accounts } = useAccounts();
 
-  // Calculate Net PnL
+  // Calculate Net PnL (use manual if set, otherwise calculate)
   const entry = parseFloat(entryPrice) || 0;
   const exit = parseFloat(exitPrice) || 0;
   const posSize = parseFloat(size) || 0;
-  const netPnl = exit && entry ? ((exit - entry) * posSize * (direction === 'LONG' ? 1 : -1) * 10000).toFixed(2) : '—';
+  const calculatedPnl = exit && entry ? ((exit - entry) * posSize * (direction === 'LONG' ? 1 : -1) * 10000).toFixed(2) : '';
+  const displayPnl = manualPnl !== '' ? manualPnl : calculatedPnl;
+  const finalPnl = parseFloat(displayPnl) || 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +108,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
       entryDate: new Date(),
       exitDate: exit ? new Date() : undefined,
       status: exit ? 'CLOSED' : 'OPEN',
-      pnl: exit ? parseFloat(netPnl) : undefined,
+      pnl: exit || manualPnl ? finalPnl : undefined,
       riskRewardRatio: risk > 0 ? reward / risk : 0,
       strategy,
       session,
@@ -138,6 +141,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
     setNewsEvent('');
     setMistakes([]);
     setKeyLesson('');
+    setManualPnl('');
     setTradeNotes('');
     setImages([]);
     setBrokenRuleIds([]);
@@ -283,14 +287,19 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Net PnL</Label>
-                    <div className={cn(
-                      "h-9 px-3 flex items-center rounded-md border border-input bg-secondary/50 font-mono text-sm",
-                      parseFloat(netPnl) > 0 && "text-success",
-                      parseFloat(netPnl) < 0 && "text-destructive"
-                    )}>
-                      {netPnl !== '—' ? `$${netPnl}` : netPnl}
-                    </div>
+                    <Label className="text-xs">Net PnL ($)</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={displayPnl}
+                      onChange={(e) => setManualPnl(e.target.value)}
+                      placeholder={calculatedPnl || '0.00'}
+                      className={cn(
+                        "font-mono text-sm",
+                        parseFloat(displayPnl) > 0 && "text-success",
+                        parseFloat(displayPnl) < 0 && "text-destructive"
+                      )}
+                    />
                   </div>
                 </div>
               </section>
