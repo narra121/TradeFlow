@@ -217,6 +217,8 @@ export function ProfileView() {
                 </div>
               </div>
             </div>
+
+            <Separator />
           </CardContent>
         </Card>
 

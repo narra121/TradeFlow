@@ -28,50 +28,40 @@ import {
 
 export function SettingsView() {
   const dispatch = useAppDispatch();
-  const { profile, preferences, notifications: notificationsSettings, loading } = useAppSelector((state) => state.user);
+  const { profile, loading } = useAppSelector((state) => state.user);
   
   useEffect(() => {
     dispatch(fetchProfile());
   }, [dispatch]);
   
-  const [notifications, setNotifications] = useState(notificationsSettings?.tradeReminders ?? true);
-  const [darkMode, setDarkMode] = useState(preferences?.theme === 'dark');
-  const [currency, setCurrency] = useState(preferences?.currency || 'USD');
-  const [displayName, setDisplayName] = useState(profile?.displayName || '');
+  const [notifications, setNotifications] = useState(profile?.preferences?.notifications?.tradeReminders ?? true);
+  const [darkMode, setDarkMode] = useState(profile?.preferences?.darkMode ?? true);
+  const [currency, setCurrency] = useState(profile?.preferences?.currency || 'USD');
+  const [displayName, setDisplayName] = useState(profile?.name || '');
   const [email, setEmail] = useState(profile?.email || '');
   
   useEffect(() => {
     if (profile) {
-      setDisplayName(profile.displayName || '');
+      setDisplayName(profile.name || '');
       setEmail(profile.email || '');
+      setDarkMode(profile.preferences?.darkMode ?? true);
+      setCurrency(profile.preferences?.currency || 'USD');
+      setNotifications(profile.preferences?.notifications?.tradeReminders ?? true);
     }
   }, [profile]);
   
-  useEffect(() => {
-    if (preferences) {
-      setDarkMode(preferences.theme === 'dark');
-      setCurrency(preferences.currency || 'USD');
-    }
-  }, [preferences]);
-  
-  useEffect(() => {
-    if (notificationsSettings) {
-      setNotifications(notificationsSettings.tradeReminders ?? true);
-    }
-  }, [notificationsSettings]);
-  
   const handleUpdateProfile = async () => {
-    await dispatch(updateProfile({ displayName, email })).unwrap();
+    await dispatch(updateProfile({ name: displayName, email })).unwrap();
   };
   
   const handleDarkModeChange = async (checked: boolean) => {
     setDarkMode(checked);
-    await dispatch(updatePreferencesAction({ theme: checked ? 'dark' : 'light', currency, timezone: 'UTC' })).unwrap();
+    await dispatch(updatePreferencesAction({ darkMode: checked, currency: currency as 'USD' | 'EUR' | 'GBP', timezone: 'UTC' })).unwrap();
   };
   
   const handleCurrencyChange = async (value: string) => {
     setCurrency(value);
-    await dispatch(updatePreferencesAction({ theme: darkMode ? 'dark' : 'light', currency: value, timezone: 'UTC' })).unwrap();
+    await dispatch(updatePreferencesAction({ darkMode, currency: value as 'USD' | 'EUR' | 'GBP', timezone: 'UTC' })).unwrap();
   };
   
   const handleNotificationsChange = async (checked: boolean) => {
@@ -98,27 +88,6 @@ export function SettingsView() {
         <p className="text-muted-foreground mt-1">Customize your trading journal</p>
       </div>
 
-      {/* Profile Section */}
-      <div className="glass-card p-6 animate-fade-in">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <User className="w-5 h-5 text-primary" />
-          </div>
-          <h2 className="text-lg font-semibold text-foreground">Profile</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Display Name</Label>
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-          </div>
-          <Button variant="outline" onClick={handleUpdateProfile}>Update Profile</Button>
-        </div>
-      </div>
 
       {/* Preferences Section */}
       <div className="glass-card p-6 animate-fade-in stagger-1">
