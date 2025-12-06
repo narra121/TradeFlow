@@ -284,15 +284,20 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Connecting lines - positioned behind circles */}
+            <div className="hidden md:flex absolute top-12 left-0 right-0 items-center justify-center px-[16.67%]">
+              <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-primary/40 mx-12" />
+              <div className="w-24 shrink-0" /> {/* Space for middle circle */}
+              <div className="flex-1 h-[2px] bg-gradient-to-l from-transparent via-primary/40 to-primary/40 mx-12" />
+            </div>
+            
             {howItWorks.map((item, index) => (
-              <div key={index} className="relative">
-                {index < howItWorks.length - 1 && (
-                  <div className="hidden md:block absolute top-12 left-full w-full h-[2px] bg-gradient-to-r from-primary/50 to-transparent" />
-                )}
+              <div key={index} className="relative z-10">
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-primary/10 border-2 border-primary/30 mb-6">
-                    <span className="text-3xl font-bold text-primary">{item.step}</span>
+                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-background border-2 border-primary/30 mb-6 relative">
+                    <div className="absolute inset-1 rounded-full bg-primary/10" />
+                    <span className="text-3xl font-bold text-primary relative z-10">{item.step}</span>
                   </div>
                   <h3 className="text-xl font-semibold text-foreground mb-3">{item.title}</h3>
                   <p className="text-muted-foreground">{item.description}</p>
