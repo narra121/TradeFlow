@@ -15,11 +15,14 @@ import {
   Sparkles,
   Check,
   Edit2,
-  Camera
+  Camera,
+  Loader2
 } from 'lucide-react';
 
 export function ProfileView() {
   const [isEditing, setIsEditing] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
   const [customAnnualAmount, setCustomAnnualAmount] = useState('');
   const [selectedAmount, setSelectedAmount] = useState(1);
@@ -52,13 +55,18 @@ export function ProfileView() {
     { amount: 60, label: 'Champion', description: 'Fuel new features', monthly: 5 },
   ];
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true);
+    await new Promise(resolve => setTimeout(resolve, 500));
     setIsEditing(false);
-    // Save logic here
+    setIsSavingProfile(false);
   };
 
-  const handleSubscribe = (amount: number, cycle: 'monthly' | 'annual') => {
+  const handleSubscribe = async (amount: number, cycle: 'monthly' | 'annual') => {
+    setIsSubscribing(true);
+    await new Promise(resolve => setTimeout(resolve, 500));
     console.log(`Subscribe with amount: $${amount}/${cycle === 'monthly' ? 'month' : 'year'}`);
+    setIsSubscribing(false);
   };
 
   return (
@@ -84,8 +92,14 @@ export function ProfileView() {
               variant="ghost"
               size="sm"
               onClick={() => isEditing ? handleSaveProfile() : setIsEditing(true)}
+              disabled={isSavingProfile}
             >
-              {isEditing ? (
+              {isSavingProfile ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : isEditing ? (
                 <>
                   <Check className="w-4 h-4 mr-2" />
                   Save
@@ -366,9 +380,19 @@ export function ProfileView() {
                 billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount,
                 billingCycle
               )}
+              disabled={isSubscribing}
             >
-              <Heart className="w-4 h-4 mr-2" />
-              Subscribe for ${billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount}/{billingCycle === 'monthly' ? 'month' : 'year'}
+              {isSubscribing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Heart className="w-4 h-4 mr-2" />
+                  Subscribe for ${billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount}/{billingCycle === 'monthly' ? 'month' : 'year'}
+                </>
+              )}
             </Button>
           </div>
 
