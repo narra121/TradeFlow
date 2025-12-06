@@ -4,7 +4,7 @@ import { AccountCard } from '@/components/account/AccountCard';
 import { AddAccountModal } from '@/components/account/AddAccountModal';
 import { Button } from '@/components/ui/button';
 import { TradingAccount, AccountStatus } from '@/types/trade';
-import { Plus, Building2, AlertTriangle } from 'lucide-react';
+import { Plus, Building2, AlertTriangle, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,21 +30,31 @@ export function AccountsView() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deletingAccountId) {
+      setIsDeleting(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
       deleteAccount(deletingAccountId);
       setDeletingAccountId(null);
+      setIsDeleting(false);
     }
   };
 
-  const handleAddAccount = (account: Omit<TradingAccount, 'id' | 'createdAt'>) => {
+  const handleAddAccount = async (account: Omit<TradingAccount, 'id' | 'createdAt'>) => {
+    setIsSaving(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
     if (editingAccount) {
       updateAccount(editingAccount.id, account);
       setEditingAccount(null);
     } else {
       addAccount(account);
     }
+    setIsSaving(false);
   };
 
   const handleEdit = (account: TradingAccount) => {
@@ -138,6 +148,7 @@ export function AccountsView() {
         }}
         onAddAccount={handleAddAccount}
         editAccount={editingAccount}
+        isLoading={isSaving}
       />
 
       <AlertDialog open={!!deletingAccountId} onOpenChange={(open) => !open && setDeletingAccountId(null)}>
@@ -154,9 +165,20 @@ export function AccountsView() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete Account
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Account'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

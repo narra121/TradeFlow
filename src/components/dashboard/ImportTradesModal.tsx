@@ -58,6 +58,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
   const [uploadedImages, setUploadedImages] = useState<{ id: string; url: string; name: string }[]>([]);
   const [extractedTrades, setExtractedTrades] = useState<ImportedTrade[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -245,7 +246,12 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
     setExtractedTrades(prev => prev.filter(t => !t.isSelected));
   };
 
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     const tradesToSave: Omit<Trade, 'id'>[] = extractedTrades.map(t => ({
       symbol: t.symbol,
       direction: t.direction,
@@ -262,6 +268,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
     }));
 
     onImportTrades(tradesToSave);
+    setIsSaving(false);
     resetModal();
     onOpenChange(false);
   };
@@ -607,16 +614,24 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
               onOpenChange(false);
             }}
             className="w-28"
+            disabled={isSaving}
           >
             Cancel
           </Button>
           
           <Button
             onClick={handleSaveAll}
-            disabled={extractedTrades.length === 0}
+            disabled={extractedTrades.length === 0 || isSaving}
             className="w-28"
           >
-            Save All
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save All'
+            )}
           </Button>
         </div>
       </DialogContent>

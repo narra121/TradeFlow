@@ -7,15 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { TradingAccount, AccountType, AccountStatus } from '@/types/trade';
 import { accountTypeLabels, accountStatusLabels } from '@/hooks/useAccounts';
+import { Loader2 } from 'lucide-react';
 
 interface AddAccountModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddAccount: (account: Omit<TradingAccount, 'id' | 'createdAt'>) => void;
   editAccount?: TradingAccount | null;
+  isLoading?: boolean;
 }
 
-export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount }: AddAccountModalProps) {
+export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount, isLoading }: AddAccountModalProps) {
   const [name, setName] = useState(editAccount?.name || '');
   const [broker, setBroker] = useState(editAccount?.broker || '');
   const [type, setType] = useState<AccountType>(editAccount?.type || 'prop_challenge');
@@ -163,11 +165,18 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount 
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit">
-              {editAccount ? 'Save Changes' : 'Add Account'}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {editAccount ? 'Saving...' : 'Adding...'}
+                </>
+              ) : (
+                editAccount ? 'Save Changes' : 'Add Account'
+              )}
             </Button>
           </div>
         </form>
