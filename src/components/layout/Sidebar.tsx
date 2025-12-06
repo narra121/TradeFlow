@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   BookOpen, 
   TrendingUp, 
-  Calendar,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -22,9 +21,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
-  { icon: BookOpen, label: 'Trade Log', id: 'trades' },
+  { icon: BookOpen, label: 'Trade Log', id: 'tradelog' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
-  { icon: Calendar, label: 'Calendar', id: 'calendar' },
   { icon: Target, label: 'Goals', id: 'goals' },
   { icon: Settings, label: 'Settings', id: 'settings' },
 ];
