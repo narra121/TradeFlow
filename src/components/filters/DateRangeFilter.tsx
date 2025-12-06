@@ -27,9 +27,9 @@ export function DateRangeFilter({
   const [toOpen, setToOpen] = useState(false);
 
   const presets: { value: DatePreset; label: string }[] = [
-    { value: 30, label: '30D' },
-    { value: 60, label: '60D' },
-    { value: 90, label: '90D' },
+    { value: 30, label: 'Last 30 Days' },
+    { value: 60, label: 'Last 60 Days' },
+    { value: 90, label: 'Last 90 Days' },
   ];
 
   if (showCustomPicker) {
