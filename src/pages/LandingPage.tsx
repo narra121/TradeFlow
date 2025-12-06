@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
   Zap, 
@@ -22,12 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface LandingPageProps {
-  onGetStarted: () => void;
-  onLogin: () => void;
-}
-
-export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
+export function LandingPage() {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
 
   const features = [
@@ -144,12 +140,14 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={onLogin}>
-              Log In
+            <Button variant="ghost" asChild>
+              <Link to="/login">Log In</Link>
             </Button>
-            <Button onClick={onGetStarted} className="gap-2">
-              Get Started
-              <ArrowRight className="w-4 h-4" />
+            <Button asChild className="gap-2">
+              <Link to="/signup">
+                Get Started
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </Button>
           </div>
         </div>
@@ -181,9 +179,11 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Button size="lg" onClick={onGetStarted} className="gap-2 h-14 px-8 text-lg">
-              Start Free Trial
-              <ArrowRight className="w-5 h-5" />
+            <Button size="lg" asChild className="gap-2 h-14 px-8 text-lg">
+              <Link to="/signup">
+                Start Free Trial
+                <ArrowRight className="w-5 h-5" />
+              </Link>
             </Button>
             <Button size="lg" variant="outline" className="gap-2 h-14 px-8 text-lg">
               <Play className="w-5 h-5" />
@@ -307,9 +307,11 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
           </div>
 
           <div className="text-center mt-12">
-            <Button size="lg" onClick={onGetStarted} className="gap-2">
-              Get Started Now
-              <ChevronRight className="w-5 h-5" />
+            <Button size="lg" asChild className="gap-2">
+              <Link to="/signup">
+                Get Started Now
+                <ChevronRight className="w-5 h-5" />
+              </Link>
             </Button>
           </div>
         </div>
@@ -380,9 +382,11 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
                     Help cover hosting costs and support continued development.
                   </p>
                 </div>
-                <Button size="lg" onClick={onGetStarted} className="shrink-0 gap-2">
-                  Start Free Trial
-                  <ArrowRight className="w-5 h-5" />
+                <Button size="lg" asChild className="shrink-0 gap-2">
+                  <Link to="/signup">
+                    Start Free Trial
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
                 </Button>
               </div>
 
@@ -425,9 +429,11 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
             Join thousands of traders who are already using TradeFlow to track, analyze, and improve their performance.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" onClick={onGetStarted} className="gap-2 h-14 px-8 text-lg">
-              Start Your Free Trial
-              <ArrowRight className="w-5 h-5" />
+            <Button size="lg" asChild className="gap-2 h-14 px-8 text-lg">
+              <Link to="/signup">
+                Start Your Free Trial
+                <ArrowRight className="w-5 h-5" />
+              </Link>
             </Button>
             <p className="text-sm text-muted-foreground">No credit card required</p>
           </div>

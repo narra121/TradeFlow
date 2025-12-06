@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,10 +29,12 @@ type AuthView =
 
 interface AuthPageProps {
   onLogin: () => void;
+  initialView?: "login" | "signup";
 }
 
-export const AuthPage = ({ onLogin }: AuthPageProps) => {
-  const [view, setView] = useState<AuthView>("login");
+export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
+  const [view, setView] = useState<AuthView>(initialView);
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -270,12 +273,12 @@ export const AuthPage = ({ onLogin }: AuthPageProps) => {
 
               <p className="text-center text-muted-foreground">
                 Don't have an account?{" "}
-                <button
-                  onClick={() => { resetForm(); setView("signup"); }}
+                <Link
+                  to="/signup"
                   className="text-primary hover:text-primary/80 font-semibold transition-colors"
                 >
                   Create one
-                </button>
+                </Link>
               </p>
             </div>
           )}
@@ -388,12 +391,12 @@ export const AuthPage = ({ onLogin }: AuthPageProps) => {
 
               <p className="text-center text-muted-foreground">
                 Already have an account?{" "}
-                <button
-                  onClick={() => { resetForm(); setView("login"); }}
+                <Link
+                  to="/login"
                   className="text-primary hover:text-primary/80 font-semibold transition-colors"
                 >
                   Sign in
-                </button>
+                </Link>
               </p>
             </div>
           )}
