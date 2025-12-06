@@ -16,8 +16,9 @@ import { AccountSelect } from '@/components/account/AccountSelect';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
 import { useTradingRules } from '@/hooks/useTradingRules';
 import { useAccounts } from '@/hooks/useAccounts';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useState as useStateLoading } from 'react';
 
 interface AddTradeModalProps {
   open: boolean;
@@ -52,6 +53,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
 
   // Visual Evidence
   const [images, setImages] = useState<TradeImage[]>([]);
+  
+  // Loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Saved options hook
   const {
@@ -78,8 +82,12 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
   const posSize = parseFloat(size) || 0;
   const netPnl = exit && entry ? ((exit - entry) * posSize * (direction === 'LONG' ? 1 : -1) * 10000).toFixed(2) : '—';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const sl = parseFloat(stopLoss) || 0;
     const tp = parseFloat(takeProfit) || 0;
@@ -111,6 +119,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
       brokenRuleIds: brokenRuleIds.length > 0 ? brokenRuleIds : undefined,
     });
 
+    setIsSubmitting(false);
     resetForm();
     onOpenChange(false);
   };
@@ -441,6 +450,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
             variant="outline"
             onClick={() => onOpenChange(false)}
             className="w-28"
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
@@ -448,8 +458,16 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
             type="submit"
             onClick={handleSubmit}
             className="w-28"
+            disabled={isSubmitting}
           >
-            Add Trade
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              'Add Trade'
+            )}
           </Button>
         </div>
       </DialogContent>
