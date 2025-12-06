@@ -36,6 +36,8 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
   const [takeProfit, setTakeProfit] = useState('');
   const [size, setSize] = useState('0.1');
   const [manualPnl, setManualPnl] = useState('');
+  const [entryDateTime, setEntryDateTime] = useState('');
+  const [exitDateTime, setExitDateTime] = useState('');
 
   // Trade Context
   const [strategy, setStrategy] = useState('');
@@ -105,8 +107,8 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
       stopLoss: sl,
       takeProfit: tp,
       size: posSize,
-      entryDate: new Date(),
-      exitDate: exit ? new Date() : undefined,
+      entryDate: entryDateTime ? new Date(entryDateTime) : new Date(),
+      exitDate: exitDateTime ? new Date(exitDateTime) : (exit ? new Date() : undefined),
       status: exit ? 'CLOSED' : 'OPEN',
       pnl: exit || manualPnl ? finalPnl : undefined,
       riskRewardRatio: risk > 0 ? reward / risk : 0,
@@ -135,6 +137,8 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
     setStopLoss('');
     setTakeProfit('');
     setSize('0.1');
+    setEntryDateTime('');
+    setExitDateTime('');
     setStrategy('');
     setSession('');
     setMarketCondition('');
@@ -263,7 +267,26 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Entry Date & Time</Label>
+                    <Input
+                      type="datetime-local"
+                      value={entryDateTime}
+                      onChange={(e) => setEntryDateTime(e.target.value)}
+                      className="text-sm"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Exit Date & Time</Label>
+                    <Input
+                      type="datetime-local"
+                      value={exitDateTime}
+                      onChange={(e) => setExitDateTime(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Stop Loss</Label>
                     <Input
@@ -286,6 +309,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
                       className="font-mono text-sm"
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Net PnL ($)</Label>
                     <Input
