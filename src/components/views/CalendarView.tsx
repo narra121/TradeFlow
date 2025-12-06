@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Trade } from '@/types/trade';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, eachWeekOfInterval } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CalendarTradeModal } from '@/components/trade/CalendarTradeModal';
 
 interface CalendarViewProps {
   trades: Trade[];
@@ -11,6 +12,8 @@ interface CalendarViewProps {
 
 export function CalendarView({ trades }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -21,12 +24,17 @@ export function CalendarView({ trades }: CalendarViewProps) {
     { weekStartsOn: 0 }
   );
 
-  // Calculate P&L for each day
-  const getDayStats = (date: Date) => {
-    const dayTrades = trades.filter(trade => {
+  // Get trades for a specific day
+  const getTradesForDay = (date: Date) => {
+    return trades.filter(trade => {
       if (trade.status !== 'CLOSED' || !trade.exitDate) return false;
       return isSameDay(trade.exitDate, date);
     });
+  };
+
+  // Calculate P&L for each day
+  const getDayStats = (date: Date) => {
+    const dayTrades = getTradesForDay(date);
 
     if (dayTrades.length === 0) return null;
 
@@ -68,6 +76,47 @@ export function CalendarView({ trades }: CalendarViewProps) {
       losses,
       winRate: totalTrades > 0 ? (wins / totalTrades) * 100 : 0,
     };
+  };
+
+  // Get all trading days for navigation
+  const tradingDays = useMemo(() => {
+    const days: Date[] = [];
+    trades.forEach(trade => {
+      if (trade.status === 'CLOSED' && trade.exitDate) {
+        const exists = days.some(d => isSameDay(d, trade.exitDate!));
+        if (!exists) {
+          days.push(trade.exitDate);
+        }
+      }
+    });
+    return days.sort((a, b) => a.getTime() - b.getTime());
+  }, [trades]);
+
+  const handleDayClick = (date: Date) => {
+    const dayTrades = getTradesForDay(date);
+    if (dayTrades.length > 0) {
+      setSelectedDate(date);
+      setIsModalOpen(true);
+    }
+  };
+
+  const getCurrentDayIndex = () => {
+    if (!selectedDate) return undefined;
+    return tradingDays.findIndex(d => isSameDay(d, selectedDate));
+  };
+
+  const handlePreviousDay = () => {
+    const currentIndex = getCurrentDayIndex();
+    if (currentIndex !== undefined && currentIndex > 0) {
+      setSelectedDate(tradingDays[currentIndex - 1]);
+    }
+  };
+
+  const handleNextDay = () => {
+    const currentIndex = getCurrentDayIndex();
+    if (currentIndex !== undefined && currentIndex < tradingDays.length - 1) {
+      setSelectedDate(tradingDays[currentIndex + 1]);
+    }
   };
 
   return (
@@ -134,8 +183,10 @@ export function CalendarView({ trades }: CalendarViewProps) {
                 return (
                   <div
                     key={day.toISOString()}
+                    onClick={() => handleDayClick(day)}
                     className={cn(
-                      "aspect-square p-2 rounded-xl transition-all cursor-pointer animate-fade-in",
+                      "aspect-square p-2 rounded-xl transition-all animate-fade-in",
+                      stats ? "cursor-pointer hover:ring-2 hover:ring-primary/50" : "cursor-default",
                       "hover:bg-secondary/50",
                       !isCurrentMonth && "opacity-30",
                       isToday && "ring-2 ring-primary",
@@ -249,6 +300,25 @@ export function CalendarView({ trades }: CalendarViewProps) {
           </div>
         ))}
       </div>
+
+      {/* Calendar Trade Modal */}
+      {selectedDate && (
+        <CalendarTradeModal
+          trades={getTradesForDay(selectedDate)}
+          selectedDate={selectedDate}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedDate(null);
+          }}
+          onPreviousDay={handlePreviousDay}
+          onNextDay={handleNextDay}
+          hasPreviousDay={(getCurrentDayIndex() ?? 0) > 0}
+          hasNextDay={(getCurrentDayIndex() ?? tradingDays.length) < tradingDays.length - 1}
+          currentDayIndex={getCurrentDayIndex()}
+          totalDays={tradingDays.length}
+        />
+      )}
     </div>
   );
 }
