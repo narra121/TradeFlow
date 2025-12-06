@@ -4,6 +4,7 @@ import { TradeList } from '@/components/dashboard/TradeList';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { WinRateRing } from '@/components/dashboard/WinRateRing';
 import { QuickStats } from '@/components/dashboard/QuickStats';
+import { AccountFilter } from '@/components/account/AccountFilter';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
 
@@ -26,6 +27,7 @@ export function DashboardView({ trades, stats, onAddTrade, onImportTrades }: Das
           <p className="text-muted-foreground mt-1">Track your trading performance</p>
         </div>
         <div className="flex items-center gap-3">
+          <AccountFilter />
           <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
             <Upload className="w-5 h-5" />
             Import

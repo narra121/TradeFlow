@@ -9,7 +9,8 @@ import {
   ChevronRight,
   Zap,
   Target,
-  User
+  User,
+  Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -21,6 +22,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
+  { icon: Building2, label: 'Accounts', id: 'accounts' },
   { icon: BookOpen, label: 'Trade Log', id: 'tradelog' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
   { icon: Target, label: 'Goals', id: 'goals' },

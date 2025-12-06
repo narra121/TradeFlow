@@ -12,9 +12,11 @@ import { SmartInput } from '@/components/trade/SmartInput';
 import { MistakeTagsInput } from '@/components/trade/MistakeTagsInput';
 import { ImageUploader } from '@/components/trade/ImageUploader';
 import { BrokenRulesSelect } from '@/components/trade/BrokenRulesSelect';
+import { AccountSelect } from '@/components/account/AccountSelect';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
 import { useTradingRules } from '@/hooks/useTradingRules';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield } from 'lucide-react';
+import { useAccounts } from '@/hooks/useAccounts';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AddTradeModalProps {
@@ -45,6 +47,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
   const [tradeNotes, setTradeNotes] = useState('');
   const [brokenRuleIds, setBrokenRuleIds] = useState<string[]>([]);
 
+  // Account selection
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+
   // Visual Evidence
   const [images, setImages] = useState<TradeImage[]>([]);
 
@@ -63,6 +68,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
 
   // Trading rules hook
   const { rules } = useTradingRules();
+
+  // Accounts hook
+  const { accounts } = useAccounts();
 
   // Calculate Net PnL
   const entry = parseFloat(entryPrice) || 0;
@@ -99,6 +107,8 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
       keyLesson,
       images,
       tags: [],
+      accountIds: selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
+      brokenRuleIds: brokenRuleIds.length > 0 ? brokenRuleIds : undefined,
     });
 
     resetForm();
@@ -122,6 +132,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
     setTradeNotes('');
     setImages([]);
     setBrokenRuleIds([]);
+    setSelectedAccountIds([]);
   };
 
   return (
@@ -134,6 +145,26 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
         <ScrollArea className="flex-1 min-h-0">
           <form onSubmit={handleSubmit} className="px-6 pb-6">
             <div className="space-y-6">
+              {/* Account Selection */}
+              {accounts.length > 0 && (
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Building2 className="w-4 h-4" />
+                    Account
+                    {selectedAccountIds.length > 0 && (
+                      <span className="text-xs text-primary">({selectedAccountIds.length} selected)</span>
+                    )}
+                  </div>
+                  <AccountSelect
+                    accounts={accounts}
+                    selectedAccountIds={selectedAccountIds}
+                    onChange={setSelectedAccountIds}
+                  />
+                </section>
+              )}
+
+              {accounts.length > 0 && <Separator className="bg-border" />}
+
               {/* Section A: Core Trade Details */}
               <section className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">

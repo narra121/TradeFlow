@@ -1,6 +1,22 @@
 export type TradeDirection = 'LONG' | 'SHORT';
 export type TradeStatus = 'OPEN' | 'CLOSED';
 
+export type AccountStatus = 'active' | 'breached' | 'passed' | 'withdrawn' | 'inactive';
+export type AccountType = 'prop_challenge' | 'prop_funded' | 'personal' | 'demo';
+
+export interface TradingAccount {
+  id: string;
+  name: string;
+  broker: string;
+  type: AccountType;
+  status: AccountStatus;
+  balance: number;
+  initialBalance: number;
+  currency: string;
+  createdAt: Date;
+  notes?: string;
+}
+
 export interface TradeImage {
   id: string;
   url: string;
@@ -33,7 +49,9 @@ export interface Trade {
   keyLesson?: string;
   images?: TradeImage[];
   tags?: string[];
-  emotions?: string; // Legacy field for mock data compatibility
+  emotions?: string;
+  accountIds?: string[]; // Trade can belong to multiple accounts
+  brokenRuleIds?: string[];
 }
 
 // Saved options for smart inputs (would be stored in DB)
