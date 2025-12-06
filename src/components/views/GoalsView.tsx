@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2 } from 'lucide-react';
+import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -71,6 +71,7 @@ export function GoalsView() {
   const [periodFilter, setPeriodFilter] = useState<'all' | 'weekly' | 'monthly'>('all');
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const [savingGoalId, setSavingGoalId] = useState<string | null>(null);
 
   // Rules state
   const { rules, addRule, updateRule, deleteRule, toggleRule } = useTradingRules();
@@ -78,6 +79,10 @@ export function GoalsView() {
   const [editRuleValue, setEditRuleValue] = useState<string>('');
   const [newRuleValue, setNewRuleValue] = useState<string>('');
   const [isAddingRule, setIsAddingRule] = useState(false);
+  const [savingRuleId, setSavingRuleId] = useState<string | null>(null);
+  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
+  const [isAddingRuleLoading, setIsAddingRuleLoading] = useState(false);
+  const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null);
 
   const filteredGoals = periodFilter === 'all' 
     ? goals 
@@ -88,12 +93,15 @@ export function GoalsView() {
     setEditValue(goal.target.toString());
   };
 
-  const handleEditSave = (goalId: string) => {
+  const handleEditSave = async (goalId: string) => {
     const newTarget = parseFloat(editValue);
     if (!isNaN(newTarget) && newTarget > 0) {
+      setSavingGoalId(goalId);
+      await new Promise(resolve => setTimeout(resolve, 500));
       setGoals(prev => prev.map(g => 
         g.id === goalId ? { ...g, target: newTarget } : g
       ));
+      setSavingGoalId(null);
     }
     setEditingGoalId(null);
     setEditValue('');
@@ -110,9 +118,12 @@ export function GoalsView() {
     setEditRuleValue(ruleText);
   };
 
-  const handleRuleEditSave = (ruleId: string) => {
+  const handleRuleEditSave = async (ruleId: string) => {
     if (editRuleValue.trim()) {
+      setSavingRuleId(ruleId);
+      await new Promise(resolve => setTimeout(resolve, 500));
       updateRule(ruleId, editRuleValue);
+      setSavingRuleId(null);
     }
     setEditingRuleId(null);
     setEditRuleValue('');
@@ -123,12 +134,29 @@ export function GoalsView() {
     setEditRuleValue('');
   };
 
-  const handleAddRule = () => {
+  const handleAddRule = async () => {
     if (newRuleValue.trim()) {
+      setIsAddingRuleLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 500));
       addRule(newRuleValue);
       setNewRuleValue('');
       setIsAddingRule(false);
+      setIsAddingRuleLoading(false);
     }
+  };
+
+  const handleDeleteRule = async (ruleId: string) => {
+    setDeletingRuleId(ruleId);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    deleteRule(ruleId);
+    setDeletingRuleId(null);
+  };
+
+  const handleToggleRule = async (ruleId: string) => {
+    setTogglingRuleId(ruleId);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    toggleRule(ruleId);
+    setTogglingRuleId(null);
   };
 
   return (
@@ -239,14 +267,20 @@ export function GoalsView() {
                           size="icon"
                           className="h-6 w-6"
                           onClick={() => handleEditSave(goal.id)}
+                          disabled={savingGoalId === goal.id}
                         >
-                          <Check className="w-3.5 h-3.5 text-success" />
+                          {savingGoalId === goal.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5 text-success" />
+                          )}
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
                           onClick={handleEditCancel}
+                          disabled={savingGoalId === goal.id}
                         >
                           <X className="w-3.5 h-3.5 text-destructive" />
                         </Button>
@@ -317,7 +351,8 @@ export function GoalsView() {
               >
                 <button
                   type="button"
-                  onClick={() => toggleRule(item.id)}
+                  onClick={() => handleToggleRule(item.id)}
+                  disabled={togglingRuleId === item.id}
                   className={cn(
                     "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors",
                     item.completed 
@@ -325,7 +360,11 @@ export function GoalsView() {
                       : "bg-secondary border-2 border-muted-foreground/30 hover:border-primary"
                   )}
                 >
-                  {item.completed && <CheckCircle2 className="w-4 h-4" />}
+                  {togglingRuleId === item.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    item.completed && <CheckCircle2 className="w-4 h-4" />
+                  )}
                 </button>
                 
                 {isEditingThis ? (
@@ -345,14 +384,20 @@ export function GoalsView() {
                       size="icon"
                       className="h-7 w-7 shrink-0"
                       onClick={() => handleRuleEditSave(item.id)}
+                      disabled={savingRuleId === item.id}
                     >
-                      <Check className="w-3.5 h-3.5 text-success" />
+                      {savingRuleId === item.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5 text-success" />
+                      )}
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 shrink-0"
                       onClick={handleRuleEditCancel}
+                      disabled={savingRuleId === item.id}
                     >
                       <X className="w-3.5 h-3.5 text-destructive" />
                     </Button>
@@ -371,6 +416,7 @@ export function GoalsView() {
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => handleRuleEditStart(item.id, item.rule)}
+                        disabled={deletingRuleId === item.id}
                       >
                         <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                       </Button>
@@ -378,9 +424,14 @@ export function GoalsView() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => deleteRule(item.id)}
+                        onClick={() => handleDeleteRule(item.id)}
+                        disabled={deletingRuleId === item.id}
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        {deletingRuleId === item.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        )}
                       </Button>
                     </div>
                   </>
@@ -412,8 +463,13 @@ export function GoalsView() {
                 size="icon"
                 className="h-7 w-7 shrink-0"
                 onClick={handleAddRule}
+                disabled={isAddingRuleLoading}
               >
-                <Check className="w-3.5 h-3.5 text-success" />
+                {isAddingRuleLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Check className="w-3.5 h-3.5 text-success" />
+                )}
               </Button>
               <Button
                 variant="ghost"
@@ -423,6 +479,7 @@ export function GoalsView() {
                   setIsAddingRule(false);
                   setNewRuleValue('');
                 }}
+                disabled={isAddingRuleLoading}
               >
                 <X className="w-3.5 h-3.5 text-destructive" />
               </Button>
