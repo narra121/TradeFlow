@@ -8,13 +8,12 @@ import {
   Plus, 
   Upload,
   Search, 
-  Filter, 
   ArrowUpRight, 
   ArrowDownRight,
   Clock,
   CheckCircle2,
-  ChevronDown,
-  MoreHorizontal
+  MoreHorizontal,
+  Eye
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -22,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
 
 interface TradesViewProps {
   trades: Trade[];
@@ -32,12 +32,31 @@ interface TradesViewProps {
 export function TradesView({ trades, onAddTrade, onImportTrades }: TradesViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
+  const [selectedTradeIndex, setSelectedTradeIndex] = useState<number | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const filteredTrades = trades.filter(trade => {
     const matchesSearch = trade.symbol.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || trade.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleViewTrade = (index: number) => {
+    setSelectedTradeIndex(index);
+    setIsDetailModalOpen(true);
+  };
+
+  const handlePreviousTrade = () => {
+    if (selectedTradeIndex !== null && selectedTradeIndex > 0) {
+      setSelectedTradeIndex(selectedTradeIndex - 1);
+    }
+  };
+
+  const handleNextTrade = () => {
+    if (selectedTradeIndex !== null && selectedTradeIndex < filteredTrades.length - 1) {
+      setSelectedTradeIndex(selectedTradeIndex + 1);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -201,21 +220,33 @@ export function TradesView({ trades, onAddTrade, onImportTrades }: TradesViewPro
                     )}
                   </td>
                   <td className="px-5 py-4">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Trade</DropdownMenuItem>
-                        {trade.status === 'OPEN' && (
-                          <DropdownMenuItem>Close Trade</DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleViewTrade(index)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewTrade(index)}>
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>Edit Trade</DropdownMenuItem>
+                          {trade.status === 'OPEN' && (
+                            <DropdownMenuItem>Close Trade</DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -229,6 +260,22 @@ export function TradesView({ trades, onAddTrade, onImportTrades }: TradesViewPro
           </div>
         )}
       </div>
+
+      {/* Trade Detail Modal */}
+      <TradeDetailModal
+        trade={selectedTradeIndex !== null ? filteredTrades[selectedTradeIndex] : null}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedTradeIndex(null);
+        }}
+        onPrevious={handlePreviousTrade}
+        onNext={handleNextTrade}
+        hasPrevious={selectedTradeIndex !== null && selectedTradeIndex > 0}
+        hasNext={selectedTradeIndex !== null && selectedTradeIndex < filteredTrades.length - 1}
+        currentIndex={selectedTradeIndex ?? undefined}
+        totalCount={filteredTrades.length}
+      />
     </div>
   );
 }
