@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
 import { CalendarTradeModal } from '@/components/trade/CalendarTradeModal';
+import { AccountFilter } from '@/components/account/AccountFilter';
 
 interface TradeLogViewProps {
   trades: Trade[];
@@ -158,6 +159,7 @@ export function TradeLogView({ trades, onAddTrade, onImportTrades }: TradeLogVie
           <p className="text-muted-foreground mt-1">Track and analyze your trading history</p>
         </div>
         <div className="flex items-center gap-3">
+          <AccountFilter />
           <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
             <Upload className="w-5 h-5" />
             Import

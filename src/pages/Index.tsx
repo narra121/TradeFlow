@@ -6,11 +6,13 @@ import { AnalyticsView } from '@/components/views/AnalyticsView';
 import { GoalsView } from '@/components/views/GoalsView';
 import { ProfileView } from '@/components/views/ProfileView';
 import { SettingsView } from '@/components/views/SettingsView';
+import { AccountsView } from '@/components/views/AccountsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { mockTrades, calculatePortfolioStats } from '@/data/mockTrades';
 import { Trade } from '@/types/trade';
+import { useAccounts } from '@/hooks/useAccounts';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
@@ -19,7 +21,16 @@ const Index = () => {
   const [trades, setTrades] = useState<Trade[]>(mockTrades);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
   const [isImportTradesOpen, setIsImportTradesOpen] = useState(false);
-  const stats = useMemo(() => calculatePortfolioStats(trades), [trades]);
+  
+  const { selectedAccountId } = useAccounts();
+
+  // Filter trades by selected account
+  const filteredTrades = useMemo(() => {
+    if (!selectedAccountId) return trades;
+    return trades.filter(t => t.accountIds?.includes(selectedAccountId));
+  }, [trades, selectedAccountId]);
+
+  const stats = useMemo(() => calculatePortfolioStats(filteredTrades), [filteredTrades]);
 
   const handleAddTrade = (newTrade: Omit<Trade, 'id'>) => {
     const trade: Trade = {
@@ -36,6 +47,7 @@ const Index = () => {
     }));
     setTrades(prev => [...tradesWithIds, ...prev]);
   };
+
   const handleLogin = () => {
     setIsAuthenticated(true);
   };
@@ -43,11 +55,13 @@ const Index = () => {
   const renderView = () => {
     switch (activeView) {
       case 'dashboard':
-        return <DashboardView trades={trades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
+        return <DashboardView trades={filteredTrades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
+      case 'accounts':
+        return <AccountsView />;
       case 'tradelog':
-        return <TradeLogView trades={trades} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
+        return <TradeLogView trades={filteredTrades} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
       case 'analytics':
-        return <AnalyticsView trades={trades} stats={stats} />;
+        return <AnalyticsView trades={filteredTrades} stats={stats} />;
       case 'goals':
         return <GoalsView />;
       case 'profile':
@@ -55,7 +69,7 @@ const Index = () => {
       case 'settings':
         return <SettingsView />;
       default:
-        return <DashboardView trades={trades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
+        return <DashboardView trades={filteredTrades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
     }
   };
 
