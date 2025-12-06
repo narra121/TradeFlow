@@ -10,13 +10,17 @@ import { AccountsView } from '@/components/views/AccountsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
 import { AuthPage } from '@/components/auth/AuthPage';
+import { LandingPage } from '@/pages/LandingPage';
 import { mockTrades, calculatePortfolioStats } from '@/data/mockTrades';
 import { Trade } from '@/types/trade';
 import { useAccounts } from '@/hooks/useAccounts';
 import { cn } from '@/lib/utils';
 
+type AppView = 'landing' | 'auth' | 'app';
+
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [appView, setAppView] = useState<AppView>('landing');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [activeView, setActiveView] = useState('dashboard');
   const [trades, setTrades] = useState<Trade[]>(mockTrades);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
@@ -48,8 +52,18 @@ const Index = () => {
     setTrades(prev => [...tradesWithIds, ...prev]);
   };
 
+  const handleGetStarted = () => {
+    setAuthMode('signup');
+    setAppView('auth');
+  };
+
   const handleLogin = () => {
-    setIsAuthenticated(true);
+    setAuthMode('login');
+    setAppView('auth');
+  };
+
+  const handleAuthSuccess = () => {
+    setAppView('app');
   };
 
   const renderView = () => {
@@ -73,10 +87,17 @@ const Index = () => {
     }
   };
 
-  if (!isAuthenticated) {
-    return <AuthPage onLogin={handleLogin} />;
+  // Show landing page
+  if (appView === 'landing') {
+    return <LandingPage onGetStarted={handleGetStarted} onLogin={handleLogin} />;
   }
 
+  // Show auth page
+  if (appView === 'auth') {
+    return <AuthPage onLogin={handleAuthSuccess} />;
+  }
+
+  // Show main app
   return (
     <div className="min-h-screen bg-background bg-glow">
       <Sidebar activeView={activeView} onViewChange={setActiveView} />
