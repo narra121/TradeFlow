@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { Trade, PortfolioStats } from '@/types/trade';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,8 @@ import {
   ZAxis
 } from 'recharts';
 import { Clock, Timer } from 'lucide-react';
+import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
+import { subDays, isWithinInterval } from 'date-fns';
 
 interface AnalyticsViewProps {
   trades: Trade[];
@@ -26,7 +29,18 @@ interface AnalyticsViewProps {
 }
 
 export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
-  const closedTrades = trades.filter(t => t.status === 'CLOSED');
+  const [datePreset, setDatePreset] = useState<DatePreset>(30);
+  const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
+
+  const filteredTrades = useMemo(() => {
+    const range = getDateRangeFromPreset(datePreset, customRange);
+    return trades.filter(trade => {
+      const tradeDate = trade.exitDate || trade.entryDate;
+      return isWithinInterval(tradeDate, { start: range.from, end: range.to });
+    });
+  }, [trades, datePreset, customRange]);
+
+  const closedTrades = filteredTrades.filter(t => t.status === 'CLOSED');
   
   // Symbol distribution
   const symbolDistribution = closedTrades.reduce((acc, trade) => {
@@ -154,9 +168,18 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
-        <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
+          <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
+        </div>
+        <DateRangeFilter
+          selectedPreset={datePreset}
+          onPresetChange={setDatePreset}
+          customRange={customRange}
+          onCustomRangeChange={setCustomRange}
+          showCustomPicker
+        />
       </div>
 
       {/* Metrics Grid */}
