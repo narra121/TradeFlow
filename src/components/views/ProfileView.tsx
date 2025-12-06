@@ -16,10 +16,14 @@ import {
   Check,
   Edit2,
   Camera,
-  Loader2
+  Loader2,
+  LogOut
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export function ProfileView() {
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -28,6 +32,11 @@ export function ProfileView() {
   const [selectedAmount, setSelectedAmount] = useState(1);
   const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(12);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+
+  const handleLogout = () => {
+    toast.success('Logged out successfully');
+    navigate('/login');
+  };
   
   // Mock user data - replace with actual user data from your API
   const [user, setUser] = useState({
@@ -170,6 +179,18 @@ export function ProfileView() {
                 </div>
               </div>
             </div>
+
+            <Separator />
+
+            {/* Logout Button */}
+            <Button 
+              variant="destructive" 
+              className="w-full"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
           </CardContent>
         </Card>
 

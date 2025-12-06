@@ -43,27 +43,6 @@ export function SettingsView() {
         <p className="text-muted-foreground mt-1">Customize your trading journal</p>
       </div>
 
-      {/* Profile Section */}
-      <div className="glass-card p-6 animate-fade-in">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <User className="w-5 h-5 text-primary" />
-          </div>
-          <h2 className="text-lg font-semibold text-foreground">Profile</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Display Name</Label>
-            <Input defaultValue="Trader Pro" />
-          </div>
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input defaultValue="trader@example.com" type="email" />
-          </div>
-          <Button variant="outline">Update Profile</Button>
-        </div>
-      </div>
 
       {/* Preferences Section */}
       <div className="glass-card p-6 animate-fade-in stagger-1">
