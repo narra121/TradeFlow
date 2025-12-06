@@ -114,8 +114,8 @@ interface Trade {
   stopLoss: number;
   takeProfit: number;
   size: number;
-  entryDate: Date;
-  exitDate?: Date;
+  entryDate: Date;          // Includes both date and time (ISO 8601 format: "2024-01-15T09:30:00Z")
+  exitDate?: Date;          // Includes both date and time (ISO 8601 format: "2024-01-15T14:45:00Z")
   status: TradeStatus;
   pnl?: number;
   pnlPercent?: number;
