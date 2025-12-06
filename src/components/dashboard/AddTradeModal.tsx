@@ -11,8 +11,10 @@ import { DynamicSelect } from '@/components/trade/DynamicSelect';
 import { SmartInput } from '@/components/trade/SmartInput';
 import { MistakeTagsInput } from '@/components/trade/MistakeTagsInput';
 import { ImageUploader } from '@/components/trade/ImageUploader';
+import { BrokenRulesSelect } from '@/components/trade/BrokenRulesSelect';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText } from 'lucide-react';
+import { useTradingRules } from '@/hooks/useTradingRules';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AddTradeModalProps {
@@ -41,6 +43,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
   const [mistakes, setMistakes] = useState<string[]>([]);
   const [keyLesson, setKeyLesson] = useState('');
   const [tradeNotes, setTradeNotes] = useState('');
+  const [brokenRuleIds, setBrokenRuleIds] = useState<string[]>([]);
 
   // Visual Evidence
   const [images, setImages] = useState<TradeImage[]>([]);
@@ -57,6 +60,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
     addLesson,
     addTimeframe,
   } = useSavedOptions();
+
+  // Trading rules hook
+  const { rules } = useTradingRules();
 
   // Calculate Net PnL
   const entry = parseFloat(entryPrice) || 0;
@@ -115,6 +121,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
     setKeyLesson('');
     setTradeNotes('');
     setImages([]);
+    setBrokenRuleIds([]);
   };
 
   return (
@@ -336,6 +343,24 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
                     onAddNew={addMistake}
                   />
                 </div>
+
+                {/* Broken Rules */}
+                {rules.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-destructive" />
+                      <Label className="text-xs">Broken Rules</Label>
+                      {brokenRuleIds.length > 0 && (
+                        <span className="text-xs text-destructive">({brokenRuleIds.length} broken)</span>
+                      )}
+                    </div>
+                    <BrokenRulesSelect
+                      rules={rules}
+                      selectedRuleIds={brokenRuleIds}
+                      onChange={setBrokenRuleIds}
+                    />
+                  </div>
+                )}
               </section>
 
               <Separator className="bg-border" />
