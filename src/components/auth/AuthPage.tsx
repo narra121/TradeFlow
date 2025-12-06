@@ -6,7 +6,7 @@ import { PasswordStrength } from "./PasswordStrength";
 import { OTPInput } from "./OTPInput";
 import { toast } from "sonner";
 import {
-  TrendingUp,
+  Zap,
   Mail,
   Lock,
   User,
@@ -139,10 +139,10 @@ export const AuthPage = ({ onLogin }: AuthPageProps) => {
 
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <TrendingUp className="w-7 h-7 text-primary-foreground" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
+              <Zap className="w-7 h-7 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-bold text-foreground">TradeJournal</span>
+            <span className="text-2xl font-bold text-foreground">TradeFlow</span>
           </div>
           
           <h1 className="text-4xl xl:text-5xl font-bold text-foreground mb-6 leading-tight">
@@ -182,10 +182,10 @@ export const AuthPage = ({ onLogin }: AuthPageProps) => {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
+              <Zap className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">TradeJournal</span>
+            <span className="text-xl font-bold text-foreground">TradeFlow</span>
           </div>
 
           {/* Login View */}
