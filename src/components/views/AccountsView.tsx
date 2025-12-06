@@ -4,7 +4,17 @@ import { AccountCard } from '@/components/account/AccountCard';
 import { AddAccountModal } from '@/components/account/AddAccountModal';
 import { Button } from '@/components/ui/button';
 import { TradingAccount, AccountStatus } from '@/types/trade';
-import { Plus, Building2 } from 'lucide-react';
+import { Plus, Building2, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export function AccountsView() {
   const { 
@@ -19,6 +29,14 @@ export function AccountsView() {
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
+  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
+
+  const handleDeleteConfirm = () => {
+    if (deletingAccountId) {
+      deleteAccount(deletingAccountId);
+      setDeletingAccountId(null);
+    }
+  };
 
   const handleAddAccount = (account: Omit<TradingAccount, 'id' | 'createdAt'>) => {
     if (editingAccount) {
@@ -93,7 +111,7 @@ export function AccountsView() {
             isSelected={selectedAccountId === account.id}
             onSelect={() => setSelectedAccountId(selectedAccountId === account.id ? null : account.id)}
             onEdit={() => handleEdit(account)}
-            onDelete={() => deleteAccount(account.id)}
+            onDelete={() => setDeletingAccountId(account.id)}
             onStatusChange={(status) => handleStatusChange(account.id, status)}
           />
         ))}
@@ -121,6 +139,28 @@ export function AccountsView() {
         onAddAccount={handleAddAccount}
         editAccount={editingAccount}
       />
+
+      <AlertDialog open={!!deletingAccountId} onOpenChange={(open) => !open && setDeletingAccountId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+              </div>
+              <AlertDialogTitle>Delete Account</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-2">
+              Deleting this account will permanently remove all trades associated with it. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
