@@ -59,25 +59,29 @@ export function DashboardView({ trades, stats, onAddTrade, onImportTrades }: Das
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Track your trading performance</p>
+      <div className="space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">Track your trading performance</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
+              <Upload className="w-5 h-5" />
+              Import
+            </Button>
+            <Button onClick={onAddTrade} size="lg" className="gap-2">
+              <Plus className="w-5 h-5" />
+              New Trade
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <DateRangeFilter
             selectedPreset={datePreset}
             onPresetChange={setDatePreset}
           />
           <AccountFilter />
-          <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
-            <Upload className="w-5 h-5" />
-            Import
-          </Button>
-          <Button onClick={onAddTrade} size="lg" className="gap-2">
-            <Plus className="w-5 h-5" />
-            New Trade
-          </Button>
         </div>
       </div>
 
