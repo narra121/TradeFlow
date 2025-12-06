@@ -168,18 +168,20 @@ export function AnalyticsView({ trades, stats }: AnalyticsViewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
           <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
         </div>
-        <DateRangeFilter
-          selectedPreset={datePreset}
-          onPresetChange={setDatePreset}
-          customRange={customRange}
-          onCustomRangeChange={setCustomRange}
-          showCustomPicker
-        />
+        <div className="flex items-center gap-4">
+          <DateRangeFilter
+            selectedPreset={datePreset}
+            onPresetChange={setDatePreset}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+            showCustomPicker
+          />
+        </div>
       </div>
 
       {/* Metrics Grid */}
