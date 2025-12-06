@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardView } from '@/components/views/DashboardView';
-import { TradesView } from '@/components/views/TradesView';
+import { TradeLogView } from '@/components/views/TradeLogView';
 import { AnalyticsView } from '@/components/views/AnalyticsView';
-import { CalendarView } from '@/components/views/CalendarView';
 import { GoalsView } from '@/components/views/GoalsView';
 import { ProfileView } from '@/components/views/ProfileView';
 import { SettingsView } from '@/components/views/SettingsView';
@@ -45,12 +44,10 @@ const Index = () => {
     switch (activeView) {
       case 'dashboard':
         return <DashboardView trades={trades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
-      case 'trades':
-        return <TradesView trades={trades} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
+      case 'tradelog':
+        return <TradeLogView trades={trades} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
       case 'analytics':
         return <AnalyticsView trades={trades} stats={stats} />;
-      case 'calendar':
-        return <CalendarView trades={trades} />;
       case 'goals':
         return <GoalsView />;
       case 'profile':
