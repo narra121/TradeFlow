@@ -438,29 +438,22 @@ export function GoalsView() {
                   "flex items-center gap-3 p-4 rounded-xl transition-colors animate-fade-in group",
                   brokenCount > 0
                     ? "bg-destructive/5 border border-destructive/20"
-                    : item.completed 
-                      ? "bg-success/5 border border-success/20" 
-                      : "bg-secondary/30 border border-transparent"
+                    : "bg-success/5 border border-success/20"
                 )}
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <button
-                  type="button"
-                  onClick={() => handleToggleRule(ruleId)}
-                  disabled={togglingRuleId === ruleId}
-                  className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors",
-                    item.completed 
-                      ? "bg-success text-success-foreground" 
-                      : "bg-secondary border-2 border-muted-foreground/30 hover:border-primary"
-                  )}
-                >
-                  {togglingRuleId === ruleId ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                <div className={cn(
+                  "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
+                  brokenCount > 0
+                    ? "bg-destructive/10"
+                    : "bg-success/10"
+                )}>
+                  {brokenCount > 0 ? (
+                    <X className="w-4 h-4 text-destructive" />
                   ) : (
-                    item.completed && <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-4 h-4 text-success" />
                   )}
-                </button>
+                </div>
                 
                 {isEditingThis ? (
                   <div className="flex-1 flex items-center gap-2">
