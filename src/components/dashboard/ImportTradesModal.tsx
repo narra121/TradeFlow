@@ -244,7 +244,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
       size: t.size,
       entryDate: t.entryDate.toISOString(),
       exitDate: t.exitDate.toISOString(),
-      status: 'CLOSED' as const,
+      outcome: 'TP' as const,
       pnl: t.pnl,
       riskRewardRatio: 0,
     }));

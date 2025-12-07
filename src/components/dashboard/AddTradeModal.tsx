@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Trade, TradeDirection, TradeImage } from '@/types/trade';
+import { Trade, TradeDirection, TradeImage, TradeOutcome } from '@/types/trade';
 import { DynamicSelect } from '@/components/trade/DynamicSelect';
 import { SmartInput } from '@/components/trade/SmartInput';
 import { MistakeTagsInput } from '@/components/trade/MistakeTagsInput';
@@ -38,6 +38,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
   const [manualPnl, setManualPnl] = useState('');
   const [entryDateTime, setEntryDateTime] = useState('');
   const [exitDateTime, setExitDateTime] = useState('');
+  const [outcome, setOutcome] = useState<TradeOutcome>('TP');
 
   // Trade Context
   const [strategy, setStrategy] = useState('');
@@ -108,8 +109,8 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
       takeProfit: tp,
       size: posSize,
       entryDate: entryDateTime ? new Date(entryDateTime).toISOString() : new Date().toISOString(),
-      exitDate: exitDateTime ? new Date(exitDateTime).toISOString() : (exit ? new Date().toISOString() : undefined),
-      status: exit ? 'CLOSED' : 'OPEN',
+      exitDate: exitDateTime ? new Date(exitDateTime).toISOString() : new Date().toISOString(),
+      outcome,
       pnl: exit || manualPnl ? finalPnl : undefined,
       riskRewardRatio: risk > 0 ? reward / risk : 0,
       strategy,
@@ -139,6 +140,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
     setSize('0.1');
     setEntryDateTime('');
     setExitDateTime('');
+    setOutcome('TP');
     setStrategy('');
     setSession('');
     setMarketCondition('');

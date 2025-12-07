@@ -41,7 +41,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
   }, [trades, datePreset]);
 
   const filteredStats = useMemo(() => {
-    const closedTrades = filteredTrades.filter(t => t.status === 'CLOSED');
+    const closedTrades = filteredTrades; // All trades are closed now
     const wins = closedTrades.filter(t => (t.pnl || 0) > 0);
     const losses = closedTrades.filter(t => (t.pnl || 0) < 0);
     const totalPnl = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
@@ -97,7 +97,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     };
   }, [filteredTrades]);
 
-  const openTrades = filteredTrades.filter(t => t.status === 'OPEN');
+  // All trades are closed - no open trades section needed
 
   return (
     <div className="space-y-6">
@@ -155,8 +155,8 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           className="stagger-3"
         />
         <StatCard
-          title="Open Positions"
-          value={openTrades.length}
+          title="Breakeven Trades"
+          value={filteredTrades.filter(t => t.outcome === 'BREAKEVEN').length}
           icon={BarChart3}
           variant="accent"
           className="stagger-4"
@@ -174,8 +174,8 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
         <div>
           <WinRateRing 
             winRate={filteredStats.winRate}
-            wins={filteredTrades.filter(t => t.status === 'CLOSED' && (t.pnl || 0) > 0).length}
-            losses={filteredTrades.filter(t => t.status === 'CLOSED' && (t.pnl || 0) < 0).length}
+            wins={filteredTrades.filter(t => (t.pnl || 0) > 0).length}
+            losses={filteredTrades.filter(t => (t.pnl || 0) < 0).length}
           />
         </div>
       </div>

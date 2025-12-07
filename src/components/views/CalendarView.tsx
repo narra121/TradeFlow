@@ -27,7 +27,7 @@ export function CalendarView({ trades }: CalendarViewProps) {
   // Get trades for a specific day
   const getTradesForDay = (date: Date) => {
     return trades.filter(trade => {
-      if (trade.status !== 'CLOSED' || !trade.exitDate) return false;
+      if (!trade.exitDate) return false;
       return isSameDay(trade.exitDate, date);
     });
   };
@@ -82,7 +82,7 @@ export function CalendarView({ trades }: CalendarViewProps) {
   const tradingDays = useMemo(() => {
     const days: Date[] = [];
     trades.forEach(trade => {
-      if (trade.status === 'CLOSED' && trade.exitDate) {
+      if (trade.exitDate) {
         const exitDate = new Date(trade.exitDate);
         const exists = days.some(d => isSameDay(d, exitDate));
         if (!exists) {
