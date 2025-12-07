@@ -27,10 +27,10 @@ export function DateRangeFilter({
   const [toOpen, setToOpen] = useState(false);
 
   const presets: { value: DatePreset; label: string }[] = [
-    { value: 7, label: '7' },
-    { value: 30, label: '30' },
-    { value: 60, label: '60' },
-    { value: 90, label: '90' },
+    { value: 7, label: '7 days' },
+    { value: 30, label: '30 days' },
+    { value: 60, label: '60 days' },
+    { value: 90, label: '90 days' },
   ];
 
   const handleFromSelect = (date: Date | undefined) => {
@@ -65,7 +65,6 @@ export function DateRangeFilter({
             {preset.label}
           </button>
         ))}
-        <span className="px-2 text-sm text-muted-foreground">Days</span>
         {showCustomPicker && (
           <button
             onClick={() => onPresetChange('custom')}
