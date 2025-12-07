@@ -45,7 +45,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
       )}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-sidebar-border">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
             <Zap className="w-5 h-5 text-primary-foreground" />
@@ -56,6 +56,16 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
             </span>
           )}
         </div>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+        >
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <ChevronLeft className="w-4 h-4" />
+          )}
+        </button>
       </div>
 
       {/* Navigation */}
@@ -94,8 +104,8 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         </ul>
       </nav>
 
-      {/* Bottom Section - Profile & Collapse */}
-      <div className="p-3 border-t border-sidebar-border space-y-1">
+      {/* Bottom Section - Profile */}
+      <div className="p-3 border-t border-sidebar-border">
         {/* Profile Button */}
         <button
           onClick={() => onViewChange('profile')}
@@ -118,23 +128,6 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
             <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />
           )}
         </button>
-
-        {/* Collapse Toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full justify-center"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <>
-              <ChevronLeft className="w-4 h-4" />
-              <span className="ml-2">Collapse</span>
-            </>
-          )}
-        </Button>
       </div>
     </aside>
   );
