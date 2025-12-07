@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { format, subDays } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
-export type DatePreset = 30 | 60 | 90 | 'custom';
+export type DatePreset = 7 | 30 | 60 | 90 | 'custom';
 
 interface DateRangeFilterProps {
   selectedPreset: DatePreset;
@@ -27,6 +27,7 @@ export function DateRangeFilter({
   const [toOpen, setToOpen] = useState(false);
 
   const presets: { value: DatePreset; label: string }[] = [
+    { value: 7, label: 'Last 7 Days' },
     { value: 30, label: 'Last 30 Days' },
     { value: 60, label: 'Last 60 Days' },
     { value: 90, label: 'Last 90 Days' },
