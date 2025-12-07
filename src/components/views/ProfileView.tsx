@@ -13,7 +13,6 @@ import {
   Calendar, 
   CreditCard, 
   Heart, 
-  Sparkles,
   Check,
   Edit2,
   Camera,
@@ -74,8 +73,6 @@ export function ProfileView() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
-  const [customAmount, setCustomAmount] = useState('');
-  const [customAnnualAmount, setCustomAnnualAmount] = useState('');
   const [selectedAmount, setSelectedAmount] = useState(99);
   const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(999);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
@@ -564,38 +561,13 @@ export function ProfileView() {
                   </button>
                 ))}
               </div>
-
-              {/* Custom Amount Monthly */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-lg bg-background/30 border border-border/50 mb-6">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  <span className="text-sm text-foreground font-medium">Custom amount:</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">₹</span>
-                  <Input
-                    type="number"
-                    min="99"
-                    placeholder="Min ₹99"
-                    value={customAmount}
-                    onChange={(e) => {
-                      setCustomAmount(e.target.value);
-                      if (e.target.value && Number(e.target.value) >= 99) {
-                        setSelectedAmount(Number(e.target.value));
-                      }
-                    }}
-                    className="w-32 bg-background/50"
-                  />
-                  <span className="text-muted-foreground text-sm">/month</span>
-                </div>
-              </div>
             </>
           )}
 
           {/* Annual Tiers */}
           {billingCycle === 'annual' && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {annualTiers
                   .filter(tier => availablePlans.some(p => p.period === 'yearly' && p.amount === tier.amount))
                   .map((tier) => (
@@ -623,31 +595,6 @@ export function ProfileView() {
                     )}
                   </button>
                 ))}
-              </div>
-
-              {/* Custom Amount Annual */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-lg bg-background/30 border border-border/50 mb-6">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  <span className="text-sm text-foreground font-medium">Custom amount:</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">₹</span>
-                  <Input
-                    type="number"
-                    min="999"
-                    placeholder="Min ₹999"
-                    value={customAnnualAmount}
-                    onChange={(e) => {
-                      setCustomAnnualAmount(e.target.value);
-                      if (e.target.value && Number(e.target.value) >= 999) {
-                        setSelectedAnnualAmount(Number(e.target.value));
-                      }
-                    }}
-                    className="w-32 bg-background/50"
-                  />
-                  <span className="text-muted-foreground text-sm">/year</span>
-                </div>
               </div>
             </>
           )}
