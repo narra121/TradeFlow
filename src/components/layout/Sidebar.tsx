@@ -45,7 +45,10 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
       )}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
+      <div className={cn(
+        "h-16 flex items-center border-b border-sidebar-border",
+        collapsed ? "justify-center px-2" : "justify-between px-4"
+      )}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
             <Zap className="w-5 h-5 text-primary-foreground" />
@@ -56,16 +59,14 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
             </span>
           )}
         </div>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
+        {!collapsed && (
+          <button
+            onClick={() => setCollapsed(true)}
+            className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+          >
             <ChevronLeft className="w-4 h-4" />
-          )}
-        </button>
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -104,14 +105,15 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         </ul>
       </nav>
 
-      {/* Bottom Section - Profile */}
-      <div className="p-3 border-t border-sidebar-border">
+      {/* Bottom Section - Profile & Expand */}
+      <div className="p-3 border-t border-sidebar-border space-y-1">
         {/* Profile Button */}
         <button
           onClick={() => onViewChange('profile')}
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
             "hover:bg-sidebar-accent",
+            collapsed && "justify-center",
             activeView === 'profile'
               ? "bg-sidebar-accent text-sidebar-primary" 
               : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
@@ -128,6 +130,16 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
             <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />
           )}
         </button>
+
+        {/* Expand Button (only when collapsed) */}
+        {collapsed && (
+          <button
+            onClick={() => setCollapsed(false)}
+            className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </aside>
   );
