@@ -63,11 +63,12 @@ const goalTypes: GoalType[] = [
   },
   {
     id: 'trades',
-    title: 'Trade Count',
-    description: 'Execute quality trades',
+    title: 'Max Trades',
+    description: 'Stay under trade limit',
     unit: ' trades',
     icon: Award,
     color: 'text-accent',
+    isInverse: true,
   },
 ];
 
@@ -198,12 +199,22 @@ export function GoalsView() {
     const Icon = goalType.icon;
     const key = `${goalType.id}-${period}`;
     const isInverse = goalType.isInverse;
+    
+    // For inverse goals: lower is better, show how much "room" is left
+    // For normal goals: higher is better, show progress toward target
     const progress = isInverse 
-      ? Math.max(0, ((data.target - data.current + data.target) / data.target) * 50)
+      ? Math.min((data.current / data.target) * 100, 100)
       : Math.min((data.current / data.target) * 100, 100);
+    
+    // For inverse: success if current <= target (stayed under limit)
+    // For inverse: warning/danger if current > target (exceeded limit)
     const isCompleted = isInverse 
       ? data.current <= data.target 
       : data.current >= data.target;
+    
+    // For inverse goals, exceeding the target is bad
+    const isExceeded = isInverse && data.current > data.target;
+    
     const isEditing = editingGoalKey === key;
 
     return (
@@ -216,9 +227,9 @@ export function GoalsView() {
           <div className="flex items-center gap-3">
             <div className={cn(
               "w-11 h-11 rounded-xl flex items-center justify-center",
-              isCompleted ? "bg-success/10" : "bg-secondary"
+              isExceeded ? "bg-destructive/10" : isCompleted ? "bg-success/10" : "bg-secondary"
             )}>
-              <Icon className={cn("w-5 h-5", isCompleted ? "text-success" : goalType.color)} />
+              <Icon className={cn("w-5 h-5", isExceeded ? "text-destructive" : isCompleted ? "text-success" : goalType.color)} />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -231,12 +242,20 @@ export function GoalsView() {
                 )}>
                   {period}
                 </span>
+                {isInverse && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full uppercase font-medium bg-warning/10 text-warning">
+                    Limit
+                  </span>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">{goalType.description}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {isCompleted && (
+            {isExceeded && (
+              <X className="w-5 h-5 text-destructive" />
+            )}
+            {isCompleted && !isExceeded && (
               <CheckCircle2 className="w-5 h-5 text-success" />
             )}
             {!isEditing && (
@@ -257,7 +276,7 @@ export function GoalsView() {
             <div className="flex items-baseline gap-1">
               <span className={cn(
                 "text-2xl font-bold font-mono",
-                isCompleted ? "text-success" : "text-foreground"
+                isExceeded ? "text-destructive" : isCompleted ? "text-success" : "text-foreground"
               )}>
                 {goalType.unit === '$' && goalType.unit}{data.current.toLocaleString()}{goalType.unit !== '$' && goalType.unit}
               </span>
@@ -311,9 +330,13 @@ export function GoalsView() {
             {!isEditing && (
               <span className={cn(
                 "text-sm font-medium",
-                isCompleted ? "text-success" : "text-muted-foreground"
+                isExceeded ? "text-destructive" : isCompleted ? "text-success" : "text-muted-foreground"
               )}>
-                {progress.toFixed(0)}%
+                {isInverse ? (
+                  isExceeded ? 'Exceeded!' : `${((data.target - data.current) / data.target * 100).toFixed(0)}% left`
+                ) : (
+                  `${progress.toFixed(0)}%`
+                )}
               </span>
             )}
           </div>
@@ -322,7 +345,7 @@ export function GoalsView() {
             value={progress} 
             className={cn(
               "h-2",
-              isCompleted ? "[&>div]:bg-success" : ""
+              isExceeded ? "[&>div]:bg-destructive" : isCompleted ? "[&>div]:bg-success" : isInverse ? "[&>div]:bg-warning" : ""
             )}
           />
         </div>
