@@ -22,7 +22,7 @@ import {
 import { Clock, Timer, Loader2 } from 'lucide-react';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { AccountFilter } from '@/components/account/AccountFilter';
-import { subDays, isWithinInterval } from 'date-fns';
+import { subDays, isWithinInterval, startOfWeek, endOfWeek, format, addDays, isSameDay } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchTrades } from '@/store/slices/tradesSlice';
 import { 
@@ -196,14 +196,21 @@ export function AnalyticsView() {
     if (drawdown > maxDrawdown) maxDrawdown = drawdown;
   });
 
-  // Daily P&L for bar chart
-  const dailyPnL = [
-    { day: 'Mon', pnl: 450 },
-    { day: 'Tue', pnl: -120 },
-    { day: 'Wed', pnl: 380 },
-    { day: 'Thu', pnl: 700 },
-    { day: 'Fri', pnl: 280 },
-  ];
+  // Daily P&L for current week (Sunday to Saturday)
+  const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 }); // Sunday
+  const dailyPnL = Array.from({ length: 7 }, (_, i) => {
+    const dayDate = addDays(currentWeekStart, i);
+    const dayTrades = trades.filter(trade => {
+      const tradeDate = new Date(trade.exitDate || trade.entryDate);
+      return isSameDay(tradeDate, dayDate);
+    });
+    const pnl = dayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    return {
+      day: format(dayDate, 'EEE'),
+      date: format(dayDate, 'MMM d'),
+      pnl,
+    };
+  });
 
   // Performance metrics
   const metrics = [
@@ -274,9 +281,12 @@ export function AnalyticsView() {
         {/* Equity Curve */}
         <PerformanceChart />
 
-        {/* Daily P&L Bar Chart */}
+        {/* Daily P&L Bar Chart - Current Week */}
         <div className="glass-card p-5">
-          <h3 className="font-semibold text-foreground mb-6">Daily P&L</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-semibold text-foreground">Daily P&L</h3>
+            <span className="text-xs text-muted-foreground">This Week (Sun - Sat)</span>
+          </div>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailyPnL} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -299,13 +309,20 @@ export function AnalyticsView() {
                     border: '1px solid hsl(220, 16%, 18%)',
                     borderRadius: '8px',
                   }}
-                  formatter={(value: number) => [`$${value}`, 'P&L']}
+                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'P&L']}
+                  labelFormatter={(label, payload) => payload?.[0]?.payload?.date || label}
                 />
                 <Bar 
                   dataKey="pnl" 
                   radius={[4, 4, 0, 0]}
-                  fill="hsl(160, 84%, 39%)"
-                />
+                >
+                  {dailyPnL.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.pnl >= 0 ? 'hsl(160, 84%, 39%)' : 'hsl(0, 72%, 51%)'} 
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
