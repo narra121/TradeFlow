@@ -167,7 +167,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart - spans 2 columns */}
         <div className="lg:col-span-2">
-          <PerformanceChart />
+          <PerformanceChart trades={filteredTrades} />
         </div>
 
         {/* Win Rate Ring */}
