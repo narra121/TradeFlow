@@ -8,7 +8,7 @@ import {
   UpdatePreferencesPayload, 
   UpdateNotificationsPayload,
   Subscription,
-  CreateSubscriptionPayload,
+  UserCreateSubscriptionPayload,
   SavedOptions,
   AddOptionPayload
 } from '@/lib/api';
@@ -94,7 +94,7 @@ export const fetchSubscription = createAsyncThunk(
 
 export const createSubscription = createAsyncThunk(
   'user/createSubscription',
-  async (payload: CreateSubscriptionPayload, { rejectWithValue }) => {
+  async (payload: UserCreateSubscriptionPayload, { rejectWithValue }) => {
     try {
       const response = await subscriptionsApi.createSubscription(payload);
       return response;

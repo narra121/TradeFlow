@@ -21,7 +21,7 @@ export interface AccountsResponse {
 export const accountsApi = {
   // GET /v1/accounts
   getAccounts: async (): Promise<AccountsResponse> => {
-    const response = await apiClient.get('/accounts');
+    const response: any = await apiClient.get('/accounts');
     // Map accountId to id for frontend compatibility
     const accounts = response.accounts.map((account: any) => ({
       ...account,
@@ -37,7 +37,7 @@ export const accountsApi = {
 
   // POST /v1/accounts
   createAccount: async (payload: CreateAccountPayload): Promise<{ account: TradingAccount }> => {
-    const response = await apiClient.post('/accounts', payload);
+    const response: any = await apiClient.post('/accounts', payload);
     // Map accountId to id
     const account = {
       ...response.account,
@@ -49,7 +49,7 @@ export const accountsApi = {
 
   // PUT /v1/accounts/:id
   updateAccount: async (id: string, payload: Partial<CreateAccountPayload>): Promise<{ account: TradingAccount }> => {
-    const response = await apiClient.put(`/accounts/${id}`, payload);
+    const response: any = await apiClient.put(`/accounts/${id}`, payload);
     // Map accountId to id
     const account = {
       ...response.account,
@@ -61,7 +61,7 @@ export const accountsApi = {
 
   // PATCH /v1/accounts/:id/status
   updateAccountStatus: async (id: string, status: AccountStatus): Promise<{ account: TradingAccount }> => {
-    const response = await apiClient.patch(`/accounts/${id}/status`, { status });
+    const response: any = await apiClient.patch(`/accounts/${id}/status`, { status });
     // Map accountId to id
     const account = {
       ...response.account,

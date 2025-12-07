@@ -46,7 +46,7 @@ export function AnalyticsView() {
   const filteredTrades = useMemo(() => {
     const range = getDateRangeFromPreset(datePreset, customRange);
     return trades.filter(trade => {
-      const tradeDate = trade.exitDate || trade.entryDate;
+      const tradeDate = new Date(trade.exitDate || trade.entryDate);
       return isWithinInterval(tradeDate, { start: range.from, end: range.to });
     });
   }, [trades, datePreset, customRange]);
@@ -81,8 +81,8 @@ export function AnalyticsView() {
   // Hourly win rate calculation (all 24 hours) - computed locally from filtered trades
   const localHourlyStats = Array.from({ length: 24 }, (_, hour) => {
     const tradesInHour = closedTrades.filter(t => {
-      const entryHour = t.entryDate.getHours();
-      return entryHour === hour;
+      const entryDate = new Date(t.entryDate);
+      return entryDate.getHours() === hour;
     });
     const wins = tradesInHour.filter(t => (t.pnl || 0) > 0).length;
     const total = tradesInHour.length;
@@ -96,7 +96,7 @@ export function AnalyticsView() {
   // Daily win rate calculation (by day of week) - computed locally from filtered trades
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const localDailyWinRate = dayNames.map((day, index) => {
-    const tradesOnDay = closedTrades.filter(t => t.entryDate.getDay() === index);
+    const tradesOnDay = closedTrades.filter(t => new Date(t.entryDate).getDay() === index);
     const wins = tradesOnDay.filter(t => (t.pnl || 0) > 0).length;
     const total = tradesOnDay.length;
     return {
@@ -109,7 +109,9 @@ export function AnalyticsView() {
   // Trade duration calculation (time to hit TP or SL)
   const tradeDurations = closedTrades.map(trade => {
     if (!trade.exitDate) return null;
-    const durationMs = trade.exitDate.getTime() - trade.entryDate.getTime();
+    const exitDate = new Date(trade.exitDate);
+    const entryDate = new Date(trade.entryDate);
+    const durationMs = exitDate.getTime() - entryDate.getTime();
     const durationHours = durationMs / (1000 * 60 * 60);
     return {
       symbol: trade.symbol,
