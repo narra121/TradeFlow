@@ -13,7 +13,7 @@ interface DynamicSelectProps {
   value: string;
   onChange: (value: string) => void;
   options: string[];
-  onAddNew: (value: string) => void;
+  onAddNew?: (value: string) => void;
   placeholder?: string;
   className?: string;
 }
@@ -36,7 +36,7 @@ export function DynamicSelect({
   };
 
   const handleAddNew = () => {
-    if (newValue.trim() && !options.includes(newValue.trim())) {
+    if (onAddNew && newValue.trim() && !options.includes(newValue.trim())) {
       onAddNew(newValue.trim());
       onChange(newValue.trim());
       setNewValue('');
@@ -76,48 +76,49 @@ export function DynamicSelect({
             </button>
           ))}
         </div>
-        
-        <div className="border-t border-border">
-          {isAdding ? (
-            <div className="p-2 flex gap-2">
-              <Input
-                value={newValue}
-                onChange={(e) => setNewValue(e.target.value)}
-                placeholder="Enter new value..."
-                className="h-8 text-sm"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddNew();
-                  }
-                  if (e.key === 'Escape') {
-                    setIsAdding(false);
-                    setNewValue('');
-                  }
-                }}
-              />
-              <Button
+        {onAddNew && (
+          <div className="border-t border-border">
+            {isAdding ? (
+              <div className="p-2 flex gap-2">
+                <Input
+                  value={newValue}
+                  onChange={(e) => setNewValue(e.target.value)}
+                  placeholder="Enter new value..."
+                  className="h-8 text-sm"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddNew();
+                    }
+                    if (e.key === 'Escape') {
+                      setIsAdding(false);
+                      setNewValue('');
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAddNew}
+                  disabled={!newValue.trim()}
+                  className="h-8 px-3"
+                >
+                  Add
+                </Button>
+              </div>
+            ) : (
+              <button
                 type="button"
-                size="sm"
-                onClick={handleAddNew}
-                disabled={!newValue.trim()}
-                className="h-8 px-3"
+                onClick={() => setIsAdding(true)}
+                className="w-full px-3 py-2 text-left text-sm bg-secondary/50 hover:bg-secondary transition-colors flex items-center gap-2 text-primary"
               >
-                Add
-              </Button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsAdding(true)}
-              className="w-full px-3 py-2 text-left text-sm bg-secondary/50 hover:bg-secondary transition-colors flex items-center gap-2 text-primary"
-            >
-              <Plus className="w-4 h-4" />
-              Add New
-            </button>
-          )}
-        </div>
+                <Plus className="w-4 h-4" />
+                Add New
+              </button>
+            )}
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
