@@ -13,12 +13,12 @@ import { MistakeTagsInput } from '@/components/trade/MistakeTagsInput';
 import { ImageUploader } from '@/components/trade/ImageUploader';
 import { BrokenRulesSelect } from '@/components/trade/BrokenRulesSelect';
 import { AccountSelect } from '@/components/account/AccountSelect';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
 import { useTradingRules } from '@/hooks/useTradingRules';
 import { useAccounts } from '@/hooks/useAccounts';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState as useStateLoading } from 'react';
 
 interface AddTradeModalProps {
   open: boolean;
@@ -270,21 +270,19 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Entry Date & Time</Label>
-                    <Input
-                      type="datetime-local"
+                    <DateTimePicker
                       value={entryDateTime}
-                      onChange={(e) => setEntryDateTime(e.target.value)}
-                      className="text-sm"
+                      onChange={setEntryDateTime}
+                      placeholder="Select entry time"
                       required
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Exit Date & Time</Label>
-                    <Input
-                      type="datetime-local"
+                    <DateTimePicker
                       value={exitDateTime}
-                      onChange={(e) => setExitDateTime(e.target.value)}
-                      className="text-sm"
+                      onChange={setExitDateTime}
+                      placeholder="Select exit time"
                     />
                   </div>
                   <div className="space-y-1.5">
