@@ -55,17 +55,49 @@ export interface UploadUrlResponse {
 export const tradesApi = {
   // GET /v1/trades
   getTrades: async (params?: TradesQueryParams): Promise<TradesResponse> => {
-    return apiClient.get('/trades', { params });
+    const response: any = await apiClient.get('/trades', { params });
+    // Map backend response to frontend Trade type
+    const trades = response.trades.map((trade: any) => ({
+      ...trade,
+      id: trade.tradeId,
+      direction: trade.side === 'BUY' ? 'LONG' : 'SHORT',
+      size: trade.quantity,
+      entryDate: trade.openDate, // Keep as ISO string for Redux
+      exitDate: trade.closeDate || undefined, // Keep as ISO string for Redux
+    }));
+    return { trades };
   },
 
   // POST /v1/trades
   createTrade: async (payload: CreateTradePayload): Promise<{ trade: Trade }> => {
-    return apiClient.post('/trades', payload);
+    const response: any = await apiClient.post('/trades', payload);
+    const backendTrade = response.trade;
+    // Map backend response to frontend Trade type
+    const trade: Trade = {
+      ...backendTrade,
+      id: backendTrade.tradeId,
+      direction: backendTrade.side === 'BUY' ? 'LONG' : 'SHORT',
+      size: backendTrade.quantity,
+      entryDate: backendTrade.openDate, // Keep as ISO string for Redux
+      exitDate: backendTrade.closeDate || undefined, // Keep as ISO string for Redux
+    };
+    return { trade };
   },
 
   // PUT /v1/trades/:id
   updateTrade: async (id: string, payload: Partial<CreateTradePayload>): Promise<{ trade: Trade }> => {
-    return apiClient.put(`/trades/${id}`, payload);
+    const response: any = await apiClient.put(`/trades/${id}`, payload);
+    const backendTrade = response.trade;
+    // Map backend response to frontend Trade type
+    const trade: Trade = {
+      ...backendTrade,
+      id: backendTrade.tradeId,
+      direction: backendTrade.side === 'BUY' ? 'LONG' : 'SHORT',
+      size: backendTrade.quantity,
+      entryDate: backendTrade.openDate, // Keep as ISO string for Redux
+      exitDate: backendTrade.closeDate || undefined, // Keep as ISO string for Redux
+    };
+    return { trade };
   },
 
   // DELETE /v1/trades/:id

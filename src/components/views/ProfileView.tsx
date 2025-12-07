@@ -34,19 +34,23 @@ export function ProfileView() {
   const { initiateSubscription, loading: paymentLoading, error: paymentError } = useRazorpay();
   
   const [availablePlans, setAvailablePlans] = useState<PlanResponse[]>([]);
-  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [plansLoaded, setPlansLoaded] = useState(false);
   
   useEffect(() => {
     dispatch(fetchProfile());
     dispatch(fetchSubscription());
-    loadAvailablePlans();
-  }, [dispatch]);
+    if (!plansLoaded) {
+      loadAvailablePlans();
+    }
+  }, [dispatch, plansLoaded]);
   
   const loadAvailablePlans = async () => {
     try {
       setLoadingPlans(true);
       const response = await razorpayApi.getPlans();
       setAvailablePlans(response.plans || []);
+      setPlansLoaded(true);
     } catch (error) {
       console.error('Failed to load plans:', error);
     } finally {
@@ -64,6 +68,7 @@ export function ProfileView() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(false);
+  const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
   const [managingSubscription, setManagingSubscription] = useState(false);
   
   // Get plan ID based on selected amount and billing cycle
@@ -118,9 +123,8 @@ export function ProfileView() {
   ];
 
   const annualTiers = [
-    { amount: 999, label: 'Basic', description: 'Cover hosting costs', monthly: 99 },
-    { amount: 2999, label: 'Supporter', description: 'Help us grow', monthly: 299 },
-    { amount: 4999, label: 'Champion', description: 'Fuel new features', monthly: 499 },
+    { amount: 999, label: 'Basic', description: 'Save 17%!', monthly: 99 },
+    { amount: 2999, label: 'Pro', description: 'Save 17% and support development!', monthly: 299 },
   ];
 
   const handleSaveProfile = async () => {
@@ -136,19 +140,23 @@ export function ProfileView() {
   // Fetch current subscription on mount
   useEffect(() => {
     const fetchSubscriptionDetails = async () => {
+      if (subscriptionLoaded) return;
+      
       try {
         setLoadingSubscription(true);
         const details = await razorpayApi.getSubscription();
         setSubscriptionDetails(details);
+        setSubscriptionLoaded(true);
       } catch (error) {
         console.log('No active subscription found');
+        setSubscriptionLoaded(true);
       } finally {
         setLoadingSubscription(false);
       }
     };
 
     fetchSubscriptionDetails();
-  }, []);
+  }, [subscriptionLoaded]);
 
   const handleSubscribe = async (amount: number, cycle: 'monthly' | 'annual') => {
     setIsSubscribing(true);
@@ -241,6 +249,14 @@ export function ProfileView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* User Profile Card */}
+        {loading && !profile ? (
+          <Card className="lg:col-span-2 bg-card/50 backdrop-blur border-border/50">
+            <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading profile...</p>
+            </CardContent>
+          </Card>
+        ) : (
         <Card className="lg:col-span-2 bg-card/50 backdrop-blur border-border/50">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -336,6 +352,7 @@ export function ProfileView() {
             <Separator />
           </CardContent>
         </Card>
+        )}
 
         {/* Current Subscription Card */}
         <Card className="bg-card/50 backdrop-blur border-border/50">
@@ -347,9 +364,10 @@ export function ProfileView() {
             <CardDescription>Your current plan</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {loadingSubscription ? (
-              <div className="flex items-center justify-center p-4">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            {loadingSubscription && !subscriptionLoaded ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Loading subscription...</p>
               </div>
             ) : subscriptionDetails ? (
               <>
@@ -440,6 +458,14 @@ export function ProfileView() {
       </div>
 
       {/* Subscription Plans */}
+      {loadingPlans && !plansLoaded ? (
+        <Card className="bg-card/50 backdrop-blur border-border/50">
+          <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading subscription plans...</p>
+          </CardContent>
+        </Card>
+      ) : (
       <Card className="bg-card/50 backdrop-blur border-border/50">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
@@ -545,7 +571,7 @@ export function ProfileView() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {annualTiers
-                  .filter(tier => availablePlans.some(p => p.period === 'annual' && p.amount === tier.amount))
+                  .filter(tier => availablePlans.some(p => p.period === 'yearly' && p.amount === tier.amount))
                   .map((tier) => (
                   <button
                     key={tier.amount}
@@ -658,6 +684,7 @@ export function ProfileView() {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

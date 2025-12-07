@@ -26,7 +26,7 @@ export const accountsApi = {
     const accounts = response.accounts.map((account: any) => ({
       ...account,
       id: account.accountId,
-      createdAt: new Date(account.createdAt)
+      createdAt: account.createdAt // Keep as ISO string for Redux serialization
     }));
     return {
       accounts,
@@ -42,7 +42,7 @@ export const accountsApi = {
     const account = {
       ...response.account,
       id: response.account.accountId,
-      createdAt: new Date(response.account.createdAt)
+      createdAt: response.account.createdAt // Keep as ISO string for Redux serialization
     };
     return { account };
   },
@@ -54,7 +54,7 @@ export const accountsApi = {
     const account = {
       ...response.account,
       id: response.account.accountId,
-      createdAt: new Date(response.account.createdAt)
+      createdAt: response.account.createdAt // Keep as ISO string for Redux serialization
     };
     return { account };
   },
@@ -66,7 +66,7 @@ export const accountsApi = {
     const account = {
       ...response.account,
       id: response.account.accountId,
-      createdAt: new Date(response.account.createdAt)
+      createdAt: response.account.createdAt // Keep as ISO string for Redux serialization
     };
     return { account };
   },

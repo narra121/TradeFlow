@@ -13,7 +13,7 @@ export interface TradingAccount {
   balance: number;
   initialBalance: number;
   currency: string;
-  createdAt: Date;
+  createdAt: string; // ISO string for Redux serialization
   notes?: string;
 }
 
@@ -33,8 +33,8 @@ export interface Trade {
   stopLoss: number;
   takeProfit: number;
   size: number;
-  entryDate: Date;
-  exitDate?: Date;
+  entryDate: string; // ISO string for Redux serialization
+  exitDate?: string; // ISO string for Redux serialization
   status: TradeStatus;
   pnl?: number;
   pnlPercent?: number;

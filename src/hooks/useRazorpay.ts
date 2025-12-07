@@ -114,30 +114,50 @@ export const useRazorpay = () => {
           throw new Error('Razorpay SDK not loaded. Please include the checkout script.');
         }
 
+        const razorpayKeyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+        if (!razorpayKeyId || razorpayKeyId === 'rzp_test_xxxxxxxxxxxxx') {
+          throw new Error('Razorpay Key ID is not configured. Please set VITE_RAZORPAY_KEY_ID in .env file');
+        }
+
         // Create subscription on backend
         const subscriptionPayload: CreateSubscriptionPayload = {
           planId: options.planId,
           customerNotify: 1,
         };
 
+        console.log('Creating subscription with payload:', subscriptionPayload);
         const subscriptionResponse = await razorpayApi.createSubscription(
           subscriptionPayload
         );
 
-        // Configure Razorpay subscription checkout
+        console.log('Subscription created:', subscriptionResponse);
+
+        // For subscriptions, we need to redirect to the short_url for authentication
+        // Or use the checkout with proper prefill and notes
         const razorpayOptions = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+          key: razorpayKeyId,
           subscription_id: subscriptionResponse.subscriptionId,
           name: options.name,
           description: options.description,
+          prefill: {
+            email: '', // Will be filled from user profile
+            contact: '',
+          },
+          notes: {
+            subscription_for: 'TradeFlow Premium',
+          },
           handler: async (response: any) => {
             try {
               // Subscription payment successful
               // The webhook will handle updating the database
               console.log('Subscription payment response:', response);
 
-              options.onSuccess?.(subscriptionResponse.subscriptionId);
+              // Give webhook time to process
+              setTimeout(() => {
+                options.onSuccess?.(subscriptionResponse.subscriptionId);
+              }, 2000);
             } catch (err: any) {
+              console.error('Handler error:', err);
               setError(err.message || 'Subscription activation failed');
               options.onFailure?.(err);
             } finally {
@@ -150,16 +170,27 @@ export const useRazorpay = () => {
               setError('Subscription cancelled by user');
               options.onFailure?.(new Error('Subscription cancelled'));
             },
+            confirm_close: true,
           },
           theme: {
             color: '#10b981',
           },
         };
 
+        console.log('Opening Razorpay with options:', { ...razorpayOptions, key: '***' });
+
         // Open Razorpay checkout for subscription
         const razorpayInstance = new window.Razorpay(razorpayOptions);
+        razorpayInstance.on('payment.failed', function (response: any) {
+          console.error('Payment failed:', response.error);
+          setError(response.error.description || 'Payment failed');
+          setLoading(false);
+          options.onFailure?.(new Error(response.error.description));
+        });
+        
         razorpayInstance.open();
       } catch (err: any) {
+        console.error('Subscription error:', err);
         setError(err.message || 'Failed to initiate subscription');
         setLoading(false);
         options.onFailure?.(err);

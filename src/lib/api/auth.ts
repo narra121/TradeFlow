@@ -64,11 +64,7 @@ export const authApi = {
     
     // Transform response to match AuthResponse interface
     return {
-      user: response.user || {
-        id: '',
-        name: '',
-        email: payload.email
-      },
+      user: response.user,
       token: response.IdToken,
       refreshToken: response.RefreshToken
     } as AuthResponse;
