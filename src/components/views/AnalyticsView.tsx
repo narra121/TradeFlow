@@ -33,24 +33,13 @@ import {
 
 export function AnalyticsView() {
   const dispatch = useAppDispatch();
-  const { trades, loading: tradesLoading } = useAppSelector((state) => state.trades);
-  const { stats, loading: statsLoading } = useAppSelector((state) => state.stats);
-  const { 
-    hourlyStats, 
-    dailyWinRate, 
-    symbolDistribution, 
-    strategyDistribution,
-    loading: analyticsLoading 
-  } = useAppSelector((state) => state.analytics);
+  const { trades = [], loading: tradesLoading } = useAppSelector((state) => state.trades);
   const { selectedAccountId } = useAppSelector((state) => state.accounts);
   
   useEffect(() => {
     dispatch(fetchTrades({ accountId: selectedAccountId }));
-    dispatch(fetchHourlyStats(selectedAccountId));
-    dispatch(fetchDailyWinRate(selectedAccountId));
-    dispatch(fetchSymbolDistribution(selectedAccountId));
-    dispatch(fetchStrategyDistribution(selectedAccountId));
   }, [dispatch, selectedAccountId]);
+  
   const [datePreset, setDatePreset] = useState<DatePreset>(30);
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
 
@@ -64,33 +53,33 @@ export function AnalyticsView() {
 
   const closedTrades = filteredTrades.filter(t => t.status === 'CLOSED');
   
-  // Symbol distribution
-  const symbolDistribution = closedTrades.reduce((acc, trade) => {
+  // Symbol distribution (computed locally from filtered trades)
+  const localSymbolDistribution = closedTrades.reduce((acc, trade) => {
     acc[trade.symbol] = (acc[trade.symbol] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const pieData = Object.entries(symbolDistribution).map(([name, value]) => ({
+  const pieData = Object.entries(localSymbolDistribution).map(([name, value]) => ({
     name,
     value,
   }));
 
-  // Strategy distribution
-  const strategyDistribution = closedTrades.reduce((acc, trade) => {
+  // Strategy distribution (computed locally from filtered trades)
+  const localStrategyDistribution = closedTrades.reduce((acc, trade) => {
     const strategy = trade.strategy || 'Unknown';
     acc[strategy] = (acc[strategy] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const strategyPieData = Object.entries(strategyDistribution).map(([name, value]) => ({
+  const strategyPieData = Object.entries(localStrategyDistribution).map(([name, value]) => ({
     name,
     value,
   }));
 
   const COLORS = ['hsl(160, 84%, 39%)', 'hsl(265, 89%, 62%)', 'hsl(45, 93%, 47%)', 'hsl(200, 95%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(320, 70%, 50%)'];
 
-  // Hourly win rate calculation (all 24 hours)
-  const hourlyStats = Array.from({ length: 24 }, (_, hour) => {
+  // Hourly win rate calculation (all 24 hours) - computed locally from filtered trades
+  const localHourlyStats = Array.from({ length: 24 }, (_, hour) => {
     const tradesInHour = closedTrades.filter(t => {
       const entryHour = t.entryDate.getHours();
       return entryHour === hour;
@@ -104,9 +93,9 @@ export function AnalyticsView() {
     };
   });
 
-  // Daily win rate calculation (by day of week)
+  // Daily win rate calculation (by day of week) - computed locally from filtered trades
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const dailyWinRate = dayNames.map((day, index) => {
+  const localDailyWinRate = dayNames.map((day, index) => {
     const tradesOnDay = closedTrades.filter(t => t.entryDate.getDay() === index);
     const wins = tradesOnDay.filter(t => (t.pnl || 0) > 0).length;
     const total = tradesOnDay.length;
@@ -162,6 +151,48 @@ export function AnalyticsView() {
     return `${(hours / 24).toFixed(1)}d`;
   };
 
+  // Calculate stats locally from filtered trades
+  const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
+  const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
+  const totalPnl = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+  const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0;
+  const totalWins = winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+  const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0));
+  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
+  const avgWin = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
+  const avgLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
+  const bestTrade = closedTrades.length > 0 ? Math.max(...closedTrades.map(t => t.pnl || 0)) : 0;
+  const worstTrade = closedTrades.length > 0 ? Math.min(...closedTrades.map(t => t.pnl || 0)) : 0;
+  const avgRiskReward = losingTrades.length > 0 && avgLoss > 0 ? avgWin / avgLoss : 0;
+  
+  // Calculate consecutive wins/losses
+  let consecutiveWins = 0;
+  let consecutiveLosses = 0;
+  let currentWinStreak = 0;
+  let currentLossStreak = 0;
+  closedTrades.forEach(trade => {
+    if ((trade.pnl || 0) > 0) {
+      currentWinStreak++;
+      currentLossStreak = 0;
+      consecutiveWins = Math.max(consecutiveWins, currentWinStreak);
+    } else if ((trade.pnl || 0) < 0) {
+      currentLossStreak++;
+      currentWinStreak = 0;
+      consecutiveLosses = Math.max(consecutiveLosses, currentLossStreak);
+    }
+  });
+  
+  // Calculate max drawdown (simplified)
+  let maxDrawdown = 0;
+  let peak = 0;
+  let runningPnl = 0;
+  closedTrades.forEach(trade => {
+    runningPnl += (trade.pnl || 0);
+    if (runningPnl > peak) peak = runningPnl;
+    const drawdown = peak > 0 ? ((peak - runningPnl) / peak) * 100 : 0;
+    if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+  });
+
   // Daily P&L for bar chart
   const dailyPnL = [
     { day: 'Mon', pnl: 450 },
@@ -173,18 +204,18 @@ export function AnalyticsView() {
 
   // Performance metrics
   const metrics = [
-    { label: 'Total P&L', value: `$${stats.totalPnl.toFixed(2)}`, isPositive: stats.totalPnl >= 0 },
-    { label: 'Win Rate', value: `${stats.winRate.toFixed(1)}%`, isPositive: stats.winRate >= 50 },
-    { label: 'Profit Factor', value: stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2), isPositive: stats.profitFactor >= 1 },
-    { label: 'Average Win', value: `$${stats.avgWin.toFixed(2)}`, isPositive: true },
-    { label: 'Average Loss', value: `$${stats.avgLoss.toFixed(2)}`, isPositive: false },
-    { label: 'Max Drawdown', value: `${stats.maxDrawdown}%`, isPositive: false },
-    { label: 'Best Trade', value: `$${stats.bestTrade.toFixed(2)}`, isPositive: true },
-    { label: 'Worst Trade', value: `$${stats.worstTrade.toFixed(2)}`, isPositive: false },
-    { label: 'Avg R:R', value: stats.avgRiskReward.toFixed(2), isPositive: stats.avgRiskReward >= 1.5 },
-    { label: 'Total Trades', value: stats.totalTrades.toString(), isPositive: true },
-    { label: 'Win Streak', value: stats.consecutiveWins.toString(), isPositive: true },
-    { label: 'Loss Streak', value: stats.consecutiveLosses.toString(), isPositive: false },
+    { label: 'Total P&L', value: `$${totalPnl.toFixed(2)}`, isPositive: totalPnl >= 0 },
+    { label: 'Win Rate', value: `${winRate.toFixed(1)}%`, isPositive: winRate >= 50 },
+    { label: 'Profit Factor', value: profitFactor === Infinity ? '∞' : profitFactor.toFixed(2), isPositive: profitFactor >= 1 },
+    { label: 'Average Win', value: `$${avgWin.toFixed(2)}`, isPositive: true },
+    { label: 'Average Loss', value: `$${avgLoss.toFixed(2)}`, isPositive: false },
+    { label: 'Max Drawdown', value: `${maxDrawdown.toFixed(1)}%`, isPositive: false },
+    { label: 'Best Trade', value: `$${bestTrade.toFixed(2)}`, isPositive: true },
+    { label: 'Worst Trade', value: `$${worstTrade.toFixed(2)}`, isPositive: false },
+    { label: 'Avg R:R', value: avgRiskReward.toFixed(2), isPositive: avgRiskReward >= 1.5 },
+    { label: 'Total Trades', value: closedTrades.length.toString(), isPositive: true },
+    { label: 'Win Streak', value: consecutiveWins.toString(), isPositive: true },
+    { label: 'Loss Streak', value: consecutiveLosses.toString(), isPositive: false },
   ];
 
   return (
@@ -278,7 +309,7 @@ export function AnalyticsView() {
           </div>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hourlyStats} margin={{ top: 10, right: 5, left: 0, bottom: 0 }} barCategoryGap="8%">
+              <BarChart data={localHourlyStats} margin={{ top: 10, right: 5, left: 0, bottom: 0 }} barCategoryGap="8%">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
                 <XAxis 
                   dataKey="hour" 
@@ -326,7 +357,7 @@ export function AnalyticsView() {
           </div>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyWinRate} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+              <BarChart data={localDailyWinRate} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" horizontal={false} />
                 <XAxis 
                   type="number"

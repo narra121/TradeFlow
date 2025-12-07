@@ -1,98 +1,46 @@
-import { useState, useCallback } from 'react';
+import { useEffect } from 'react';
 import { TradingAccount, AccountStatus, AccountType } from '@/types/trade';
-
-const defaultAccounts: TradingAccount[] = [
-  {
-    id: '1',
-    name: 'FTMO Challenge',
-    broker: 'FTMO',
-    type: 'prop_challenge',
-    status: 'active',
-    balance: 102500,
-    initialBalance: 100000,
-    currency: 'USD',
-    createdAt: new Date('2024-11-01'),
-    notes: '$100k challenge account',
-  },
-  {
-    id: '2',
-    name: 'Personal Account',
-    broker: 'IC Markets',
-    type: 'personal',
-    status: 'active',
-    balance: 5200,
-    initialBalance: 5000,
-    currency: 'USD',
-    createdAt: new Date('2024-06-15'),
-  },
-];
-
-let globalAccounts = [...defaultAccounts];
-let globalSelectedAccountId: string | null = null;
-let listeners: (() => void)[] = [];
-
-const notifyListeners = () => {
-  listeners.forEach(listener => listener());
-};
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { 
+  fetchAccounts, 
+  createAccount, 
+  updateAccount as updateAccountAction, 
+  deleteAccount as deleteAccountAction,
+  updateAccountStatus as updateAccountStatusAction,
+  setSelectedAccount as setSelectedAccountAction
+} from '@/store/slices/accountsSlice';
 
 export function useAccounts() {
-  const [accounts, setAccounts] = useState<TradingAccount[]>(globalAccounts);
-  const [selectedAccountId, setSelectedAccountIdState] = useState<string | null>(globalSelectedAccountId);
+  const dispatch = useAppDispatch();
+  const { accounts, selectedAccountId, loading, error } = useAppSelector((state) => state.accounts);
 
-  useState(() => {
-    const listener = () => {
-      setAccounts([...globalAccounts]);
-      setSelectedAccountIdState(globalSelectedAccountId);
-    };
-    listeners.push(listener);
-    return () => {
-      listeners = listeners.filter(l => l !== listener);
-    };
-  });
-
-  const addAccount = useCallback((account: Omit<TradingAccount, 'id' | 'createdAt'>) => {
-    const newAccount: TradingAccount = {
-      ...account,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-    };
-    globalAccounts = [...globalAccounts, newAccount];
-    setAccounts(globalAccounts);
-    notifyListeners();
-    return newAccount;
-  }, []);
-
-  const updateAccount = useCallback((id: string, updates: Partial<TradingAccount>) => {
-    globalAccounts = globalAccounts.map(acc => 
-      acc.id === id ? { ...acc, ...updates } : acc
-    );
-    setAccounts(globalAccounts);
-    notifyListeners();
-  }, []);
-
-  const updateAccountStatus = useCallback((id: string, status: AccountStatus) => {
-    globalAccounts = globalAccounts.map(acc => 
-      acc.id === id ? { ...acc, status } : acc
-    );
-    setAccounts(globalAccounts);
-    notifyListeners();
-  }, []);
-
-  const deleteAccount = useCallback((id: string) => {
-    globalAccounts = globalAccounts.filter(acc => acc.id !== id);
-    if (globalSelectedAccountId === id) {
-      globalSelectedAccountId = null;
+  // Fetch accounts on mount if not already loaded
+  useEffect(() => {
+    if (accounts.length === 0 && !loading) {
+      dispatch(fetchAccounts());
     }
-    setAccounts(globalAccounts);
-    setSelectedAccountIdState(globalSelectedAccountId);
-    notifyListeners();
-  }, []);
+  }, [dispatch, accounts.length, loading]);
 
-  const setSelectedAccountId = useCallback((id: string | null) => {
-    globalSelectedAccountId = id;
-    setSelectedAccountIdState(id);
-    notifyListeners();
-  }, []);
+  const addAccount = async (account: Omit<TradingAccount, 'id' | 'createdAt'>) => {
+    const result = await dispatch(createAccount(account)).unwrap();
+    return result;
+  };
+
+  const updateAccount = async (id: string, updates: Partial<Omit<TradingAccount, 'id' | 'createdAt'>>) => {
+    await dispatch(updateAccountAction({ id, payload: updates })).unwrap();
+  };
+
+  const updateAccountStatus = async (id: string, status: AccountStatus) => {
+    await dispatch(updateAccountStatusAction({ id, status })).unwrap();
+  };
+
+  const deleteAccount = async (id: string) => {
+    await dispatch(deleteAccountAction(id)).unwrap();
+  };
+
+  const setSelectedAccountId = (id: string | null) => {
+    dispatch(setSelectedAccountAction(id));
+  };
 
   const selectedAccount = accounts.find(acc => acc.id === selectedAccountId) || null;
 

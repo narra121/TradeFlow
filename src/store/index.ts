@@ -6,6 +6,7 @@ import statsReducer from './slices/statsSlice';
 import analyticsReducer from './slices/analyticsSlice';
 import goalsRulesReducer from './slices/goalsRulesSlice';
 import userReducer from './slices/userSlice';
+import { toastMiddleware } from './middleware/toastMiddleware';
 
 export const store = configureStore({
   reducer: {
@@ -27,7 +28,7 @@ export const store = configureStore({
         // Ignore these paths in the state
         ignoredPaths: ['items.dates'],
       },
-    }),
+    }).concat(toastMiddleware),
   devTools: import.meta.env.MODE !== 'production',
 });
 

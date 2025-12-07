@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,14 +18,30 @@ interface AddAccountModalProps {
 }
 
 export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount, isLoading }: AddAccountModalProps) {
-  const [name, setName] = useState(editAccount?.name || '');
-  const [broker, setBroker] = useState(editAccount?.broker || '');
-  const [type, setType] = useState<AccountType>(editAccount?.type || 'prop_challenge');
-  const [status, setStatus] = useState<AccountStatus>(editAccount?.status || 'active');
-  const [initialBalance, setInitialBalance] = useState(editAccount?.initialBalance?.toString() || '');
-  const [balance, setBalance] = useState(editAccount?.balance?.toString() || '');
-  const [currency, setCurrency] = useState(editAccount?.currency || 'USD');
-  const [notes, setNotes] = useState(editAccount?.notes || '');
+  const [name, setName] = useState('');
+  const [broker, setBroker] = useState('');
+  const [type, setType] = useState<AccountType>('prop_challenge');
+  const [status, setStatus] = useState<AccountStatus>('active');
+  const [initialBalance, setInitialBalance] = useState('');
+  const [balance, setBalance] = useState('');
+  const [currency, setCurrency] = useState('USD');
+  const [notes, setNotes] = useState('');
+
+  // Populate form when editAccount changes
+  useEffect(() => {
+    if (editAccount) {
+      setName(editAccount.name);
+      setBroker(editAccount.broker);
+      setType(editAccount.type);
+      setStatus(editAccount.status);
+      setInitialBalance(editAccount.initialBalance?.toString() || '');
+      setBalance(editAccount.balance?.toString() || '');
+      setCurrency(editAccount.currency || 'USD');
+      setNotes(editAccount.notes || '');
+    } else {
+      resetForm();
+    }
+  }, [editAccount, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,9 +56,6 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
       currency,
       notes: notes.trim() || undefined,
     });
-
-    resetForm();
-    onOpenChange(false);
   };
 
   const resetForm = () => {

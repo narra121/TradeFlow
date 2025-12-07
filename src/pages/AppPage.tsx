@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardView } from '@/components/views/DashboardView';
 import { TradeLogView } from '@/components/views/TradeLogView';
@@ -9,53 +9,39 @@ import { SettingsView } from '@/components/views/SettingsView';
 import { AccountsView } from '@/components/views/AccountsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
-import { mockTrades, calculatePortfolioStats } from '@/data/mockTrades';
-import { Trade } from '@/types/trade';
-import { useAccounts } from '@/hooks/useAccounts';
+import { useAppDispatch } from '@/store/hooks';
+import { createTrade } from '@/store/slices/tradesSlice';
 import { cn } from '@/lib/utils';
+import type { Trade } from '@/types/trade';
 
 export function AppPage() {
+  const dispatch = useAppDispatch();
   const [activeView, setActiveView] = useState('dashboard');
-  const [trades, setTrades] = useState<Trade[]>(mockTrades);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
   const [isImportTradesOpen, setIsImportTradesOpen] = useState(false);
-  
-  const { selectedAccountId } = useAccounts();
 
-  // Filter trades by selected account
-  const filteredTrades = useMemo(() => {
-    if (!selectedAccountId) return trades;
-    return trades.filter(t => t.accountIds?.includes(selectedAccountId));
-  }, [trades, selectedAccountId]);
-
-  const stats = useMemo(() => calculatePortfolioStats(filteredTrades), [filteredTrades]);
-
-  const handleAddTrade = (newTrade: Omit<Trade, 'id'>) => {
-    const trade: Trade = {
-      ...newTrade,
-      id: Date.now().toString(),
-    };
-    setTrades(prev => [trade, ...prev]);
+  const handleAddTrade = async (newTrade: Omit<Trade, 'id'>) => {
+    await dispatch(createTrade(newTrade as unknown as any)).unwrap();
+    setIsAddTradeOpen(false);
   };
 
-  const handleImportTrades = (newTrades: Omit<Trade, 'id'>[]) => {
-    const tradesWithIds: Trade[] = newTrades.map((trade, index) => ({
-      ...trade,
-      id: `${Date.now()}-${index}`,
-    }));
-    setTrades(prev => [...tradesWithIds, ...prev]);
+  const handleImportTrades = async (newTrades: Omit<Trade, 'id'>[]) => {
+    for (const trade of newTrades) {
+      await dispatch(createTrade(trade as unknown as any)).unwrap();
+    }
+    setIsImportTradesOpen(false);
   };
 
   const renderView = () => {
     switch (activeView) {
       case 'dashboard':
-        return <DashboardView trades={filteredTrades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
+        return <DashboardView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
       case 'accounts':
         return <AccountsView />;
       case 'tradelog':
-        return <TradeLogView trades={filteredTrades} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
+        return <TradeLogView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
       case 'analytics':
-        return <AnalyticsView trades={filteredTrades} stats={stats} />;
+        return <AnalyticsView />;
       case 'goals':
         return <GoalsView />;
       case 'profile':
@@ -63,7 +49,7 @@ export function AppPage() {
       case 'settings':
         return <SettingsView />;
       default:
-        return <DashboardView trades={filteredTrades} stats={stats} onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
+        return <DashboardView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
     }
   };
 

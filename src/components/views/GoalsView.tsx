@@ -15,6 +15,7 @@ import {
   deleteRule as deleteRuleAction,
   toggleRule as toggleRuleAction
 } from '@/store/slices/goalsRulesSlice';
+import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/goalsRules';
 
 interface Goal {
   id: string;
@@ -77,7 +78,11 @@ const defaultGoals: Goal[] = [
 
 export function GoalsView() {
   const dispatch = useAppDispatch();
-  const { goals, rules, loading } = useAppSelector((state) => state.goalsRules);
+  const { goals: reduxGoals = [], rules: reduxRules = [], loading } = useAppSelector((state) => state.goalsRules);
+  
+  // Use defaultGoals as fallback if Redux goals are empty
+  const goals = reduxGoals && reduxGoals.length > 0 ? reduxGoals : defaultGoals;
+  const rules = reduxRules || [];
   
   useEffect(() => {
     dispatch(fetchGoals());
@@ -104,7 +109,8 @@ export function GoalsView() {
     : goals.filter(g => g.period === periodFilter);
 
   const handleEditStart = (goal: any) => {
-    setEditingGoalId(goal.id);
+    const goalId = goal.id || goal.goalId;
+    setEditingGoalId(goalId);
     setEditValue(goal.target.toString());
   };
 
@@ -112,7 +118,7 @@ export function GoalsView() {
     const newTarget = parseFloat(editValue);
     if (!isNaN(newTarget) && newTarget > 0) {
       setSavingGoalId(goalId);
-      await dispatch(updateGoalAction({ id: goalId, target: newTarget })).unwrap();
+      await dispatch(updateGoalAction({ id: goalId, payload: { target: newTarget } })).unwrap();
       setSavingGoalId(null);
     }
     setEditingGoalId(null);
@@ -133,7 +139,7 @@ export function GoalsView() {
   const handleRuleEditSave = async (ruleId: string) => {
     if (editRuleValue.trim()) {
       setSavingRuleId(ruleId);
-      await dispatch(updateRuleAction({ id: ruleId, rule: editRuleValue })).unwrap();
+      await dispatch(updateRuleAction({ id: ruleId, payload: { rule: editRuleValue } })).unwrap();
       setSavingRuleId(null);
     }
     setEditingRuleId(null);
@@ -188,18 +194,19 @@ export function GoalsView() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredGoals.map((goal, index) => {
           const Icon = goal.icon;
-          const isInverse = goal.id === '3';
+          const goalId = (goal as any).id || (goal as any).goalId;
+          const isInverse = goalId === '3';
           const progress = isInverse 
             ? Math.max(0, ((goal.target - goal.current + goal.target) / goal.target) * 50)
             : Math.min((goal.current / goal.target) * 100, 100);
           const isCompleted = isInverse 
             ? goal.current <= goal.target 
             : goal.current >= goal.target;
-          const isEditing = editingGoalId === goal.id;
+          const isEditing = editingGoalId === goalId;
 
           return (
             <div 
-              key={goal.id}
+              key={goalId}
               className="glass-card p-5 animate-fade-in group"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
@@ -265,7 +272,7 @@ export function GoalsView() {
                           className="w-20 h-7 text-lg font-mono py-0 px-2"
                           autoFocus
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleEditSave(goal.id);
+                            if (e.key === 'Enter') handleEditSave(goalId);
                             if (e.key === 'Escape') handleEditCancel();
                           }}
                         />
@@ -274,10 +281,10 @@ export function GoalsView() {
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() => handleEditSave(goal.id)}
-                          disabled={savingGoalId === goal.id}
+                          onClick={() => handleEditSave(goalId)}
+                          disabled={savingGoalId === goalId}
                         >
-                          {savingGoalId === goal.id ? (
+                          {savingGoalId === goalId ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
                             <Check className="w-3.5 h-3.5 text-success" />
@@ -288,7 +295,7 @@ export function GoalsView() {
                           size="icon"
                           className="h-6 w-6"
                           onClick={handleEditCancel}
-                          disabled={savingGoalId === goal.id}
+                          disabled={savingGoalId === goalId}
                         >
                           <X className="w-3.5 h-3.5 text-destructive" />
                         </Button>
@@ -344,11 +351,12 @@ export function GoalsView() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {rules.map((item, index) => {
-            const isEditingThis = editingRuleId === item.id;
+            const ruleId = (item as any).id || (item as any).ruleId;
+            const isEditingThis = editingRuleId === ruleId;
             
             return (
               <div 
-                key={item.id}
+                key={ruleId}
                 className={cn(
                   "flex items-center gap-3 p-4 rounded-xl transition-colors animate-fade-in group",
                   item.completed 
@@ -359,8 +367,8 @@ export function GoalsView() {
               >
                 <button
                   type="button"
-                  onClick={() => handleToggleRule(item.id)}
-                  disabled={togglingRuleId === item.id}
+                  onClick={() => handleToggleRule(ruleId)}
+                  disabled={togglingRuleId === ruleId}
                   className={cn(
                     "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors",
                     item.completed 
@@ -368,7 +376,7 @@ export function GoalsView() {
                       : "bg-secondary border-2 border-muted-foreground/30 hover:border-primary"
                   )}
                 >
-                  {togglingRuleId === item.id ? (
+                  {togglingRuleId === ruleId ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
                     item.completed && <CheckCircle2 className="w-4 h-4" />
@@ -383,7 +391,7 @@ export function GoalsView() {
                       className="h-8 text-sm"
                       autoFocus
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleRuleEditSave(item.id);
+                        if (e.key === 'Enter') handleRuleEditSave(ruleId);
                         if (e.key === 'Escape') handleRuleEditCancel();
                       }}
                     />
@@ -391,10 +399,10 @@ export function GoalsView() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 shrink-0"
-                      onClick={() => handleRuleEditSave(item.id)}
-                      disabled={savingRuleId === item.id}
+                      onClick={() => handleRuleEditSave(ruleId)}
+                      disabled={savingRuleId === ruleId}
                     >
-                      {savingRuleId === item.id ? (
+                      {savingRuleId === ruleId ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <Check className="w-3.5 h-3.5 text-success" />
@@ -405,7 +413,7 @@ export function GoalsView() {
                       size="icon"
                       className="h-7 w-7 shrink-0"
                       onClick={handleRuleEditCancel}
-                      disabled={savingRuleId === item.id}
+                      disabled={savingRuleId === ruleId}
                     >
                       <X className="w-3.5 h-3.5 text-destructive" />
                     </Button>
@@ -423,8 +431,8 @@ export function GoalsView() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => handleRuleEditStart(item.id, item.rule)}
-                        disabled={deletingRuleId === item.id}
+                        onClick={() => handleRuleEditStart(ruleId, item.rule)}
+                        disabled={deletingRuleId === ruleId}
                       >
                         <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                       </Button>
@@ -432,10 +440,10 @@ export function GoalsView() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => handleDeleteRule(item.id)}
-                        disabled={deletingRuleId === item.id}
+                        onClick={() => handleDeleteRule(ruleId)}
+                        disabled={deletingRuleId === ruleId}
                       >
-                        {deletingRuleId === item.id ? (
+                        {deletingRuleId === ruleId ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <Trash2 className="w-3.5 h-3.5 text-destructive" />

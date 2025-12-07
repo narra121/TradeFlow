@@ -32,7 +32,7 @@ interface TradesViewProps {
 
 export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
   const dispatch = useAppDispatch();
-  const { trades, loading } = useAppSelector((state) => state.trades);
+  const { trades = [], loading } = useAppSelector((state) => state.trades);
   const { selectedAccountId } = useAppSelector((state) => state.accounts);
   
   useEffect(() => {

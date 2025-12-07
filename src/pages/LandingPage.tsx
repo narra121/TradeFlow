@@ -209,10 +209,10 @@ export function LandingPage() {
             <div className="bg-card p-8">
               <div className="grid grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: 'Total P&L', value: '+$12,637', color: 'text-success' },
+                  { label: 'Total P&L', value: '+₹12,637', color: 'text-success' },
                   { label: 'Win Rate', value: '67.4%', color: 'text-primary' },
                   { label: 'Total Trades', value: '156', color: 'text-foreground' },
-                  { label: 'Best Trade', value: '+$2,450', color: 'text-success' },
+                  { label: 'Best Trade', value: '+₹2,450', color: 'text-success' },
                 ].map((stat, i) => (
                   <div key={i} className="bg-secondary/50 rounded-xl p-4">
                     <div className="text-sm text-muted-foreground mb-1">{stat.label}</div>
@@ -376,7 +376,7 @@ export function LandingPage() {
                     Full Access
                   </div>
                   <h3 className="text-3xl font-bold text-foreground mb-2">
-                    Starting from <span className="text-primary">$1</span>/month
+                    Starting from <span className="text-primary">₹99</span>/month
                   </h3>
                   <p className="text-muted-foreground">
                     Help cover hosting costs and support continued development.

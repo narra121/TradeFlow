@@ -39,7 +39,7 @@ type TabType = 'trades' | 'calendar';
 
 export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) {
   const dispatch = useAppDispatch();
-  const { trades, loading } = useAppSelector((state) => state.trades);
+  const { trades = [], loading } = useAppSelector((state) => state.trades);
   const { selectedAccountId } = useAppSelector((state) => state.accounts);
   
   useEffect(() => {
@@ -64,6 +64,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
   // Filter trades by date range
   const dateFilteredTrades = useMemo(() => {
+    if (!trades) return [];
     const range = getDateRangeFromPreset(datePreset, customRange);
     return trades.filter(trade => {
       const tradeDate = trade.exitDate || trade.entryDate;

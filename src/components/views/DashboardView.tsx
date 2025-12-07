@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Trade, PortfolioStats } from '@/types/trade';
+import { PortfolioStats } from '@/types/trade';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { TradeList } from '@/components/dashboard/TradeList';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
@@ -12,7 +12,6 @@ import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucid
 import { isWithinInterval } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchTrades } from '@/store/slices/tradesSlice';
-import { fetchStats, fetchDailyStats } from '@/store/slices/statsSlice';
 
 interface DashboardViewProps {
   onAddTrade: () => void;
@@ -21,19 +20,19 @@ interface DashboardViewProps {
 
 export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps) {
   const dispatch = useAppDispatch();
-  const { trades, loading: tradesLoading } = useAppSelector((state) => state.trades);
-  const { stats, loading: statsLoading } = useAppSelector((state) => state.stats);
+  const { trades = [], loading: tradesLoading } = useAppSelector((state) => state.trades);
   const { selectedAccountId } = useAppSelector((state) => state.accounts);
   
   useEffect(() => {
     dispatch(fetchTrades({ accountId: selectedAccountId }));
-    dispatch(fetchStats(selectedAccountId));
-    dispatch(fetchDailyStats({ accountId: selectedAccountId }));
+    // Note: Daily stats endpoint not yet implemented in backend
+    // dispatch(fetchDailyStats({ accountId: selectedAccountId }));
   }, [dispatch, selectedAccountId]);
   
   const [datePreset, setDatePreset] = useState<DatePreset>(30);
 
   const filteredTrades = useMemo(() => {
+    if (!trades) return [];
     const range = getDateRangeFromPreset(datePreset);
     return trades.filter(trade => {
       const tradeDate = trade.exitDate || trade.entryDate;
@@ -52,9 +51,37 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     const grossProfit = wins.reduce((sum, t) => sum + (t.pnl || 0), 0);
     const grossLoss = Math.abs(losses.reduce((sum, t) => sum + (t.pnl || 0), 0));
     const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+    const avgRiskReward = avgLoss > 0 ? avgWin / avgLoss : 0;
+    
+    // Calculate consecutive wins/losses
+    let maxConsecutiveWins = 0;
+    let maxConsecutiveLosses = 0;
+    let currentWinStreak = 0;
+    let currentLossStreak = 0;
+    closedTrades.forEach(trade => {
+      if ((trade.pnl || 0) > 0) {
+        currentWinStreak++;
+        currentLossStreak = 0;
+        maxConsecutiveWins = Math.max(maxConsecutiveWins, currentWinStreak);
+      } else if ((trade.pnl || 0) < 0) {
+        currentLossStreak++;
+        currentWinStreak = 0;
+        maxConsecutiveLosses = Math.max(maxConsecutiveLosses, currentLossStreak);
+      }
+    });
+    
+    // Calculate max drawdown
+    let maxDrawdown = 0;
+    let peak = 0;
+    let runningPnl = 0;
+    closedTrades.forEach(trade => {
+      runningPnl += (trade.pnl || 0);
+      if (runningPnl > peak) peak = runningPnl;
+      const drawdown = peak > 0 ? ((peak - runningPnl) / peak) * 100 : 0;
+      if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+    });
     
     return {
-      ...stats,
       totalPnl,
       winRate,
       totalTrades: closedTrades.length,
@@ -63,8 +90,12 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
       profitFactor,
       bestTrade: closedTrades.length > 0 ? Math.max(...closedTrades.map(t => t.pnl || 0)) : 0,
       worstTrade: closedTrades.length > 0 ? Math.min(...closedTrades.map(t => t.pnl || 0)) : 0,
+      maxDrawdown,
+      avgRiskReward,
+      consecutiveWins: maxConsecutiveWins,
+      consecutiveLosses: maxConsecutiveLosses,
     };
-  }, [filteredTrades, stats]);
+  }, [filteredTrades]);
 
   const openTrades = filteredTrades.filter(t => t.status === 'OPEN');
 

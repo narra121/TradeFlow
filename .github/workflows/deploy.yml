@@ -1,0 +1,45 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: 'npm' # Cache npm dependencies for faster builds
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env.production file
+        run: |
+          echo "VITE_API_URL=${{ secrets.VITE_API_URL_PROD }}" >> .env.production
+          echo "VITE_RAZORPAY_KEY_ID=${{ secrets.VITE_RAZORPAY_KEY_ID_PROD }}" >> .env.production
+          echo "VITE_AWS_REGION=${{ secrets.VITE_AWS_REGION }}" >> .env.production
+          echo "VITE_COGNITO_USER_POOL_ID=${{ secrets.VITE_COGNITO_USER_POOL_ID_PROD }}" >> .env.production
+          echo "VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID_PROD }}" >> .env.production
+
+      - name: Build project
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          # Optional: If you're using a custom domain, uncomment:
+          # cname: tradeflow.yourdomain.com

@@ -55,25 +55,36 @@ export const authApi = {
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
     const response: any = await apiClient.post('/auth/login', payload);
     
+    // Backend returns IdToken, AccessToken, RefreshToken (capitalized)
     // Store tokens in localStorage
-    if (response.token) {
-      localStorage.setItem('idToken', response.token);
-      localStorage.setItem('refreshToken', response.refreshToken);
+    if (response.IdToken) {
+      localStorage.setItem('idToken', response.IdToken);
+      localStorage.setItem('refreshToken', response.RefreshToken);
     }
     
-    return response as AuthResponse;
+    // Transform response to match AuthResponse interface
+    return {
+      user: response.user || {
+        id: '',
+        name: '',
+        email: payload.email
+      },
+      token: response.IdToken,
+      refreshToken: response.RefreshToken
+    } as AuthResponse;
   },
 
   // POST /v1/auth/refresh
   refreshToken: async (payload: RefreshTokenPayload): Promise<{ token: string }> => {
     const response: any = await apiClient.post('/auth/refresh', payload);
     
+    // Backend returns IdToken (capitalized)
     // Update token in localStorage
-    if (response.token) {
-      localStorage.setItem('idToken', response.token);
+    if (response.IdToken) {
+      localStorage.setItem('idToken', response.IdToken);
     }
     
-    return response as { token: string };
+    return { token: response.IdToken };
   },
 
   // POST /v1/auth/forgot-password

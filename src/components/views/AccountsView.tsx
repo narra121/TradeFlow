@@ -21,16 +21,12 @@ import {
   updateAccount as updateAccountAction, 
   deleteAccount as deleteAccountAction,
   updateAccountStatus as updateAccountStatusAction,
-  setSelectedAccountId 
+  setSelectedAccount 
 } from '@/store/slices/accountsSlice';
 
 export function AccountsView() {
   const dispatch = useAppDispatch();
-  const { accounts, selectedAccountId, loading } = useAppSelector((state) => state.accounts);
-  
-  useEffect(() => {
-    dispatch(fetchAccounts());
-  }, [dispatch]);
+  const { accounts = [], selectedAccountId, loading } = useAppSelector((state) => state.accounts);
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
@@ -38,12 +34,22 @@ export function AccountsView() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    dispatch(fetchAccounts());
+  }, [dispatch]);
+
   const handleDeleteConfirm = async () => {
     if (deletingAccountId) {
       setIsDeleting(true);
-      await dispatch(deleteAccountAction(deletingAccountId)).unwrap();
-      setDeletingAccountId(null);
-      setIsDeleting(false);
+      try {
+        await dispatch(deleteAccountAction(deletingAccountId)).unwrap();
+        setDeletingAccountId(null);
+      } catch (error: any) {
+        console.error('Failed to delete account:', error);
+        alert(`Failed to delete account: ${error?.message || 'Unknown error'}`);
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -51,11 +57,14 @@ export function AccountsView() {
     setIsSaving(true);
     try {
       if (editingAccount) {
-        await dispatch(updateAccountAction({ id: editingAccount.id, data: account })).unwrap();
+        await dispatch(updateAccountAction({ id: editingAccount.id, payload: account })).unwrap();
         setEditingAccount(null);
       } else {
         await dispatch(createAccount(account)).unwrap();
       }
+      setIsAddModalOpen(false);
+    } catch (error) {
+      console.error('Failed to save account:', error);
     } finally {
       setIsSaving(false);
     }
@@ -117,32 +126,39 @@ export function AccountsView() {
       </div>
 
       {/* Accounts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {accounts.map((account) => (
-          <AccountCard
-            key={account.id}
-            account={account}
-            isSelected={selectedAccountId === account.id}
-            onSelect={() => dispatch(setSelectedAccountId(selectedAccountId === account.id ? null : account.id))}
-            onEdit={() => handleEdit(account)}
-            onDelete={() => setDeletingAccountId(account.id)}
-            onStatusChange={(status) => handleStatusChange(account.id, status)}
-          />
-        ))}
+      {loading && accounts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading accounts...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {accounts.map((account) => (
+            <AccountCard
+              key={account.id}
+              account={account}
+              isSelected={selectedAccountId === account.id}
+              onSelect={() => dispatch(setSelectedAccount(selectedAccountId === account.id ? null : account.id))}
+              onEdit={() => handleEdit(account)}
+              onDelete={() => setDeletingAccountId(account.id)}
+              onStatusChange={(status) => handleStatusChange(account.id, status)}
+            />
+          ))}
 
-        {/* Add Account Card */}
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="glass-card p-6 border-dashed border-2 flex flex-col items-center justify-center gap-3 min-h-[140px] hover:border-primary/50 hover:bg-primary/5 transition-all group"
-        >
-          <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-            <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-          </div>
-          <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-            Add New Account
-          </span>
-        </button>
-      </div>
+          {/* Add Account Card */}
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="glass-card p-6 border-dashed border-2 flex flex-col items-center justify-center gap-3 min-h-[140px] hover:border-primary/50 hover:bg-primary/5 transition-all group"
+          >
+            <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+              <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+            </div>
+            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+              Add New Account
+            </span>
+          </button>
+        </div>
+      )}
 
       <AddAccountModal
         open={isAddModalOpen}
@@ -171,7 +187,10 @@ export function AccountsView() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleDeleteConfirm} 
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteConfirm();
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isDeleting}
             >

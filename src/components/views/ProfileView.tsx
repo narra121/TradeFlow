@@ -25,24 +25,53 @@ import {
   fetchSubscription,
   createSubscription as createSubscriptionAction
 } from '@/store/slices/userSlice';
+import { useRazorpay } from '@/hooks/useRazorpay';
+import { razorpayApi, SubscriptionDetails, PlanResponse } from '@/lib/api';
 
 export function ProfileView() {
   const dispatch = useAppDispatch();
   const { profile, subscription, loading } = useAppSelector((state) => state.user);
+  const { initiateSubscription, loading: paymentLoading, error: paymentError } = useRazorpay();
+  
+  const [availablePlans, setAvailablePlans] = useState<PlanResponse[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
   
   useEffect(() => {
     dispatch(fetchProfile());
     dispatch(fetchSubscription());
+    loadAvailablePlans();
   }, [dispatch]);
+  
+  const loadAvailablePlans = async () => {
+    try {
+      setLoadingPlans(true);
+      const response = await razorpayApi.getPlans();
+      setAvailablePlans(response.plans || []);
+    } catch (error) {
+      console.error('Failed to load plans:', error);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
   
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
   const [customAnnualAmount, setCustomAnnualAmount] = useState('');
-  const [selectedAmount, setSelectedAmount] = useState(1);
-  const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(12);
+  const [selectedAmount, setSelectedAmount] = useState(99);
+  const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(999);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
+  const [managingSubscription, setManagingSubscription] = useState(false);
+  
+  // Get plan ID based on selected amount and billing cycle
+  const getSelectedPlanId = () => {
+    const amount = billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount;
+    const plan = availablePlans.find(p => p.period === billingCycle && p.amount === amount);
+    return plan?.planId || '';
+  };
   
   // Local state for editing
   const [user, setUser] = useState({
@@ -83,15 +112,15 @@ export function ProfileView() {
   }, [subscription]);
 
   const supportTiers = [
-    { amount: 1, label: 'Basic', description: 'Cover hosting costs' },
-    { amount: 3, label: 'Supporter', description: 'Help us grow' },
-    { amount: 5, label: 'Champion', description: 'Fuel new features' },
+    { amount: 99, label: 'Basic', description: 'Cover hosting costs' },
+    { amount: 299, label: 'Supporter', description: 'Help us grow' },
+    { amount: 499, label: 'Champion', description: 'Fuel new features' },
   ];
 
   const annualTiers = [
-    { amount: 12, label: 'Basic', description: 'Cover hosting costs', monthly: 1 },
-    { amount: 36, label: 'Supporter', description: 'Help us grow', monthly: 3 },
-    { amount: 60, label: 'Champion', description: 'Fuel new features', monthly: 5 },
+    { amount: 999, label: 'Basic', description: 'Cover hosting costs', monthly: 99 },
+    { amount: 2999, label: 'Supporter', description: 'Help us grow', monthly: 299 },
+    { amount: 4999, label: 'Champion', description: 'Fuel new features', monthly: 499 },
   ];
 
   const handleSaveProfile = async () => {
@@ -104,15 +133,101 @@ export function ProfileView() {
     }
   };
 
+  // Fetch current subscription on mount
+  useEffect(() => {
+    const fetchSubscriptionDetails = async () => {
+      try {
+        setLoadingSubscription(true);
+        const details = await razorpayApi.getSubscription();
+        setSubscriptionDetails(details);
+      } catch (error) {
+        console.log('No active subscription found');
+      } finally {
+        setLoadingSubscription(false);
+      }
+    };
+
+    fetchSubscriptionDetails();
+  }, []);
+
   const handleSubscribe = async (amount: number, cycle: 'monthly' | 'annual') => {
     setIsSubscribing(true);
     try {
-      await dispatch(createSubscriptionAction({ 
-        amount, 
-        billingCycle: cycle 
-      })).unwrap();
+      // Find plan ID based on amount and cycle
+      const plan = availablePlans.find(p => p.period === cycle && p.amount === amount);
+      
+      if (!plan) {
+        console.error('Plan not found for:', { amount, cycle });
+        alert('Selected plan is not available. Please try another option.');
+        return;
+      }
+
+      await initiateSubscription({
+        planId: plan.planId,
+        name: plan.name,
+        description: plan.description || `${cycle === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ₹${amount}`,
+        onSuccess: async (subscriptionId) => {
+          console.log('Subscription created:', subscriptionId);
+          
+          // Refresh subscription details
+          const details = await razorpayApi.getSubscription();
+          setSubscriptionDetails(details);
+          
+          // Update Redux store
+          await dispatch(createSubscriptionAction({ 
+            amount, 
+            billingCycle: cycle 
+          })).unwrap();
+        },
+        onFailure: (error) => {
+          console.error('Subscription failed:', error);
+        },
+      });
     } finally {
       setIsSubscribing(false);
+    }
+  };
+
+  const handleCancelSubscription = async (immediate = false) => {
+    if (!confirm(`Are you sure you want to cancel your subscription${immediate ? ' immediately' : ' at the end of the billing cycle'}?`)) {
+      return;
+    }
+
+    setManagingSubscription(true);
+    try {
+      await razorpayApi.cancelSubscription(!immediate);
+      const details = await razorpayApi.getSubscription();
+      setSubscriptionDetails(details);
+    } catch (error) {
+      console.error('Failed to cancel subscription:', error);
+    } finally {
+      setManagingSubscription(false);
+    }
+  };
+
+  const handlePauseSubscription = async () => {
+    setManagingSubscription(true);
+    try {
+      await razorpayApi.pauseSubscription('now');
+      const details = await razorpayApi.getSubscription();
+      setSubscriptionDetails(details);
+    } catch (error) {
+      console.error('Failed to pause subscription:', error);
+    } finally {
+      setManagingSubscription(false);
+    }
+  };
+
+  const handleResumeSubscription = async () => {
+    setManagingSubscription(true);
+    try {
+      await razorpayApi.resumeSubscription('now');
+      const details = await razorpayApi.getSubscription();
+      setSubscriptionDetails(details);
+    } catch (error) {
+      console.error('Failed to resume subscription:', error);
+    } finally {
+      setManagingSubscription(false);
     }
   };
 
@@ -232,23 +347,94 @@ export function ProfileView() {
             <CardDescription>Your current plan</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-lg font-semibold text-foreground">
-                  ${user.subscription.amount}/month
-                </span>
-                <Badge variant="default" className="bg-green-500/20 text-green-400 border-green-500/30">
-                  {user.subscription.status}
-                </Badge>
+            {loadingSubscription ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground">
-                Next billing: {user.subscription.nextBilling}
-              </p>
-            </div>
+            ) : subscriptionDetails ? (
+              <>
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-lg font-semibold text-foreground">
+                      Active Subscription
+                    </span>
+                    <Badge 
+                      variant="default" 
+                      className={
+                        subscriptionDetails.status === 'active' 
+                          ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          : subscriptionDetails.status === 'paused'
+                          ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                          : 'bg-red-500/20 text-red-400 border-red-500/30'
+                      }
+                    >
+                      {subscriptionDetails.status}
+                    </Badge>
+                  </div>
+                  {subscriptionDetails.currentEnd && (
+                    <p className="text-sm text-muted-foreground">
+                      Next billing: {new Date(subscriptionDetails.currentEnd).toLocaleDateString()}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Paid cycles: {subscriptionDetails.paidCount}
+                    {subscriptionDetails.remainingCount && ` • Remaining: ${subscriptionDetails.remainingCount}`}
+                  </p>
+                </div>
 
-            <div className="text-sm text-muted-foreground">
-              <p>Thank you for supporting TradeFlow! Your contribution helps keep the platform running.</p>
-            </div>
+                {/* Subscription Management Buttons */}
+                {subscriptionDetails.status === 'active' && (
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePauseSubscription()}
+                      disabled={managingSubscription}
+                      className="w-full"
+                    >
+                      {managingSubscription ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                      ) : (
+                        'Pause Subscription'
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCancelSubscription(false)}
+                      disabled={managingSubscription}
+                      className="w-full text-destructive hover:text-destructive"
+                    >
+                      Cancel at End of Cycle
+                    </Button>
+                  </div>
+                )}
+
+                {subscriptionDetails.status === 'paused' && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleResumeSubscription()}
+                    disabled={managingSubscription}
+                    className="w-full"
+                  >
+                    {managingSubscription ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                    ) : (
+                      'Resume Subscription'
+                    )}
+                  </Button>
+                )}
+
+                <div className="text-sm text-muted-foreground">
+                  <p>Thank you for supporting TradeFlow! Payments are automatically processed on your billing date.</p>
+                </div>
+              </>
+            ) : (
+              <div className="text-center p-4 text-muted-foreground">
+                <p>No active subscription. Choose a plan below to get started!</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -299,7 +485,9 @@ export function ProfileView() {
           {billingCycle === 'monthly' && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {supportTiers.map((tier) => (
+                {supportTiers
+                  .filter(tier => availablePlans.some(p => p.period === 'monthly' && p.amount === tier.amount))
+                  .map((tier) => (
                   <button
                     key={tier.amount}
                     onClick={() => setSelectedAmount(tier.amount)}
@@ -310,7 +498,7 @@ export function ProfileView() {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-bold text-foreground">${tier.amount}</span>
+                      <span className="text-2xl font-bold text-foreground">₹{tier.amount}</span>
                       <span className="text-sm text-muted-foreground">/month</span>
                     </div>
                     <h3 className="font-semibold text-foreground mb-1">{tier.label}</h3>
@@ -332,15 +520,15 @@ export function ProfileView() {
                   <span className="text-sm text-foreground font-medium">Custom amount:</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">$</span>
+                  <span className="text-muted-foreground">₹</span>
                   <Input
                     type="number"
-                    min="1"
-                    placeholder="Min $1"
+                    min="99"
+                    placeholder="Min ₹99"
                     value={customAmount}
                     onChange={(e) => {
                       setCustomAmount(e.target.value);
-                      if (e.target.value && Number(e.target.value) >= 1) {
+                      if (e.target.value && Number(e.target.value) >= 99) {
                         setSelectedAmount(Number(e.target.value));
                       }
                     }}
@@ -356,7 +544,9 @@ export function ProfileView() {
           {billingCycle === 'annual' && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {annualTiers.map((tier) => (
+                {annualTiers
+                  .filter(tier => availablePlans.some(p => p.period === 'annual' && p.amount === tier.amount))
+                  .map((tier) => (
                   <button
                     key={tier.amount}
                     onClick={() => setSelectedAnnualAmount(tier.amount)}
@@ -367,12 +557,12 @@ export function ProfileView() {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-bold text-foreground">${tier.amount}</span>
+                      <span className="text-2xl font-bold text-foreground">₹{tier.amount}</span>
                       <span className="text-sm text-muted-foreground">/year</span>
                     </div>
                     <h3 className="font-semibold text-foreground mb-1">{tier.label}</h3>
                     <p className="text-sm text-muted-foreground">{tier.description}</p>
-                    <p className="text-xs text-primary mt-1">(${tier.monthly}/month)</p>
+                    <p className="text-xs text-primary mt-1">(₹{tier.monthly}/month)</p>
                     {selectedAnnualAmount === tier.amount && (
                       <div className="mt-3 flex items-center gap-1 text-primary text-sm">
                         <Check className="w-4 h-4" />
@@ -390,15 +580,15 @@ export function ProfileView() {
                   <span className="text-sm text-foreground font-medium">Custom amount:</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">$</span>
+                  <span className="text-muted-foreground">₹</span>
                   <Input
                     type="number"
-                    min="12"
-                    placeholder="Min $12"
+                    min="999"
+                    placeholder="Min ₹999"
                     value={customAnnualAmount}
                     onChange={(e) => {
                       setCustomAnnualAmount(e.target.value);
-                      if (e.target.value && Number(e.target.value) >= 12) {
+                      if (e.target.value && Number(e.target.value) >= 999) {
                         setSelectedAnnualAmount(Number(e.target.value));
                       }
                     }}
@@ -413,7 +603,7 @@ export function ProfileView() {
           {/* Info Box */}
           <div className="p-4 rounded-lg bg-muted/30 border border-border/50 mb-6">
             <p className="text-sm text-muted-foreground text-center">
-              <span className="text-foreground font-medium">Why {billingCycle === 'monthly' ? '$1' : '$12'} minimum?</span> This small amount helps us cover 
+              <span className="text-foreground font-medium">Why {billingCycle === 'monthly' ? '₹99' : '₹999'} minimum?</span> This small amount helps us cover 
               server hosting, database costs, and ongoing maintenance. Every contribution, big or small, 
               directly supports the continued development of TradeFlow. No hidden fees, no locked features — 
               just transparent support for a tool we all love.
@@ -439,7 +629,7 @@ export function ProfileView() {
               ) : (
                 <>
                   <Heart className="w-4 h-4 mr-2" />
-                  Subscribe for ${billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount}/{billingCycle === 'monthly' ? 'month' : 'year'}
+                  Subscribe for ₹{billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount}/{billingCycle === 'monthly' ? 'month' : 'year'}
                 </>
               )}
             </Button>
