@@ -1,6 +1,6 @@
 import * as React from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,7 +9,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
 
 interface DateTimePickerProps {
   value: string;
@@ -31,57 +30,53 @@ export function DateTimePicker({
   // Parse the datetime-local string to Date
   const dateValue = value ? new Date(value) : undefined;
   
-  // Get time string from value
-  const timeValue = dateValue
-    ? `${String(dateValue.getHours()).padStart(2, "0")}:${String(dateValue.getMinutes()).padStart(2, "0")}`
-    : "";
+  // Get hours and minutes
+  const hours = dateValue?.getHours() ?? 12;
+  const minutes = dateValue?.getMinutes() ?? 0;
+
+  const formatDateTimeString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hour = String(date.getHours()).padStart(2, "0");
+    const minute = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+  };
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       // Preserve existing time or use current time
-      const hours = dateValue?.getHours() ?? new Date().getHours();
-      const minutes = dateValue?.getMinutes() ?? new Date().getMinutes();
-      date.setHours(hours, minutes);
-      
-      // Format as datetime-local string
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      const hour = String(date.getHours()).padStart(2, "0");
-      const minute = String(date.getMinutes()).padStart(2, "0");
-      
-      onChange(`${year}-${month}-${day}T${hour}:${minute}`);
+      const h = dateValue?.getHours() ?? new Date().getHours();
+      const m = dateValue?.getMinutes() ?? new Date().getMinutes();
+      date.setHours(h, m);
+      onChange(formatDateTimeString(date));
     }
   };
 
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = e.target.value;
-    if (time && dateValue) {
-      const [hours, minutes] = time.split(":").map(Number);
-      const newDate = new Date(dateValue);
-      newDate.setHours(hours, minutes);
-      
-      const year = newDate.getFullYear();
-      const month = String(newDate.getMonth() + 1).padStart(2, "0");
-      const day = String(newDate.getDate()).padStart(2, "0");
-      const hour = String(newDate.getHours()).padStart(2, "0");
-      const minute = String(newDate.getMinutes()).padStart(2, "0");
-      
-      onChange(`${year}-${month}-${day}T${hour}:${minute}`);
-    } else if (time && !dateValue) {
-      // If no date selected yet, use today
-      const today = new Date();
-      const [hours, minutes] = time.split(":").map(Number);
-      today.setHours(hours, minutes);
-      
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, "0");
-      const day = String(today.getDate()).padStart(2, "0");
-      const hour = String(today.getHours()).padStart(2, "0");
-      const minute = String(today.getMinutes()).padStart(2, "0");
-      
-      onChange(`${year}-${month}-${day}T${hour}:${minute}`);
-    }
+  const updateTime = (newHours: number, newMinutes: number) => {
+    const date = dateValue ? new Date(dateValue) : new Date();
+    date.setHours(newHours, newMinutes);
+    onChange(formatDateTimeString(date));
+  };
+
+  const incrementHour = () => {
+    const newHours = (hours + 1) % 24;
+    updateTime(newHours, minutes);
+  };
+
+  const decrementHour = () => {
+    const newHours = (hours - 1 + 24) % 24;
+    updateTime(newHours, minutes);
+  };
+
+  const incrementMinute = () => {
+    const newMinutes = (minutes + 1) % 60;
+    updateTime(hours, newMinutes);
+  };
+
+  const decrementMinute = () => {
+    const newMinutes = (minutes - 1 + 60) % 60;
+    updateTime(hours, newMinutes);
   };
 
   return (
@@ -112,15 +107,60 @@ export function DateTimePicker({
           className="p-3 pointer-events-auto"
         />
         <div className="border-t border-border p-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-4">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <Input
-              type="time"
-              value={timeValue}
-              onChange={handleTimeChange}
-              className="flex-1"
-              required={required}
-            />
+            
+            {/* Hours */}
+            <div className="flex flex-col items-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={incrementHour}
+              >
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+              <div className="w-10 h-10 flex items-center justify-center bg-secondary rounded-md font-mono text-lg font-semibold">
+                {String(hours).padStart(2, "0")}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={decrementHour}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <span className="text-xl font-semibold text-muted-foreground">:</span>
+
+            {/* Minutes */}
+            <div className="flex flex-col items-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={incrementMinute}
+              >
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+              <div className="w-10 h-10 flex items-center justify-center bg-secondary rounded-md font-mono text-lg font-semibold">
+                {String(minutes).padStart(2, "0")}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={decrementMinute}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </PopoverContent>
