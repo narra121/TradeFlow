@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { tradesApi } from '@/lib/api/trades';
 import { 
   Table, 
   TableBody, 
@@ -139,54 +140,35 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
 
     setIsProcessing(true);
     
-    // Simulate API call - replace with actual AI extraction later
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Extract base64 data from uploaded images (max 3)
+      const imageData = uploadedImages.slice(0, 3).map(img => img.url);
+      
+      // Call backend API to extract trades from all images
+      const response = await tradesApi.extractTrades(imageData);
+      
+      // Transform API response to ImportedTrade format
+      const extracted: ImportedTrade[] = response.items.map((trade: any, index: number) => ({
+        id: (Date.now() + index).toString(),
+        symbol: trade.symbol || '',
+        direction: trade.side === 'BUY' ? 'LONG' : trade.side === 'SELL' ? 'SHORT' : 'LONG',
+        entryPrice: parseFloat(trade.entryPrice) || 0,
+        exitPrice: parseFloat(trade.exitPrice) || 0,
+        size: parseFloat(trade.quantity) || 0,
+        pnl: parseFloat(trade.pnl) || 0,
+        entryDate: trade.openDate ? new Date(trade.openDate) : new Date(),
+        exitDate: trade.closeDate ? new Date(trade.closeDate) : new Date(),
+        isEditing: false,
+        isSelected: false,
+      }));
 
-    // Mock extracted trades for UI demo
-    const mockExtracted: ImportedTrade[] = [
-      {
-        id: '1',
-        symbol: 'EURUSD',
-        direction: 'LONG',
-        entryPrice: 1.0850,
-        exitPrice: 1.0920,
-        size: 1.0,
-        pnl: 70,
-        entryDate: new Date('2024-01-15T09:30:00'),
-        exitDate: new Date('2024-01-15T14:45:00'),
-        isEditing: false,
-        isSelected: false,
-      },
-      {
-        id: '2',
-        symbol: 'GBPUSD',
-        direction: 'SHORT',
-        entryPrice: 1.2650,
-        exitPrice: 1.2580,
-        size: 0.5,
-        pnl: 35,
-        entryDate: new Date('2024-01-15T10:15:00'),
-        exitDate: new Date('2024-01-15T16:00:00'),
-        isEditing: false,
-        isSelected: false,
-      },
-      {
-        id: '3',
-        symbol: 'USDJPY',
-        direction: 'LONG',
-        entryPrice: 148.50,
-        exitPrice: 148.20,
-        size: 0.25,
-        pnl: -75,
-        entryDate: new Date('2024-01-15T11:00:00'),
-        exitDate: new Date('2024-01-15T15:30:00'),
-        isEditing: false,
-        isSelected: false,
-      },
-    ];
-
-    setExtractedTrades(mockExtracted);
-    setIsProcessing(false);
+      setExtractedTrades(extracted);
+    } catch (error) {
+      console.error('Failed to extract trades:', error);
+      // You could add a toast notification here
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const toggleEdit = (id: string) => {

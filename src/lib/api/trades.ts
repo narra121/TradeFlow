@@ -114,4 +114,9 @@ export const tradesApi = {
   getUploadUrl: async (): Promise<UploadUrlResponse> => {
     return apiClient.get('/upload-url');
   },
+
+  // POST /v1/trades/extract (supports up to 3 images)
+  extractTrades: async (images: string[]): Promise<{ items: any[] }> => {
+    return apiClient.post('/trades/extract', { images });
+  },
 };
