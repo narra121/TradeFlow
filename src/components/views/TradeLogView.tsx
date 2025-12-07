@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Filter
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -87,6 +88,14 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     const matchesOutcome = outcomeFilter === 'ALL' || trade.outcome === outcomeFilter;
     return matchesSymbol && matchesOutcome;
   });
+
+  // Helper to check if a trade is missing additional details
+  const isTradeIncomplete = (trade: Trade) => {
+    const hasNoImages = !trade.images || trade.images.length === 0;
+    const hasNoStrategy = !trade.strategy;
+    const hasNoNotes = !trade.notes && !trade.keyLesson;
+    return hasNoImages && hasNoStrategy && hasNoNotes;
+  };
 
   // Trade table handlers
   const handleViewTrade = (index: number) => {
@@ -319,6 +328,18 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                             )}
                           </div>
                           <span className="font-semibold text-foreground">{trade.symbol}</span>
+                          {isTradeIncomplete(trade) && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="w-2 h-2 rounded-full bg-warning animate-pulse" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Missing details (screenshots, strategy, notes)</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
                       </td>
                       <td className="px-5 py-4">

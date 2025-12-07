@@ -271,6 +271,9 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
       <DialogContent className="w-[80vw] max-w-[80vw] h-[85vh] max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-xl font-semibold">Import Trades from Screenshot</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Import extracts basic trade data only. To add screenshots, notes, and other details, edit each trade in the Trade Log after importing.
+          </p>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">
