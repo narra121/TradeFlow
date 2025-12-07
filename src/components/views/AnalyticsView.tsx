@@ -279,7 +279,7 @@ export function AnalyticsView() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Equity Curve */}
-        <PerformanceChart />
+        <PerformanceChart trades={filteredTrades} />
 
         {/* Daily P&L Bar Chart - Current Week */}
         <div className="glass-card p-5">
