@@ -21,6 +21,7 @@ import {
 } from 'recharts';
 import { Clock, Timer, Loader2 } from 'lucide-react';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
+import { AccountFilter } from '@/components/account/AccountFilter';
 import { subDays, isWithinInterval } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchTrades } from '@/store/slices/tradesSlice';
@@ -238,6 +239,7 @@ export function AnalyticsView() {
           <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
         </div>
         <div className="flex items-center gap-4">
+          <AccountFilter />
           <DateRangeFilter
             selectedPreset={datePreset}
             onPresetChange={setDatePreset}
