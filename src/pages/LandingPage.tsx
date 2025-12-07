@@ -19,7 +19,8 @@ import {
   Building2,
   PieChart,
   Clock,
-  Award
+  Award,
+  Heart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -181,7 +182,7 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Button size="lg" asChild className="gap-2 h-14 px-8 text-lg">
               <Link to="/signup">
-                Start Free Trial
+                Start Free — No Card Required
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
@@ -359,39 +360,40 @@ export function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-foreground mb-4">
-              Simple,
-              <span className="text-primary"> Transparent Pricing</span>
+              100%
+              <span className="text-primary"> Free to Use</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Support the platform with a small contribution. Every feature is available to all supporters.
+              TradeFlow is completely free with all features included. If you love it and want to support the developer, you can contribute optionally.
             </p>
           </div>
 
-          <div className="bg-card rounded-3xl border border-border/50 overflow-hidden">
+          {/* Free Plan */}
+          <div className="bg-card rounded-3xl border border-border/50 overflow-hidden mb-8">
             <div className="p-8 md:p-12">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
                 <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-                    <Award className="w-4 h-4" />
-                    Full Access
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success text-sm font-medium mb-4">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Forever Free
                   </div>
                   <h3 className="text-3xl font-bold text-foreground mb-2">
-                    Starting from <span className="text-primary">₹99</span>/month
+                    <span className="text-success">₹0</span> — All Features Included
                   </h3>
                   <p className="text-muted-foreground">
-                    Help cover hosting costs and support continued development.
+                    No credit card required. No hidden fees. Just start trading smarter.
                   </p>
                 </div>
                 <Button size="lg" asChild className="shrink-0 gap-2">
                   <Link to="/signup">
-                    Start Free Trial
+                    Get Started Free
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
               </div>
 
               <div className="mt-10 pt-10 border-t border-border/50">
-                <div className="text-sm font-medium text-muted-foreground mb-4">Everything included:</div>
+                <div className="text-sm font-medium text-muted-foreground mb-4">Everything included for free:</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
                     'Unlimited trades',
@@ -401,7 +403,7 @@ export function LandingPage() {
                     'Multiple accounts',
                     'Goal tracking',
                     'Trading rules',
-                    'Priority support',
+                    'All future features',
                   ].map((feature, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
@@ -411,6 +413,32 @@ export function LandingPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Support the Developer */}
+          <div className="bg-card/50 rounded-2xl border border-primary/20 p-8 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+              <Heart className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">Love TradeFlow? Support the Developer</h3>
+            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
+              TradeFlow is built with love by an independent developer. If you find it valuable, 
+              consider supporting with a small contribution to help cover hosting and development costs.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <div className="px-6 py-3 rounded-xl bg-background/50 border border-border/50">
+                <span className="text-2xl font-bold text-primary">₹99</span>
+                <span className="text-muted-foreground">/month</span>
+              </div>
+              <span className="text-muted-foreground">or</span>
+              <div className="px-6 py-3 rounded-xl bg-background/50 border border-border/50">
+                <span className="text-2xl font-bold text-primary">₹299</span>
+                <span className="text-muted-foreground">/month</span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">
+              100% optional — the app remains fully free regardless
+            </p>
           </div>
         </div>
       </section>
