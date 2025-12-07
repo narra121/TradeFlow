@@ -1,22 +1,26 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Trade } from '@/types/trade';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, eachWeekOfInterval, subDays, isWithinInterval } from 'date-fns';
 import { 
   Plus, 
   Upload,
-  Search, 
   ArrowUpRight, 
   ArrowDownRight,
-  Clock,
-  CheckCircle2,
   MoreHorizontal,
   Eye,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Filter
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +56,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
   
   // Trades table state
-  const [searchQuery, setSearchQuery] = useState('');
+  const [symbolFilter, setSymbolFilter] = useState<string>('ALL');
   const [outcomeFilter, setOutcomeFilter] = useState<'ALL' | 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN'>('ALL');
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -72,10 +76,16 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     });
   }, [trades, datePreset, customRange]);
 
+  // Get unique symbols for filter
+  const uniqueSymbols = useMemo(() => {
+    const symbols = new Set(dateFilteredTrades.map(trade => trade.symbol));
+    return Array.from(symbols).sort();
+  }, [dateFilteredTrades]);
+
   const filteredTrades = dateFilteredTrades.filter(trade => {
-    const matchesSearch = trade.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSymbol = symbolFilter === 'ALL' || trade.symbol === symbolFilter;
     const matchesOutcome = outcomeFilter === 'ALL' || trade.outcome === outcomeFilter;
-    return matchesSearch && matchesOutcome;
+    return matchesSymbol && matchesOutcome;
   });
 
   // Trade table handlers
@@ -236,33 +246,38 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
       {activeTab === 'trades' && (
         <>
           {/* Filters */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by symbol..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Filters:</span>
             </div>
             
-            <div className="flex items-center gap-2">
-              {(['ALL', 'TP', 'PARTIAL', 'SL', 'BREAKEVEN'] as const).map(outcome => (
-                <button
-                  key={outcome}
-                  onClick={() => setOutcomeFilter(outcome)}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                    outcomeFilter === outcome
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {outcome === 'ALL' ? 'All' : outcome}
-                </button>
-              ))}
-            </div>
+            {/* Symbol Filter */}
+            <Select value={symbolFilter} onValueChange={setSymbolFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Symbol" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Symbols</SelectItem>
+                {uniqueSymbols.map(symbol => (
+                  <SelectItem key={symbol} value={symbol}>{symbol}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Outcome Filter */}
+            <Select value={outcomeFilter} onValueChange={(value: 'ALL' | 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN') => setOutcomeFilter(value)}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Outcome" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Outcomes</SelectItem>
+                <SelectItem value="TP">TP (Take Profit)</SelectItem>
+                <SelectItem value="PARTIAL">Partial</SelectItem>
+                <SelectItem value="SL">SL (Stop Loss)</SelectItem>
+                <SelectItem value="BREAKEVEN">Breakeven</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Trades Table */}

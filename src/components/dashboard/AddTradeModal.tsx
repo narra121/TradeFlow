@@ -327,6 +327,15 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
                       )}
                     />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Outcome</Label>
+                    <DynamicSelect
+                      value={outcome}
+                      onChange={(value) => setOutcome(value as TradeOutcome)}
+                      options={['TP', 'PARTIAL', 'SL', 'BREAKEVEN']}
+                      placeholder="Select outcome..."
+                    />
+                  </div>
                 </div>
               </section>
 
