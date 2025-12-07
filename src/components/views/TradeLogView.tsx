@@ -205,6 +205,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <AccountFilter />
           {activeTab === 'trades' && (
             <DateRangeFilter
               selectedPreset={datePreset}
@@ -214,7 +215,6 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
               showCustomPicker
             />
           )}
-          <AccountFilter />
         </div>
       </div>
 
