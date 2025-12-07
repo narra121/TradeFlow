@@ -251,18 +251,22 @@ export function GoalsView() {
               <p className="text-sm text-muted-foreground">{goalType.description}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             {isExceeded && (
-              <X className="w-5 h-5 text-destructive" />
+              <div className="w-7 h-7 flex items-center justify-center">
+                <X className="w-5 h-5 text-destructive" />
+              </div>
             )}
             {isCompleted && !isExceeded && (
-              <CheckCircle2 className="w-5 h-5 text-success" />
+              <div className="w-7 h-7 flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-success" />
+              </div>
             )}
             {!isEditing && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => handleEditStart(goalType.id, period, data.target)}
               >
                 <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
