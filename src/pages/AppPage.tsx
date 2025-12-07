@@ -22,13 +22,60 @@ export function AppPage() {
   const [isImportTradesOpen, setIsImportTradesOpen] = useState(false);
 
   const handleAddTrade = async (newTrade: Omit<Trade, 'id'>) => {
-    await dispatch(createTrade(newTrade as unknown as any)).unwrap();
+    // Map frontend Trade format to backend API format
+    const payload = {
+      symbol: newTrade.symbol,
+      side: newTrade.direction === 'LONG' ? 'BUY' as const : 'SELL' as const,
+      quantity: newTrade.size,
+      entryPrice: newTrade.entryPrice,
+      exitPrice: newTrade.exitPrice,
+      stopLoss: newTrade.stopLoss,
+      takeProfit: newTrade.takeProfit,
+      openDate: newTrade.entryDate,
+      closeDate: newTrade.exitDate,
+      accountIds: newTrade.accountIds,
+      brokenRuleIds: newTrade.brokenRuleIds,
+      setupType: newTrade.strategy,
+      tradingSession: newTrade.session,
+      marketCondition: newTrade.marketCondition,
+      newsEvents: newTrade.newsEvents,
+      mistakes: newTrade.mistakes,
+      lessons: newTrade.keyLesson ? [newTrade.keyLesson] : [],
+      tags: newTrade.tags,
+      images: newTrade.images?.map(img => ({
+        url: img.url,
+        timeframe: img.timeframe,
+        description: img.description
+      }))
+    };
+    await dispatch(createTrade(payload as any)).unwrap();
     setIsAddTradeOpen(false);
   };
 
   const handleImportTrades = async (newTrades: Omit<Trade, 'id'>[]) => {
     for (const trade of newTrades) {
-      await dispatch(createTrade(trade as unknown as any)).unwrap();
+      // Map frontend Trade format to backend API format
+      const payload = {
+        symbol: trade.symbol,
+        side: trade.direction === 'LONG' ? 'BUY' as const : 'SELL' as const,
+        quantity: trade.size,
+        entryPrice: trade.entryPrice,
+        exitPrice: trade.exitPrice,
+        stopLoss: trade.stopLoss,
+        takeProfit: trade.takeProfit,
+        openDate: trade.entryDate,
+        closeDate: trade.exitDate,
+        accountIds: trade.accountIds,
+        brokenRuleIds: trade.brokenRuleIds,
+        setupType: trade.strategy,
+        tradingSession: trade.session,
+        marketCondition: trade.marketCondition,
+        newsEvents: trade.newsEvents,
+        mistakes: trade.mistakes,
+        lessons: trade.keyLesson ? [trade.keyLesson] : [],
+        tags: trade.tags
+      };
+      await dispatch(createTrade(payload as any)).unwrap();
     }
     setIsImportTradesOpen(false);
   };

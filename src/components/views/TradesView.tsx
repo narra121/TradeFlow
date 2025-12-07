@@ -128,7 +128,7 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
                 <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Exit</th>
                 <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Size</th>
                 <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">R:R</th>
-                <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Status</th>
+                <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Outcome</th>
                 <th className="px-5 py-4 text-right text-sm font-medium text-muted-foreground">P&L</th>
                 <th className="px-5 py-4 text-right text-sm font-medium text-muted-foreground"></th>
               </tr>
