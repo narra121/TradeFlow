@@ -463,7 +463,7 @@ export function LandingPage() {
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
-            <p className="text-sm text-muted-foreground">No credit card required</p>
+            <p className="text-sm text-muted-foreground">Free forever • All features included</p>
           </div>
         </div>
       </section>
