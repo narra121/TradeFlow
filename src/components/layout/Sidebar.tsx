@@ -93,7 +93,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
                     isActive && "text-sidebar-primary"
                   )} />
                   {!collapsed && (
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-medium whitespace-nowrap">{item.label}</span>
                   )}
                   {isActive && !collapsed && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />
@@ -124,7 +124,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
             activeView === 'profile' && "text-sidebar-primary"
           )} />
           {!collapsed && (
-            <span className="font-medium">Profile</span>
+            <span className="font-medium whitespace-nowrap">Profile</span>
           )}
           {activeView === 'profile' && !collapsed && (
             <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />
