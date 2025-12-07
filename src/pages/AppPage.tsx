@@ -17,6 +17,7 @@ import type { Trade } from '@/types/trade';
 export function AppPage() {
   const dispatch = useAppDispatch();
   const [activeView, setActiveView] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
   const [isImportTradesOpen, setIsImportTradesOpen] = useState(false);
 
@@ -55,11 +56,16 @@ export function AppPage() {
 
   return (
     <div className="min-h-screen bg-background bg-glow">
-      <Sidebar activeView={activeView} onViewChange={setActiveView} />
+      <Sidebar 
+        activeView={activeView} 
+        onViewChange={setActiveView}
+        collapsed={sidebarCollapsed}
+        onCollapsedChange={setSidebarCollapsed}
+      />
       
       <main className={cn(
-        "transition-all duration-300 min-h-screen",
-        "ml-[240px] p-8"
+        "transition-all duration-300 min-h-screen p-8",
+        sidebarCollapsed ? "ml-[72px]" : "ml-[240px]"
       )}>
         <div className="max-w-7xl mx-auto animate-fade-in">
           {renderView()}
