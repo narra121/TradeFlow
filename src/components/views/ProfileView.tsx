@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,8 @@ import {
   Check,
   Edit2,
   Camera,
-  Loader2
+  Loader2,
+  LogOut
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
@@ -26,12 +28,23 @@ import {
   createSubscription as createSubscriptionAction
 } from '@/store/slices/userSlice';
 import { useRazorpay } from '@/hooks/useRazorpay';
-import { razorpayApi, SubscriptionDetails, PlanResponse } from '@/lib/api';
+import { razorpayApi, SubscriptionDetails, PlanResponse, authApi } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
 
 export function ProfileView() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { profile, subscription, loading } = useAppSelector((state) => state.user);
   const { initiateSubscription, loading: paymentLoading, error: paymentError } = useRazorpay();
+  
+  const handleLogout = () => {
+    authApi.logout();
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    navigate('/login');
+  };
   
   const [availablePlans, setAvailablePlans] = useState<PlanResponse[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
@@ -350,6 +363,18 @@ export function ProfileView() {
             </div>
 
             <Separator />
+            
+            {/* Logout Button */}
+            <div className="pt-2">
+              <Button 
+                variant="destructive" 
+                onClick={handleLogout}
+                className="w-full"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </CardContent>
         </Card>
         )}

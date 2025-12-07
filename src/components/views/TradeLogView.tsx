@@ -139,8 +139,9 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     const days: Date[] = [];
     dateFilteredTrades.forEach(trade => {
       if (trade.status === 'CLOSED' && trade.exitDate) {
-        const exists = days.some(d => isSameDay(d, trade.exitDate!));
-        if (!exists) days.push(trade.exitDate);
+        const exitDate = new Date(trade.exitDate);
+        const exists = days.some(d => isSameDay(d, exitDate));
+        if (!exists) days.push(exitDate);
       }
     });
     return days.sort((a, b) => a.getTime() - b.getTime());

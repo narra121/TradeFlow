@@ -83,9 +83,10 @@ export function CalendarView({ trades }: CalendarViewProps) {
     const days: Date[] = [];
     trades.forEach(trade => {
       if (trade.status === 'CLOSED' && trade.exitDate) {
-        const exists = days.some(d => isSameDay(d, trade.exitDate!));
+        const exitDate = new Date(trade.exitDate);
+        const exists = days.some(d => isSameDay(d, exitDate));
         if (!exists) {
-          days.push(trade.exitDate);
+          days.push(exitDate);
         }
       }
     });

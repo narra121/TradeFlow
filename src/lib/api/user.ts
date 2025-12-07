@@ -44,7 +44,7 @@ export interface Subscription {
   nextBillingDate: string;
 }
 
-export interface CreateSubscriptionPayload {
+export interface UserCreateSubscriptionPayload {
   amount: number;
   billingCycle: 'monthly' | 'annual';
 }
@@ -94,7 +94,7 @@ export const subscriptionsApi = {
   },
 
   // POST /v1/subscriptions
-  createSubscription: async (payload: CreateSubscriptionPayload): Promise<{ subscription: Subscription; paymentUrl: string }> => {
+  createSubscription: async (payload: UserCreateSubscriptionPayload): Promise<{ subscription: Subscription; paymentUrl: string }> => {
     return apiClient.post('/subscriptions', payload);
   },
 
