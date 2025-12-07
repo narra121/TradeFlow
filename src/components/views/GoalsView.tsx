@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,7 +15,9 @@ import {
   deleteRule as deleteRuleAction,
   toggleRule as toggleRuleAction
 } from '@/store/slices/goalsRulesSlice';
+import { fetchTrades } from '@/store/slices/tradesSlice';
 import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/goalsRules';
+import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 
 interface GoalType {
   id: string;
@@ -89,6 +91,7 @@ const defaultGoalData: GoalData[] = [
 export function GoalsView() {
   const dispatch = useAppDispatch();
   const { rules: reduxRules = [], loading } = useAppSelector((state) => state.goalsRules);
+  const { trades } = useAppSelector((state) => state.trades);
   
   // Use defaultGoalData as the data source (would come from Redux in production)
   const [goalData, setGoalData] = useState<GoalData[]>(defaultGoalData);
@@ -97,7 +100,30 @@ export function GoalsView() {
   useEffect(() => {
     dispatch(fetchGoals());
     dispatch(fetchRules());
+    dispatch(fetchTrades({}));
   }, [dispatch]);
+
+  // Calculate broken rule counts for current week
+  const brokenRuleCounts = useMemo(() => {
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday
+    const weekEnd = endOfWeek(now, { weekStartsOn: 0 }); // Saturday
+    
+    const counts: Record<string, number> = {};
+    
+    trades.forEach(trade => {
+      // Check if trade is within current week
+      const tradeDate = parseISO(trade.entryDate);
+      if (isWithinInterval(tradeDate, { start: weekStart, end: weekEnd })) {
+        // Count broken rules
+        trade.brokenRuleIds?.forEach(ruleId => {
+          counts[ruleId] = (counts[ruleId] || 0) + 1;
+        });
+      }
+    });
+    
+    return counts;
+  }, [trades]);
   
   const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
   const [editingGoalKey, setEditingGoalKey] = useState<string | null>(null);
@@ -403,15 +429,18 @@ export function GoalsView() {
           {rules.map((item, index) => {
             const ruleId = (item as any).id || (item as any).ruleId;
             const isEditingThis = editingRuleId === ruleId;
+            const brokenCount = brokenRuleCounts[ruleId] || 0;
             
             return (
               <div 
                 key={ruleId}
                 className={cn(
                   "flex items-center gap-3 p-4 rounded-xl transition-colors animate-fade-in group",
-                  item.completed 
-                    ? "bg-success/5 border border-success/20" 
-                    : "bg-secondary/30 border border-transparent"
+                  brokenCount > 0
+                    ? "bg-destructive/5 border border-destructive/20"
+                    : item.completed 
+                      ? "bg-success/5 border border-success/20" 
+                      : "bg-secondary/30 border border-transparent"
                 )}
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
@@ -470,12 +499,20 @@ export function GoalsView() {
                   </div>
                 ) : (
                   <>
-                    <span className={cn(
-                      "text-sm flex-1",
-                      item.completed ? "text-foreground" : "text-muted-foreground"
-                    )}>
-                      {item.rule}
-                    </span>
+                    <div className="flex-1 flex items-center gap-2">
+                      <span className={cn(
+                        "text-sm",
+                        item.completed ? "text-foreground" : "text-muted-foreground"
+                      )}>
+                        {item.rule}
+                      </span>
+                      {brokenCount > 0 && (
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
+                          <AlertTriangle className="w-3 h-3" />
+                          {brokenCount}× this week
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="ghost"
