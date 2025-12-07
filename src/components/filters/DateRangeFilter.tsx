@@ -27,15 +27,11 @@ export function DateRangeFilter({
   const [toOpen, setToOpen] = useState(false);
 
   const presets: { value: DatePreset; label: string }[] = [
-    { value: 7, label: 'Last 7 Days' },
-    { value: 30, label: 'Last 30 Days' },
-    { value: 60, label: 'Last 60 Days' },
-    { value: 90, label: 'Last 90 Days' },
+    { value: 7, label: '7' },
+    { value: 30, label: '30' },
+    { value: 60, label: '60' },
+    { value: 90, label: '90' },
   ];
-
-  if (showCustomPicker) {
-    presets.push({ value: 'custom', label: 'Custom' });
-  }
 
   const handleFromSelect = (date: Date | undefined) => {
     if (date && onCustomRangeChange && customRange) {
@@ -54,6 +50,7 @@ export function DateRangeFilter({
   return (
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg">
+        <span className="px-2 text-sm text-muted-foreground">Last</span>
         {presets.map((preset) => (
           <button
             key={preset.value}
@@ -68,6 +65,20 @@ export function DateRangeFilter({
             {preset.label}
           </button>
         ))}
+        <span className="px-2 text-sm text-muted-foreground">Days</span>
+        {showCustomPicker && (
+          <button
+            onClick={() => onPresetChange('custom')}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+              selectedPreset === 'custom'
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Custom
+          </button>
+        )}
       </div>
 
       {showCustomPicker && selectedPreset === 'custom' && customRange && (
