@@ -32,10 +32,11 @@ const navItems: NavItem[] = [
 interface SidebarProps {
   activeView: string;
   onViewChange: (view: string) => void;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 }
 
-export function Sidebar({ activeView, onViewChange }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export function Sidebar({ activeView, onViewChange, collapsed, onCollapsedChange }: SidebarProps) {
 
   return (
     <aside 
@@ -61,7 +62,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         </div>
         {!collapsed && (
           <button
-            onClick={() => setCollapsed(true)}
+            onClick={() => onCollapsedChange(true)}
             className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -134,7 +135,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         {/* Expand Button (only when collapsed) */}
         {collapsed && (
           <button
-            onClick={() => setCollapsed(false)}
+            onClick={() => onCollapsedChange(false)}
             className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
