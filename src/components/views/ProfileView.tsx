@@ -130,14 +130,13 @@ export function ProfileView() {
   }, [subscription]);
 
   const supportTiers = [
-    { amount: 99, label: 'Basic', description: 'Cover hosting costs' },
+    { amount: 99, label: 'Basic', description: 'Minimum support' },
     { amount: 299, label: 'Supporter', description: 'Help us grow' },
-    { amount: 499, label: 'Champion', description: 'Fuel new features' },
   ];
 
   const annualTiers = [
     { amount: 999, label: 'Basic', description: 'Save 17%!', monthly: 99 },
-    { amount: 2999, label: 'Pro', description: 'Save 17% and support development!', monthly: 299 },
+    { amount: 2999, label: 'Supporter', description: 'Save 17%!', monthly: 299 },
   ];
 
   const handleSaveProfile = async () => {
@@ -475,7 +474,8 @@ export function ProfileView() {
               </>
             ) : (
               <div className="text-center p-4 text-muted-foreground">
-                <p>No active subscription. Choose a plan below to get started!</p>
+                <p className="text-success font-medium mb-1">Free Account</p>
+                <p className="text-sm">You have full access to all features! Support us below if you'd like.</p>
               </div>
             )}
           </CardContent>
@@ -496,12 +496,13 @@ export function ProfileView() {
           <div className="mx-auto w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
             <Heart className="w-6 h-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">Support TradeFlow</CardTitle>
+          <CardTitle className="text-2xl">Support the Developer (Optional)</CardTitle>
           <CardDescription className="max-w-xl mx-auto mt-2">
-            TradeFlow is built with passion by independent developers. Your contribution 
-            helps cover hosting costs, maintenance, and allows us to keep building new features.
+            TradeFlow is <span className="text-success font-semibold">100% free to use</span> with all features included.
+            If you love TradeFlow and want to support the developer, you can contribute a small amount 
+            to help cover hosting and development costs.
             <span className="block mt-2 text-foreground/80 font-medium">
-              Choose a plan that works for you — every bit helps!
+              Minimum ₹99 or ₹299 — completely optional!
             </span>
           </CardDescription>
         </CardHeader>
@@ -654,10 +655,9 @@ export function ProfileView() {
           {/* Info Box */}
           <div className="p-4 rounded-lg bg-muted/30 border border-border/50 mb-6">
             <p className="text-sm text-muted-foreground text-center">
-              <span className="text-foreground font-medium">Why {billingCycle === 'monthly' ? '₹99' : '₹999'} minimum?</span> This small amount helps us cover 
-              server hosting, database costs, and ongoing maintenance. Every contribution, big or small, 
-              directly supports the continued development of TradeFlow. No hidden fees, no locked features — 
-              just transparent support for a tool we all love.
+              <span className="text-success font-medium">The app is completely free!</span> Your support is optional but greatly appreciated. 
+              It helps cover server hosting, database costs, and ongoing development. 
+              No features are locked — this is purely a way to say thanks!
             </p>
           </div>
 
