@@ -363,9 +363,9 @@ export function ProfileView() {
             {/* Logout Button */}
             <div className="pt-2">
               <Button 
-                variant="destructive" 
+                variant="outline" 
                 onClick={handleLogout}
-                className="w-full"
+                className="w-full text-muted-foreground hover:text-foreground"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
