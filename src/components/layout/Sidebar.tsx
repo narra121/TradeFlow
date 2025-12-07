@@ -40,7 +40,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   return (
     <aside 
       className={cn(
-        "fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 z-50",
+        "fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 z-50 overflow-hidden",
         collapsed ? "w-[72px]" : "w-[240px]"
       )}
     >
