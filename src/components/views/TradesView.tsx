@@ -39,14 +39,14 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
     dispatch(fetchTrades({ accountId: selectedAccountId }));
   }, [dispatch, selectedAccountId]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL');
+  const [outcomeFilter, setOutcomeFilter] = useState<'ALL' | 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN'>('ALL');
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const filteredTrades = trades.filter(trade => {
     const matchesSearch = trade.symbol.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || trade.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesOutcome = outcomeFilter === 'ALL' || trade.outcome === outcomeFilter;
+    return matchesSearch && matchesOutcome;
   });
 
   const handleViewTrade = (index: number) => {
@@ -99,18 +99,18 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
         </div>
         
         <div className="flex items-center gap-2">
-          {(['ALL', 'OPEN', 'CLOSED'] as const).map(status => (
+          {(['ALL', 'TP', 'PARTIAL', 'SL', 'BREAKEVEN'] as const).map(outcome => (
             <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
+              key={outcome}
+              onClick={() => setOutcomeFilter(outcome)}
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                statusFilter === status
+                outcomeFilter === outcome
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
               )}
             >
-              {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
+              {outcome === 'ALL' ? 'All' : outcome}
             </button>
           ))}
         </div>
@@ -188,22 +188,15 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
                     {trade.riskRewardRatio.toFixed(2)}
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      {trade.status === 'OPEN' ? (
-                        <>
-                          <Clock className="w-4 h-4 text-warning" />
-                          <span className="text-warning text-sm">Open</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className={cn(
-                            "w-4 h-4",
-                            (trade.pnl || 0) >= 0 ? "text-success" : "text-destructive"
-                          )} />
-                          <span className="text-sm text-muted-foreground">Closed</span>
-                        </>
-                      )}
-                    </div>
+                    <span className={cn(
+                      "text-xs px-2 py-1 rounded-full font-medium",
+                      trade.outcome === 'TP' ? "bg-success/10 text-success" :
+                      trade.outcome === 'PARTIAL' ? "bg-primary/10 text-primary" :
+                      trade.outcome === 'BREAKEVEN' ? "bg-muted text-muted-foreground" :
+                      "bg-destructive/10 text-destructive"
+                    )}>
+                      {trade.outcome}
+                    </span>
                   </td>
                   <td className="px-5 py-4 text-right">
                     {trade.pnl !== undefined ? (
@@ -248,9 +241,6 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuItem>Edit Trade</DropdownMenuItem>
-                          {trade.status === 'OPEN' && (
-                            <DropdownMenuItem>Close Trade</DropdownMenuItem>
-                          )}
                           <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

@@ -1,5 +1,5 @@
 export type TradeDirection = 'LONG' | 'SHORT';
-export type TradeStatus = 'OPEN' | 'CLOSED';
+export type TradeOutcome = 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN';
 
 export type AccountStatus = 'active' | 'breached' | 'passed' | 'withdrawn' | 'inactive';
 export type AccountType = 'prop_challenge' | 'prop_funded' | 'personal' | 'demo';
@@ -35,7 +35,7 @@ export interface Trade {
   size: number;
   entryDate: string; // ISO string for Redux serialization
   exitDate?: string; // ISO string for Redux serialization
-  status: TradeStatus;
+  outcome: TradeOutcome;
   pnl?: number;
   pnlPercent?: number;
   riskRewardRatio: number;

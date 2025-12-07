@@ -64,18 +64,14 @@ export function TradeList({ trades, limit }: TradeListProps) {
                 </div>
               </div>
 
-              {/* P&L and Status */}
+              {/* P&L and Outcome */}
               <div className="text-right">
                 <div className="flex items-center gap-2 justify-end">
-                  {trade.status === 'OPEN' ? (
-                    <Clock className="w-4 h-4 text-warning" />
-                  ) : (
-                    <CheckCircle2 className={cn(
-                      "w-4 h-4",
-                      (trade.pnl || 0) >= 0 ? "text-success" : "text-destructive"
-                    )} />
-                  )}
-                  {trade.status === 'CLOSED' && trade.pnl !== undefined && (
+                  <CheckCircle2 className={cn(
+                    "w-4 h-4",
+                    (trade.pnl || 0) >= 0 ? "text-success" : "text-destructive"
+                  )} />
+                  {trade.pnl !== undefined && (
                     <span className={cn(
                       "font-semibold font-mono",
                       trade.pnl >= 0 ? "text-success" : "text-destructive"
@@ -83,18 +79,16 @@ export function TradeList({ trades, limit }: TradeListProps) {
                       {trade.pnl >= 0 ? '+' : ''}{trade.pnl.toFixed(2)}
                     </span>
                   )}
-                  {trade.status === 'OPEN' && (
-                    <span className="text-warning font-medium">Active</span>
-                  )}
                 </div>
-                {trade.pnlPercent !== undefined && trade.status === 'CLOSED' && (
-                  <span className={cn(
-                    "text-sm font-mono",
-                    trade.pnlPercent >= 0 ? "text-success/70" : "text-destructive/70"
-                  )}>
-                    {trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(2)}%
-                  </span>
-                )}
+                <span className={cn(
+                  "text-xs px-2 py-0.5 rounded-full font-medium",
+                  trade.outcome === 'TP' ? "bg-success/10 text-success" :
+                  trade.outcome === 'PARTIAL' ? "bg-primary/10 text-primary" :
+                  trade.outcome === 'BREAKEVEN' ? "bg-muted text-muted-foreground" :
+                  "bg-destructive/10 text-destructive"
+                )}>
+                  {trade.outcome}
+                </span>
               </div>
             </div>
 

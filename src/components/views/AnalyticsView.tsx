@@ -19,7 +19,7 @@ import {
   Scatter,
   ZAxis
 } from 'recharts';
-import { Clock, Timer } from 'lucide-react';
+import { Clock, Timer, Loader2 } from 'lucide-react';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { subDays, isWithinInterval } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -51,7 +51,7 @@ export function AnalyticsView() {
     });
   }, [trades, datePreset, customRange]);
 
-  const closedTrades = filteredTrades.filter(t => t.status === 'CLOSED');
+  const closedTrades = filteredTrades; // All trades are closed now
   
   // Symbol distribution (computed locally from filtered trades)
   const localSymbolDistribution = closedTrades.reduce((acc, trade) => {
@@ -219,6 +219,15 @@ export function AnalyticsView() {
     { label: 'Win Streak', value: consecutiveWins.toString(), isPositive: true },
     { label: 'Loss Streak', value: consecutiveLosses.toString(), isPositive: false },
   ];
+
+  if (tradesLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading analytics...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
