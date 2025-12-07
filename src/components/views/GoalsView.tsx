@@ -98,7 +98,7 @@ export function GoalsView() {
     dispatch(fetchRules());
   }, [dispatch]);
   
-  const [periodFilter, setPeriodFilter] = useState<'all' | 'weekly' | 'monthly'>('all');
+  const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
   const [editingGoalKey, setEditingGoalKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [savingGoalKey, setSavingGoalKey] = useState<string | null>(null);
@@ -118,10 +118,6 @@ export function GoalsView() {
     return goalData.find(g => g.goalTypeId === goalTypeId && g.period === period);
   };
 
-  // Filter goal types based on period (all shows both periods)
-  const filteredPeriods: ('weekly' | 'monthly')[] = periodFilter === 'all' 
-    ? ['weekly', 'monthly'] 
-    : [periodFilter];
 
   const handleEditStart = (goalTypeId: string, period: 'weekly' | 'monthly', currentTarget: number) => {
     const key = `${goalTypeId}-${period}`;
@@ -342,32 +338,18 @@ export function GoalsView() {
           <h1 className="text-3xl font-bold text-foreground">Goals & Rules</h1>
           <p className="text-muted-foreground mt-1">Track your trading objectives</p>
         </div>
-        <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as typeof periodFilter)}>
+        <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as 'weekly' | 'monthly')}>
           <TabsList className="bg-secondary/50">
-            <TabsTrigger value="all" className="text-sm">All</TabsTrigger>
             <TabsTrigger value="weekly" className="text-sm">Weekly</TabsTrigger>
             <TabsTrigger value="monthly" className="text-sm">Monthly</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      {/* Goals Grid - organized by goal type, showing selected periods */}
-      <div className="space-y-6">
+      {/* Goals Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {goalTypes.map((goalType, typeIndex) => (
-          <div key={goalType.id}>
-            {periodFilter === 'all' ? (
-              // Show both weekly and monthly side by side
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderGoalCard(goalType, 'weekly', typeIndex * 2)}
-                {renderGoalCard(goalType, 'monthly', typeIndex * 2 + 1)}
-              </div>
-            ) : (
-              // Show single period
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderGoalCard(goalType, periodFilter, typeIndex)}
-              </div>
-            )}
-          </div>
+          renderGoalCard(goalType, periodFilter, typeIndex)
         ))}
       </div>
       {/* Trading Rules Checklist */}
