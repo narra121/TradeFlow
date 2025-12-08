@@ -18,6 +18,8 @@ import {
 import { fetchTrades } from '@/store/slices/tradesSlice';
 import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/goalsRules';
 import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
+import { AccountFilter } from '@/components/account/AccountFilter';
+import { useAccounts } from '@/hooks/useAccounts';
 
 interface GoalType {
   id: string;
@@ -92,6 +94,7 @@ export function GoalsView() {
   const dispatch = useAppDispatch();
   const { rules: reduxRules = [], loading } = useAppSelector((state) => state.goalsRules);
   const { trades } = useAppSelector((state) => state.trades);
+  const { selectedAccountId } = useAccounts();
   
   // Use defaultGoalData as the data source (would come from Redux in production)
   const [goalData, setGoalData] = useState<GoalData[]>(defaultGoalData);
@@ -102,8 +105,14 @@ export function GoalsView() {
     dispatch(fetchRules());
     dispatch(fetchTrades({}));
   }, [dispatch]);
+  
+  // Filter trades by selected account for rule counting
+  const filteredTrades = useMemo(() => {
+    if (!selectedAccountId) return trades;
+    return trades.filter(trade => trade.accountIds?.includes(selectedAccountId));
+  }, [trades, selectedAccountId]);
 
-  // Calculate broken rule counts for current week
+  // Calculate broken rule counts for current week (uses filtered trades for account)
   const brokenRuleCounts = useMemo(() => {
     const now = new Date();
     const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday
@@ -111,7 +120,7 @@ export function GoalsView() {
     
     const counts: Record<string, number> = {};
     
-    trades.forEach(trade => {
+    filteredTrades.forEach(trade => {
       // Check if trade is within current week
       const tradeDate = parseISO(trade.entryDate);
       if (isWithinInterval(tradeDate, { start: weekStart, end: weekEnd })) {
@@ -123,7 +132,7 @@ export function GoalsView() {
     });
     
     return counts;
-  }, [trades]);
+  }, [filteredTrades]);
   
   const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
   const [editingGoalKey, setEditingGoalKey] = useState<string | null>(null);
@@ -391,12 +400,15 @@ export function GoalsView() {
           <h1 className="text-3xl font-bold text-foreground">Goals & Rules</h1>
           <p className="text-muted-foreground mt-1">Track your trading objectives</p>
         </div>
-        <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as 'weekly' | 'monthly')}>
-          <TabsList className="bg-secondary/50">
-            <TabsTrigger value="weekly" className="text-sm">Weekly</TabsTrigger>
-            <TabsTrigger value="monthly" className="text-sm">Monthly</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-4">
+          <AccountFilter showLabel={false} />
+          <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as 'weekly' | 'monthly')}>
+            <TabsList className="bg-secondary/50">
+              <TabsTrigger value="weekly" className="text-sm">Weekly</TabsTrigger>
+              <TabsTrigger value="monthly" className="text-sm">Monthly</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Goals Grid */}
