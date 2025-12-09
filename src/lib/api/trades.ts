@@ -93,7 +93,33 @@ export const tradesApi = {
 
   // POST /v1/trades
   createTrade: async (payload: CreateTradePayload): Promise<{ trade: Trade }> => {
-    const response: any = await apiClient.post('/trades', payload);
+    // Map UI fields to backend API fields
+    const backendPayload = {
+      symbol: payload.symbol,
+      side: payload.direction === 'LONG' ? 'BUY' : 'SELL', // Map direction to side
+      quantity: payload.size, // Map size to quantity
+      entryPrice: payload.entryPrice,
+      exitPrice: payload.exitPrice,
+      stopLoss: payload.stopLoss,
+      takeProfit: payload.takeProfit,
+      openDate: payload.entryDate, // Map entryDate to openDate
+      closeDate: payload.exitDate, // Map exitDate to closeDate
+      outcome: payload.outcome,
+      pnl: payload.pnl,
+      riskRewardRatio: payload.riskRewardRatio,
+      setupType: payload.strategy,
+      tradingSession: payload.session,
+      marketCondition: payload.marketCondition,
+      newsEvents: payload.newsEvents || [],
+      mistakes: payload.mistakes || [],
+      lessons: payload.keyLesson ? [payload.keyLesson] : [], // Convert single lesson to array
+      tags: payload.tags || [],
+      accountIds: payload.accountIds || [], // Include accountIds for proper account association
+      brokenRuleIds: payload.brokenRuleIds || [],
+      images: payload.images || [],
+    };
+
+    const response: any = await apiClient.post('/trades', backendPayload);
     const backendTrade = response.trade;
     // Map backend response to frontend Trade type
     const trade: Trade = {
@@ -116,7 +142,32 @@ export const tradesApi = {
 
   // PUT /v1/trades/:id
   updateTrade: async (id: string, payload: Partial<CreateTradePayload>): Promise<{ trade: Trade }> => {
-    const response: any = await apiClient.put(`/trades/${id}`, payload);
+    // Map UI fields to backend API fields
+    const backendPayload: any = {};
+    if (payload.symbol !== undefined) backendPayload.symbol = payload.symbol;
+    if (payload.direction !== undefined) backendPayload.side = payload.direction === 'LONG' ? 'BUY' : 'SELL';
+    if (payload.size !== undefined) backendPayload.quantity = payload.size;
+    if (payload.entryPrice !== undefined) backendPayload.entryPrice = payload.entryPrice;
+    if (payload.exitPrice !== undefined) backendPayload.exitPrice = payload.exitPrice;
+    if (payload.stopLoss !== undefined) backendPayload.stopLoss = payload.stopLoss;
+    if (payload.takeProfit !== undefined) backendPayload.takeProfit = payload.takeProfit;
+    if (payload.entryDate !== undefined) backendPayload.openDate = payload.entryDate;
+    if (payload.exitDate !== undefined) backendPayload.closeDate = payload.exitDate;
+    if (payload.outcome !== undefined) backendPayload.outcome = payload.outcome;
+    if (payload.pnl !== undefined) backendPayload.pnl = payload.pnl;
+    if (payload.riskRewardRatio !== undefined) backendPayload.riskRewardRatio = payload.riskRewardRatio;
+    if (payload.strategy !== undefined) backendPayload.setupType = payload.strategy;
+    if (payload.session !== undefined) backendPayload.tradingSession = payload.session;
+    if (payload.marketCondition !== undefined) backendPayload.marketCondition = payload.marketCondition;
+    if (payload.newsEvents !== undefined) backendPayload.newsEvents = payload.newsEvents;
+    if (payload.mistakes !== undefined) backendPayload.mistakes = payload.mistakes;
+    if (payload.keyLesson !== undefined) backendPayload.lessons = payload.keyLesson ? [payload.keyLesson] : [];
+    if (payload.tags !== undefined) backendPayload.tags = payload.tags;
+    if (payload.accountIds !== undefined) backendPayload.accountIds = payload.accountIds;
+    if (payload.brokenRuleIds !== undefined) backendPayload.brokenRuleIds = payload.brokenRuleIds;
+    if (payload.images !== undefined) backendPayload.images = payload.images;
+
+    const response: any = await apiClient.put(`/trades/${id}`, backendPayload);
     const backendTrade = response.trade;
     // Map backend response to frontend Trade type
     const trade: Trade = {
@@ -144,7 +195,36 @@ export const tradesApi = {
 
   // POST /v1/trades (bulk import)
   bulkImportTrades: async (payload: BulkImportPayload): Promise<{ imported: number; failed: number; errors: any[] }> => {
-    const response: any = await apiClient.post('/trades', payload);
+    // Map UI fields to backend API fields for each item
+    const mappedItems = payload.items.map(item => ({
+      symbol: item.symbol,
+      side: item.direction === 'LONG' ? 'BUY' : 'SELL', // Map direction to side
+      quantity: item.size, // Map size to quantity
+      entryPrice: item.entryPrice,
+      exitPrice: item.exitPrice,
+      stopLoss: item.stopLoss,
+      takeProfit: item.takeProfit,
+      openDate: item.entryDate, // Map entryDate to openDate
+      closeDate: item.exitDate, // Map exitDate to closeDate
+      outcome: item.outcome,
+      pnl: item.pnl,
+      riskRewardRatio: item.riskRewardRatio,
+      setupType: item.strategy,
+      tradingSession: item.session,
+      marketCondition: item.marketCondition,
+      newsEvents: item.newsEvents || [],
+      mistakes: item.mistakes || [],
+      lessons: item.keyLesson ? [item.keyLesson] : [], // Convert single lesson to array
+      tags: item.tags || [],
+      accountIds: item.accountIds || [], // Include accountIds for proper account association
+      brokenRuleIds: item.brokenRuleIds || [],
+      images: item.images || [],
+    }));
+
+    const response: any = await apiClient.post('/trades', { 
+      items: mappedItems,
+      accountId: payload.accountId 
+    });
     // Backend returns: { created: number, skipped: [], errors: [], items: [] }
     // Map to frontend expected format
     return {

@@ -2,8 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
@@ -25,12 +25,30 @@ const queryClient = new QueryClient({
 
 function AppRoutes() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isHandlingUnauthorized = useRef(false);
 
   useEffect(() => {
     // Listen for unauthorized events from API interceptor
     const handleUnauthorized = () => {
+      // Prevent multiple simultaneous unauthorized handlers
+      if (isHandlingUnauthorized.current) {
+        return;
+      }
+      
+      // Don't navigate if already on login page
+      if (location.pathname === '/login') {
+        return;
+      }
+      
+      isHandlingUnauthorized.current = true;
       tokenRefreshScheduler.stop();
       navigate('/login', { replace: true });
+      
+      // Reset flag after navigation
+      setTimeout(() => {
+        isHandlingUnauthorized.current = false;
+      }, 1000);
     };
 
     window.addEventListener('unauthorized', handleUnauthorized);
@@ -38,7 +56,7 @@ function AppRoutes() {
     return () => {
       window.removeEventListener('unauthorized', handleUnauthorized);
     };
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   // Separate effect to start scheduler only once on mount
   useEffect(() => {

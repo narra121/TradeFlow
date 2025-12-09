@@ -112,20 +112,25 @@ export const deleteAccount = createAsyncThunk(
   }
 );
 
+// Logout thunk
+export const logout = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      tokenRefreshScheduler.stop();
+      await authApi.logout();
+    } catch (error) {
+      // Continue with logout even if API call fails
+      console.error('Logout API error:', error);
+    }
+  }
+);
+
 // Slice
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    logout: (state) => {
-      authApi.logout();
-      tokenRefreshScheduler.stop();
-      state.user = null;
-      state.token = null;
-      state.refreshToken = null;
-      state.isAuthenticated = false;
-      state.error = null;
-    },
     clearError: (state) => {
       state.error = null;
     },
@@ -238,6 +243,29 @@ const authSlice = createSlice({
         state.error = action.payload as string;
       });
 
+    // Logout
+    builder
+      .addCase(logout.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.loading = false;
+        state.user = null;
+        state.token = null;
+        state.refreshToken = null;
+        state.isAuthenticated = false;
+        state.error = null;
+      })
+      .addCase(logout.rejected, (state) => {
+        // Even if logout fails, clear local state
+        state.loading = false;
+        state.user = null;
+        state.token = null;
+        state.refreshToken = null;
+        state.isAuthenticated = false;
+        state.error = null;
+      });
+
     // Delete Account
     builder
       .addCase(deleteAccount.pending, (state) => {
@@ -260,5 +288,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, clearSignupSuccess } = authSlice.actions;
+export const { clearError, clearSignupSuccess } = authSlice.actions;
 export default authSlice.reducer;

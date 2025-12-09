@@ -109,8 +109,14 @@ export const authApi = {
     localStorage.removeItem('refreshToken');
   },
 
-  // Logout (client-side only)
-  logout: () => {
+  // Logout - calls backend to invalidate session
+  logout: async (): Promise<void> => {
+    try {
+      await apiClient.post('/auth/logout-all');
+    } catch (error) {
+      // Continue with local logout even if API call fails
+      console.error('Logout API call failed:', error);
+    }
     localStorage.removeItem('idToken');
     localStorage.removeItem('refreshToken');
   },

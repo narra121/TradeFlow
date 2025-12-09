@@ -41,6 +41,8 @@ import { useRazorpay } from '@/hooks/useRazorpay';
 import { razorpayApi, SubscriptionDetails, PlanResponse, authApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { ProfileCardSkeleton, SubscriptionCardSkeleton, SubscriptionPlansCardSkeleton } from '@/components/ui/loading-skeleton';
+import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
+import { logout as logoutThunk } from '@/store/slices/authSlice';
 
 export function ProfileView() {
   const dispatch = useAppDispatch();
@@ -48,13 +50,17 @@ export function ProfileView() {
   const { profile, subscription, loading } = useAppSelector((state) => state.user);
   const { initiateSubscription, loading: paymentLoading, error: paymentError } = useRazorpay();
   
-  const handleLogout = () => {
-    authApi.logout();
+  const handleLogout = async () => {
+    // Dispatch logout thunk which stops scheduler and calls API
+    await dispatch(logoutThunk()).unwrap();
+    
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
     });
-    navigate('/login');
+    
+    // Navigate to login
+    navigate('/login', { replace: true });
   };
   
   const [availablePlans, setAvailablePlans] = useState<PlanResponse[]>([]);
