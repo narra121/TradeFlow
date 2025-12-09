@@ -45,21 +45,20 @@ type TabType = 'trades' | 'calendar';
 
 export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) {
   const dispatch = useAppDispatch();
-  const { trades = [], loading } = useAppSelector((state) => state.trades);
+  const { trades = [], loading, filters } = useAppSelector((state) => state.trades);
   
   const [activeTab, setActiveTab] = useState<TabType>('trades');
   
-  // Date filter state
-  const [datePreset, setDatePreset] = useState<DatePreset>(30);
+  // Date filter state - customRange only
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
   
   // Update Redux when date filter changes
   const handleDatePresetChange = (preset: DatePreset) => {
-    setDatePreset(preset);
     const range = getDateRangeFromPreset(preset, customRange);
     dispatch(setDateRangeFilter({
       startDate: range.from.toISOString(),
-      endDate: range.to.toISOString()
+      endDate: range.to.toISOString(),
+      datePreset: preset
     }));
   };
   
@@ -217,7 +216,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           <AccountFilter />
           {activeTab === 'trades' && (
             <DateRangeFilter
-              selectedPreset={datePreset}
+              selectedPreset={filters.datePreset}
               onPresetChange={handleDatePresetChange}
               customRange={customRange}
               onCustomRangeChange={setCustomRange}

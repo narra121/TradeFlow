@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { tradesApi, CreateTradePayload, TradesQueryParams, BulkImportPayload } from '@/lib/api';
 import { handleApiError } from '@/lib/api';
 import { Trade } from '@/types/trade';
+import { DatePreset } from '@/components/filters/DateRangeFilter';
 
 export interface TradesState {
   trades: Trade[];
@@ -11,6 +12,7 @@ export interface TradesState {
     accountId: string;
     startDate: string;
     endDate: string;
+    datePreset: DatePreset; // Store the preset selection
   };
 }
 
@@ -31,6 +33,7 @@ const initialState: TradesState = {
   error: null,
   filters: {
     accountId: 'ALL',
+    datePreset: 30,
     ...getDefaultDateRange()
   },
 };
@@ -124,10 +127,14 @@ const tradesSlice = createSlice({
     setDateRangeFilter: (state, action) => {
       state.filters.startDate = action.payload.startDate;
       state.filters.endDate = action.payload.endDate;
+      if (action.payload.datePreset !== undefined) {
+        state.filters.datePreset = action.payload.datePreset;
+      }
     },
     clearFilters: (state) => {
       state.filters = {
         accountId: 'ALL',
+        datePreset: 30,
         ...getDefaultDateRange()
       };
     },

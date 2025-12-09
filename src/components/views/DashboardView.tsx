@@ -26,16 +26,14 @@ interface DashboardViewProps {
 
 export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps) {
   const dispatch = useAppDispatch();
-  const { trades = [], loading: tradesLoading } = useAppSelector((state) => state.trades);
-  
-  const [datePreset, setDatePreset] = useState<DatePreset>(30);
+  const { trades = [], loading: tradesLoading, filters } = useAppSelector((state) => state.trades);
   
   const handleDatePresetChange = (preset: DatePreset) => {
-    setDatePreset(preset);
     const range = getDateRangeFromPreset(preset);
     dispatch(setDateRangeFilter({
       startDate: range.from.toISOString(),
-      endDate: range.to.toISOString()
+      endDate: range.to.toISOString(),
+      datePreset: preset
     }));
   };
 
@@ -122,7 +120,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
         </div>
         <div className="flex items-center gap-4">
           <DateRangeFilter
-            selectedPreset={datePreset}
+            selectedPreset={filters.datePreset}
             onPresetChange={handleDatePresetChange}
           />
           <AccountFilter />
