@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { format, subDays } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
-export type DatePreset = 7 | 30 | 60 | 90 | 'custom';
+export type DatePreset = 7 | 30 | 60 | 90 | 365 | 'all' | 'custom';
 
 interface DateRangeFilterProps {
   selectedPreset: DatePreset;
@@ -31,6 +31,8 @@ export function DateRangeFilter({
     { value: 30, label: '30 days' },
     { value: 60, label: '60 days' },
     { value: 90, label: '90 days' },
+    { value: 365, label: '1 year' },
+    { value: 'all', label: 'All time' },
   ];
 
   const handleFromSelect = (date: Date | undefined) => {
@@ -145,6 +147,10 @@ export function getDateRangeFromPreset(preset: DatePreset, customRange?: { from:
   const now = new Date();
   if (preset === 'custom' && customRange) {
     return customRange;
+  }
+  if (preset === 'all') {
+    // All time: start from Jan 1, 2000 to cover any possible trade date
+    return { from: new Date('2000-01-01'), to: now };
   }
   const days = typeof preset === 'number' ? preset : 30;
   return { from: subDays(now, days), to: now };
