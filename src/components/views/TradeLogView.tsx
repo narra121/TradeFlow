@@ -29,12 +29,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
 import { CalendarTradeModal } from '@/components/trade/CalendarTradeModal';
+import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { setDateRangeFilter, deleteTrade, updateTrade } from '@/store/slices/tradesSlice';
 
 interface TradeLogViewProps {
   onAddTrade: () => void;
@@ -67,6 +78,8 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const [outcomeFilter, setOutcomeFilter] = useState<'ALL' | 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN'>('ALL');
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [deletingTradeId, setDeletingTradeId] = useState<string | null>(null);
 
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -97,6 +110,55 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   };
 
   // Trade table handlers
+  const handleEditTrade = (trade: Trade) => {
+    setEditingTrade(trade);
+  };
+
+  const handleSaveEditedTrade = async (updatedTrade: Omit<Trade, 'id'>) => {
+    if (!editingTrade) return;
+    
+    const payload = {
+      symbol: updatedTrade.symbol,
+      side: updatedTrade.direction === 'LONG' ? 'BUY' as const : 'SELL' as const,
+      quantity: updatedTrade.size,
+      entryPrice: updatedTrade.entryPrice,
+      exitPrice: updatedTrade.exitPrice,
+      stopLoss: updatedTrade.stopLoss,
+      takeProfit: updatedTrade.takeProfit,
+      openDate: updatedTrade.entryDate,
+      closeDate: updatedTrade.exitDate,
+      outcome: updatedTrade.outcome,
+      accountIds: updatedTrade.accountIds,
+      brokenRuleIds: updatedTrade.brokenRuleIds,
+      setupType: updatedTrade.strategy,
+      tradingSession: updatedTrade.session,
+      marketCondition: updatedTrade.marketCondition,
+      newsEvents: updatedTrade.newsEvents,
+      mistakes: updatedTrade.mistakes,
+      lessons: updatedTrade.keyLesson ? [updatedTrade.keyLesson] : [],
+      tags: updatedTrade.tags,
+      images: updatedTrade.images?.map(img => ({
+        url: img.url,
+        timeframe: img.timeframe,
+        description: img.description
+      }))
+    };
+    
+    await dispatch(updateTrade({ id: editingTrade.id, payload: payload as any })).unwrap();
+    setEditingTrade(null);
+  };
+
+  const handleDeleteTrade = async (tradeId: string) => {
+    setDeletingTradeId(tradeId);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingTradeId) {
+      await dispatch(deleteTrade(deletingTradeId));
+      setDeletingTradeId(null);
+    }
+  };
+
   const handleViewTrade = (index: number) => {
     setSelectedTradeIndex(index);
     setIsDetailModalOpen(true);
@@ -425,8 +487,13 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                               <DropdownMenuItem onClick={() => handleViewTrade(index)}>
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem>Edit Trade</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditTrade(trade)}>Edit Trade</DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive" 
+                                onClick={() => handleDeleteTrade(trade.id)}
+                              >
+                                Delete
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -657,6 +724,35 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           totalDays={tradingDays.length}
         />
       )}
+
+      {/* Edit Trade Modal */}
+      {editingTrade && (
+        <AddTradeModal
+          open={!!editingTrade}
+          onOpenChange={(open) => !open && setEditingTrade(null)}
+          onAddTrade={handleSaveEditedTrade}
+          editMode={true}
+          initialTrade={editingTrade}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingTradeId} onOpenChange={(open) => !open && setDeletingTradeId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Trade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this trade? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

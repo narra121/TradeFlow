@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { TradingRule } from '@/hooks/useTradingRules';
+import { TradingRule } from '@/lib/api/goalsRules';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 interface BrokenRulesSelectProps {
@@ -20,13 +20,13 @@ export function BrokenRulesSelect({ rules, selectedRuleIds, onChange }: BrokenRu
   return (
     <div className="space-y-2">
       {rules.map((rule) => {
-        const isSelected = selectedRuleIds.includes(rule.id);
+        const isSelected = selectedRuleIds.includes(rule.ruleId);
         
         return (
           <button
-            key={rule.id}
+            key={rule.ruleId}
             type="button"
-            onClick={() => toggleRule(rule.id)}
+            onClick={() => toggleRule(rule.ruleId)}
             className={cn(
               "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all text-sm",
               isSelected

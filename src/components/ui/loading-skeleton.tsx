@@ -375,3 +375,55 @@ export function SettingsSectionSkeleton() {
     </div>
   );
 }
+
+// Subscription plans card skeleton
+export function SubscriptionPlansCardSkeleton() {
+  return (
+    <div className="glass-card p-6 animate-pulse">
+      <div className="text-center mb-6">
+        <Skeleton className="w-12 h-12 rounded-full mx-auto mb-4" />
+        <Skeleton className="h-6 w-64 mx-auto mb-2" />
+        <Skeleton className="h-4 w-96 mx-auto mb-1" />
+        <Skeleton className="h-4 w-80 mx-auto" />
+      </div>
+      
+      {/* Billing cycle toggle */}
+      <div className="flex justify-center mb-6">
+        <Skeleton className="h-10 w-48 rounded-lg" />
+      </div>
+      
+      {/* Pricing tiers */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="p-6 rounded-xl border-2 border-border/50">
+            <div className="flex items-center justify-between mb-3">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <Skeleton className="h-5 w-32 mb-2" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+        ))}
+      </div>
+      
+      {/* Info box */}
+      <Skeleton className="h-20 w-full rounded-lg mb-6" />
+      
+      {/* Subscribe button */}
+      <div className="flex justify-center mb-8">
+        <Skeleton className="h-12 w-64 rounded-md" />
+      </div>
+      
+      {/* Features grid */}
+      <div className="pt-6 border-t border-border/50">
+        <Skeleton className="h-4 w-48 mx-auto mb-4" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-5 w-full" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+

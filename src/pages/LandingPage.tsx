@@ -185,13 +185,9 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Button size="lg" asChild className="gap-2 h-14 px-8 text-lg">
               <Link to="/signup">
-                Start Free — No Card Required
+                Get Started for Free
                 <ArrowRight className="w-5 h-5" />
               </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2 h-14 px-8 text-lg">
-              <Play className="w-5 h-5" />
-              Watch Demo
             </Button>
           </div>
 

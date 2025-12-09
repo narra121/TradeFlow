@@ -40,7 +40,7 @@ import {
 import { useRazorpay } from '@/hooks/useRazorpay';
 import { razorpayApi, SubscriptionDetails, PlanResponse, authApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { ProfileCardSkeleton, SubscriptionCardSkeleton } from '@/components/ui/loading-skeleton';
+import { ProfileCardSkeleton, SubscriptionCardSkeleton, SubscriptionPlansCardSkeleton } from '@/components/ui/loading-skeleton';
 
 export function ProfileView() {
   const dispatch = useAppDispatch();
@@ -402,6 +402,9 @@ export function ProfileView() {
         )}
 
         {/* Current Subscription Card */}
+        {loading && !profile ? (
+          <SubscriptionCardSkeleton />
+        ) : (
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -500,16 +503,12 @@ export function ProfileView() {
             )}
           </CardContent>
         </Card>
+        )}
       </div>
 
       {/* Subscription Plans */}
-      {loadingPlans && !plansLoaded ? (
-        <Card className="bg-card/50 backdrop-blur border-border/50">
-          <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading subscription plans...</p>
-          </CardContent>
-        </Card>
+      {(loading && !profile) || (loadingPlans && !plansLoaded) ? (
+        <SubscriptionPlansCardSkeleton />
       ) : (
       <Card className="bg-card/50 backdrop-blur border-border/50">
         <CardHeader className="text-center">

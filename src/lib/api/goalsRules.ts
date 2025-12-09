@@ -78,3 +78,18 @@ export const rulesApi = {
     return apiClient.delete(`/rules/${id}`);
   },
 };
+
+// Combined API for fetching both rules and goals in one request
+export const goalsRulesApi = {
+  // GET /v1/rules-goals
+  getRulesAndGoals: async (): Promise<{ 
+    rules: TradingRule[]; 
+    goals: Goal[];
+    meta: {
+      rulesCount: number;
+      goalsCount: number;
+    };
+  }> => {
+    return apiClient.get('/rules-goals');
+  },
+};

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,9 +24,11 @@ interface AddTradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddTrade: (trade: Omit<Trade, 'id'>) => void;
+  editMode?: boolean;
+  initialTrade?: Trade;
 }
 
-export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalProps) {
+export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false, initialTrade }: AddTradeModalProps) {
   // Core Trade Details
   const [direction, setDirection] = useState<TradeDirection>('LONG');
   const [symbol, setSymbol] = useState('');
@@ -79,6 +81,33 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
 
   // Accounts hook
   const { accounts } = useAccounts();
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editMode && initialTrade) {
+      setDirection(initialTrade.direction);
+      setSymbol(initialTrade.symbol);
+      setEntryPrice(initialTrade.entryPrice?.toString() || '');
+      setExitPrice(initialTrade.exitPrice?.toString() || '');
+      setStopLoss(initialTrade.stopLoss?.toString() || '');
+      setTakeProfit(initialTrade.takeProfit?.toString() || '');
+      setSize(initialTrade.size.toString());
+      setManualPnl(initialTrade.pnl?.toString() || '');
+      setEntryDateTime(initialTrade.entryDate);
+      setExitDateTime(initialTrade.exitDate || '');
+      setOutcome(initialTrade.outcome || 'TP');
+      setStrategy(initialTrade.strategy || '');
+      setSession(initialTrade.session || '');
+      setMarketCondition(initialTrade.marketCondition || '');
+      setNewsEvent('');
+      setMistakes(initialTrade.mistakes || []);
+      setKeyLesson(initialTrade.keyLesson || '');
+      setTradeNotes(initialTrade.notes || '');
+      setBrokenRuleIds(initialTrade.brokenRuleIds || []);
+      setSelectedAccountIds(initialTrade.accountIds || []);
+      setImages(initialTrade.images || []);
+    }
+  }, [editMode, initialTrade]);
 
   // Calculate Net PnL (use manual if set, otherwise calculate)
   const entry = parseFloat(entryPrice) || 0;
@@ -158,7 +187,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade }: AddTradeModalP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[60vw] max-w-[60vw] h-[85vh] max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-          <DialogTitle className="text-xl font-semibold">Add New Trade</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">{editMode ? 'Edit Trade' : 'Add New Trade'}</DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">

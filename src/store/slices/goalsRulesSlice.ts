@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { goalsApi, rulesApi, Goal, TradingRule, UpdateGoalPayload, CreateRulePayload, UpdateRulePayload } from '@/lib/api';
+import { goalsApi, rulesApi, goalsRulesApi, Goal, TradingRule, UpdateGoalPayload, CreateRulePayload, UpdateRulePayload } from '@/lib/api';
 import { handleApiError } from '@/lib/api';
 
 export interface GoalsRulesState {
@@ -15,6 +15,19 @@ const initialState: GoalsRulesState = {
   loading: false,
   error: null,
 };
+
+// Combined async thunk for fetching both rules and goals
+export const fetchRulesAndGoals = createAsyncThunk(
+  'goalsRules/fetchRulesAndGoals',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await goalsRulesApi.getRulesAndGoals();
+      return { rules: response.rules, goals: response.goals };
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
 
 // Async thunks - Goals
 export const fetchGoals = createAsyncThunk(
@@ -112,6 +125,23 @@ const goalsRulesSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Fetch Rules and Goals (Combined)
+    builder
+      .addCase(fetchRulesAndGoals.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchRulesAndGoals.fulfilled, (state, action) => {
+        state.loading = false;
+        state.rules = action.payload.rules;
+        state.goals = action.payload.goals;
+        state.error = null;
+      })
+      .addCase(fetchRulesAndGoals.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
     // Fetch Goals
     builder
       .addCase(fetchGoals.pending, (state) => {

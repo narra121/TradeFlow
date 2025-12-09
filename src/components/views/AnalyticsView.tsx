@@ -32,6 +32,16 @@ import {
   fetchSymbolDistribution, 
   fetchStrategyDistribution 
 } from '@/store/slices/analyticsSlice';
+import {
+  calculateTradeStats,
+  calculateSymbolDistribution,
+  calculateStrategyDistribution,
+  calculateHourlyStats,
+  calculateDailyWinRate,
+  calculateTradeDurations,
+  groupDurationsByRange,
+  formatDuration,
+} from '@/lib/tradeCalculations';
 
 export function AnalyticsView() {
   const dispatch = useAppDispatch();
@@ -50,11 +60,13 @@ export function AnalyticsView() {
 
   const closedTrades = filteredTrades; // All trades are closed now
   
+  // Calculate all analytics using centralized functions
+  const stats = useMemo(() => calculateTradeStats(closedTrades), [closedTrades]);
+  
   // Symbol distribution (computed locally from filtered trades)
-  const localSymbolDistribution = closedTrades.reduce((acc, trade) => {
-    acc[trade.symbol] = (acc[trade.symbol] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const localSymbolDistribution = useMemo(() => 
+    calculateSymbolDistribution(closedTrades), [closedTrades]
+  );
 
   const pieData = Object.entries(localSymbolDistribution).map(([name, value]) => ({
     name,
@@ -62,11 +74,9 @@ export function AnalyticsView() {
   }));
 
   // Strategy distribution (computed locally from filtered trades)
-  const localStrategyDistribution = closedTrades.reduce((acc, trade) => {
-    const strategy = trade.strategy || 'Unknown';
-    acc[strategy] = (acc[strategy] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const localStrategyDistribution = useMemo(() => 
+    calculateStrategyDistribution(closedTrades), [closedTrades]
+  );
 
   const strategyPieData = Object.entries(localStrategyDistribution).map(([name, value]) => ({
     name,
@@ -76,121 +86,29 @@ export function AnalyticsView() {
   const COLORS = ['hsl(160, 84%, 39%)', 'hsl(265, 89%, 62%)', 'hsl(45, 93%, 47%)', 'hsl(200, 95%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(320, 70%, 50%)'];
 
   // Hourly win rate calculation (all 24 hours) - computed locally from filtered trades
-  const localHourlyStats = Array.from({ length: 24 }, (_, hour) => {
-    const tradesInHour = closedTrades.filter(t => {
-      const entryDate = new Date(t.entryDate);
-      return entryDate.getHours() === hour;
-    });
-    const wins = tradesInHour.filter(t => (t.pnl || 0) > 0).length;
-    const total = tradesInHour.length;
-    return {
-      hour: `${hour.toString().padStart(2, '0')}`,
-      winRate: total > 0 ? (wins / total) * 100 : 0,
-      trades: total,
-    };
-  });
+  const localHourlyStats = useMemo(() => 
+    calculateHourlyStats(closedTrades), [closedTrades]
+  );
 
   // Daily win rate calculation (by day of week) - computed locally from filtered trades
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const localDailyWinRate = dayNames.map((day, index) => {
-    const tradesOnDay = closedTrades.filter(t => new Date(t.entryDate).getDay() === index);
-    const wins = tradesOnDay.filter(t => (t.pnl || 0) > 0).length;
-    const total = tradesOnDay.length;
-    return {
-      day,
-      winRate: total > 0 ? (wins / total) * 100 : 0,
-      trades: total,
-    };
-  });
+  const localDailyWinRate = useMemo(() => 
+    calculateDailyWinRate(closedTrades), [closedTrades]
+  );
 
-  // Trade duration calculation (time to hit TP or SL)
-  const tradeDurations = closedTrades.map(trade => {
-    if (!trade.exitDate) return null;
-    const exitDate = new Date(trade.exitDate);
-    const entryDate = new Date(trade.entryDate);
-    const durationMs = exitDate.getTime() - entryDate.getTime();
-    const durationHours = durationMs / (1000 * 60 * 60);
-    return {
-      symbol: trade.symbol,
-      duration: durationHours,
-      pnl: trade.pnl || 0,
-      isWin: (trade.pnl || 0) > 0,
-    };
-  }).filter(Boolean) as { symbol: string; duration: number; pnl: number; isWin: boolean }[];
+  // Trade duration calculation using centralized functions
+  const durationStats = useMemo(() => 
+    calculateTradeDurations(closedTrades), [closedTrades]
+  );
+  
+  const tradeDurations = durationStats.durations;
 
   // Group durations for bar chart
-  const durationRanges = [
-    { range: '< 1h', min: 0, max: 1 },
-    { range: '1-4h', min: 1, max: 4 },
-    { range: '4-8h', min: 4, max: 8 },
-    { range: '8-24h', min: 8, max: 24 },
-    { range: '> 24h', min: 24, max: Infinity },
-  ];
-
-  const durationData = durationRanges.map(({ range, min, max }) => {
-    const tradesInRange = tradeDurations.filter(t => t.duration >= min && t.duration < max);
-    const wins = tradesInRange.filter(t => t.isWin).length;
-    const losses = tradesInRange.length - wins;
-    return {
-      range,
-      wins,
-      losses,
-      total: tradesInRange.length,
-    };
-  }).filter(d => d.total > 0);
+  const durationData = useMemo(() => 
+    groupDurationsByRange(closedTrades), [closedTrades]
+  );
 
   // Max/Min/Avg duration stats
-  const maxDuration = Math.max(...tradeDurations.map(t => t.duration));
-  const minDuration = Math.min(...tradeDurations.map(t => t.duration));
-  const avgDuration = tradeDurations.reduce((sum, t) => sum + t.duration, 0) / tradeDurations.length;
-
-  const formatDuration = (hours: number) => {
-    if (hours < 1) return `${Math.round(hours * 60)}m`;
-    if (hours < 24) return `${hours.toFixed(1)}h`;
-    return `${(hours / 24).toFixed(1)}d`;
-  };
-
-  // Calculate stats locally from filtered trades
-  const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
-  const losingTrades = closedTrades.filter(t => (t.pnl || 0) < 0);
-  const totalPnl = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-  const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0;
-  const totalWins = winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-  const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0));
-  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
-  const avgWin = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
-  const avgLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
-  const bestTrade = closedTrades.length > 0 ? Math.max(...closedTrades.map(t => t.pnl || 0)) : 0;
-  const worstTrade = closedTrades.length > 0 ? Math.min(...closedTrades.map(t => t.pnl || 0)) : 0;
-  const avgRiskReward = losingTrades.length > 0 && avgLoss > 0 ? avgWin / avgLoss : 0;
-  
-  // Calculate consecutive wins/losses
-  let consecutiveWins = 0;
-  let consecutiveLosses = 0;
-  let currentWinStreak = 0;
-  let currentLossStreak = 0;
-  closedTrades.forEach(trade => {
-    if ((trade.pnl || 0) > 0) {
-      currentWinStreak++;
-      currentLossStreak = 0;
-      consecutiveWins = Math.max(consecutiveWins, currentWinStreak);
-    } else if ((trade.pnl || 0) < 0) {
-      currentLossStreak++;
-      currentWinStreak = 0;
-      consecutiveLosses = Math.max(consecutiveLosses, currentLossStreak);
-    }
-  });
-  
-  // Calculate max drawdown (simplified)
-  let maxDrawdown = 0;
-  let peak = 0;
-  let runningPnl = 0;
-  closedTrades.forEach(trade => {
-    runningPnl += (trade.pnl || 0);
-    if (runningPnl > peak) peak = runningPnl;
-    const drawdown = peak > 0 ? ((peak - runningPnl) / peak) * 100 : 0;
-    if (drawdown > maxDrawdown) maxDrawdown = drawdown;
-  });
+  const { maxDuration, minDuration, avgDuration } = durationStats;
 
   // Daily P&L for current week (Sunday to Saturday)
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 }); // Sunday
@@ -208,20 +126,20 @@ export function AnalyticsView() {
     };
   });
 
-  // Performance metrics
+  // Performance metrics using calculated stats
   const metrics = [
-    { label: 'Total P&L', value: `$${totalPnl.toFixed(2)}`, isPositive: totalPnl >= 0 },
-    { label: 'Win Rate', value: `${winRate.toFixed(1)}%`, isPositive: winRate >= 50 },
-    { label: 'Profit Factor', value: profitFactor === Infinity ? '∞' : profitFactor.toFixed(2), isPositive: profitFactor >= 1 },
-    { label: 'Average Win', value: `$${avgWin.toFixed(2)}`, isPositive: true },
-    { label: 'Average Loss', value: `$${avgLoss.toFixed(2)}`, isPositive: false },
-    { label: 'Max Drawdown', value: `${maxDrawdown.toFixed(1)}%`, isPositive: false },
-    { label: 'Best Trade', value: `$${bestTrade.toFixed(2)}`, isPositive: true },
-    { label: 'Worst Trade', value: `$${worstTrade.toFixed(2)}`, isPositive: false },
-    { label: 'Avg R:R', value: avgRiskReward.toFixed(2), isPositive: avgRiskReward >= 1.5 },
-    { label: 'Total Trades', value: closedTrades.length.toString(), isPositive: true },
-    { label: 'Win Streak', value: consecutiveWins.toString(), isPositive: true },
-    { label: 'Loss Streak', value: consecutiveLosses.toString(), isPositive: false },
+    { label: 'Total P&L', value: `$${stats.totalPnl.toFixed(2)}`, isPositive: stats.totalPnl >= 0 },
+    { label: 'Win Rate', value: `${stats.winRate.toFixed(1)}%`, isPositive: stats.winRate >= 50 },
+    { label: 'Profit Factor', value: stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2), isPositive: stats.profitFactor >= 1 },
+    { label: 'Average Win', value: `$${stats.avgWin.toFixed(2)}`, isPositive: true },
+    { label: 'Average Loss', value: `$${stats.avgLoss.toFixed(2)}`, isPositive: false },
+    { label: 'Max Drawdown', value: `${stats.maxDrawdown.toFixed(1)}%`, isPositive: false },
+    { label: 'Best Trade', value: `$${stats.bestTrade.toFixed(2)}`, isPositive: true },
+    { label: 'Worst Trade', value: `$${stats.worstTrade.toFixed(2)}`, isPositive: false },
+    { label: 'Avg R:R', value: stats.avgRiskReward.toFixed(2), isPositive: stats.avgRiskReward >= 1.5 },
+    { label: 'Total Trades', value: stats.totalTrades.toString(), isPositive: true },
+    { label: 'Win Streak', value: stats.consecutiveWins.toString(), isPositive: true },
+    { label: 'Loss Streak', value: stats.consecutiveLosses.toString(), isPositive: false },
   ];
 
   if (tradesLoading) {

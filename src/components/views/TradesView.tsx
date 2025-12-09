@@ -21,9 +21,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
+import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchTrades } from '@/store/slices/tradesSlice';
+import { deleteTrade, updateTrade } from '@/store/slices/tradesSlice';
 
 interface TradesViewProps {
   onAddTrade: () => void;
@@ -38,6 +49,8 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
   const [outcomeFilter, setOutcomeFilter] = useState<'ALL' | 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN'>('ALL');
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [deletingTradeId, setDeletingTradeId] = useState<string | null>(null);
 
   const filteredTrades = trades.filter(trade => {
     const matchesSearch = trade.symbol.toLowerCase().includes(searchQuery.toLowerCase());
@@ -48,6 +61,55 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
   const handleViewTrade = (index: number) => {
     setSelectedTradeIndex(index);
     setIsDetailModalOpen(true);
+  };
+
+  const handleEditTrade = (trade: Trade) => {
+    setEditingTrade(trade);
+  };
+
+  const handleSaveEditedTrade = async (updatedTrade: Omit<Trade, 'id'>) => {
+    if (!editingTrade) return;
+    
+    const payload = {
+      symbol: updatedTrade.symbol,
+      side: updatedTrade.direction === 'LONG' ? 'BUY' as const : 'SELL' as const,
+      quantity: updatedTrade.size,
+      entryPrice: updatedTrade.entryPrice,
+      exitPrice: updatedTrade.exitPrice,
+      stopLoss: updatedTrade.stopLoss,
+      takeProfit: updatedTrade.takeProfit,
+      openDate: updatedTrade.entryDate,
+      closeDate: updatedTrade.exitDate,
+      outcome: updatedTrade.outcome,
+      accountIds: updatedTrade.accountIds,
+      brokenRuleIds: updatedTrade.brokenRuleIds,
+      setupType: updatedTrade.strategy,
+      tradingSession: updatedTrade.session,
+      marketCondition: updatedTrade.marketCondition,
+      newsEvents: updatedTrade.newsEvents,
+      mistakes: updatedTrade.mistakes,
+      lessons: updatedTrade.keyLesson ? [updatedTrade.keyLesson] : [],
+      tags: updatedTrade.tags,
+      images: updatedTrade.images?.map(img => ({
+        url: img.url,
+        timeframe: img.timeframe,
+        description: img.description
+      }))
+    };
+    
+    await dispatch(updateTrade({ id: editingTrade.id, payload: payload as any })).unwrap();
+    setEditingTrade(null);
+  };
+
+  const handleDeleteTrade = async (tradeId: string) => {
+    setDeletingTradeId(tradeId);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingTradeId) {
+      await dispatch(deleteTrade(deletingTradeId));
+      setDeletingTradeId(null);
+    }
   };
 
   const handlePreviousTrade = () => {
@@ -236,8 +298,13 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
                           <DropdownMenuItem onClick={() => handleViewTrade(index)}>
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Edit Trade</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditTrade(trade)}>Edit Trade</DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive" 
+                            onClick={() => handleDeleteTrade(trade.id)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -270,6 +337,33 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
         currentIndex={selectedTradeIndex ?? undefined}
         totalCount={filteredTrades.length}
       />
+
+      {/* Edit Trade Modal */}
+      {editingTrade && (
+        <AddTradeModal
+          isOpen={!!editingTrade}
+          onClose={() => setEditingTrade(null)}
+          onAddTrade={handleSaveEditedTrade}
+          editMode={true}
+          initialTrade={editingTrade}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingTradeId} onOpenChange={(open) => !open && setDeletingTradeId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the trade.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

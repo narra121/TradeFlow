@@ -7,9 +7,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
-  fetchGoals, 
+  fetchRulesAndGoals,
   updateGoal as updateGoalAction,
-  fetchRules,
   createRule as createRuleAction,
   updateRule as updateRuleAction,
   deleteRule as deleteRuleAction,
@@ -102,8 +101,7 @@ export function GoalsView() {
   const rules = reduxRules || [];
   
   useEffect(() => {
-    dispatch(fetchGoals());
-    dispatch(fetchRules());
+    dispatch(fetchRulesAndGoals());
   }, [dispatch]);
   
   // Filter trades by selected account for rule counting

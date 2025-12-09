@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { calculateTradeStats } from '@/lib/tradeCalculations';
 import { 
   DashboardStatsSkeleton, 
   ChartSkeleton, 
@@ -39,61 +40,9 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
 
   const filteredTrades = trades; // No need to filter - backend already filtered
 
+  // Calculate all stats using centralized function
   const filteredStats = useMemo(() => {
-    const closedTrades = filteredTrades; // All trades are closed now
-    const wins = closedTrades.filter(t => (t.pnl || 0) > 0);
-    const losses = closedTrades.filter(t => (t.pnl || 0) < 0);
-    const totalPnl = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-    const winRate = closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0;
-    const avgWin = wins.length > 0 ? wins.reduce((sum, t) => sum + (t.pnl || 0), 0) / wins.length : 0;
-    const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((sum, t) => sum + (t.pnl || 0), 0) / losses.length) : 0;
-    const grossProfit = wins.reduce((sum, t) => sum + (t.pnl || 0), 0);
-    const grossLoss = Math.abs(losses.reduce((sum, t) => sum + (t.pnl || 0), 0));
-    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
-    const avgRiskReward = avgLoss > 0 ? avgWin / avgLoss : 0;
-    
-    // Calculate consecutive wins/losses
-    let maxConsecutiveWins = 0;
-    let maxConsecutiveLosses = 0;
-    let currentWinStreak = 0;
-    let currentLossStreak = 0;
-    closedTrades.forEach(trade => {
-      if ((trade.pnl || 0) > 0) {
-        currentWinStreak++;
-        currentLossStreak = 0;
-        maxConsecutiveWins = Math.max(maxConsecutiveWins, currentWinStreak);
-      } else if ((trade.pnl || 0) < 0) {
-        currentLossStreak++;
-        currentWinStreak = 0;
-        maxConsecutiveLosses = Math.max(maxConsecutiveLosses, currentLossStreak);
-      }
-    });
-    
-    // Calculate max drawdown
-    let maxDrawdown = 0;
-    let peak = 0;
-    let runningPnl = 0;
-    closedTrades.forEach(trade => {
-      runningPnl += (trade.pnl || 0);
-      if (runningPnl > peak) peak = runningPnl;
-      const drawdown = peak > 0 ? ((peak - runningPnl) / peak) * 100 : 0;
-      if (drawdown > maxDrawdown) maxDrawdown = drawdown;
-    });
-    
-    return {
-      totalPnl,
-      winRate,
-      totalTrades: closedTrades.length,
-      avgWin,
-      avgLoss,
-      profitFactor,
-      bestTrade: closedTrades.length > 0 ? Math.max(...closedTrades.map(t => t.pnl || 0)) : 0,
-      worstTrade: closedTrades.length > 0 ? Math.min(...closedTrades.map(t => t.pnl || 0)) : 0,
-      maxDrawdown,
-      avgRiskReward,
-      consecutiveWins: maxConsecutiveWins,
-      consecutiveLosses: maxConsecutiveLosses,
-    };
+    return calculateTradeStats(filteredTrades);
   }, [filteredTrades]);
 
   // All trades are closed - no open trades section needed
@@ -157,8 +106,8 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
             className="stagger-3"
           />
           <StatCard
-            title="Breakeven Trades"
-            value={filteredTrades.filter(t => t.outcome === 'BREAKEVEN').length}
+            title="Profit Factor"
+            value={filteredStats.profitFactor === Infinity ? '∞' : filteredStats.profitFactor.toFixed(2)}
             icon={BarChart3}
             variant="accent"
             className="stagger-4"
@@ -185,8 +134,8 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           <div>
             <WinRateRing 
               winRate={filteredStats.winRate}
-              wins={filteredTrades.filter(t => (t.pnl || 0) > 0).length}
-              losses={filteredTrades.filter(t => (t.pnl || 0) < 0).length}
+              wins={filteredStats.wins}
+              losses={filteredStats.losses}
             />
           </div>
         </div>
