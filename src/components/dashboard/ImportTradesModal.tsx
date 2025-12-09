@@ -41,6 +41,8 @@ interface ImportedTrade {
   direction: TradeDirection;
   entryPrice: number;
   exitPrice: number;
+  stopLoss: number;
+  takeProfit: number;
   size: number;
   pnl: number;
   entryDate: Date;
@@ -52,7 +54,7 @@ interface ImportedTrade {
 interface ImportTradesModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImportTrades: (trades: Omit<Trade, 'id'>[]) => void;
+  onImportTrades: (trades: Omit<Trade, 'id'>[]) => Promise<{ success: boolean; error?: any }>;
 }
 
 export function ImportTradesModal({ open, onOpenChange, onImportTrades }: ImportTradesModalProps) {
@@ -154,6 +156,8 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         direction: trade.side === 'BUY' ? 'LONG' : trade.side === 'SELL' ? 'SHORT' : 'LONG',
         entryPrice: parseFloat(trade.entryPrice) || 0,
         exitPrice: parseFloat(trade.exitPrice) || 0,
+        stopLoss: parseFloat(trade.stopLoss) || 0,
+        takeProfit: parseFloat(trade.takeProfit) || 0,
         size: parseFloat(trade.quantity) || 0,
         pnl: parseFloat(trade.pnl) || 0,
         entryDate: trade.openDate ? new Date(trade.openDate) : new Date(),
@@ -215,6 +219,8 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
       ...selectedTrades[0],
       size: selectedTrades.reduce((sum, t) => sum + t.size, 0),
       pnl: selectedTrades.reduce((sum, t) => sum + t.pnl, 0),
+      stopLoss: selectedTrades[0].stopLoss,
+      takeProfit: selectedTrades[0].takeProfit,
       entryDate: new Date(Math.min(...selectedTrades.map(t => t.entryDate.getTime()))),
       exitDate: new Date(Math.max(...selectedTrades.map(t => t.exitDate.getTime()))),
       isSelected: false,
@@ -231,28 +237,36 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
   const handleSaveAll = async () => {
     setIsSaving(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const tradesToSave: Omit<Trade, 'id'>[] = extractedTrades.map(t => ({
-      symbol: t.symbol,
-      direction: t.direction,
-      entryPrice: t.entryPrice,
-      exitPrice: t.exitPrice,
-      stopLoss: 0,
-      takeProfit: 0,
-      size: t.size,
-      entryDate: t.entryDate.toISOString(),
-      exitDate: t.exitDate.toISOString(),
-      outcome: 'TP' as const,
-      pnl: t.pnl,
-      riskRewardRatio: 0,
-    }));
+    try {
+      const tradesToSave: Omit<Trade, 'id'>[] = extractedTrades.map(t => ({
+        symbol: t.symbol,
+        direction: t.direction,
+        entryPrice: t.entryPrice,
+        exitPrice: t.exitPrice,
+        stopLoss: t.stopLoss,
+        takeProfit: t.takeProfit,
+        size: t.size,
+        entryDate: t.entryDate.toISOString(),
+        exitDate: t.exitDate.toISOString(),
+        outcome: 'TP' as const,
+        pnl: t.pnl,
+        riskRewardRatio: 0,
+      }));
 
-    onImportTrades(tradesToSave);
-    setIsSaving(false);
-    resetModal();
-    onOpenChange(false);
+      const result = await onImportTrades(tradesToSave);
+      
+      // Only close and reset if save was successful
+      if (result?.success) {
+        resetModal();
+        onOpenChange(false);
+      }
+      // If not successful, keep dialog open for user to retry
+    } catch (error) {
+      console.error('Error saving trades:', error);
+      // Keep dialog open on error
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const resetModal = () => {

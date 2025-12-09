@@ -103,7 +103,6 @@ export function GoalsView() {
   useEffect(() => {
     dispatch(fetchGoals());
     dispatch(fetchRules());
-    dispatch(fetchTrades({}));
   }, [dispatch]);
   
   // Filter trades by selected account for rule counting

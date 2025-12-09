@@ -1,41 +1,38 @@
 import apiClient from './api';
-import { Trade } from '@/types/trade';
+import { Trade, TradeImage } from '@/types/trade';
 
+// Frontend payload - matches exactly what AddTradeModal sends (line 104-125)
+// This gets mapped to backend format in AppPage.tsx before API call
 export interface CreateTradePayload {
   symbol: string;
-  side: 'BUY' | 'SELL';
-  quantity: number;
+  direction: 'LONG' | 'SHORT';
+  size: number;
   entryPrice?: number;
   exitPrice?: number;
   stopLoss?: number;
   takeProfit?: number;
-  openDate: string; // YYYY-MM-DD
-  closeDate?: string;
+  entryDate: string; // ISO string
+  exitDate?: string; // ISO string
+  outcome?: 'TP' | 'SL' | 'PARTIAL' | 'BREAKEVEN';
+  pnl?: number; // Calculated in UI
+  riskRewardRatio?: number; // Calculated in UI
+  strategy?: string;
+  session?: string;
+  marketCondition?: string;
+  newsEvents?: string[];
+  mistakes?: string[];
+  keyLesson?: string; // Single string from UI
+  tags?: string[];
   accountIds?: string[];
   brokenRuleIds?: string[];
-  setupType?: string;
-  tradingSession?: string;
-  marketCondition?: string;
-  preTradeNotes?: string;
-  postTradeNotes?: string;
-  mistakes?: string[];
-  lessons?: string[];
-  newsEvents?: string[];
-  tags?: string[];
-  images?: Array<{
-    url?: string;
-    base64Data?: string;
-    timeframe?: string;
-    description?: string;
-  }>;
+  images?: TradeImage[];
 }
 
 export interface TradesQueryParams {
   accountId?: string;
   startDate?: string;
   endDate?: string;
-  status?: 'OPEN' | 'CLOSED';
-  symbol?: string;
+
 }
 
 export interface TradesResponse {
@@ -56,15 +53,41 @@ export const tradesApi = {
   // GET /v1/trades
   getTrades: async (params?: TradesQueryParams): Promise<TradesResponse> => {
     const response: any = await apiClient.get('/trades', { params });
-    // Map backend response to frontend Trade type
-    const trades = response.trades.map((trade: any) => ({
-      ...trade,
+    
+    // Handle case where response might be { trades: [...] } or just [...]
+    const tradesArray = Array.isArray(response) ? response : (response?.trades || []);
+    
+    // Map backend response to frontend Trade type - DO NOT spread original trade
+    const trades = tradesArray.map((trade: any) => ({
       id: trade.tradeId,
+      symbol: trade.symbol,
       direction: trade.side === 'BUY' ? 'LONG' : 'SHORT',
+      entryPrice: trade.entryPrice || 0,
+      exitPrice: trade.exitPrice || undefined,
+      stopLoss: trade.stopLoss || 0,
+      takeProfit: trade.takeProfit || 0,
       size: trade.quantity,
-      entryDate: trade.openDate, // Keep as ISO string for Redux
-      exitDate: trade.closeDate || undefined, // Keep as ISO string for Redux
+      entryDate: trade.openDate,
+      exitDate: trade.closeDate || undefined,
+      outcome: trade.outcome || 'TP',
+      pnl: trade.pnl || 0,
+      pnlPercent: trade.pnlPercent,
+      riskRewardRatio: trade.riskRewardRatio || 0,
+      notes: trade.postTradeNotes || trade.preTradeNotes,
+      setup: trade.setupType,
+      strategy: trade.setupType,
+      session: trade.tradingSession,
+      marketCondition: trade.marketCondition,
+      newsEvents: trade.newsEvents || [],
+      mistakes: trade.mistakes || [],
+      keyLesson: trade.lessons?.[0],
+      images: trade.images || [],
+      tags: trade.tags || [],
+      emotions: trade.emotions,
+      accountIds: trade.accountId ? [trade.accountId] : [],
+      brokenRuleIds: trade.brokenRuleIds || [],
     }));
+    
     return { trades };
   },
 
@@ -80,6 +103,13 @@ export const tradesApi = {
       size: backendTrade.quantity,
       entryDate: backendTrade.openDate, // Keep as ISO string for Redux
       exitDate: backendTrade.closeDate || undefined, // Keep as ISO string for Redux
+      outcome: backendTrade.outcome || 'TP',
+      riskRewardRatio: backendTrade.riskRewardRatio || 0,
+      stopLoss: backendTrade.stopLoss || 0,
+      takeProfit: backendTrade.takeProfit || 0,
+      pnl: backendTrade.pnl || 0,
+      entryPrice: backendTrade.entryPrice || 0,
+      exitPrice: backendTrade.exitPrice || undefined,
     };
     return { trade };
   },
@@ -96,6 +126,13 @@ export const tradesApi = {
       size: backendTrade.quantity,
       entryDate: backendTrade.openDate, // Keep as ISO string for Redux
       exitDate: backendTrade.closeDate || undefined, // Keep as ISO string for Redux
+      outcome: backendTrade.outcome || 'TP',
+      riskRewardRatio: backendTrade.riskRewardRatio || 0,
+      stopLoss: backendTrade.stopLoss || 0,
+      takeProfit: backendTrade.takeProfit || 0,
+      pnl: backendTrade.pnl || 0,
+      entryPrice: backendTrade.entryPrice || 0,
+      exitPrice: backendTrade.exitPrice || undefined,
     };
     return { trade };
   },
@@ -107,7 +144,14 @@ export const tradesApi = {
 
   // POST /v1/trades (bulk import)
   bulkImportTrades: async (payload: BulkImportPayload): Promise<{ imported: number; failed: number; errors: any[] }> => {
-    return apiClient.post('/trades', payload);
+    const response: any = await apiClient.post('/trades', payload);
+    // Backend returns: { created: number, skipped: [], errors: [], items: [] }
+    // Map to frontend expected format
+    return {
+      imported: response.created || 0,
+      failed: response.errors?.length || 0,
+      errors: response.errors || []
+    };
   },
 
   // GET /v1/upload-url

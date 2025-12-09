@@ -4,9 +4,17 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 // API Base URL from environment variable
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.tradeflow.com/v1';
 
-// Custom event to handle unauthorized access
+// Debounce unauthorized events to prevent rapid-fire
+let unauthorizedTimeout: NodeJS.Timeout | null = null;
 const dispatchUnauthorized = () => {
-  window.dispatchEvent(new CustomEvent('unauthorized'));
+  if (unauthorizedTimeout) {
+    return; // Already scheduled, skip
+  }
+  
+  unauthorizedTimeout = setTimeout(() => {
+    window.dispatchEvent(new CustomEvent('unauthorized'));
+    unauthorizedTimeout = null;
+  }, 500); // 500ms debounce
 };
 
 // Create axios instance
@@ -38,12 +46,12 @@ apiClient.interceptors.request.use(
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: unknown) => void }> = [];
 
-const processQueue = (error: AxiosError | null) => {
+const processQueue = (error: AxiosError | null, token: string | null = null) => {
   failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
     } else {
-      prom.resolve();
+      prom.resolve(token);
     }
   });
   
@@ -74,71 +82,83 @@ apiClient.interceptors.response.use(
     return response.data || response;
   },
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _retryCount?: number };
     
     // Handle specific error cases
     if (error.response) {
       const status = error.response.status;
       
-      if (status === 401 && !originalRequest._retry) {
-        // Try to refresh the token
-        const refreshToken = localStorage.getItem('refreshToken');
+      if (status === 401) {
+        // Initialize retry count
+        if (!originalRequest._retryCount) {
+          originalRequest._retryCount = 0;
+        }
         
-        if (refreshToken && !isRefreshing) {
-          originalRequest._retry = true;
-          isRefreshing = true;
+        // Allow max 1 retry (refresh once and retry)
+        if (originalRequest._retryCount < 1) {
+          const refreshToken = localStorage.getItem('refreshToken');
           
-          try {
-            // Call refresh token endpoint
-            const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-              refreshToken: refreshToken
-            });
+          if (refreshToken && !isRefreshing) {
+            originalRequest._retryCount += 1;
+            isRefreshing = true;
             
-            // Backend returns envelope format: { data: { IdToken, ... }, error: null }
-            const tokens = response.data?.data || response.data;
-            const newToken = tokens.IdToken;
-            localStorage.setItem('idToken', newToken);
-            
-            // Update the original request with new token
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            try {
+              // Call refresh token endpoint
+              const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+                refreshToken: refreshToken
+              });
+              
+              // Backend returns envelope format: { data: { IdToken, ... }, error: null }
+              const tokens = response.data?.data || response.data;
+              const newToken = tokens.IdToken;
+              localStorage.setItem('idToken', newToken);
+              
+              // Update the original request with new token
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              }
+              
+              // Process the queued requests
+              processQueue(null, newToken);
+              isRefreshing = false;
+              
+              // Retry the original request
+              return apiClient(originalRequest);
+            } catch (refreshError) {
+              // Refresh failed - clear tokens and dispatch unauthorized event
+              processQueue(error);
+              isRefreshing = false;
+              localStorage.removeItem('idToken');
+              localStorage.removeItem('refreshToken');
+              dispatchUnauthorized();
+              return Promise.reject(refreshError);
             }
-            
-            // Process the queued requests
-            processQueue(null);
-            isRefreshing = false;
-            
-            // Retry the original request
-            return apiClient(originalRequest);
-          } catch (refreshError) {
-            // Refresh failed - clear tokens and dispatch unauthorized event
-            processQueue(error);
-            isRefreshing = false;
+          } else if (isRefreshing) {
+            // If already refreshing, queue this request
+            return new Promise((resolve, reject) => {
+              failedQueue.push({ resolve, reject });
+            }).then((token) => {
+              if (originalRequest.headers && token) {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+              }
+              return apiClient(originalRequest);
+            }).catch(err => {
+              return Promise.reject(err);
+            });
+          } else {
+            // No refresh token available - dispatch unauthorized event
             localStorage.removeItem('idToken');
             localStorage.removeItem('refreshToken');
             dispatchUnauthorized();
-            return Promise.reject(refreshError);
+            return Promise.reject(error);
           }
-        } else if (isRefreshing) {
-          // If already refreshing, queue this request
-          return new Promise((resolve, reject) => {
-            failedQueue.push({ resolve, reject });
-          }).then(() => {
-            if (originalRequest.headers) {
-              const token = localStorage.getItem('idToken');
-              if (token) {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-              }
-            }
-            return apiClient(originalRequest);
-          }).catch(err => {
-            return Promise.reject(err);
-          });
         } else {
-          // No refresh token available - dispatch unauthorized event
+          // Max retries reached (already refreshed once and got 401 again) - logout
+          console.warn('Token refresh failed after retry, logging out');
           localStorage.removeItem('idToken');
           localStorage.removeItem('refreshToken');
           dispatchUnauthorized();
+          return Promise.reject(error);
         }
       } else {
         // Handle other error cases

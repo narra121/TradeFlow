@@ -54,7 +54,7 @@ export function TradeList({ trades, limit }: TradeListProps) {
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-sm text-muted-foreground">
-                      {format(trade.entryDate, 'MMM d, HH:mm')}
+                      {format(new Date(trade.entryDate), 'MMM d, HH:mm')}
                     </span>
                     <span className="text-muted-foreground/50">•</span>
                     <span className="text-sm text-muted-foreground font-mono">

@@ -138,11 +138,11 @@ export function TradeDetailModal({
                   </div>
                   <div>
                     <p className="text-primary text-xs uppercase font-medium mb-1">Open Date</p>
-                    <p className="text-foreground text-xs">{format(trade.entryDate, 'yyyy-MM-dd HH:mm')}</p>
+                    <p className="text-foreground text-xs">{format(new Date(trade.entryDate), 'yyyy-MM-dd HH:mm')}</p>
                   </div>
                   <div>
                     <p className="text-primary text-xs uppercase font-medium mb-1">Close Date</p>
-                    <p className="text-foreground text-xs">{trade.exitDate ? format(trade.exitDate, 'yyyy-MM-dd HH:mm') : '—'}</p>
+                    <p className="text-foreground text-xs">{trade.exitDate ? format(new Date(trade.exitDate), 'yyyy-MM-dd HH:mm') : '—'}</p>
                   </div>
                 </div>
               </div>

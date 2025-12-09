@@ -10,12 +10,16 @@ import { AccountsView } from '@/components/views/AccountsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
 import { useAppDispatch } from '@/store/hooks';
-import { createTrade } from '@/store/slices/tradesSlice';
+import { createTrade, bulkImportTrades, fetchTrades } from '@/store/slices/tradesSlice';
+import { useTradesSync } from '@/hooks/useTradesSync';
 import { cn } from '@/lib/utils';
 import type { Trade } from '@/types/trade';
 
 export function AppPage() {
   const dispatch = useAppDispatch();
+  
+  // Centralized trades sync with account selection
+  useTradesSync();
   const [activeView, setActiveView] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
@@ -33,6 +37,7 @@ export function AppPage() {
       takeProfit: newTrade.takeProfit,
       openDate: newTrade.entryDate,
       closeDate: newTrade.exitDate,
+      outcome: newTrade.outcome,
       accountIds: newTrade.accountIds,
       brokenRuleIds: newTrade.brokenRuleIds,
       setupType: newTrade.strategy,
@@ -53,9 +58,9 @@ export function AppPage() {
   };
 
   const handleImportTrades = async (newTrades: Omit<Trade, 'id'>[]) => {
-    for (const trade of newTrades) {
-      // Map frontend Trade format to backend API format
-      const payload = {
+    try {
+      // Map frontend Trade format to backend API format for bulk import
+      const items = newTrades.map(trade => ({
         symbol: trade.symbol,
         side: trade.direction === 'LONG' ? 'BUY' as const : 'SELL' as const,
         quantity: trade.size,
@@ -65,6 +70,7 @@ export function AppPage() {
         takeProfit: trade.takeProfit,
         openDate: trade.entryDate,
         closeDate: trade.exitDate,
+        outcome: trade.outcome,
         accountIds: trade.accountIds,
         brokenRuleIds: trade.brokenRuleIds,
         setupType: trade.strategy,
@@ -74,10 +80,23 @@ export function AppPage() {
         mistakes: trade.mistakes,
         lessons: trade.keyLesson ? [trade.keyLesson] : [],
         tags: trade.tags
-      };
-      await dispatch(createTrade(payload as any)).unwrap();
+      }));
+
+      // Use bulk import API
+      await dispatch(bulkImportTrades({ items })).unwrap();
+      
+      // Refresh the trades list
+      await dispatch(fetchTrades()).unwrap();
+      
+      // Close dialog only after successful save
+      setIsImportTradesOpen(false);
+      
+      return { success: true };
+    } catch (error) {
+      // Don't close dialog on error - let user retry or fix issues
+      console.error('Failed to import trades:', error);
+      return { success: false, error };
     }
-    setIsImportTradesOpen(false);
   };
 
   const renderView = () => {

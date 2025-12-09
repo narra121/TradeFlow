@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { authApi, LoginPayload, SignupPayload, ConfirmSignupPayload, ForgotPasswordPayload, ResetPasswordPayload } from '@/lib/api';
 import { handleApiError } from '@/lib/api';
+import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
 
 export interface AuthState {
   user: {
@@ -118,6 +119,7 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       authApi.logout();
+      tokenRefreshScheduler.stop();
       state.user = null;
       state.token = null;
       state.refreshToken = null;
@@ -176,6 +178,9 @@ const authSlice = createSlice({
         state.refreshToken = action.payload.refreshToken;
         state.isAuthenticated = true;
         state.error = null;
+        
+        // Start token refresh scheduler
+        tokenRefreshScheduler.start();
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -224,6 +229,9 @@ const authSlice = createSlice({
         state.token = null;
         state.refreshToken = null;
         state.isAuthenticated = false;
+        
+        // Stop token refresh scheduler
+        tokenRefreshScheduler.stop();
       })
       .addCase(logoutAll.rejected, (state, action) => {
         state.loading = false;
@@ -241,6 +249,9 @@ const authSlice = createSlice({
         state.token = null;
         state.refreshToken = null;
         state.isAuthenticated = false;
+        
+        // Stop token refresh scheduler
+        tokenRefreshScheduler.stop();
       })
       .addCase(deleteAccount.rejected, (state, action) => {
         state.loading = false;

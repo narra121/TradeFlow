@@ -33,7 +33,7 @@ import { CalendarTradeModal } from '@/components/trade/CalendarTradeModal';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchTrades } from '@/store/slices/tradesSlice';
+import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 
 interface TradeLogViewProps {
   onAddTrade: () => void;
@@ -45,16 +45,22 @@ type TabType = 'trades' | 'calendar';
 export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) {
   const dispatch = useAppDispatch();
   const { trades = [], loading } = useAppSelector((state) => state.trades);
-  const { selectedAccountId } = useAppSelector((state) => state.accounts);
   
-  useEffect(() => {
-    dispatch(fetchTrades({ accountId: selectedAccountId }));
-  }, [dispatch, selectedAccountId]);
   const [activeTab, setActiveTab] = useState<TabType>('trades');
   
   // Date filter state
   const [datePreset, setDatePreset] = useState<DatePreset>(30);
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
+  
+  // Update Redux when date filter changes
+  const handleDatePresetChange = (preset: DatePreset) => {
+    setDatePreset(preset);
+    const range = getDateRangeFromPreset(preset, customRange);
+    dispatch(setDateRangeFilter({
+      startDate: range.from.toISOString(),
+      endDate: range.to.toISOString()
+    }));
+  };
   
   // Trades table state
   const [symbolFilter, setSymbolFilter] = useState<string>('ALL');
@@ -67,15 +73,8 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
-  // Filter trades by date range
-  const dateFilteredTrades = useMemo(() => {
-    if (!trades) return [];
-    const range = getDateRangeFromPreset(datePreset, customRange);
-    return trades.filter(trade => {
-      const tradeDate = trade.exitDate || trade.entryDate;
-      return isWithinInterval(tradeDate, { start: range.from, end: range.to });
-    });
-  }, [trades, datePreset, customRange]);
+  // Trades are already filtered by backend based on Redux date range
+  const dateFilteredTrades = trades;
 
   // Get unique symbols for filter
   const uniqueSymbols = useMemo(() => {
@@ -218,7 +217,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           {activeTab === 'trades' && (
             <DateRangeFilter
               selectedPreset={datePreset}
-              onPresetChange={setDatePreset}
+              onPresetChange={handleDatePresetChange}
               customRange={customRange}
               onCustomRangeChange={setCustomRange}
               showCustomPicker
@@ -355,14 +354,14 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                       <td className="px-5 py-4">
                         <div>
                           <p className="font-mono text-foreground">{trade.entryPrice}</p>
-                          <p className="text-xs text-muted-foreground">{format(trade.entryDate, 'MMM d, HH:mm')}</p>
+                          <p className="text-xs text-muted-foreground">{format(new Date(trade.entryDate), 'MMM d, HH:mm')}</p>
                         </div>
                       </td>
                       <td className="px-5 py-4">
                         {trade.exitPrice ? (
                           <div>
                             <p className="font-mono text-foreground">{trade.exitPrice}</p>
-                            <p className="text-xs text-muted-foreground">{trade.exitDate && format(trade.exitDate, 'MMM d, HH:mm')}</p>
+                            <p className="text-xs text-muted-foreground">{trade.exitDate && format(new Date(trade.exitDate), 'MMM d, HH:mm')}</p>
                           </div>
                         ) : (
                           <span className="text-muted-foreground">—</span>

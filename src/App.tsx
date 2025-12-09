@@ -9,6 +9,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { AppPage } from "./pages/AppPage";
 import NotFound from "./pages/NotFound";
+import { tokenRefreshScheduler } from "./lib/tokenRefreshScheduler";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,12 +29,30 @@ function AppRoutes() {
   useEffect(() => {
     // Listen for unauthorized events from API interceptor
     const handleUnauthorized = () => {
+      tokenRefreshScheduler.stop();
       navigate('/login', { replace: true });
     };
 
     window.addEventListener('unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('unauthorized', handleUnauthorized);
+    
+    return () => {
+      window.removeEventListener('unauthorized', handleUnauthorized);
+    };
   }, [navigate]);
+
+  // Separate effect to start scheduler only once on mount
+  useEffect(() => {
+    const token = localStorage.getItem('idToken');
+    if (token && !tokenRefreshScheduler.isRunning()) {
+      console.log('[App] Starting token refresh scheduler on mount');
+      tokenRefreshScheduler.start();
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      tokenRefreshScheduler.stop();
+    };
+  }, []); // Empty dependency array - run only once on mount
 
   return (
     <Routes>

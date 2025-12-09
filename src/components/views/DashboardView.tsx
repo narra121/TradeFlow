@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { PortfolioStats } from '@/types/trade';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { TradeList } from '@/components/dashboard/TradeList';
@@ -9,9 +9,8 @@ import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
-import { isWithinInterval } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchTrades } from '@/store/slices/tradesSlice';
+import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 
 interface DashboardViewProps {
   onAddTrade: () => void;
@@ -21,24 +20,19 @@ interface DashboardViewProps {
 export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps) {
   const dispatch = useAppDispatch();
   const { trades = [], loading: tradesLoading } = useAppSelector((state) => state.trades);
-  const { selectedAccountId } = useAppSelector((state) => state.accounts);
-  
-  useEffect(() => {
-    dispatch(fetchTrades({ accountId: selectedAccountId }));
-    // Note: Daily stats endpoint not yet implemented in backend
-    // dispatch(fetchDailyStats({ accountId: selectedAccountId }));
-  }, [dispatch, selectedAccountId]);
   
   const [datePreset, setDatePreset] = useState<DatePreset>(30);
+  
+  const handleDatePresetChange = (preset: DatePreset) => {
+    setDatePreset(preset);
+    const range = getDateRangeFromPreset(preset);
+    dispatch(setDateRangeFilter({
+      startDate: range.from.toISOString(),
+      endDate: range.to.toISOString()
+    }));
+  };
 
-  const filteredTrades = useMemo(() => {
-    if (!trades) return [];
-    const range = getDateRangeFromPreset(datePreset);
-    return trades.filter(trade => {
-      const tradeDate = trade.exitDate || trade.entryDate;
-      return isWithinInterval(tradeDate, { start: range.from, end: range.to });
-    });
-  }, [trades, datePreset]);
+  const filteredTrades = trades; // No need to filter - backend already filtered
 
   const filteredStats = useMemo(() => {
     const closedTrades = filteredTrades; // All trades are closed now
@@ -122,7 +116,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
         <div className="flex items-center gap-4">
           <DateRangeFilter
             selectedPreset={datePreset}
-            onPresetChange={setDatePreset}
+            onPresetChange={handleDatePresetChange}
           />
           <AccountFilter />
         </div>

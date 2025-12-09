@@ -7,22 +7,42 @@ export interface TradesState {
   trades: Trade[];
   loading: boolean;
   error: string | null;
-  filters: TradesQueryParams;
+  filters: {
+    accountId: string;
+    startDate: string;
+    endDate: string;
+  };
 }
+
+// Default to last 30 days
+const getDefaultDateRange = () => {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 30);
+  return {
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString()
+  };
+};
 
 const initialState: TradesState = {
   trades: [],
   loading: false,
   error: null,
-  filters: {},
+  filters: {
+    accountId: 'ALL',
+    ...getDefaultDateRange()
+  },
 };
 
 // Async thunks
 export const fetchTrades = createAsyncThunk(
   'trades/fetchTrades',
-  async (params: TradesQueryParams | undefined, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const response = await tradesApi.getTrades(params);
+      const state = getState() as any;
+      const filters = state.trades.filters;
+      const response = await tradesApi.getTrades(filters);
       return response.trades;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -96,10 +116,20 @@ const tradesSlice = createSlice({
   initialState,
   reducers: {
     setFilters: (state, action) => {
-      state.filters = action.payload;
+      state.filters = { ...state.filters, ...action.payload };
+    },
+    setAccountFilter: (state, action) => {
+      state.filters.accountId = action.payload || 'ALL';
+    },
+    setDateRangeFilter: (state, action) => {
+      state.filters.startDate = action.payload.startDate;
+      state.filters.endDate = action.payload.endDate;
     },
     clearFilters: (state) => {
-      state.filters = {};
+      state.filters = {
+        accountId: 'ALL',
+        ...getDefaultDateRange()
+      };
     },
     clearError: (state) => {
       state.error = null;
@@ -206,5 +236,5 @@ const tradesSlice = createSlice({
   },
 });
 
-export const { setFilters, clearFilters, clearError } = tradesSlice.actions;
+export const { setFilters, setAccountFilter, setDateRangeFilter, clearFilters, clearError } = tradesSlice.actions;
 export default tradesSlice.reducer;

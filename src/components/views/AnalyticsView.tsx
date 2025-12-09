@@ -35,11 +35,6 @@ import {
 export function AnalyticsView() {
   const dispatch = useAppDispatch();
   const { trades = [], loading: tradesLoading } = useAppSelector((state) => state.trades);
-  const { selectedAccountId } = useAppSelector((state) => state.accounts);
-  
-  useEffect(() => {
-    dispatch(fetchTrades({ accountId: selectedAccountId }));
-  }, [dispatch, selectedAccountId]);
   
   const [datePreset, setDatePreset] = useState<DatePreset>(30);
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });

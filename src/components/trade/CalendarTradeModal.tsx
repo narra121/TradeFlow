@@ -139,7 +139,7 @@ export function CalendarTradeModal({
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
-                          {format(trade.entryDate, 'HH:mm')}
+                          {format(new Date(trade.entryDate), 'HH:mm')}
                         </span>
                         <span className={cn(
                           "text-xs font-mono font-semibold",

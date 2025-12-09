@@ -33,11 +33,7 @@ interface TradesViewProps {
 export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
   const dispatch = useAppDispatch();
   const { trades = [], loading } = useAppSelector((state) => state.trades);
-  const { selectedAccountId } = useAppSelector((state) => state.accounts);
   
-  useEffect(() => {
-    dispatch(fetchTrades({ accountId: selectedAccountId }));
-  }, [dispatch, selectedAccountId]);
   const [searchQuery, setSearchQuery] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState<'ALL' | 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN'>('ALL');
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number | null>(null);
@@ -168,14 +164,14 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
                   <td className="px-5 py-4">
                     <div>
                       <p className="font-mono text-foreground">{trade.entryPrice}</p>
-                      <p className="text-xs text-muted-foreground">{format(trade.entryDate, 'MMM d, HH:mm')}</p>
+                      <p className="text-xs text-muted-foreground">{format(new Date(trade.entryDate), 'MMM d, HH:mm')}</p>
                     </div>
                   </td>
                   <td className="px-5 py-4">
                     {trade.exitPrice ? (
                       <div>
                         <p className="font-mono text-foreground">{trade.exitPrice}</p>
-                        <p className="text-xs text-muted-foreground">{trade.exitDate && format(trade.exitDate, 'MMM d, HH:mm')}</p>
+                        <p className="text-xs text-muted-foreground">{trade.exitDate && format(new Date(trade.exitDate), 'MMM d, HH:mm')}</p>
                       </div>
                     ) : (
                       <span className="text-muted-foreground">—</span>
