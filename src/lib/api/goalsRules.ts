@@ -3,12 +3,13 @@ import apiClient from './api';
 export interface Goal {
   userId: string;
   goalId: string;
+  accountId: string;
+  goalType: 'profit' | 'winRate' | 'maxDrawdown' | 'maxTrades';
+  period: 'weekly' | 'monthly';
+  target: number;
   title: string;
   description: string;
-  target: number;
-  current: number;
   unit: string;
-  period: 'weekly' | 'monthly';
   icon: string;
   color: string;
   isInverse?: boolean;
@@ -30,6 +31,8 @@ export interface UpdateGoalPayload {
   target?: number;
   title?: string;
   description?: string;
+  accountId?: string;
+  period?: 'weekly' | 'monthly';
 }
 
 export interface CreateRulePayload {

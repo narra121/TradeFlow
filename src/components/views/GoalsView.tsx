@@ -8,18 +8,21 @@ import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
   fetchRulesAndGoals,
+  fetchGoalPeriodTrades,
   updateGoal as updateGoalAction,
   createRule as createRuleAction,
   updateRule as updateRuleAction,
   deleteRule as deleteRuleAction,
   toggleRule as toggleRuleAction
 } from '@/store/slices/goalsRulesSlice';
-import { fetchTrades } from '@/store/slices/tradesSlice';
 import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/goalsRules';
 import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { useAccounts } from '@/hooks/useAccounts';
 import { GoalCardSkeleton, RulesListSkeleton } from '@/components/ui/loading-skeleton';
+import { calculateGoalProgressForAccount, calculateBrokenRulesCounts, hasCurrentPeriodData } from '@/lib/goalCalculations';
+import { Trade } from '@/types/trade';
+import { fetchGoals } from '@/store/slices/goalsRulesSlice';
 
 interface GoalType {
   id: string;
@@ -92,52 +95,17 @@ const defaultGoalData: GoalData[] = [
 
 export function GoalsView() {
   const dispatch = useAppDispatch();
-  const { rules: reduxRules = [], loading } = useAppSelector((state) => state.goalsRules);
+  const { goals, rules: reduxRules = [], periodTrades, periodTradesLoaded, loading } = useAppSelector((state) => state.goalsRules);
   const { trades } = useAppSelector((state) => state.trades);
-  const { selectedAccountId } = useAccounts();
+  const { selectedAccountId, accounts } = useAccounts();
   
-  // Use defaultGoalData as the data source (would come from Redux in production)
-  const [goalData, setGoalData] = useState<GoalData[]>(defaultGoalData);
   const rules = reduxRules || [];
   
-  useEffect(() => {
-    dispatch(fetchRulesAndGoals());
-  }, [dispatch]);
-  
-  // Filter trades by selected account for rule counting
-  const filteredTrades = useMemo(() => {
-    if (!selectedAccountId) return trades;
-    return trades.filter(trade => trade.accountIds?.includes(selectedAccountId));
-  }, [trades, selectedAccountId]);
-
-  // Calculate broken rule counts for current week (uses filtered trades for account)
-  const brokenRuleCounts = useMemo(() => {
-    const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday
-    const weekEnd = endOfWeek(now, { weekStartsOn: 0 }); // Saturday
-    
-    const counts: Record<string, number> = {};
-    
-    filteredTrades.forEach(trade => {
-      // Check if trade is within current week
-      const tradeDate = parseISO(trade.entryDate);
-      if (isWithinInterval(tradeDate, { start: weekStart, end: weekEnd })) {
-        // Count broken rules
-        trade.brokenRuleIds?.forEach(ruleId => {
-          counts[ruleId] = (counts[ruleId] || 0) + 1;
-        });
-      }
-    });
-    
-    return counts;
-  }, [filteredTrades]);
-  
+  // State declarations - must be before useMemo hooks
   const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
   const [editingGoalKey, setEditingGoalKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [savingGoalKey, setSavingGoalKey] = useState<string | null>(null);
-
-  // Rules state
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [editRuleValue, setEditRuleValue] = useState<string>('');
   const [newRuleValue, setNewRuleValue] = useState<string>('');
@@ -146,30 +114,79 @@ export function GoalsView() {
   const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
   const [isAddingRuleLoading, setIsAddingRuleLoading] = useState(false);
   const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    dispatch(fetchRulesAndGoals());
+    dispatch(fetchGoals());
+  }, [dispatch]);
+  
+  // Fetch period trades if not already loaded and monthly data not in main trades
+  useEffect(() => {
+    if (!periodTradesLoaded && !hasCurrentPeriodData(trades, 'monthly')) {
+      dispatch(fetchGoalPeriodTrades());
+    }
+  }, [dispatch, periodTradesLoaded, trades]);
+  
+  // Use period trades if available, otherwise use main trades
+  const tradesForCalculations = useMemo(() => {
+    return periodTrades.length > 0 ? periodTrades : trades;
+  }, [periodTrades, trades]);
+  
+  // Calculate broken rule counts for current period
+  const brokenRuleCounts = useMemo(() => {
+    return calculateBrokenRulesCounts(tradesForCalculations, periodFilter);
+  }, [tradesForCalculations, periodFilter]);
+  
+  // Get account-specific goals for current period
+  const accountGoals = useMemo(() => {
+    const accountId = selectedAccountId || 'ALL';
+    return goals.filter(g => g.accountId === accountId && g.period === periodFilter);
+  }, [goals, selectedAccountId, periodFilter]);
+  
+  // Calculate goal progress from trades
+  const goalProgress = useMemo(() => {
+    if (accountGoals.length === 0) return null;
+    
+    const accountId = selectedAccountId || 'ALL';
+    const profitGoal = accountGoals.find(g => g.goalType === 'profit');
+    const winRateGoal = accountGoals.find(g => g.goalType === 'winRate');
+    const drawdownGoal = accountGoals.find(g => g.goalType === 'maxDrawdown');
+    const tradesGoal = accountGoals.find(g => g.goalType === 'maxTrades');
+    
+    return calculateGoalProgressForAccount(
+      tradesForCalculations,
+      accountId,
+      periodFilter,
+      {
+        profit: profitGoal?.target || 0,
+        winRate: winRateGoal?.target || 0,
+        maxDrawdown: drawdownGoal?.target || 0,
+        maxTrades: tradesGoal?.target || 0
+      }
+    );
+  }, [accountGoals, tradesForCalculations, selectedAccountId, periodFilter]);
 
   // Get goal data for a specific goal type and period
-  const getGoalData = (goalTypeId: string, period: 'weekly' | 'monthly') => {
-    return goalData.find(g => g.goalTypeId === goalTypeId && g.period === period);
+  const getGoalForType = (goalType: string) => {
+    return accountGoals.find(g => g.goalType === goalType);
   };
 
-
-  const handleEditStart = (goalTypeId: string, period: 'weekly' | 'monthly', currentTarget: number) => {
-    const key = `${goalTypeId}-${period}`;
-    setEditingGoalKey(key);
+  const handleEditStart = (goalId: string, currentTarget: number) => {
+    setEditingGoalKey(goalId);
     setEditValue(currentTarget.toString());
   };
 
-  const handleEditSave = async (goalTypeId: string, period: 'weekly' | 'monthly') => {
-    const key = `${goalTypeId}-${period}`;
+  const handleEditSave = async (goalId: string, period: 'weekly' | 'monthly') => {
     const newTarget = parseFloat(editValue);
     if (!isNaN(newTarget) && newTarget > 0) {
-      setSavingGoalKey(key);
-      // Update local state (would dispatch to Redux in production)
-      setGoalData(prev => prev.map(g => 
-        g.goalTypeId === goalTypeId && g.period === period 
-          ? { ...g, target: newTarget }
-          : g
-      ));
+      setSavingGoalKey(goalId);
+      try {
+        await dispatch(updateGoalAction({ id: goalId, payload: { target: newTarget } })).unwrap();
+        // Refresh goals after update
+        await dispatch(fetchGoals()).unwrap();
+      } catch (error) {
+        console.error('Failed to update goal:', error);
+      }
       setSavingGoalKey(null);
     }
     setEditingGoalKey(null);
@@ -226,27 +243,41 @@ export function GoalsView() {
 
   // Render a single goal card
   const renderGoalCard = (goalType: GoalType, period: 'weekly' | 'monthly', index: number) => {
-    const data = getGoalData(goalType.id, period);
-    if (!data) return null;
+    const goal = getGoalForType(goalType.id);
+    if (!goal || !goalProgress) return null;
+    
+    // Get current value from goalProgress based on goal type
+    const getCurrentValue = () => {
+      switch (goalType.id) {
+        case 'profit': return goalProgress.profit.current;
+        case 'winRate': return goalProgress.winRate.current;
+        case 'drawdown': return goalProgress.maxDrawdown.current;
+        case 'trades': return goalProgress.tradeCount.current;
+        default: return 0;
+      }
+    };
+    
+    const current = getCurrentValue();
+    const target = goal.target;
 
     const Icon = goalType.icon;
-    const key = `${goalType.id}-${period}`;
+    const key = goal.goalId;
     const isInverse = goalType.isInverse;
     
     // For inverse goals: lower is better, show how much "room" is left
     // For normal goals: higher is better, show progress toward target
     const progress = isInverse 
-      ? Math.min((data.current / data.target) * 100, 100)
-      : Math.min((data.current / data.target) * 100, 100);
+      ? Math.min((current / target) * 100, 100)
+      : Math.min((current / target) * 100, 100);
     
     // For inverse: success if current <= target (stayed under limit)
     // For inverse: warning/danger if current > target (exceeded limit)
     const isCompleted = isInverse 
-      ? data.current <= data.target 
-      : data.current >= data.target;
+      ? current <= target 
+      : current >= target;
     
     // For inverse goals, exceeding the target is bad
-    const isExceeded = isInverse && data.current > data.target;
+    const isExceeded = isInverse && current > target;
     
     const isEditing = editingGoalKey === key;
 
@@ -300,7 +331,7 @@ export function GoalsView() {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => handleEditStart(goalType.id, period, data.target)}
+                onClick={() => handleEditStart(goal.goalId, target)}
               >
                 <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
               </Button>
@@ -315,7 +346,7 @@ export function GoalsView() {
                 "text-2xl font-bold font-mono",
                 isExceeded ? "text-destructive" : isCompleted ? "text-success" : "text-foreground"
               )}>
-                {goalType.unit === '$' && goalType.unit}{data.current.toLocaleString()}{goalType.unit !== '$' && goalType.unit}
+                {goalType.unit === '$' && goalType.unit}{current.toLocaleString()}{goalType.unit !== '$' && goalType.unit}
               </span>
               <span className="text-muted-foreground text-lg font-mono">
                 {' / '}
@@ -330,7 +361,7 @@ export function GoalsView() {
                     className="w-20 h-7 text-lg font-mono py-0 px-2"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleEditSave(goalType.id, period);
+                      if (e.key === 'Enter') handleEditSave(goal.goalId, period);
                       if (e.key === 'Escape') handleEditCancel();
                     }}
                   />
@@ -339,7 +370,7 @@ export function GoalsView() {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => handleEditSave(goalType.id, period)}
+                    onClick={() => handleEditSave(goal.goalId, period)}
                     disabled={savingGoalKey === key}
                   >
                     {savingGoalKey === key ? (
@@ -360,7 +391,7 @@ export function GoalsView() {
                 </div>
               ) : (
                 <span className="text-muted-foreground text-lg font-mono">
-                  {goalType.unit === '$' && goalType.unit}{data.target.toLocaleString()}{goalType.unit !== '$' && goalType.unit}
+                  {goalType.unit === '$' && goalType.unit}{target.toLocaleString()}{goalType.unit !== '$' && goalType.unit}
                 </span>
               )}
             </div>
@@ -370,7 +401,7 @@ export function GoalsView() {
                 isExceeded ? "text-destructive" : isCompleted ? "text-success" : "text-muted-foreground"
               )}>
                 {isInverse ? (
-                  isExceeded ? 'Exceeded!' : `${((data.target - data.current) / data.target * 100).toFixed(0)}% left`
+                  isExceeded ? 'Exceeded!' : `${((target - current) / target * 100).toFixed(0)}% left`
                 ) : (
                   `${progress.toFixed(0)}%`
                 )}

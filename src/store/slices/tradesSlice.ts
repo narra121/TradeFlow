@@ -113,6 +113,23 @@ export const getUploadUrl = createAsyncThunk(
   }
 );
 
+// Fetch trades for a specific period (for goal calculations)
+export const fetchPeriodTrades = createAsyncThunk(
+  'trades/fetchPeriodTrades',
+  async (params: { accountId?: string; startDate: string; endDate: string }, { rejectWithValue }) => {
+    try {
+      const response = await tradesApi.getTrades({
+        accountId: params.accountId || 'ALL',
+        startDate: params.startDate,
+        endDate: params.endDate
+      });
+      return response.trades;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
 // Slice
 const tradesSlice = createSlice({
   name: 'trades',

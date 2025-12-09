@@ -1,19 +1,24 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { goalsApi, rulesApi, goalsRulesApi, Goal, TradingRule, UpdateGoalPayload, CreateRulePayload, UpdateRulePayload } from '@/lib/api';
 import { handleApiError } from '@/lib/api';
+import { Trade } from '@/types/trade';
 
 export interface GoalsRulesState {
   goals: Goal[];
   rules: TradingRule[];
+  periodTrades: Trade[]; // Trades for current period (monthly) for goal calculations
   loading: boolean;
   error: string | null;
+  periodTradesLoaded: boolean; // Track if period trades have been fetched
 }
 
 const initialState: GoalsRulesState = {
   goals: [],
   rules: [],
+  periodTrades: [],
   loading: false,
   error: null,
+  periodTradesLoaded: false,
 };
 
 // Combined async thunk for fetching both rules and goals
@@ -109,6 +114,30 @@ export const deleteRule = createAsyncThunk(
     try {
       await rulesApi.deleteRule(id);
       return id;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+// Fetch trades for current period (for goal calculations)
+import { tradesApi } from '@/lib/api';
+import { startOfMonth, endOfMonth } from 'date-fns';
+
+export const fetchGoalPeriodTrades = createAsyncThunk(
+  'goalsRules/fetchGoalPeriodTrades',
+  async (_, { rejectWithValue }) => {
+    try {
+      const now = new Date();
+      const monthStart = startOfMonth(now).toISOString();
+      const monthEnd = endOfMonth(now).toISOString();
+      
+      const response = await tradesApi.getTrades({
+        accountId: 'ALL',
+        startDate: monthStart,
+        endDate: monthEnd
+      });
+      return response.trades;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -256,6 +285,23 @@ const goalsRulesSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteRule.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch Goal Period Trades
+    builder
+      .addCase(fetchGoalPeriodTrades.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchGoalPeriodTrades.fulfilled, (state, action) => {
+        state.loading = false;
+        state.periodTrades = action.payload;
+        state.periodTradesLoaded = true;
+        state.error = null;
+      })
+      .addCase(fetchGoalPeriodTrades.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
