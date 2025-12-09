@@ -19,7 +19,8 @@ import {
   Scatter,
   ZAxis
 } from 'recharts';
-import { Clock, Timer, Loader2 } from 'lucide-react';
+import { Clock, Timer } from 'lucide-react';
+import { MetricsGridSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { subDays, isWithinInterval, startOfWeek, endOfWeek, format, addDays, isSameDay } from 'date-fns';
@@ -225,9 +226,33 @@ export function AnalyticsView() {
 
   if (tradesLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
-        <p className="text-muted-foreground">Loading analytics...</p>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
+            <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <AccountFilter />
+            <DateRangeFilter
+              selectedPreset={datePreset}
+              onPresetChange={setDatePreset}
+              customRange={customRange}
+              onCustomRangeChange={setCustomRange}
+              showCustomPicker
+            />
+          </div>
+        </div>
+        <MetricsGridSkeleton />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartSkeleton height="h-[280px]" />
+          <ChartSkeleton height="h-[280px]" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartSkeleton height="h-[280px]" />
+          <ChartSkeleton height="h-[280px]" />
+        </div>
       </div>
     );
   }

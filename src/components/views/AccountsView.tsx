@@ -23,6 +23,7 @@ import {
   updateAccountStatus as updateAccountStatusAction,
   setSelectedAccount 
 } from '@/store/slices/accountsSlice';
+import { AccountCardSkeleton, StatCardSkeleton } from '@/components/ui/loading-skeleton';
 
 export function AccountsView() {
   const dispatch = useAppDispatch();
@@ -97,39 +98,48 @@ export function AccountsView() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <Building2 className="w-5 h-5 text-primary" />
-            <span className="text-sm text-muted-foreground">Total Accounts</span>
-          </div>
-          <p className="text-2xl font-bold font-mono text-foreground">{accounts.length}</p>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <StatCardSkeleton key={i} />
+          ))}
         </div>
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <Building2 className="w-5 h-5 text-accent" />
-            <span className="text-sm text-muted-foreground">Combined Balance</span>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              <span className="text-sm text-muted-foreground">Total Accounts</span>
+            </div>
+            <p className="text-2xl font-bold font-mono text-foreground">{accounts.length}</p>
           </div>
-          <p className="text-2xl font-bold font-mono text-foreground">
-            ${totalBalance.toLocaleString()}
-          </p>
-        </div>
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <Building2 className="w-5 h-5 text-success" />
-            <span className="text-sm text-muted-foreground">Total P&L</span>
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <Building2 className="w-5 h-5 text-accent" />
+              <span className="text-sm text-muted-foreground">Combined Balance</span>
+            </div>
+            <p className="text-2xl font-bold font-mono text-foreground">
+              ${totalBalance.toLocaleString()}
+            </p>
           </div>
-          <p className={`text-2xl font-bold font-mono ${totalPnl >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {totalPnl >= 0 ? '+' : ''}${totalPnl.toLocaleString()}
-          </p>
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <Building2 className="w-5 h-5 text-success" />
+              <span className="text-sm text-muted-foreground">Total P&L</span>
+            </div>
+            <p className={`text-2xl font-bold font-mono ${totalPnl >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {totalPnl >= 0 ? '+' : ''}${totalPnl.toLocaleString()}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Accounts Grid */}
-      {loading && accounts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading accounts...</p>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <AccountCardSkeleton key={i} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

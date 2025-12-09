@@ -11,6 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { 
+  DashboardStatsSkeleton, 
+  ChartSkeleton, 
+  WinRateRingSkeleton, 
+  RecentTradesListSkeleton, 
+  QuickStatsSkeleton 
+} from '@/components/ui/loading-skeleton';
 
 interface DashboardViewProps {
   onAddTrade: () => void;
@@ -123,69 +130,91 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total P&L"
-          value={filteredStats.totalPnl.toFixed(2)}
-          prefix="$"
-          icon={DollarSign}
-          variant={filteredStats.totalPnl >= 0 ? 'success' : 'danger'}
-          trend={{ value: 12.5, isPositive: filteredStats.totalPnl >= 0 }}
-          className="stagger-1"
-        />
-        <StatCard
-          title="Win Rate"
-          value={filteredStats.winRate.toFixed(1)}
-          suffix="%"
-          icon={TrendingUp}
-          variant="success"
-          className="stagger-2"
-        />
-        <StatCard
-          title="Total Trades"
-          value={filteredStats.totalTrades}
-          icon={Activity}
-          variant="default"
-          className="stagger-3"
-        />
-        <StatCard
-          title="Breakeven Trades"
-          value={filteredTrades.filter(t => t.outcome === 'BREAKEVEN').length}
-          icon={BarChart3}
-          variant="accent"
-          className="stagger-4"
-        />
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart - spans 2 columns */}
-        <div className="lg:col-span-2">
-          <PerformanceChart trades={filteredTrades} />
-        </div>
-
-        {/* Win Rate Ring */}
-        <div>
-          <WinRateRing 
-            winRate={filteredStats.winRate}
-            wins={filteredTrades.filter(t => (t.pnl || 0) > 0).length}
-            losses={filteredTrades.filter(t => (t.pnl || 0) < 0).length}
+      {tradesLoading ? (
+        <DashboardStatsSkeleton />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Total P&L"
+            value={filteredStats.totalPnl.toFixed(2)}
+            prefix="$"
+            icon={DollarSign}
+            variant={filteredStats.totalPnl >= 0 ? 'success' : 'danger'}
+            trend={{ value: 12.5, isPositive: filteredStats.totalPnl >= 0 }}
+            className="stagger-1"
+          />
+          <StatCard
+            title="Win Rate"
+            value={filteredStats.winRate.toFixed(1)}
+            suffix="%"
+            icon={TrendingUp}
+            variant="success"
+            className="stagger-2"
+          />
+          <StatCard
+            title="Total Trades"
+            value={filteredStats.totalTrades}
+            icon={Activity}
+            variant="default"
+            className="stagger-3"
+          />
+          <StatCard
+            title="Breakeven Trades"
+            value={filteredTrades.filter(t => t.outcome === 'BREAKEVEN').length}
+            icon={BarChart3}
+            variant="accent"
+            className="stagger-4"
           />
         </div>
-      </div>
+      )}
+
+      {/* Main Content Grid */}
+      {tradesLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <ChartSkeleton height="h-[280px]" />
+          </div>
+          <WinRateRingSkeleton />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Chart - spans 2 columns */}
+          <div className="lg:col-span-2">
+            <PerformanceChart trades={filteredTrades} />
+          </div>
+
+          {/* Win Rate Ring */}
+          <div>
+            <WinRateRing 
+              winRate={filteredStats.winRate}
+              wins={filteredTrades.filter(t => (t.pnl || 0) > 0).length}
+              losses={filteredTrades.filter(t => (t.pnl || 0) < 0).length}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Bottom Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Trades - spans 2 columns */}
-        <div className="lg:col-span-2">
-          <TradeList trades={filteredTrades} limit={5} />
+      {tradesLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <RecentTradesListSkeleton />
+          </div>
+          <QuickStatsSkeleton />
         </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recent Trades - spans 2 columns */}
+          <div className="lg:col-span-2">
+            <TradeList trades={filteredTrades} limit={5} />
+          </div>
 
-        {/* Quick Stats */}
-        <div>
-          <QuickStats stats={filteredStats} />
+          {/* Quick Stats */}
+          <div>
+            <QuickStats stats={filteredStats} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
