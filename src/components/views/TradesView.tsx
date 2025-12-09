@@ -13,7 +13,8 @@ import {
   Clock,
   CheckCircle2,
   MoreHorizontal,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -51,6 +52,7 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [deletingTradeId, setDeletingTradeId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredTrades = trades.filter(trade => {
     const matchesSearch = trade.symbol.toLowerCase().includes(searchQuery.toLowerCase());
@@ -107,8 +109,15 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
 
   const confirmDelete = async () => {
     if (deletingTradeId) {
-      await dispatch(deleteTrade(deletingTradeId));
-      setDeletingTradeId(null);
+      setIsDeleting(true);
+      try {
+        await dispatch(deleteTrade(deletingTradeId)).unwrap();
+        setDeletingTradeId(null);
+      } catch (error) {
+        // Error is handled by toast middleware
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -359,8 +368,21 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

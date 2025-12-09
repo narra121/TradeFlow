@@ -214,7 +214,8 @@ const tradesSlice = createSlice({
     // Delete Trade
     builder
       .addCase(deleteTrade.pending, (state) => {
-        state.loading = true;
+        // Don't set global loading state for individual trade deletions
+        // to avoid shimmer effect on entire table
         state.error = null;
       })
       .addCase(deleteTrade.fulfilled, (state, action) => {

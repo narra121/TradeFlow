@@ -12,7 +12,8 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
-  Filter
+  Filter,
+  Loader2
 } from 'lucide-react';
 import { TradeTableSkeleton, CalendarSkeleton } from '@/components/ui/loading-skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -80,6 +81,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [deletingTradeId, setDeletingTradeId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -154,8 +156,15 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
   const confirmDelete = async () => {
     if (deletingTradeId) {
-      await dispatch(deleteTrade(deletingTradeId));
-      setDeletingTradeId(null);
+      setIsDeleting(true);
+      try {
+        await dispatch(deleteTrade(deletingTradeId)).unwrap();
+        setDeletingTradeId(null);
+      } catch (error) {
+        // Error is handled by toast middleware
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -746,9 +755,20 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
