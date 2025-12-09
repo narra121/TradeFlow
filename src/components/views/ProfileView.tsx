@@ -40,6 +40,7 @@ import {
 import { useRazorpay } from '@/hooks/useRazorpay';
 import { razorpayApi, SubscriptionDetails, PlanResponse, authApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { ProfileCardSkeleton, SubscriptionCardSkeleton } from '@/components/ui/loading-skeleton';
 
 export function ProfileView() {
   const dispatch = useAppDispatch();
@@ -270,12 +271,9 @@ export function ProfileView() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* User Profile Card */}
         {loading && !profile ? (
-          <Card className="lg:col-span-2 bg-card/50 backdrop-blur border-border/50">
-            <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Loading profile...</p>
-            </CardContent>
-          </Card>
+          <div className="lg:col-span-2">
+            <ProfileCardSkeleton />
+          </div>
         ) : (
         <Card className="lg:col-span-2 bg-card/50 backdrop-blur border-border/50">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -414,10 +412,7 @@ export function ProfileView() {
           </CardHeader>
           <CardContent className="space-y-4">
             {loadingSubscription && !subscriptionLoaded ? (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Loading subscription...</p>
-              </div>
+              <SubscriptionCardSkeleton />
             ) : subscriptionDetails ? (
               <>
                 <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">

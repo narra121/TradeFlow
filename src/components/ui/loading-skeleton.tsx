@@ -289,3 +289,89 @@ export function CalendarSkeleton() {
     </div>
   );
 }
+
+// Profile card skeleton
+export function ProfileCardSkeleton() {
+  return (
+    <div className="glass-card p-6 animate-pulse">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <Skeleton className="h-5 w-40 mb-2" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <Skeleton className="h-9 w-20" />
+      </div>
+      
+      {/* Avatar Section */}
+      <div className="flex items-center gap-6 mb-6">
+        <Skeleton className="w-24 h-24 rounded-full" />
+        <div>
+          <Skeleton className="h-6 w-32 mb-2" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+      </div>
+      
+      <Skeleton className="h-px w-full mb-6" />
+      
+      {/* Profile Fields */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-10 w-full rounded-md" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-10 w-full rounded-md" />
+        </div>
+      </div>
+      
+      <Skeleton className="h-px w-full mb-6" />
+      <Skeleton className="h-10 w-full rounded-md" />
+    </div>
+  );
+}
+
+// Subscription card skeleton
+export function SubscriptionCardSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="p-4 rounded-lg bg-muted/20 space-y-3">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-6 w-16 rounded-full" />
+        </div>
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-3 w-48" />
+      </div>
+      <Skeleton className="h-9 w-full rounded-md" />
+      <Skeleton className="h-9 w-full rounded-md" />
+    </div>
+  );
+}
+
+// Settings section skeleton
+export function SettingsSectionSkeleton() {
+  return (
+    <div className="glass-card p-6 animate-pulse">
+      <div className="flex items-center gap-3 mb-6">
+        <Skeleton className="w-10 h-10 rounded-xl" />
+        <Skeleton className="h-5 w-28" />
+      </div>
+      
+      <div className="space-y-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-5 h-5" />
+              <div>
+                <Skeleton className="h-4 w-24 mb-1" />
+                <Skeleton className="h-3 w-40" />
+              </div>
+            </div>
+            <Skeleton className="h-6 w-11 rounded-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
