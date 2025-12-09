@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Filter
 } from 'lucide-react';
+import { TradeTableSkeleton, CalendarSkeleton } from '@/components/ui/loading-skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
@@ -290,7 +291,10 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             </Select>
           </div>
 
-          {/* Trades Table */}
+          {/* Trades Table with Loading State */}
+          {loading ? (
+            <TradeTableSkeleton rows={8} />
+          ) : (
           <div className="glass-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -440,6 +444,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
               </div>
             )}
           </div>
+          )}
         </>
       )}
 

@@ -62,14 +62,14 @@ export function AppPage() {
       // Map frontend Trade format to backend API format for bulk import
       const items = newTrades.map(trade => ({
         symbol: trade.symbol,
-        side: trade.direction === 'LONG' ? 'BUY' as const : 'SELL' as const,
-        quantity: trade.size,
+        direction: trade.direction,
+        size: trade.size,
         entryPrice: trade.entryPrice,
         exitPrice: trade.exitPrice,
         stopLoss: trade.stopLoss,
         takeProfit: trade.takeProfit,
-        openDate: trade.entryDate,
-        closeDate: trade.exitDate,
+        entryDate: trade.entryDate,
+        exitDate: trade.exitDate,
         outcome: trade.outcome,
         accountIds: trade.accountIds,
         brokenRuleIds: trade.brokenRuleIds,
@@ -83,7 +83,7 @@ export function AppPage() {
       }));
 
       // Use bulk import API
-      await dispatch(bulkImportTrades({ items })).unwrap();
+      await dispatch(bulkImportTrades({ items } as any)).unwrap();
       
       // Refresh the trades list
       await dispatch(fetchTrades()).unwrap();

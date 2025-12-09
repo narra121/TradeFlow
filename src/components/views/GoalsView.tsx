@@ -20,6 +20,7 @@ import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/g
 import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { useAccounts } from '@/hooks/useAccounts';
+import { GoalCardSkeleton, RulesListSkeleton } from '@/components/ui/loading-skeleton';
 
 interface GoalType {
   id: string;
@@ -411,12 +412,24 @@ export function GoalsView() {
       </div>
 
       {/* Goals Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {goalTypes.map((goalType, typeIndex) => (
-          renderGoalCard(goalType, periodFilter, typeIndex)
-        ))}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <GoalCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {goalTypes.map((goalType, typeIndex) => (
+            renderGoalCard(goalType, periodFilter, typeIndex)
+          ))}
+        </div>
+      )}
+
       {/* Trading Rules Checklist */}
+      {loading ? (
+        <RulesListSkeleton />
+      ) : (
       <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-foreground">Trading Rules</h2>
@@ -594,6 +607,7 @@ export function GoalsView() {
           )}
         </div>
       </div>
+      )}
 
       {/* Motivational Quote */}
       <div className="glass-card p-6 bg-gradient-card border-primary/20">
