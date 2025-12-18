@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { TradingAccount, AccountStatus, AccountType } from '@/types/trade';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
@@ -13,13 +13,15 @@ import {
 export function useAccounts() {
   const dispatch = useAppDispatch();
   const { accounts, selectedAccountId, loading, error } = useAppSelector((state) => state.accounts);
+  const hasFetchedRef = useRef(false);
 
-  // Fetch accounts on mount if not already loaded
+  // Fetch accounts only once on mount
   useEffect(() => {
-    if (accounts.length === 0 && !loading) {
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       dispatch(fetchAccounts());
     }
-  }, [dispatch, accounts.length, loading]);
+  }, [dispatch]);
 
   const addAccount = async (account: Omit<TradingAccount, 'id' | 'createdAt'>) => {
     const result = await dispatch(createAccount(account)).unwrap();

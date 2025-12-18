@@ -1,17 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchRules } from '@/store/slices/goalsRulesSlice';
 
 export function useTradingRules() {
   const dispatch = useAppDispatch();
-  const { rules, loading } = useAppSelector((state) => state.goalsRules);
+  const { rules, loading, error } = useAppSelector((state) => state.goalsRules);
+  const hasFetchedRef = useRef(false);
 
-  // Fetch rules on mount if not already loaded
+  // Fetch rules only once on mount
   useEffect(() => {
-    if (rules.length === 0 && !loading) {
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       dispatch(fetchRules());
     }
-  }, [dispatch, rules.length, loading]);
+  }, [dispatch]);
 
   return {
     rules,

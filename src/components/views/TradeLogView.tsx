@@ -158,10 +158,14 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     if (deletingTradeId) {
       setIsDeleting(true);
       try {
-        await dispatch(deleteTrade(deletingTradeId)).unwrap();
+        // Ensure minimum 1 second loading for better UX
+        await Promise.all([
+          dispatch(deleteTrade(deletingTradeId)).unwrap(),
+          new Promise(resolve => setTimeout(resolve, 1000))
+        ]);
         setDeletingTradeId(null);
-      } catch (error) {
-        // Error is handled by toast middleware
+      } catch (error: any) {
+        console.error('Failed to delete trade:', error);
       } finally {
         setIsDeleting(false);
       }
