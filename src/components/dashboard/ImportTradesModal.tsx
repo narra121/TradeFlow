@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import { tradesApi } from '@/lib/api/trades';
 import {
@@ -437,181 +437,173 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                   )}
                 </div>
 
-                <div className="border border-border rounded-lg overflow-hidden">
-                  <ScrollAreaPrimitive.Root type="always" className="relative overflow-hidden">
-                    <ScrollAreaPrimitive.Viewport className="h-[320px] w-full">
-                      <table className="min-w-[980px] w-full caption-bottom text-sm whitespace-nowrap">
-                        <TableHeader>
-                          <TableRow className="bg-muted/50">
-                            <TableHead className="w-10">
-                              <Checkbox
-                                checked={extractedTrades.length > 0 && extractedTrades.every(t => t.isSelected)}
-                                onCheckedChange={toggleSelectAll}
-                              />
-                            </TableHead>
-                            <TableHead>Symbol</TableHead>
-                            <TableHead>Direction</TableHead>
-                            <TableHead>Entry</TableHead>
-                            <TableHead>Exit</TableHead>
-                            <TableHead>Size</TableHead>
-                            <TableHead>P&L</TableHead>
-                            <TableHead>Entry Date</TableHead>
-                            <TableHead className="w-24">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {extractedTrades.map((trade) => (
-                            <TableRow key={trade.id} className={cn(trade.isSelected && "bg-primary/5")}>
-                              <TableCell>
+                <div className="border border-border rounded-lg overflow-hidden grid">
+                  <ScrollAreaPrimitive.Root type="always" className="relative w-full h-[320px] overflow-hidden">
+                    <ScrollAreaPrimitive.Viewport className="w-full h-full">
+                      {/* w-max ensures the container expands to fit the table width */}
+                      {/* min-w-full ensures it fills the viewport if content is small */}
+                      <div className="min-w-full w-max">
+                        <table className="w-full caption-bottom text-sm whitespace-nowrap">
+                          <TableHeader>
+                            <TableRow className="bg-muted/50">
+                              <TableHead className="w-10">
                                 <Checkbox
-                                  checked={trade.isSelected}
-                                  onCheckedChange={() => toggleSelect(trade.id)}
+                                  checked={extractedTrades.length > 0 && extractedTrades.every(t => t.isSelected)}
+                                  onCheckedChange={toggleSelectAll}
                                 />
-                              </TableCell>
-                              <TableCell>
-                                {trade.isEditing ? (
-                                  <Input
-                                    value={trade.symbol}
-                                    onChange={(e) => updateTrade(trade.id, 'symbol', e.target.value)}
-                                    className="h-8 w-24"
-                                  />
-                                ) : (
-                                  <span className="font-medium">{trade.symbol}</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {trade.isEditing ? (
-                                  <Select
-                                    value={trade.direction}
-                                    onValueChange={(v) => updateTrade(trade.id, 'direction', v)}
-                                  >
-                                    <SelectTrigger className="h-8 w-24">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="LONG">LONG</SelectItem>
-                                      <SelectItem value="SHORT">SHORT</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <span
-                                    className={cn(
-                                      "px-2 py-0.5 rounded text-xs font-medium",
-                                      trade.direction === 'LONG'
-                                        ? "bg-emerald-500/20 text-emerald-400"
-                                        : "bg-red-500/20 text-red-400"
-                                    )}
-                                  >
-                                    {trade.direction}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {trade.isEditing ? (
-                                  <Input
-                                    type="number"
-                                    step="0.00001"
-                                    value={trade.entryPrice}
-                                    onChange={(e) => updateTrade(trade.id, 'entryPrice', parseFloat(e.target.value))}
-                                    className="h-8 w-24"
-                                  />
-                                ) : (
-                                  trade.entryPrice.toFixed(4)
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {trade.isEditing ? (
-                                  <Input
-                                    type="number"
-                                    step="0.00001"
-                                    value={trade.exitPrice}
-                                    onChange={(e) => updateTrade(trade.id, 'exitPrice', parseFloat(e.target.value))}
-                                    className="h-8 w-24"
-                                  />
-                                ) : (
-                                  trade.exitPrice.toFixed(4)
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {trade.isEditing ? (
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={trade.size}
-                                    onChange={(e) => updateTrade(trade.id, 'size', parseFloat(e.target.value))}
-                                    className="h-8 w-20"
-                                  />
-                                ) : (
-                                  trade.size
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {trade.isEditing ? (
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={trade.pnl}
-                                    onChange={(e) => updateTrade(trade.id, 'pnl', parseFloat(e.target.value))}
-                                    className="h-8 w-24"
-                                  />
-                                ) : (
-                                  <span
-                                    className={cn(
-                                      "font-medium",
-                                      trade.pnl >= 0 ? "text-emerald-400" : "text-red-400"
-                                    )}
-                                  >
-                                    {trade.pnl >= 0 ? '+' : ''}{trade.pnl.toFixed(2)}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground text-sm">
-                                {trade.entryDate.toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-7 w-7"
-                                    onClick={() => toggleEdit(trade.id)}
-                                  >
-                                    {trade.isEditing ? (
-                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                    ) : (
-                                      <Pencil className="w-3.5 h-3.5" />
-                                    )}
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-7 w-7 text-destructive hover:text-destructive"
-                                    onClick={() => deleteTrade(trade.id)}
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </Button>
-                                </div>
-                              </TableCell>
+                              </TableHead>
+                              <TableHead>Symbol</TableHead>
+                              <TableHead>Direction</TableHead>
+                              <TableHead>Entry</TableHead>
+                              <TableHead>Exit</TableHead>
+                              <TableHead>Size</TableHead>
+                              <TableHead>P&L</TableHead>
+                              <TableHead>Entry Date</TableHead>
+                              <TableHead className="w-24">Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </table>
+                          </TableHeader>
+                          <TableBody>
+                            {extractedTrades.map((trade) => (
+                              <TableRow key={trade.id} className={cn(trade.isSelected && "bg-primary/5")}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={trade.isSelected}
+                                    onCheckedChange={() => toggleSelect(trade.id)}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  {trade.isEditing ? (
+                                    <Input
+                                      value={trade.symbol}
+                                      onChange={(e) => updateTrade(trade.id, 'symbol', e.target.value)}
+                                      className="h-8 w-24"
+                                    />
+                                  ) : (
+                                    <span className="font-medium">{trade.symbol}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {trade.isEditing ? (
+                                    <Select
+                                      value={trade.direction}
+                                      onValueChange={(v) => updateTrade(trade.id, 'direction', v)}
+                                    >
+                                      <SelectTrigger className="h-8 w-24">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="LONG">LONG</SelectItem>
+                                        <SelectItem value="SHORT">SHORT</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <span
+                                      className={cn(
+                                        "px-2 py-0.5 rounded text-xs font-medium",
+                                        trade.direction === 'LONG'
+                                          ? "bg-emerald-500/20 text-emerald-400"
+                                          : "bg-red-500/20 text-red-400"
+                                      )}
+                                    >
+                                      {trade.direction}
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {trade.isEditing ? (
+                                    <Input
+                                      type="number"
+                                      step="0.00001"
+                                      value={trade.entryPrice}
+                                      onChange={(e) => updateTrade(trade.id, 'entryPrice', parseFloat(e.target.value))}
+                                      className="h-8 w-24"
+                                    />
+                                  ) : (
+                                    trade.entryPrice.toFixed(4)
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {trade.isEditing ? (
+                                    <Input
+                                      type="number"
+                                      step="0.00001"
+                                      value={trade.exitPrice}
+                                      onChange={(e) => updateTrade(trade.id, 'exitPrice', parseFloat(e.target.value))}
+                                      className="h-8 w-24"
+                                    />
+                                  ) : (
+                                    trade.exitPrice.toFixed(4)
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {trade.isEditing ? (
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={trade.size}
+                                      onChange={(e) => updateTrade(trade.id, 'size', parseFloat(e.target.value))}
+                                      className="h-8 w-20"
+                                    />
+                                  ) : (
+                                    trade.size
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {trade.isEditing ? (
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={trade.pnl}
+                                      onChange={(e) => updateTrade(trade.id, 'pnl', parseFloat(e.target.value))}
+                                      className="h-8 w-24"
+                                    />
+                                  ) : (
+                                    <span
+                                      className={cn(
+                                        "font-medium",
+                                        trade.pnl >= 0 ? "text-emerald-400" : "text-red-400"
+                                      )}
+                                    >
+                                      {trade.pnl >= 0 ? '+' : ''}{trade.pnl.toFixed(2)}
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm">
+                                  {trade.entryDate.toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-7 w-7"
+                                      onClick={() => toggleEdit(trade.id)}
+                                    >
+                                      {trade.isEditing ? (
+                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                      ) : (
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-7 w-7 text-destructive hover:text-destructive"
+                                      onClick={() => deleteTrade(trade.id)}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </table>
+                      </div>
                     </ScrollAreaPrimitive.Viewport>
 
-                    <ScrollAreaPrimitive.ScrollAreaScrollbar
-                      orientation="vertical"
-                      className="flex touch-none select-none transition-colors h-full w-2.5 border-l border-l-transparent p-[1px]"
-                    >
-                      <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
-                    </ScrollAreaPrimitive.ScrollAreaScrollbar>
-
-                    <ScrollAreaPrimitive.ScrollAreaScrollbar
-                      orientation="horizontal"
-                      className="flex touch-none select-none transition-colors h-2.5 flex-col border-t border-t-transparent p-[1px]"
-                    >
-                      <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
-                    </ScrollAreaPrimitive.ScrollAreaScrollbar>
-
+                    <ScrollBar orientation="horizontal" />
+                    <ScrollBar orientation="vertical" />
                     <ScrollAreaPrimitive.Corner />
                   </ScrollAreaPrimitive.Root>
                 </div>
