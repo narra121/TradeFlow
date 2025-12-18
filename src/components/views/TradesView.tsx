@@ -354,8 +354,8 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
       {/* Edit Trade Modal */}
       {editingTrade && (
         <AddTradeModal
-          isOpen={!!editingTrade}
-          onClose={() => setEditingTrade(null)}
+          open={!!editingTrade}
+          onOpenChange={(open) => !open && setEditingTrade(null)}
           onAddTrade={handleSaveEditedTrade}
           editMode={true}
           initialTrade={editingTrade}
