@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import { tradesApi } from '@/lib/api/trades';
@@ -56,6 +57,12 @@ interface ImportTradesModalProps {
   onOpenChange: (open: boolean) => void;
   onImportTrades: (trades: Omit<Trade, 'id'>[]) => Promise<{ success: boolean; error?: any }>;
 }
+
+const toLocalISOString = (date: Date) => {
+  const offset = date.getTimezoneOffset() * 60000;
+  const localDate = new Date(date.getTime() - offset);
+  return localDate.toISOString().slice(0, 16);
+};
 
 export function ImportTradesModal({ open, onOpenChange, onImportTrades }: ImportTradesModalProps) {
   const [uploadedImages, setUploadedImages] = useState<{ id: string; url: string; name: string }[]>([]);
@@ -456,9 +463,12 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                               <TableHead>Direction</TableHead>
                               <TableHead>Entry</TableHead>
                               <TableHead>Exit</TableHead>
+                              <TableHead>Stop Loss</TableHead>
+                              <TableHead>Take Profit</TableHead>
                               <TableHead>Size</TableHead>
                               <TableHead>P&L</TableHead>
                               <TableHead>Entry Date</TableHead>
+                              <TableHead>Exit Date</TableHead>
                               <TableHead className="w-24">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -539,6 +549,32 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                                   {trade.isEditing ? (
                                     <Input
                                       type="number"
+                                      step="0.00001"
+                                      value={trade.stopLoss}
+                                      onChange={(e) => updateTrade(trade.id, 'stopLoss', parseFloat(e.target.value))}
+                                      className="h-8 w-24"
+                                    />
+                                  ) : (
+                                    trade.stopLoss.toFixed(4)
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {trade.isEditing ? (
+                                    <Input
+                                      type="number"
+                                      step="0.00001"
+                                      value={trade.takeProfit}
+                                      onChange={(e) => updateTrade(trade.id, 'takeProfit', parseFloat(e.target.value))}
+                                      className="h-8 w-24"
+                                    />
+                                  ) : (
+                                    trade.takeProfit.toFixed(4)
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {trade.isEditing ? (
+                                    <Input
+                                      type="number"
                                       step="0.01"
                                       value={trade.size}
                                       onChange={(e) => updateTrade(trade.id, 'size', parseFloat(e.target.value))}
@@ -569,7 +605,30 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                                   )}
                                 </TableCell>
                                 <TableCell className="text-muted-foreground text-sm">
-                                  {trade.entryDate.toLocaleDateString()}
+                                  {trade.isEditing ? (
+                                    <div className="w-48">
+                                      <DateTimePicker
+                                        value={toLocalISOString(trade.entryDate)}
+                                        onChange={(value) => updateTrade(trade.id, 'entryDate', new Date(value))}
+                                        className="h-8"
+                                      />
+                                    </div>
+                                  ) : (
+                                    trade.entryDate.toLocaleString()
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm">
+                                  {trade.isEditing ? (
+                                    <div className="w-48">
+                                      <DateTimePicker
+                                        value={toLocalISOString(trade.exitDate)}
+                                        onChange={(value) => updateTrade(trade.id, 'exitDate', new Date(value))}
+                                        className="h-8"
+                                      />
+                                    </div>
+                                  ) : (
+                                    trade.exitDate.toLocaleString()
+                                  )}
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-1">
