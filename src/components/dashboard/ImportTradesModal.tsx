@@ -438,7 +438,8 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                 </div>
 
                 <div className="border border-border rounded-lg overflow-hidden">
-                  <Table>
+                  <div className="overflow-auto max-h-[300px]">
+                  <Table className="w-full">
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className="w-10">
@@ -590,6 +591,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </div>
 
                 {extractedTrades.length === 0 && (
