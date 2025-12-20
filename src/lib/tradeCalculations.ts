@@ -28,7 +28,27 @@ export interface TradeStats {
  * Calculate comprehensive trading statistics from trades array
  */
 export function calculateTradeStats(trades: Trade[]): TradeStats {
-  const closedTrades = trades;
+  // Exclude trades that belong to the special "-1" account.
+  // Backend sometimes uses accountId=-1 for unassigned/invalid trades.
+  const eligibleTrades = trades.filter((trade) => {
+    const ids = trade.accountIds;
+    if (!ids || ids.length === 0) return true;
+    return !ids.some((id) => {
+      if (typeof id === 'number') return id === -1;
+      const normalized = String(id).trim();
+      if (normalized === '-1') return true;
+      const asInt = Number.parseInt(normalized, 10);
+      return Number.isFinite(asInt) && asInt === -1;
+    });
+  });
+
+  // Ensure deterministic, chronological calculations for streaks/drawdown.
+  // Prefer exitDate when present; otherwise fall back to entryDate.
+  const closedTrades = [...eligibleTrades].sort((a, b) => {
+    const aTime = new Date(a.exitDate ?? a.entryDate).getTime();
+    const bTime = new Date(b.exitDate ?? b.entryDate).getTime();
+    return aTime - bTime;
+  });
   
   if (closedTrades.length === 0) {
     return {
@@ -74,7 +94,13 @@ export function calculateTradeStats(trades: Trade[]): TradeStats {
   const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
   
   // Risk/Reward
-  const avgRiskReward = avgLoss > 0 ? avgWin / avgLoss : 0;
+  // Prefer per-trade R:R if provided; otherwise fall back to avgWin/avgLoss.
+  const rrValues = closedTrades
+    .map(t => t.riskRewardRatio)
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0);
+  const avgRiskReward = rrValues.length > 0
+    ? rrValues.reduce((sum, v) => sum + v, 0) / rrValues.length
+    : (avgLoss > 0 ? avgWin / avgLoss : 0);
   
   // Best/Worst trades
   const bestTrade = Math.max(...closedTrades.map(t => t.pnl || 0));
@@ -98,17 +124,28 @@ export function calculateTradeStats(trades: Trade[]): TradeStats {
     }
   });
   
-  // Calculate max drawdown
-  let maxDrawdown = 0;
-  let peak = 0;
+  // Calculate max drawdown (%)
+  // Naive drawdown from a 0 start can exceed 100% if cumulative PnL goes below 0 after a small peak.
+  // To keep drawdown meaningful as a percentage, compute it from a shifted equity curve with a
+  // strictly-positive starting equity.
   let runningPnl = 0;
-  
-  closedTrades.forEach(trade => {
+  let minRunningPnl = 0;
+  for (const trade of closedTrades) {
     runningPnl += (trade.pnl || 0);
-    if (runningPnl > peak) peak = runningPnl;
-    const drawdown = peak > 0 ? ((peak - runningPnl) / peak) * 100 : 0;
+    if (runningPnl < minRunningPnl) minRunningPnl = runningPnl;
+  }
+
+  const startingEquity = (minRunningPnl < 0 ? -minRunningPnl : 0) + 1;
+  let maxDrawdown = 0;
+  let peakEquity = startingEquity;
+  let equity = startingEquity;
+
+  for (const trade of closedTrades) {
+    equity += (trade.pnl || 0);
+    if (equity > peakEquity) peakEquity = equity;
+    const drawdown = peakEquity > 0 ? ((peakEquity - equity) / peakEquity) * 100 : 0;
     if (drawdown > maxDrawdown) maxDrawdown = drawdown;
-  });
+  }
   
   // Expectancy (average profit per trade)
   const expectancy = totalPnl / closedTrades.length;

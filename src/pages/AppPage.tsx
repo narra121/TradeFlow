@@ -9,14 +9,14 @@ import { SettingsView } from '@/components/views/SettingsView';
 import { AccountsView } from '@/components/views/AccountsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
-import { useAppDispatch } from '@/store/hooks';
-import { createTrade, bulkImportTrades, fetchTrades } from '@/store/slices/tradesSlice';
+import { useCreateTradeMutation, useBulkImportTradesMutation } from '@/store/api';
 import { useTradesSync } from '@/hooks/useTradesSync';
 import { cn } from '@/lib/utils';
 import type { Trade } from '@/types/trade';
 
 export function AppPage() {
-  const dispatch = useAppDispatch();
+  const [createTrade] = useCreateTradeMutation();
+  const [bulkImportTrades] = useBulkImportTradesMutation();
   
   // Centralized trades sync with account selection
   useTradesSync();
@@ -53,7 +53,7 @@ export function AppPage() {
         description: img.description
       }))
     };
-    await dispatch(createTrade(payload as any)).unwrap();
+    await createTrade(payload as any).unwrap();
     setIsAddTradeOpen(false);
   };
 
@@ -83,10 +83,7 @@ export function AppPage() {
       }));
 
       // Use bulk import API
-      await dispatch(bulkImportTrades({ items } as any)).unwrap();
-      
-      // Refresh the trades list
-      await dispatch(fetchTrades()).unwrap();
+      await bulkImportTrades({ items } as any).unwrap();
       
       // Close dialog only after successful save
       setIsImportTradesOpen(false);

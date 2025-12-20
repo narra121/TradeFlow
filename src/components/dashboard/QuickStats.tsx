@@ -7,6 +7,12 @@ interface QuickStatsProps {
 }
 
 export function QuickStats({ stats }: QuickStatsProps) {
+  const formatSignedCurrency0 = (amount: number) => {
+    const abs = Math.abs(amount);
+    const sign = amount >= 0 ? '+' : '-';
+    return `${sign}$${abs.toFixed(0)}`;
+  };
+
   const items = [
     {
       label: 'Profit Factor',
@@ -24,14 +30,14 @@ export function QuickStats({ stats }: QuickStatsProps) {
     },
     {
       label: 'Best Trade',
-      value: `+$${stats.bestTrade.toFixed(0)}`,
+      value: formatSignedCurrency0(stats.bestTrade),
       icon: TrendingUp,
       color: 'text-success',
       bgColor: 'bg-success/10',
     },
     {
       label: 'Worst Trade',
-      value: `$${stats.worstTrade.toFixed(0)}`,
+      value: formatSignedCurrency0(stats.worstTrade),
       icon: TrendingDown,
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
@@ -45,7 +51,7 @@ export function QuickStats({ stats }: QuickStatsProps) {
     },
     {
       label: 'Max Drawdown',
-      value: `${stats.maxDrawdown}%`,
+      value: `${stats.maxDrawdown.toFixed(2)}%`,
       icon: Snowflake,
       color: 'text-chart-4',
       bgColor: 'bg-chart-4/10',

@@ -31,36 +31,41 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { 
-  fetchProfile, 
-  updateProfile as updateProfileAction,
-  fetchSubscription,
-  createSubscription as createSubscriptionAction
-} from '@/store/slices/userSlice';
+import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useCreateSubscriptionMutation, useLogoutMutation } from '@/store/api';
 import { useRazorpay } from '@/hooks/useRazorpay';
 import { razorpayApi, SubscriptionDetails, PlanResponse, authApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { ProfileCardSkeleton, SubscriptionCardSkeleton, SubscriptionPlansCardSkeleton } from '@/components/ui/loading-skeleton';
 import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
-import { logout as logoutThunk } from '@/store/slices/authSlice';
 
 export function ProfileView() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { profile, subscription, loading } = useAppSelector((state) => state.user);
+  const { data: profile, isLoading: loading } = useGetProfileQuery();
+  const { data: subscription } = useGetSubscriptionQuery();
+  const [updateProfile] = useUpdateProfileMutation();
+  const [createSubscription] = useCreateSubscriptionMutation();
+  const [logout] = useLogoutMutation();
   const { initiateSubscription, loading: paymentLoading, error: paymentError } = useRazorpay();
   
   const handleLogout = async () => {
-    // Dispatch logout thunk which stops scheduler and calls API
-    await dispatch(logoutThunk()).unwrap();
-    
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
-    
-    // Navigate to login
-    navigate('/login', { replace: true });
+    try {
+      await logout().unwrap();
+      
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      
+      // Navigate to login
+      navigate('/login', { replace: true });
+    } catch (error) {
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging out.",
+        variant: "destructive",
+      });
+    }
   };
   
   const [availablePlans, setAvailablePlans] = useState<PlanResponse[]>([]);
@@ -68,12 +73,10 @@ export function ProfileView() {
   const [plansLoaded, setPlansLoaded] = useState(false);
   
   useEffect(() => {
-    dispatch(fetchProfile());
-    dispatch(fetchSubscription());
     if (!plansLoaded) {
       loadAvailablePlans();
     }
-  }, [dispatch, plansLoaded]);
+  }, [plansLoaded]);
   
   const loadAvailablePlans = async () => {
     try {
@@ -157,7 +160,7 @@ export function ProfileView() {
   const handleSaveProfile = async () => {
     setIsSavingProfile(true);
     try {
-      await dispatch(updateProfileAction({ name: user.name, email: user.email })).unwrap();
+      await updateProfile({ name: user.name, email: user.email }).unwrap();
       setIsEditing(false);
     } finally {
       setIsSavingProfile(false);
@@ -209,10 +212,10 @@ export function ProfileView() {
           setSubscriptionDetails(details);
           
           // Update Redux store
-          await dispatch(createSubscriptionAction({ 
+          await createSubscription({ 
             amount, 
             billingCycle: cycle 
-          })).unwrap();
+          }).unwrap();
         },
         onFailure: (error) => {
           console.error('Subscription failed:', error);

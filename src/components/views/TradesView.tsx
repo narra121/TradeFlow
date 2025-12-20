@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Trade } from '@/types/trade';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,8 +34,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { deleteTrade, updateTrade } from '@/store/slices/tradesSlice';
+import { useAppSelector } from '@/store/hooks';
+import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation } from '@/store/api';
 
 interface TradesViewProps {
   onAddTrade: () => void;
@@ -43,8 +43,19 @@ interface TradesViewProps {
 }
 
 export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
-  const dispatch = useAppDispatch();
-  const { trades = [], loading } = useAppSelector((state) => state.trades);
+  const filters = useAppSelector((state) => state.trades.filters);
+  
+  // Prepare query params, excluding datePreset and accountId='ALL'
+  // Use useMemo to prevent unnecessary re-renders and cache invalidation
+  const queryParams = useMemo(() => ({
+    accountId: filters.accountId,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+  }), [filters.accountId, filters.startDate, filters.endDate]);
+  
+  const { data: trades = [], isLoading: loading } = useGetTradesQuery(queryParams);
+  const [updateTrade] = useUpdateTradeMutation();
+  const [deleteTrade] = useDeleteTradeMutation();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState<'ALL' | 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN'>('ALL');
@@ -71,35 +82,10 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
 
   const handleSaveEditedTrade = async (updatedTrade: Omit<Trade, 'id'>) => {
     if (!editingTrade) return;
-    
-    const payload = {
-      symbol: updatedTrade.symbol,
-      side: updatedTrade.direction === 'LONG' ? 'BUY' as const : 'SELL' as const,
-      quantity: updatedTrade.size,
-      entryPrice: updatedTrade.entryPrice,
-      exitPrice: updatedTrade.exitPrice,
-      stopLoss: updatedTrade.stopLoss,
-      takeProfit: updatedTrade.takeProfit,
-      openDate: updatedTrade.entryDate,
-      closeDate: updatedTrade.exitDate,
-      outcome: updatedTrade.outcome,
-      accountIds: updatedTrade.accountIds,
-      brokenRuleIds: updatedTrade.brokenRuleIds,
-      setupType: updatedTrade.strategy,
-      tradingSession: updatedTrade.session,
-      marketCondition: updatedTrade.marketCondition,
-      newsEvents: updatedTrade.newsEvents,
-      mistakes: updatedTrade.mistakes,
-      lessons: updatedTrade.keyLesson ? [updatedTrade.keyLesson] : [],
-      tags: updatedTrade.tags,
-      images: updatedTrade.images?.map(img => ({
-        url: img.url,
-        timeframe: img.timeframe,
-        description: img.description
-      }))
-    };
-    
-    await dispatch(updateTrade({ id: editingTrade.id, payload: payload as any })).unwrap();
+
+    // IMPORTANT: `useUpdateTradeMutation` expects UI-shaped fields (CreateTradePayload),
+    // and the API layer maps them to backend keys.
+    await updateTrade({ id: editingTrade.id, payload: updatedTrade as any }).unwrap();
     setEditingTrade(null);
   };
 
@@ -113,7 +99,7 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
       try {
         // Ensure minimum 1 second loading for better UX
         await Promise.all([
-          dispatch(deleteTrade(deletingTradeId)).unwrap(),
+          deleteTrade(deletingTradeId).unwrap(),
           new Promise(resolve => setTimeout(resolve, 1000))
         ]);
         setDeletingTradeId(null);

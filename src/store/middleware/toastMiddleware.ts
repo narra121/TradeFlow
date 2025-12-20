@@ -88,7 +88,23 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
 
     // Handle rejected actions (error)
     if (actionType.endsWith('/rejected')) {
-      const errorMessage = (action.payload as string) || 'An error occurred';
+      // Extract error message from payload
+      let errorMessage = 'An error occurred';
+      
+      if (action.payload) {
+        if (typeof action.payload === 'string') {
+          errorMessage = action.payload;
+        } else if (typeof action.payload === 'object' && action.payload !== null) {
+          // Handle RTK Query error object structure
+          if ('data' in action.payload && typeof action.payload.data === 'string') {
+            errorMessage = action.payload.data;
+          } else if ('error' in action.payload && typeof action.payload.error === 'string') {
+            errorMessage = action.payload.error;
+          } else if ('message' in action.payload && typeof action.payload.message === 'string') {
+            errorMessage = action.payload.message;
+          }
+        }
+      }
       
       // Skip auth errors - they're handled in the auth component
       if (!actionType.startsWith('auth/')) {

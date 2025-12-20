@@ -1,5 +1,4 @@
-import { useState, useMemo } from 'react';
-import { PortfolioStats } from '@/types/trade';
+import { useMemo } from 'react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { TradeList } from '@/components/dashboard/TradeList';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
@@ -12,6 +11,7 @@ import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucid
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { calculateTradeStats } from '@/lib/tradeCalculations';
+import { useGetTradesQuery } from '@/store/api';
 import { 
   DashboardStatsSkeleton, 
   ChartSkeleton, 
@@ -27,13 +27,22 @@ interface DashboardViewProps {
 
 export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps) {
   const dispatch = useAppDispatch();
-  const { trades = [], loading: tradesLoading, filters } = useAppSelector((state) => state.trades);
+  const filters = useAppSelector((state) => state.trades.filters);
+  
+  // Prepare query params
+  const queryParams = useMemo(() => ({
+    accountId: filters.accountId,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+  }), [filters.accountId, filters.startDate, filters.endDate]);
+  
+  const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(queryParams);
   
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset);
     dispatch(setDateRangeFilter({
-      startDate: range.from.toISOString(),
-      endDate: range.to.toISOString(),
+      startDate: range.from.toISOString().split('T')[0],
+      endDate: range.to.toISOString().split('T')[0],
       datePreset: preset
     }));
   };

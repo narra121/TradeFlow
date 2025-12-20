@@ -2,6 +2,7 @@ import { Trade } from '@/types/trade';
 import { cn } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownRight, Clock, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TradeListProps {
   trades: Trade[];
@@ -10,6 +11,18 @@ interface TradeListProps {
 
 export function TradeList({ trades, limit }: TradeListProps) {
   const displayTrades = limit ? trades.slice(0, limit) : trades;
+
+  const isTradeUnmapped = (trade: Trade) => {
+    const ids: any = trade.accountIds;
+    if (!ids || ids.length === 0) return true;
+    return ids.some((id: any) => {
+      if (typeof id === 'number') return id === -1;
+      const normalized = String(id).trim();
+      if (normalized === '-1') return true;
+      const asInt = Number.parseInt(normalized, 10);
+      return Number.isFinite(asInt) && asInt === -1;
+    });
+  };
 
   return (
     <div className="glass-card overflow-hidden animate-fade-in">
@@ -43,6 +56,20 @@ export function TradeList({ trades, limit }: TradeListProps) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-foreground">{trade.symbol}</span>
+                    {isTradeUnmapped(trade) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="w-2 h-2 rounded-full bg-warning animate-pulse" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" align="start" sideOffset={6}>
+                            <p>
+                              This trade is not mapped to any account id and will not be considered in any stats calculation.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                     <span className={cn(
                       "text-xs px-2 py-0.5 rounded-full font-medium",
                       trade.direction === 'LONG'

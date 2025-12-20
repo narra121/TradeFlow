@@ -6,23 +6,14 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { 
-  fetchRulesAndGoals,
-  fetchGoalPeriodTrades,
-  updateGoal as updateGoalAction,
-  createRule as createRuleAction,
-  updateRule as updateRuleAction,
-  deleteRule as deleteRuleAction,
-  toggleRule as toggleRuleAction
-} from '@/store/slices/goalsRulesSlice';
+import { useGetRulesAndGoalsQuery, useGetGoalPeriodTradesQuery, useUpdateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation } from '@/store/api';
 import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/goalsRules';
 import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { useAccounts } from '@/hooks/useAccounts';
 import { GoalCardSkeleton, RulesListSkeleton } from '@/components/ui/loading-skeleton';
-import { calculateGoalProgressForAccount, calculateBrokenRulesCounts, hasCurrentPeriodData } from '@/lib/goalCalculations';
+import { calculateGoalProgressForAccount, calculateBrokenRulesCounts } from '@/lib/goalCalculations';
 import { Trade } from '@/types/trade';
-import { fetchGoals } from '@/store/slices/goalsRulesSlice';
 
 interface GoalType {
   id: string;
@@ -95,8 +86,18 @@ const defaultGoalData: GoalData[] = [
 
 export function GoalsView() {
   const dispatch = useAppDispatch();
-  const { goals, rules: reduxRules = [], periodTrades, periodTradesLoaded, loading } = useAppSelector((state) => state.goalsRules);
-  const { trades } = useAppSelector((state) => state.trades);
+  const { data: rulesGoalsData, isLoading: rulesGoalsLoading } = useGetRulesAndGoalsQuery();
+  const { data: periodTrades = [], isLoading: periodTradesLoading } = useGetGoalPeriodTradesQuery();
+  const [updateGoal] = useUpdateGoalMutation();
+  const [createRule] = useCreateRuleMutation();
+  const [updateRule] = useUpdateRuleMutation();
+  const [deleteRule] = useDeleteRuleMutation();
+  const [toggleRule] = useToggleRuleMutation();
+
+  const loading = rulesGoalsLoading || periodTradesLoading;
+  
+  const goals = rulesGoalsData?.goals || [];
+  const reduxRules = rulesGoalsData?.rules || [];
   const { selectedAccountId, accounts } = useAccounts();
   
   const rules = reduxRules || [];
@@ -115,22 +116,10 @@ export function GoalsView() {
   const [isAddingRuleLoading, setIsAddingRuleLoading] = useState(false);
   const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null);
   
-  useEffect(() => {
-    dispatch(fetchRulesAndGoals());
-    dispatch(fetchGoals());
-  }, [dispatch]);
-  
-  // Fetch period trades if not already loaded and monthly data not in main trades
-  useEffect(() => {
-    if (!periodTradesLoaded && !hasCurrentPeriodData(trades, 'monthly')) {
-      dispatch(fetchGoalPeriodTrades());
-    }
-  }, [dispatch, periodTradesLoaded, trades]);
-  
   // Use period trades if available, otherwise use main trades
   const tradesForCalculations = useMemo(() => {
-    return periodTrades.length > 0 ? periodTrades : trades;
-  }, [periodTrades, trades]);
+    return periodTrades ?? [];
+  }, [periodTrades]);
   
   // Calculate broken rule counts for current period
   const brokenRuleCounts = useMemo(() => {

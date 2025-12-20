@@ -15,35 +15,33 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { 
-  fetchAccounts, 
-  createAccount, 
-  updateAccount as updateAccountAction, 
-  deleteAccount as deleteAccountAction,
-  updateAccountStatus as updateAccountStatusAction,
-  setSelectedAccount 
-} from '@/store/slices/accountsSlice';
+import { setSelectedAccount } from '@/store/slices/accountsSlice';
+import { useGetAccountsQuery, useCreateAccountMutation, useUpdateAccountMutation, useDeleteAccountMutation, useUpdateAccountStatusMutation } from '@/store/api';
 import { AccountCardSkeleton, StatCardSkeleton } from '@/components/ui/loading-skeleton';
 
 export function AccountsView() {
   const dispatch = useAppDispatch();
-  const { accounts = [], selectedAccountId, loading } = useAppSelector((state) => state.accounts);
+  const { selectedAccountId } = useAppSelector((state) => state.accounts || {});
+  const { data: accountsData, isLoading: loading } = useGetAccountsQuery();
+  const [createAccount] = useCreateAccountMutation();
+  const [updateAccount] = useUpdateAccountMutation();
+  const [deleteAccount] = useDeleteAccountMutation();
+  const [updateAccountStatus] = useUpdateAccountStatusMutation();
+  
+  const accounts = accountsData?.accounts || [];
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    dispatch(fetchAccounts());
-  }, [dispatch]);
 
   const handleDeleteConfirm = async () => {
     if (deletingAccountId) {
       setIsDeleting(true);
       try {
-        await dispatch(deleteAccountAction(deletingAccountId)).unwrap();
+        await deleteAccount(deletingAccountId).unwrap();
         setDeletingAccountId(null);
       } catch (error: any) {
         console.error('Failed to delete account:', error);
@@ -58,10 +56,13 @@ export function AccountsView() {
     setIsSaving(true);
     try {
       if (editingAccount) {
-        await dispatch(updateAccountAction({ id: editingAccount.id, payload: account })).unwrap();
+        if (!editingAccount.id) {
+          throw new Error('Account id is missing; cannot update account');
+        }
+        await updateAccount({ id: editingAccount.id, payload: account }).unwrap();
         setEditingAccount(null);
       } else {
-        await dispatch(createAccount(account)).unwrap();
+        await createAccount(account).unwrap();
       }
       setIsAddModalOpen(false);
     } catch (error) {
@@ -77,7 +78,7 @@ export function AccountsView() {
   };
 
   const handleStatusChange = (id: string, status: AccountStatus) => {
-    dispatch(updateAccountStatusAction({ id, status }));
+    updateAccountStatus({ id, status });
   };
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);

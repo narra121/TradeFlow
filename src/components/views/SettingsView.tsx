@@ -18,22 +18,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { 
-  fetchProfile, 
-  updateProfile,
-  updatePreferences as updatePreferencesAction, 
-  updateNotifications as updateNotificationsAction
-} from '@/store/slices/userSlice';
+import { useAppSelector } from '@/store/hooks';
+import { useGetProfileQuery, useUpdateProfileMutation, useUpdatePreferencesMutation, useUpdateNotificationsMutation } from '@/store/api';
 import { SettingsSectionSkeleton } from '@/components/ui/loading-skeleton';
 
 export function SettingsView() {
-  const dispatch = useAppDispatch();
-  const { profile, loading } = useAppSelector((state) => state.user);
-  
-  useEffect(() => {
-    dispatch(fetchProfile());
-  }, [dispatch]);
+  const { data: profile, isLoading: loading } = useGetProfileQuery();
+  const [updateProfile] = useUpdateProfileMutation();
+  const [updatePreferences] = useUpdatePreferencesMutation();
+  const [updateNotifications] = useUpdateNotificationsMutation();
   
   const [notifications, setNotifications] = useState(profile?.preferences?.notifications?.tradeReminders ?? true);
   const [darkMode, setDarkMode] = useState(profile?.preferences?.darkMode ?? true);
@@ -52,22 +45,22 @@ export function SettingsView() {
   }, [profile]);
   
   const handleUpdateProfile = async () => {
-    await dispatch(updateProfile({ name: displayName, email })).unwrap();
+    await updateProfile({ name: displayName, email }).unwrap();
   };
   
   const handleDarkModeChange = async (checked: boolean) => {
     setDarkMode(checked);
-    await dispatch(updatePreferencesAction({ darkMode: checked, currency: currency as 'USD' | 'EUR' | 'GBP', timezone: 'UTC' })).unwrap();
+    await updatePreferences({ darkMode: checked, currency: currency as 'USD' | 'EUR' | 'GBP', timezone: 'UTC' }).unwrap();
   };
   
   const handleCurrencyChange = async (value: string) => {
     setCurrency(value);
-    await dispatch(updatePreferencesAction({ darkMode, currency: value as 'USD' | 'EUR' | 'GBP', timezone: 'UTC' })).unwrap();
+    await updatePreferences({ darkMode, currency: value as 'USD' | 'EUR' | 'GBP', timezone: 'UTC' }).unwrap();
   };
   
   const handleNotificationsChange = async (checked: boolean) => {
     setNotifications(checked);
-    await dispatch(updateNotificationsAction({ tradeReminders: checked, weeklyReport: true, goalAlerts: true })).unwrap();
+    await updateNotifications({ tradeReminders: checked, weeklyReport: true, goalAlerts: true }).unwrap();
   };
 
   const settingSections = [

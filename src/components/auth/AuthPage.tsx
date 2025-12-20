@@ -19,15 +19,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { 
-  login, 
-  signup, 
-  confirmSignup, 
-  forgotPassword, 
-  resetPassword,
-  clearError,
-  clearSignupSuccess
-} from "@/store/slices/authSlice";
+import { clearSignupSuccess } from "@/store/slices/authSlice";
+import { useLoginMutation, useSignupMutation, useConfirmSignupMutation, useForgotPasswordMutation, useResetPasswordMutation } from "@/store/api";
 
 type AuthView =
   | "login"
@@ -45,7 +38,15 @@ interface AuthPageProps {
 export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated, signupSuccess } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, signupSuccess } = useAppSelector((state) => state.auth);
+  const [login, { isLoading: loginLoading, error: loginError }] = useLoginMutation();
+  const [signup, { isLoading: signupLoading, error: signupError }] = useSignupMutation();
+  const [confirmSignup, { isLoading: confirmLoading, error: confirmError }] = useConfirmSignupMutation();
+  const [forgotPassword, { isLoading: forgotLoading, error: forgotError }] = useForgotPasswordMutation();
+  const [resetPassword, { isLoading: resetLoading, error: resetError }] = useResetPasswordMutation();
+  
+  const loading = loginLoading || signupLoading || confirmLoading || forgotLoading || resetLoading;
+  const error = loginError || signupError || confirmError || forgotError || resetError;
   
   const [view, setView] = useState<AuthView>(initialView);
   const [email, setEmail] = useState("");
@@ -76,10 +77,9 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
   // Handle errors
   useEffect(() => {
     if (error) {
-      toast.error(error);
-      dispatch(clearError());
+      toast.error((error as any)?.data?.message || (error as any)?.message || 'An error occurred');
     }
-  }, [error, dispatch]);
+  }, [error]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +87,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Please fill in all fields");
       return;
     }
-    dispatch(login({ email, password }));
+    await login({ email, password }).unwrap();
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -104,7 +104,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Password must be at least 8 characters");
       return;
     }
-    dispatch(signup({ name, email, password }));
+    await signup({ name, email, password }).unwrap();
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -113,20 +113,24 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Please enter your email");
       return;
     }
-    const result = await dispatch(forgotPassword({ email }));
-    if (forgotPassword.fulfilled.match(result)) {
+    try {
+      await forgotPassword({ email }).unwrap();
       toast.success("Reset code sent to your email");
       setView("reset");
+    } catch (error) {
+      // Error toast is handled by useEffect
     }
   };
 
   const handleOTPComplete = async (otp: string) => {
     setOtpCode(otp);
-    const result = await dispatch(confirmSignup({ email, code: otp }));
-    if (confirmSignup.fulfilled.match(result)) {
+    try {
+      await confirmSignup({ email, code: otp }).unwrap();
       toast.success("Email verified successfully!");
       // Auto-login after verification
-      dispatch(login({ email, password }));
+      await login({ email, password }).unwrap();
+    } catch (error) {
+      // Error toast is handled by useEffect
     }
   };
 
@@ -144,9 +148,11 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Please enter the reset code from your email");
       return;
     }
-    const result = await dispatch(resetPassword({ email, code: otpCode, newPassword: password }));
-    if (resetPassword.fulfilled.match(result)) {
+    try {
+      await resetPassword({ email, code: otpCode, newPassword: password }).unwrap();
       setView("success");
+    } catch (error) {
+      // Error toast is handled by useEffect
     }
   };
 

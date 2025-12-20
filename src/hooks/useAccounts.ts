@@ -1,43 +1,35 @@
 import { useEffect, useRef } from 'react';
 import { TradingAccount, AccountStatus, AccountType } from '@/types/trade';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { 
-  fetchAccounts, 
-  createAccount, 
-  updateAccount as updateAccountAction, 
-  deleteAccount as deleteAccountAction,
-  updateAccountStatus as updateAccountStatusAction,
-  setSelectedAccount as setSelectedAccountAction
-} from '@/store/slices/accountsSlice';
+import { setSelectedAccount as setSelectedAccountAction } from '@/store/slices/accountsSlice';
+import { useGetAccountsQuery, useCreateAccountMutation, useUpdateAccountMutation, useDeleteAccountMutation, useUpdateAccountStatusMutation } from '@/store/api';
 
 export function useAccounts() {
   const dispatch = useAppDispatch();
-  const { accounts, selectedAccountId, loading, error } = useAppSelector((state) => state.accounts);
-  const hasFetchedRef = useRef(false);
+  const { selectedAccountId } = useAppSelector((state) => state.accounts || {});
+  const { data: accountsData, isLoading: loading, error } = useGetAccountsQuery();
+  const [createAccountMutation] = useCreateAccountMutation();
+  const [updateAccountMutation] = useUpdateAccountMutation();
+  const [deleteAccountMutation] = useDeleteAccountMutation();
+  const [updateAccountStatusMutation] = useUpdateAccountStatusMutation();
 
-  // Fetch accounts only once on mount
-  useEffect(() => {
-    if (!hasFetchedRef.current) {
-      hasFetchedRef.current = true;
-      dispatch(fetchAccounts());
-    }
-  }, [dispatch]);
+  const accounts = accountsData?.accounts || [];
 
   const addAccount = async (account: Omit<TradingAccount, 'id' | 'createdAt'>) => {
-    const result = await dispatch(createAccount(account)).unwrap();
+    const result = await createAccountMutation(account).unwrap();
     return result;
   };
 
   const updateAccount = async (id: string, updates: Partial<Omit<TradingAccount, 'id' | 'createdAt'>>) => {
-    await dispatch(updateAccountAction({ id, payload: updates })).unwrap();
+    await updateAccountMutation({ id, payload: updates }).unwrap();
   };
 
   const updateAccountStatus = async (id: string, status: AccountStatus) => {
-    await dispatch(updateAccountStatusAction({ id, status })).unwrap();
+    await updateAccountStatusMutation({ id, status }).unwrap();
   };
 
   const deleteAccount = async (id: string) => {
-    await dispatch(deleteAccountAction(id)).unwrap();
+    await deleteAccountMutation(id).unwrap();
   };
 
   const setSelectedAccountId = (id: string | null) => {

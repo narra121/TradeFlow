@@ -445,7 +445,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                 </div>
 
                 <div className="border border-border rounded-lg overflow-hidden grid">
-                  <ScrollAreaPrimitive.Root type="always" className="relative w-full h-[320px] overflow-hidden">
+                  <ScrollAreaPrimitive.Root type="always" className="relative w-full overflow-hidden">
                     <ScrollAreaPrimitive.Viewport className="w-full h-full">
                       {/* w-max ensures the container expands to fit the table width */}
                       {/* min-w-full ensures it fills the viewport if content is small */}
@@ -662,7 +662,6 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                     </ScrollAreaPrimitive.Viewport>
 
                     <ScrollBar orientation="horizontal" />
-                    <ScrollBar orientation="vertical" />
                     <ScrollAreaPrimitive.Corner />
                   </ScrollAreaPrimitive.Root>
                 </div>

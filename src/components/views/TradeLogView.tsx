@@ -46,7 +46,8 @@ import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setDateRangeFilter, deleteTrade, updateTrade } from '@/store/slices/tradesSlice';
+import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation } from '@/store/api';
 
 interface TradeLogViewProps {
   onAddTrade: () => void;
@@ -57,7 +58,20 @@ type TabType = 'trades' | 'calendar';
 
 export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) {
   const dispatch = useAppDispatch();
-  const { trades = [], loading, filters } = useAppSelector((state) => state.trades);
+  const { filters } = useAppSelector((state) => state.trades);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  
+  // Prepare query params, excluding datePreset and accountId='ALL'
+  // Use useMemo to prevent unnecessary re-renders and cache invalidation
+  const queryParams = useMemo(() => ({
+    accountId: filters.accountId,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+  }), [filters.accountId, filters.startDate, filters.endDate]);
+  
+  const { data: trades = [], isLoading: loading } = useGetTradesQuery(queryParams, );
+  const [updateTrade] = useUpdateTradeMutation();
+  const [deleteTrade] = useDeleteTradeMutation();
   
   const [activeTab, setActiveTab] = useState<TabType>('trades');
   
@@ -68,8 +82,8 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
     dispatch(setDateRangeFilter({
-      startDate: range.from.toISOString(),
-      endDate: range.to.toISOString(),
+      startDate: range.from.toISOString().split('T')[0],
+      endDate: range.to.toISOString().split('T')[0],
       datePreset: preset
     }));
   };
@@ -118,35 +132,10 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
   const handleSaveEditedTrade = async (updatedTrade: Omit<Trade, 'id'>) => {
     if (!editingTrade) return;
-    
-    const payload = {
-      symbol: updatedTrade.symbol,
-      side: updatedTrade.direction === 'LONG' ? 'BUY' as const : 'SELL' as const,
-      quantity: updatedTrade.size,
-      entryPrice: updatedTrade.entryPrice,
-      exitPrice: updatedTrade.exitPrice,
-      stopLoss: updatedTrade.stopLoss,
-      takeProfit: updatedTrade.takeProfit,
-      openDate: updatedTrade.entryDate,
-      closeDate: updatedTrade.exitDate,
-      outcome: updatedTrade.outcome,
-      accountIds: updatedTrade.accountIds,
-      brokenRuleIds: updatedTrade.brokenRuleIds,
-      setupType: updatedTrade.strategy,
-      tradingSession: updatedTrade.session,
-      marketCondition: updatedTrade.marketCondition,
-      newsEvents: updatedTrade.newsEvents,
-      mistakes: updatedTrade.mistakes,
-      lessons: updatedTrade.keyLesson ? [updatedTrade.keyLesson] : [],
-      tags: updatedTrade.tags,
-      images: updatedTrade.images?.map(img => ({
-        url: img.url,
-        timeframe: img.timeframe,
-        description: img.description
-      }))
-    };
-    
-    await dispatch(updateTrade({ id: editingTrade.id, payload: payload as any })).unwrap();
+
+    // IMPORTANT: `useUpdateTradeMutation` expects UI-shaped fields (CreateTradePayload),
+    // and the API layer maps them to backend keys.
+    await updateTrade({ id: editingTrade.id, payload: updatedTrade as any }).unwrap();
     setEditingTrade(null);
   };
 
@@ -160,7 +149,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
       try {
         // Ensure minimum 1 second loading for better UX
         await Promise.all([
-          dispatch(deleteTrade(deletingTradeId)).unwrap(),
+          deleteTrade(deletingTradeId).unwrap(),
           new Promise(resolve => setTimeout(resolve, 1000))
         ]);
         setDeletingTradeId(null);

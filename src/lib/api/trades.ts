@@ -73,7 +73,7 @@ export const tradesApi = {
       pnl: trade.pnl || 0,
       pnlPercent: trade.pnlPercent,
       riskRewardRatio: trade.riskRewardRatio || 0,
-      notes: trade.postTradeNotes || trade.preTradeNotes,
+      notes: trade.postTradeNotes || trade.preTradeNotes || trade.notes,
       setup: trade.setupType,
       strategy: trade.setupType,
       session: trade.tradingSession,

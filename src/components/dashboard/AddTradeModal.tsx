@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import { useTradingRules } from '@/hooks/useTradingRules';
 import { useAccounts } from '@/hooks/useAccounts';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLazyGetTradeQuery } from '@/store/api';
 
 interface AddTradeModalProps {
   open: boolean;
@@ -82,32 +83,103 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
   // Accounts hook
   const { accounts } = useAccounts();
 
-  // Populate form when editing
+  const [triggerGetTrade] = useLazyGetTradeQuery();
+  const [resolvedTrade, setResolvedTrade] = useState<Trade | null>(null);
+
+  const editTrade = useMemo(() => {
+    if (!editMode) return null;
+    return resolvedTrade ?? initialTrade ?? null;
+  }, [editMode, resolvedTrade, initialTrade]);
+
+  const normalizeImages = (raw: any[] | undefined): TradeImage[] => {
+    if (!Array.isArray(raw)) return [];
+    return raw.map((img: any, index: number) => {
+      const url =
+        (typeof img?.url === 'string' && img.url) ||
+        (typeof img?.imageUrl === 'string' && img.imageUrl) ||
+        (typeof img?.src === 'string' && img.src) ||
+        (typeof img?.signedUrl === 'string' && img.signedUrl) ||
+        (typeof img?.presignedUrl === 'string' && img.presignedUrl) ||
+        '';
+
+      const id =
+        (typeof img?.id === 'string' && img.id) ||
+        (typeof img?.imageId === 'string' && img.imageId) ||
+        (typeof img?.key === 'string' && img.key) ||
+        (typeof img?.s3Key === 'string' && img.s3Key) ||
+        (url ? url : String(index));
+
+      const timeframe =
+        (typeof img?.timeframe === 'string' && img.timeframe) ||
+        (typeof img?.timeFrame === 'string' && img.timeFrame) ||
+        '1H';
+
+      const description = (typeof img?.description === 'string' && img.description) || '';
+
+      return { id, url, timeframe, description };
+    });
+  };
+
+  // When editing, fetch a fully-populated trade (helps with missing fields + signed image URLs).
   useEffect(() => {
-    if (editMode && initialTrade) {
-      setDirection(initialTrade.direction);
-      setSymbol(initialTrade.symbol);
-      setEntryPrice(initialTrade.entryPrice?.toString() || '');
-      setExitPrice(initialTrade.exitPrice?.toString() || '');
-      setStopLoss(initialTrade.stopLoss?.toString() || '');
-      setTakeProfit(initialTrade.takeProfit?.toString() || '');
-      setSize(initialTrade.size.toString());
-      setManualPnl(initialTrade.pnl?.toString() || '');
-      setEntryDateTime(initialTrade.entryDate);
-      setExitDateTime(initialTrade.exitDate || '');
-      setOutcome(initialTrade.outcome || 'TP');
-      setStrategy(initialTrade.strategy || '');
-      setSession(initialTrade.session || '');
-      setMarketCondition(initialTrade.marketCondition || '');
-      setNewsEvent('');
-      setMistakes(initialTrade.mistakes || []);
-      setKeyLesson(initialTrade.keyLesson || '');
-      setTradeNotes(initialTrade.notes || '');
-      setBrokenRuleIds(initialTrade.brokenRuleIds || []);
-      setSelectedAccountIds(initialTrade.accountIds || []);
-      setImages(initialTrade.images || []);
+    let cancelled = false;
+
+    const run = async () => {
+      if (!editMode || !open || !initialTrade?.id) return;
+      try {
+        const full = await triggerGetTrade(initialTrade.id).unwrap();
+        if (!cancelled) setResolvedTrade(full);
+      } catch {
+        // If single-trade fetch fails, fall back to the passed-in trade.
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [editMode, open, initialTrade?.id, triggerGetTrade]);
+
+  // Clear resolved trade when closing or switching mode
+  useEffect(() => {
+    if (!open || !editMode) setResolvedTrade(null);
+  }, [open, editMode]);
+
+  // Reset local form state when closing to avoid stale values on next open.
+  useEffect(() => {
+    if (!open) {
+      resetForm();
     }
-  }, [editMode, initialTrade]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Populate form when editing.
+  // NOTE: include `open` so reopening the modal repopulates even if `initialTrade` reference is unchanged.
+  useEffect(() => {
+    if (!open || !editMode || !editTrade) return;
+
+    setDirection(editTrade.direction);
+    setSymbol(typeof editTrade.symbol === 'string' ? editTrade.symbol : '');
+    setEntryPrice(editTrade.entryPrice != null ? String(editTrade.entryPrice) : '');
+    setExitPrice(editTrade.exitPrice != null ? String(editTrade.exitPrice) : '');
+    setStopLoss(editTrade.stopLoss != null ? String(editTrade.stopLoss) : '');
+    setTakeProfit(editTrade.takeProfit != null ? String(editTrade.takeProfit) : '');
+    setSize(editTrade.size != null ? String(editTrade.size) : '0.1');
+    setManualPnl(editTrade.pnl != null ? String(editTrade.pnl) : '');
+    setEntryDateTime(typeof editTrade.entryDate === 'string' ? editTrade.entryDate : '');
+    setExitDateTime(typeof editTrade.exitDate === 'string' ? editTrade.exitDate : '');
+    setOutcome(editTrade.outcome || 'TP');
+    setStrategy(editTrade.strategy || editTrade.setup || '');
+    setSession(editTrade.session || '');
+    setMarketCondition(editTrade.marketCondition || '');
+    setNewsEvent(editTrade.newsEvents?.[0] || '');
+    setMistakes(Array.isArray(editTrade.mistakes) ? editTrade.mistakes : []);
+    setKeyLesson(editTrade.keyLesson || '');
+    setTradeNotes(typeof editTrade.notes === 'string' ? editTrade.notes : '');
+    setBrokenRuleIds(Array.isArray(editTrade.brokenRuleIds) ? editTrade.brokenRuleIds : []);
+    setSelectedAccountIds(Array.isArray(editTrade.accountIds) ? editTrade.accountIds : []);
+    setImages(normalizeImages(editTrade.images));
+  }, [open, editMode, editTrade]);
 
   // Calculate Net PnL (use manual if set, otherwise calculate)
   const entry = parseFloat(entryPrice) || 0;
@@ -129,6 +201,12 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     const risk = Math.abs(entry - sl);
     const reward = Math.abs(tp - entry);
 
+    const existingNewsEvents = editMode ? (editTrade?.newsEvents || []) : [];
+    const newsValue = newsEvent.trim();
+    const nextNewsEvents = newsValue
+      ? Array.from(new Set([newsValue, ...existingNewsEvents]))
+      : existingNewsEvents;
+
     onAddTrade({
       symbol,
       direction,
@@ -145,11 +223,14 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
       strategy,
       session,
       marketCondition,
-      newsEvents: newsEvent ? [newsEvent] : [],
+      notes: tradeNotes,
+      newsEvents: nextNewsEvents,
       mistakes,
       keyLesson,
       images,
-      tags: [],
+      // No tags/emotions UI yet in this modal; preserve existing values on edit.
+      tags: editMode ? (editTrade?.tags || []) : [],
+      emotions: editMode ? editTrade?.emotions : undefined,
       accountIds: selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
       brokenRuleIds: brokenRuleIds.length > 0 ? brokenRuleIds : undefined,
     });
@@ -536,10 +617,10 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Adding...
+                {editMode ? 'Saving...' : 'Adding...'}
               </>
             ) : (
-              'Add Trade'
+              editMode ? 'Save' : 'Add Trade'
             )}
           </Button>
         </div>
