@@ -23,9 +23,11 @@ export interface CreateTradePayload {
   mistakes?: string[];
   keyLesson?: string; // Single string from UI
   tags?: string[];
-  accountIds?: string[];
+  accountId?: string;
+  accountIds?: string[]; // For creating trades in multiple accounts
   brokenRuleIds?: string[];
   images?: TradeImage[];
+  notes?: string; // Trade notes
 }
 
 export interface TradesQueryParams {
@@ -73,7 +75,7 @@ export const tradesApi = {
       pnl: trade.pnl || 0,
       pnlPercent: trade.pnlPercent,
       riskRewardRatio: trade.riskRewardRatio || 0,
-      notes: trade.postTradeNotes || trade.preTradeNotes || trade.notes,
+      notes: trade.tradeNotes || trade.notes,
       setup: trade.setupType,
       strategy: trade.setupType,
       session: trade.tradingSession,
@@ -84,7 +86,7 @@ export const tradesApi = {
       images: trade.images || [],
       tags: trade.tags || [],
       emotions: trade.emotions,
-      accountIds: trade.accountId ? [trade.accountId] : [],
+      accountId: trade.accountId && trade.accountId !== '-1' ? trade.accountId : undefined,
       brokenRuleIds: trade.brokenRuleIds || [],
     }));
     
@@ -114,7 +116,7 @@ export const tradesApi = {
       mistakes: payload.mistakes || [],
       lessons: payload.keyLesson ? [payload.keyLesson] : [], // Convert single lesson to array
       tags: payload.tags || [],
-      accountIds: payload.accountIds || [], // Include accountIds for proper account association
+      accountIds: payload.accountId ? [payload.accountId] : [], // Backend creates separate trades per account
       brokenRuleIds: payload.brokenRuleIds || [],
       images: payload.images || [],
     };
@@ -163,7 +165,7 @@ export const tradesApi = {
     if (payload.mistakes !== undefined) backendPayload.mistakes = payload.mistakes;
     if (payload.keyLesson !== undefined) backendPayload.lessons = payload.keyLesson ? [payload.keyLesson] : [];
     if (payload.tags !== undefined) backendPayload.tags = payload.tags;
-    if (payload.accountIds !== undefined) backendPayload.accountIds = payload.accountIds;
+    if (payload.accountId !== undefined) backendPayload.accountId = payload.accountId;
     if (payload.brokenRuleIds !== undefined) backendPayload.brokenRuleIds = payload.brokenRuleIds;
     if (payload.images !== undefined) backendPayload.images = payload.images;
 
@@ -216,7 +218,7 @@ export const tradesApi = {
       mistakes: item.mistakes || [],
       lessons: item.keyLesson ? [item.keyLesson] : [], // Convert single lesson to array
       tags: item.tags || [],
-      accountIds: item.accountIds || [], // Include accountIds for proper account association
+      accountId: item.accountId, // Single accountId per trade
       brokenRuleIds: item.brokenRuleIds || [],
       images: item.images || [],
     }));

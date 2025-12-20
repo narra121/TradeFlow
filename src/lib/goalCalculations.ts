@@ -39,7 +39,7 @@ export function calculateGoalProgressForAccount(
 
   const filteredTrades = safeTrades.filter(trade => {
     const tradeDate = new Date(trade.exitDate || trade.entryDate);
-    const matchesAccount = accountId === 'ALL' || trade.accountIds?.includes(accountId);
+    const matchesAccount = accountId === 'ALL' || trade.accountId === accountId;
     const matchesPeriod = isWithinInterval(tradeDate, { start: periodStart, end: periodEnd });
     return matchesAccount && matchesPeriod;
   });

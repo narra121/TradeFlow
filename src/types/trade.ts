@@ -50,7 +50,8 @@ export interface Trade {
   images?: TradeImage[];
   tags?: string[];
   emotions?: string;
-  accountIds?: string[]; // Trade can belong to multiple accounts
+  accountId?: string; // Single account ID for this trade (from response)
+  accountIds?: string[]; // Multiple account IDs for creating trades (request only)
   brokenRuleIds?: string[];
 }
 

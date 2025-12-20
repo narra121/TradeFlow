@@ -143,7 +143,7 @@ export const goalsRulesApi = api.injectEndpoints({
           pnl: trade.pnl || 0,
           pnlPercent: trade.pnlPercent,
           riskRewardRatio: trade.riskRewardRatio || 0,
-          notes: trade.postTradeNotes || trade.preTradeNotes,
+          notes: trade.tradeNotes,
           setup: trade.setupType,
           strategy: trade.setupType,
           session: trade.tradingSession,
@@ -154,7 +154,7 @@ export const goalsRulesApi = api.injectEndpoints({
           images: trade.images || [],
           tags: trade.tags || [],
           emotions: trade.emotions,
-          accountIds: trade.accountId ? [trade.accountId] : [],
+          accountId: trade.accountId && trade.accountId !== '-1' ? trade.accountId : undefined,
           brokenRuleIds: trade.brokenRuleIds || [],
         }));
       },

@@ -16,16 +16,13 @@ const mapBackendTradeToTrade = (trade: any): Trade => {
   const entryDate = trade.openDate ?? trade.entryDate;
   const exitDate = trade.closeDate ?? trade.exitDate;
 
-  const notes = trade.postTradeNotes ?? trade.preTradeNotes ?? trade.notes;
+  const notes = trade.tradeNotes ?? trade.notes;
 
   const setupType = trade.setupType ?? trade.strategy ?? trade.setup;
   const tradingSession = trade.tradingSession ?? trade.session;
 
-  const accountIds: string[] = Array.isArray(trade.accountIds)
-    ? trade.accountIds
-    : trade.accountId
-      ? [trade.accountId]
-      : [];
+  // accountId - filter out '-1' which means no account
+  const accountId = trade.accountId && trade.accountId !== '-1' ? trade.accountId : undefined;
 
   return {
     id,
@@ -53,7 +50,7 @@ const mapBackendTradeToTrade = (trade: any): Trade => {
     images: trade.images ?? [],
     tags: trade.tags ?? [],
     emotions: trade.emotions,
-    accountIds,
+    accountId,
     brokenRuleIds: trade.brokenRuleIds ?? [],
   };
 };
@@ -115,10 +112,10 @@ export const tradesApi = api.injectEndpoints({
           newsEvents: payload.newsEvents,
           mistakes: payload.mistakes,
           lessons: payload.keyLesson ? [payload.keyLesson] : undefined,
-          postTradeNotes: payload.notes,
+          tradeNotes: payload.notes,
           tags: payload.tags,
-          accountId: payload.accountIds?.[0],
-          accountIds: payload.accountIds,
+          // Use accountIds if provided (for multi-account create), else single accountId
+          accountIds: payload.accountIds || (payload.accountId ? [payload.accountId] : undefined),
           brokenRuleIds: payload.brokenRuleIds,
           images: payload.images,
         };
@@ -136,7 +133,7 @@ export const tradesApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics'],
     }),
     
-    updateTrade: builder.mutation<Trade, { id: string; payload: Partial<CreateTradePayload> }>({
+    updateTrade: builder.mutation<{ updatedTrade: Trade; createdTrades: Trade[] }, { id: string; payload: Partial<CreateTradePayload> }>({
       query: ({ id, payload }) => {
         // Map UI fields to backend API fields
         const backendPayload: any = {};
@@ -158,11 +155,13 @@ export const tradesApi = api.injectEndpoints({
         if (payload.newsEvents !== undefined) backendPayload.newsEvents = payload.newsEvents;
         if (payload.mistakes !== undefined) backendPayload.mistakes = payload.mistakes;
         if (payload.keyLesson !== undefined) backendPayload.lessons = [payload.keyLesson];
-        if (payload.notes !== undefined) backendPayload.postTradeNotes = payload.notes;
+        if (payload.notes !== undefined) backendPayload.tradeNotes = payload.notes;
         if (payload.tags !== undefined) backendPayload.tags = payload.tags;
-        if (payload.accountIds !== undefined) {
-          backendPayload.accountId = payload.accountIds[0];
+        // Use accountIds array for update to support multi-account logic
+        if (payload.accountIds !== undefined && payload.accountIds.length > 0) {
           backendPayload.accountIds = payload.accountIds;
+        } else if (payload.accountId !== undefined) {
+          backendPayload.accountIds = [payload.accountId];
         }
         if (payload.brokenRuleIds !== undefined) backendPayload.brokenRuleIds = payload.brokenRuleIds;
         if (payload.images !== undefined) backendPayload.images = payload.images;
@@ -175,15 +174,28 @@ export const tradesApi = api.injectEndpoints({
       },
       transformResponse: (response: any) => {
         const trade = response.trade || response;
-        return mapBackendTradeToTrade(trade);
+        const mappedTrade = mapBackendTradeToTrade(trade);
+        // Also map any additional trades created for other accounts
+        const createdTrades = response.createdTrades 
+          ? response.createdTrades.map(mapBackendTradeToTrade)
+          : [];
+        return { updatedTrade: mappedTrade, createdTrades };
       },
-      // Do NOT invalidate the list here (would refetch all trades).
-      // Instead, fetch the single trade and patch list caches.
-      invalidatesTags: ['Stats', 'Analytics'],
+      // Invalidate stats/analytics, and trades list if new trades were created
+      invalidatesTags: (result) => {
+        const tags: any[] = ['Stats', 'Analytics'];
+        // If additional trades were created for other accounts, invalidate the list
+        if (result?.createdTrades && result.createdTrades.length > 0) {
+          tags.push({ type: 'Trades', id: 'LIST' });
+        }
+        return tags;
+      },
       async onQueryStarted({ id }, { dispatch, getState, queryFulfilled }) {
         try {
           // Wait for update to succeed and use the mutation response as the source of truth.
-          const { data: updatedTrade } = await queryFulfilled;
+          const { data } = await queryFulfilled;
+          const updatedTrade = data.updatedTrade;
+          const createdTrades = data.createdTrades || [];
 
           // Update the single-trade cache if it exists.
           dispatch(
@@ -203,6 +215,10 @@ export const tradesApi = api.injectEndpoints({
                 const index = draft.findIndex((t) => t.id === id);
                 if (index !== -1) {
                   draft[index] = updatedTrade;
+                }
+                // Add any newly created trades (for additional accounts)
+                if (createdTrades.length > 0) {
+                  draft.push(...createdTrades);
                 }
               })
             );

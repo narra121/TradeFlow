@@ -13,15 +13,10 @@ export function TradeList({ trades, limit }: TradeListProps) {
   const displayTrades = limit ? trades.slice(0, limit) : trades;
 
   const isTradeUnmapped = (trade: Trade) => {
-    const ids: any = trade.accountIds;
-    if (!ids || ids.length === 0) return true;
-    return ids.some((id: any) => {
-      if (typeof id === 'number') return id === -1;
-      const normalized = String(id).trim();
-      if (normalized === '-1') return true;
-      const asInt = Number.parseInt(normalized, 10);
-      return Number.isFinite(asInt) && asInt === -1;
-    });
+    const id = trade.accountId;
+    if (!id) return true; // No accountId means unmapped
+    const normalized = String(id).trim();
+    return normalized === '-1';
   };
 
   return (

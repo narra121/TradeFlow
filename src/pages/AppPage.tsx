@@ -38,7 +38,7 @@ export function AppPage() {
       openDate: newTrade.entryDate,
       closeDate: newTrade.exitDate,
       outcome: newTrade.outcome,
-      accountIds: newTrade.accountIds,
+      accountIds: newTrade.accountIds, // For create: array of accounts to create trades for
       brokenRuleIds: newTrade.brokenRuleIds,
       setupType: newTrade.strategy,
       tradingSession: newTrade.session,
@@ -71,7 +71,7 @@ export function AppPage() {
         entryDate: trade.entryDate,
         exitDate: trade.exitDate,
         outcome: trade.outcome,
-        accountIds: trade.accountIds,
+        accountId: trade.accountId, // Single accountId per imported trade
         brokenRuleIds: trade.brokenRuleIds,
         setupType: trade.strategy,
         tradingSession: trade.session,

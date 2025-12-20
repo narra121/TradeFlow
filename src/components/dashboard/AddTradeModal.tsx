@@ -19,7 +19,7 @@ import { useTradingRules } from '@/hooks/useTradingRules';
 import { useAccounts } from '@/hooks/useAccounts';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useLazyGetTradeQuery } from '@/store/api';
+
 
 interface AddTradeModalProps {
   open: boolean;
@@ -83,13 +83,11 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
   // Accounts hook
   const { accounts } = useAccounts();
 
-  const [triggerGetTrade] = useLazyGetTradeQuery();
-  const [resolvedTrade, setResolvedTrade] = useState<Trade | null>(null);
-
+  // Use the trade data passed from the list - no need for separate API call
   const editTrade = useMemo(() => {
     if (!editMode) return null;
-    return resolvedTrade ?? initialTrade ?? null;
-  }, [editMode, resolvedTrade, initialTrade]);
+    return initialTrade ?? null;
+  }, [editMode, initialTrade]);
 
   const normalizeImages = (raw: any[] | undefined): TradeImage[] => {
     if (!Array.isArray(raw)) return [];
@@ -120,31 +118,6 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     });
   };
 
-  // When editing, fetch a fully-populated trade (helps with missing fields + signed image URLs).
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
-      if (!editMode || !open || !initialTrade?.id) return;
-      try {
-        const full = await triggerGetTrade(initialTrade.id).unwrap();
-        if (!cancelled) setResolvedTrade(full);
-      } catch {
-        // If single-trade fetch fails, fall back to the passed-in trade.
-      }
-    };
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [editMode, open, initialTrade?.id, triggerGetTrade]);
-
-  // Clear resolved trade when closing or switching mode
-  useEffect(() => {
-    if (!open || !editMode) setResolvedTrade(null);
-  }, [open, editMode]);
-
   // Reset local form state when closing to avoid stale values on next open.
   useEffect(() => {
     if (!open) {
@@ -158,16 +131,16 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
   useEffect(() => {
     if (!open || !editMode || !editTrade) return;
 
-    setDirection(editTrade.direction);
-    setSymbol(typeof editTrade.symbol === 'string' ? editTrade.symbol : '');
+    setDirection(editTrade.direction || 'LONG');
+    setSymbol(editTrade.symbol || '');
     setEntryPrice(editTrade.entryPrice != null ? String(editTrade.entryPrice) : '');
     setExitPrice(editTrade.exitPrice != null ? String(editTrade.exitPrice) : '');
     setStopLoss(editTrade.stopLoss != null ? String(editTrade.stopLoss) : '');
     setTakeProfit(editTrade.takeProfit != null ? String(editTrade.takeProfit) : '');
     setSize(editTrade.size != null ? String(editTrade.size) : '0.1');
     setManualPnl(editTrade.pnl != null ? String(editTrade.pnl) : '');
-    setEntryDateTime(typeof editTrade.entryDate === 'string' ? editTrade.entryDate : '');
-    setExitDateTime(typeof editTrade.exitDate === 'string' ? editTrade.exitDate : '');
+    setEntryDateTime(editTrade.entryDate || '');
+    setExitDateTime(editTrade.exitDate || '');
     setOutcome(editTrade.outcome || 'TP');
     setStrategy(editTrade.strategy || editTrade.setup || '');
     setSession(editTrade.session || '');
@@ -175,9 +148,13 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     setNewsEvent(editTrade.newsEvents?.[0] || '');
     setMistakes(Array.isArray(editTrade.mistakes) ? editTrade.mistakes : []);
     setKeyLesson(editTrade.keyLesson || '');
-    setTradeNotes(typeof editTrade.notes === 'string' ? editTrade.notes : '');
+    setTradeNotes(editTrade.notes || '');
     setBrokenRuleIds(Array.isArray(editTrade.brokenRuleIds) ? editTrade.brokenRuleIds : []);
-    setSelectedAccountIds(Array.isArray(editTrade.accountIds) ? editTrade.accountIds : []);
+    
+    // Handle accountId - single account per trade
+    const accId = editTrade.accountId;
+    setSelectedAccountIds(accId && accId !== '-1' ? [accId] : []);
+    
     setImages(normalizeImages(editTrade.images));
   }, [open, editMode, editTrade]);
 
@@ -231,6 +208,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
       // No tags/emotions UI yet in this modal; preserve existing values on edit.
       tags: editMode ? (editTrade?.tags || []) : [],
       emotions: editMode ? editTrade?.emotions : undefined,
+      // Send accountIds array for both create and edit (backend handles multi-account logic)
       accountIds: selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
       brokenRuleIds: brokenRuleIds.length > 0 ? brokenRuleIds : undefined,
     });

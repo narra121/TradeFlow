@@ -31,15 +31,10 @@ export function calculateTradeStats(trades: Trade[]): TradeStats {
   // Exclude trades that belong to the special "-1" account.
   // Backend sometimes uses accountId=-1 for unassigned/invalid trades.
   const eligibleTrades = trades.filter((trade) => {
-    const ids = trade.accountIds;
-    if (!ids || ids.length === 0) return true;
-    return !ids.some((id) => {
-      if (typeof id === 'number') return id === -1;
-      const normalized = String(id).trim();
-      if (normalized === '-1') return true;
-      const asInt = Number.parseInt(normalized, 10);
-      return Number.isFinite(asInt) && asInt === -1;
-    });
+    const id = trade.accountId;
+    if (!id) return true; // No accountId means it's eligible
+    const normalized = String(id).trim();
+    return normalized !== '-1';
   });
 
   // Ensure deterministic, chronological calculations for streaks/drawdown.
