@@ -7,3 +7,4 @@ export * from './statsApi';
 export * from './analyticsApi';
 export * from './goalsRulesApi';
 export * from './userApi';
+export * from './textApi';

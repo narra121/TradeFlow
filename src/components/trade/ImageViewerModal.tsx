@@ -6,12 +6,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useCachedImage } from '@/hooks/useCachedImage';
 import { ZoomIn, ZoomOut, Minimize2, X, Eye, EyeOff, RotateCcw } from 'lucide-react';
 
 interface ImageViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  imageUrl: string;
+  imageId: string; // Changed from imageUrl to imageId
   timeframe?: string;
   description?: string;
 }
@@ -19,7 +21,7 @@ interface ImageViewerModalProps {
 export function ImageViewerModal({
   isOpen,
   onClose,
-  imageUrl,
+  imageId,
   timeframe,
   description,
 }: ImageViewerModalProps) {
@@ -28,6 +30,9 @@ export function ImageViewerModal({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showDescription, setShowDescription] = useState(true);
+  
+  // Use the cached image hook
+  const { src: imageUrl, isLoading, error } = useCachedImage(imageId);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Reset state when modal opens
@@ -53,14 +58,12 @@ export function ImageViewerModal({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (scale > 1) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-    }
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && scale > 1) {
+    if (isDragging) {
       setPosition({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
@@ -164,8 +167,7 @@ export function ImageViewerModal({
         <div
           ref={containerRef}
           className={cn(
-            "w-full h-full flex items-center justify-center overflow-hidden",
-            scale > 1 ? "cursor-grab" : "cursor-default",
+            "w-full h-full flex items-center justify-center overflow-hidden cursor-grab",
             isDragging && "cursor-grabbing"
           )}
           onMouseDown={handleMouseDown}
@@ -174,16 +176,27 @@ export function ImageViewerModal({
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
         >
-          <img
-            src={imageUrl}
-            alt="Trade screenshot"
-            className="max-w-full max-h-full object-contain select-none"
-            style={{
-              transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-              transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-            }}
-            draggable={false}
-          />
+          {isLoading ? (
+            <div className="w-full h-full max-w-4xl max-h-[80vh] mx-auto">
+              <Skeleton className="w-full h-full rounded-lg" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center text-muted-foreground">
+              <X className="h-8 w-8 mb-2" />
+              <span>Failed to load image</span>
+            </div>
+          ) : (
+            <img
+              src={imageUrl}
+              alt="Trade screenshot"
+              className="max-w-full max-h-full object-contain select-none"
+              style={{
+                transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
+                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+              }}
+              draggable={false}
+            />
+          )}
         </div>
 
         {/* Description Panel */}

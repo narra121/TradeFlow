@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { TextEnhancerButton } from '@/components/ui/text-enhancer-button';
 import { Trade, TradeDirection, TradeImage, TradeOutcome } from '@/types/trade';
 import { DynamicSelect } from '@/components/trade/DynamicSelect';
 import { SmartInput } from '@/components/trade/SmartInput';
@@ -92,20 +93,23 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
   const normalizeImages = (raw: any[] | undefined): TradeImage[] => {
     if (!Array.isArray(raw)) return [];
     return raw.map((img: any, index: number) => {
-      const url =
-        (typeof img?.url === 'string' && img.url) ||
-        (typeof img?.imageUrl === 'string' && img.imageUrl) ||
-        (typeof img?.src === 'string' && img.src) ||
-        (typeof img?.signedUrl === 'string' && img.signedUrl) ||
-        (typeof img?.presignedUrl === 'string' && img.presignedUrl) ||
-        '';
-
+      // Extract the image ID (S3 key) from various possible formats
       const id =
         (typeof img?.id === 'string' && img.id) ||
         (typeof img?.imageId === 'string' && img.imageId) ||
         (typeof img?.key === 'string' && img.key) ||
         (typeof img?.s3Key === 'string' && img.s3Key) ||
-        (url ? url : String(index));
+        // If we have a URL, try to extract the filename from it
+        (typeof img?.url === 'string' && img.url && img.url.includes('/') 
+          ? img.url.split('/').pop()?.split('?')[0] || ''
+          : '') ||
+        (typeof img?.imageUrl === 'string' && img.imageUrl && img.imageUrl.includes('/')
+          ? img.imageUrl.split('/').pop()?.split('?')[0] || ''
+          : '') ||
+        (typeof img?.signedUrl === 'string' && img.signedUrl && img.signedUrl.includes('/')
+          ? img.signedUrl.split('/').pop()?.split('?')[0] || ''
+          : '') ||
+        String(index); // Fallback to index
 
       const timeframe =
         (typeof img?.timeframe === 'string' && img.timeframe) ||
@@ -114,7 +118,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
       const description = (typeof img?.description === 'string' && img.description) || '';
 
-      return { id, url, timeframe, description };
+      return { id, timeframe, description };
     });
   };
 
@@ -125,6 +129,13 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Check if trade has unmapped account (allow account selection)
+  const canSelectAccount = useMemo(() => {
+    if (!editMode || !editTrade) return true; // New trade - allow selection
+    const accId = editTrade.accountId;
+    return !accId || accId === '-1'; // Allow selection if unmapped
+  }, [editMode, editTrade]);
 
   // Populate form when editing.
   // NOTE: include `open` so reopening the modal repopulates even if `initialTrade` reference is unchanged.
@@ -244,7 +255,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[60vw] max-w-[60vw] h-[85vh] max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
+      <DialogContent className="w-[90vw] max-w-[90vw] h-[85vh] max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-xl font-semibold">{editMode ? 'Edit Trade' : 'Add New Trade'}</DialogTitle>
         </DialogHeader>
@@ -252,8 +263,8 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
         <ScrollArea className="flex-1 min-h-0">
           <form onSubmit={handleSubmit} className="px-6 pb-6">
             <div className="space-y-6">
-              {/* Account Selection */}
-              {accounts.length > 0 && (
+              {/* Account Selection - Only show if creating new trade or editing unmapped trade */}
+              {accounts.length > 0 && canSelectAccount && (
                 <section className="space-y-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Building2 className="w-4 h-4" />
@@ -267,6 +278,24 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                     selectedAccountIds={selectedAccountIds}
                     onChange={setSelectedAccountIds}
                   />
+                </section>
+              )}
+
+              {/* Show current account info when editing mapped trade */}
+              {accounts.length > 0 && editMode && !canSelectAccount && (
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Building2 className="w-4 h-4" />
+                    Current Account
+                  </div>
+                  <div className="p-3 bg-secondary/50 rounded-lg border border-border space-y-2">
+                    <div className="text-sm font-medium text-foreground">
+                      {accounts.find(a => a.id === editTrade?.accountId)?.name || 'Unknown Account'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Once a trade is mapped to an account, the account assignment cannot be changed.
+                    </div>
+                  </div>
                 </section>
               )}
 
@@ -481,7 +510,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">News / Events</Label>
+                    <div className="flex items-center gap-1.5 h-6">
+                      <Label className="text-xs">News / Events</Label>
+                    </div>
                     <SmartInput
                       value={newsEvent}
                       onChange={setNewsEvent}
@@ -492,17 +523,26 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 h-6">
                       <Lightbulb className="w-3.5 h-3.5 text-warning" />
                       <Label className="text-xs">Key Lesson</Label>
                     </div>
-                    <SmartInput
-                      value={keyLesson}
-                      onChange={setKeyLesson}
-                      suggestions={options.lessons}
-                      onAddNew={addLesson}
-                      placeholder="What did you learn from this trade?"
-                    />
+                    <div className="relative">
+                      <SmartInput
+                        value={keyLesson}
+                        onChange={setKeyLesson}
+                        suggestions={options.lessons}
+                        onAddNew={addLesson}
+                        placeholder="What did you learn from this trade?"
+                        className="pr-12"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <TextEnhancerButton
+                          text={keyLesson}
+                          onEnhanced={setKeyLesson}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -544,14 +584,23 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   Trade Notes
                 </div>
 
-                <div className="space-y-1.5">
-                  <Textarea
-                    value={tradeNotes}
-                    onChange={(e) => setTradeNotes(e.target.value)}
-                    placeholder="Add any additional notes about this trade..."
-                    rows={4}
-                    className="text-sm resize-none"
-                  />
+                <div className="space-y-1.5 relative">
+                  <div className="relative">
+                    <Textarea
+                      value={tradeNotes}
+                      onChange={(e) => setTradeNotes(e.target.value)}
+                      placeholder="Add any additional notes about this trade..."
+                      rows={4}
+                      className="text-sm resize-y pr-12"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <TextEnhancerButton
+                        text={tradeNotes}
+                        onEnhanced={setTradeNotes}
+                        isTradingNotes={true}
+                      />
+                    </div>
+                  </div>
                 </div>
               </section>
 

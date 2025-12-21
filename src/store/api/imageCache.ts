@@ -5,19 +5,48 @@ const imageCache = new Map<string, string>();
 
 export const imageApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    // Fetch image and cache as blob
+    // Fetch image through Lambda and cache as blob
     getImage: builder.query<string, string>({
-      queryFn: async (imageUrl) => {
+      queryFn: async (imageId, api) => {
         try {
           // Check if already cached
-          if (imageCache.has(imageUrl)) {
-            return { data: imageCache.get(imageUrl)! };
+          if (imageCache.has(imageId)) {
+            return { data: imageCache.get(imageId)! };
           }
 
-          // Fetch the image
-          const response = await fetch(imageUrl);
+          // Get the base URL with environment-specific fallback
+          const baseUrl = import.meta.env.VITE_API_URL || 
+            (import.meta.env.MODE === 'production' 
+              ? 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradeflow-prod/v1'
+              : 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradeflow-dev/v1'
+            );
+          
+          // Get auth token from the Redux state
+          const state = api.getState() as any;
+          const token = state.auth?.accessToken || localStorage.getItem('accessToken');
+          
+          if (!token) {
+            throw new Error('No authentication token available');
+          }
+
+          // Construct the Lambda endpoint URL
+          const imageUrl = `${baseUrl}/images/${imageId}`;
+
+          // Fetch the image through the Lambda function
+          const response = await fetch(imageUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
           if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.statusText}`);
+            if (response.status === 404) {
+              throw new Error('Image not found');
+            } else if (response.status === 401) {
+              throw new Error('Unauthorized - please log in again');
+            } else {
+              throw new Error(`Failed to fetch image: ${response.statusText}`);
+            }
           }
 
           // Convert to blob and create object URL
@@ -25,7 +54,7 @@ export const imageApi = api.injectEndpoints({
           const objectUrl = URL.createObjectURL(blob);
 
           // Cache it
-          imageCache.set(imageUrl, objectUrl);
+          imageCache.set(imageId, objectUrl);
 
           return { data: objectUrl };
         } catch (error) {
@@ -37,7 +66,7 @@ export const imageApi = api.injectEndpoints({
           };
         }
       },
-      // Keep images in cache for 1 hour to match presigned URL expiry
+      // Keep images in cache for 1 hour
       keepUnusedDataFor: 3600,
     }),
   }),

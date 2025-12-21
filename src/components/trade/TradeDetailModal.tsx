@@ -208,7 +208,7 @@ export function TradeDetailModal({
                       onClick={() => setSelectedImage(image)}
                     >
                       <CachedImage
-                        src={image.url}
+                        src={image.id}
                         alt={`Trade screenshot - ${image.timeframe}`}
                         className="w-full h-auto object-contain"
                       />
@@ -239,7 +239,7 @@ export function TradeDetailModal({
       <ImageViewerModal
         isOpen={!!selectedImage}
         onClose={() => setSelectedImage(null)}
-        imageUrl={selectedImage?.url || ''}
+        imageId={selectedImage?.id || ''}
         timeframe={selectedImage?.timeframe}
         description={selectedImage?.description}
       />

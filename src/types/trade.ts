@@ -18,8 +18,8 @@ export interface TradingAccount {
 }
 
 export interface TradeImage {
-  id: string;
-  url: string;
+  id: string; // This is the S3 key/filename for the image
+  url?: string; // Deprecated: kept for backward compatibility
   timeframe: string;
   description: string;
 }

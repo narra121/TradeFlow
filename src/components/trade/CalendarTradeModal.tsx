@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trade } from '@/types/trade';
+import { Trade, TradeImage } from '@/types/trade';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { CachedImage } from '@/components/trade/CachedImage';
+import { ImageViewerModal } from '@/components/trade/ImageViewerModal';
 
 interface CalendarTradeModalProps {
   trades: Trade[];
@@ -40,6 +41,7 @@ export function CalendarTradeModal({
   totalDays,
 }: CalendarTradeModalProps) {
   const [selectedTradeIndex, setSelectedTradeIndex] = useState(0);
+  const [selectedImage, setSelectedImage] = useState<TradeImage | null>(null);
 
   // Reset selected trade when trades change
   useEffect(() => {
@@ -65,7 +67,7 @@ export function CalendarTradeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[60vw] max-h-[90vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-[90vw] w-[90vw] max-h-[90vh] p-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b border-border/50 flex flex-row items-center justify-between">
           <div className="flex items-center gap-4">
             <DialogTitle className="text-lg font-semibold">
@@ -307,9 +309,12 @@ export function CalendarTradeModal({
                   selectedTrade.images.map((image, idx) => (
                     <div key={image.id || idx} className="p-4 rounded-xl border border-border/50 bg-card/50">
                       <p className="text-sm font-semibold text-foreground mb-3">{image.timeframe}</p>
-                      <div className="rounded-lg overflow-hidden bg-muted/30 mb-3">
+                      <div 
+                        className="rounded-lg overflow-hidden bg-muted/30 mb-3 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                        onClick={() => setSelectedImage(image)}
+                      >
                         <CachedImage
-                          src={image.url}
+                          src={image.id}
                           alt={`Trade screenshot - ${image.timeframe}`}
                           className="w-full h-auto object-contain"
                         />
@@ -336,6 +341,15 @@ export function CalendarTradeModal({
           </ScrollArea>
         </div>
       </DialogContent>
+
+      {/* Image Viewer Modal */}
+      <ImageViewerModal
+        isOpen={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+        imageId={selectedImage?.id || ''}
+        timeframe={selectedImage?.timeframe}
+        description={selectedImage?.description}
+      />
     </Dialog>
   );
 }

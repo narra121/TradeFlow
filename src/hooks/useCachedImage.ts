@@ -1,16 +1,16 @@
 import { useGetImageQuery } from '@/store/api/imageCache';
 
 /**
- * Hook to fetch and cache images using RTK Query
- * Returns a cached object URL for the image that can be used in img src
+ * Hook to fetch and cache images using the Lambda endpoint
+ * Takes an image ID and returns a cached object URL for the image
  */
-export const useCachedImage = (imageUrl: string | undefined) => {
-  const { data: cachedUrl, isLoading, error } = useGetImageQuery(imageUrl || '', {
-    skip: !imageUrl,
+export const useCachedImage = (imageId: string | undefined) => {
+  const { data: cachedUrl, isLoading, error } = useGetImageQuery(imageId || '', {
+    skip: !imageId,
   });
 
   return {
-    src: cachedUrl || imageUrl, // Fallback to original URL if cache loading
+    src: cachedUrl, // Object URL from the Lambda-fetched image
     isLoading,
     error,
   };

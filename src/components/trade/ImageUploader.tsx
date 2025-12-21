@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { TextEnhancerButton } from '@/components/ui/text-enhancer-button';
+import { CachedImage } from './CachedImage';
 import { DynamicSelect } from './DynamicSelect';
 import { TradeImage } from '@/types/trade';
 import { cn } from '@/lib/utils';
@@ -24,6 +26,44 @@ export function ImageUploader({
 }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+
+  // Helper function to determine if this is a data URL (newly uploaded) vs image ID (existing)
+  const isDataUrl = (urlOrId: string) => urlOrId.startsWith('data:');
+
+  // Helper component to render the appropriate image type
+  const ImageDisplay = ({ 
+    image, 
+    alt, 
+    className, 
+    onClick 
+  }: { 
+    image: TradeImage; 
+    alt: string; 
+    className?: string; 
+    onClick?: () => void;
+  }) => {
+    // For newly uploaded images, use the data URL directly
+    if (image.url && isDataUrl(image.url)) {
+      return (
+        <img
+          src={image.url}
+          alt={alt}
+          className={className}
+          onClick={onClick}
+        />
+      );
+    }
+    
+    // For existing images, use CachedImage with the image ID
+    return (
+      <CachedImage
+        src={image.id}
+        alt={alt}
+        className={className}
+        onClick={onClick}
+      />
+    );
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -86,8 +126,8 @@ export function ImageUploader({
                   className="w-full aspect-video rounded-lg overflow-hidden bg-muted cursor-pointer"
                   onClick={() => setExpandedImage(image.id)}
                 >
-                  <img
-                    src={image.url}
+                  <ImageDisplay
+                    image={image}
                     alt={`Screenshot ${index + 1}`}
                     className="w-full h-full object-contain bg-black/50"
                   />
@@ -124,15 +164,25 @@ export function ImageUploader({
 
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Description</Label>
-                  <Textarea
-                    value={image.description}
-                    onChange={(e) =>
-                      updateImage(image.id, { description: e.target.value })
-                    }
-                    placeholder="Describe what this screenshot shows... (e.g., Entry confirmation on 1H chart, support level bounce)"
-                    rows={3}
-                    className="text-sm resize-none"
-                  />
+                  <div className="relative">
+                    <Textarea
+                      value={image.description}
+                      onChange={(e) =>
+                        updateImage(image.id, { description: e.target.value })
+                      }
+                      placeholder="Describe what this screenshot shows... (e.g., Entry confirmation on 1H chart, support level bounce)"
+                      rows={3}
+                      className="text-sm resize-y pr-12"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <TextEnhancerButton
+                        text={image.description}
+                        onEnhanced={(enhancedText) =>
+                          updateImage(image.id, { description: enhancedText })
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -178,11 +228,18 @@ export function ImageUploader({
           >
             <X className="w-6 h-6" />
           </Button>
-          <img
-            src={images.find(img => img.id === expandedImage)?.url}
-            alt="Expanded screenshot"
-            className="max-w-full max-h-full object-contain rounded-lg"
-          />
+          {(() => {
+            const expandedImg = images.find(img => img.id === expandedImage);
+            if (!expandedImg) return null;
+            
+            return (
+              <ImageDisplay
+                image={expandedImg}
+                alt="Expanded screenshot"
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            );
+          })()}
         </div>
       )}
     </div>

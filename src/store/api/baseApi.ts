@@ -1,8 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
-// API Base URL from environment variable
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.tradeflow.com/v1';
+// API Base URL from environment variable with fallback logic
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.MODE === 'production' 
+    ? 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradeflow-prod/v1'
+    : 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradeflow-dev/v1'
+  );
 
 // Track if we're currently refreshing the token
 let isRefreshing = false;

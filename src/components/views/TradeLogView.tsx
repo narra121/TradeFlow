@@ -292,36 +292,34 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-fit">
-        <button
-          onClick={() => setActiveTab('trades')}
-          className={cn(
-            "px-6 py-2 rounded-md text-sm font-medium transition-all",
-            activeTab === 'trades'
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Trades
-        </button>
-        <button
-          onClick={() => setActiveTab('calendar')}
-          className={cn(
-            "px-6 py-2 rounded-md text-sm font-medium transition-all",
-            activeTab === 'calendar'
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Calendar
-        </button>
-      </div>
+      {/* Tabs and Filters */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-fit">
+          <button
+            onClick={() => setActiveTab('trades')}
+            className={cn(
+              "px-6 py-2 rounded-md text-sm font-medium transition-all",
+              activeTab === 'trades'
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Trades
+          </button>
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={cn(
+              "px-6 py-2 rounded-md text-sm font-medium transition-all",
+              activeTab === 'calendar'
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Calendar
+          </button>
+        </div>
 
-      {/* Trades Tab Content */}
-      {activeTab === 'trades' && (
-        <>
-          {/* Filters */}
+        {activeTab === 'trades' && (
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-muted-foreground" />
@@ -355,12 +353,18 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
               </SelectContent>
             </Select>
           </div>
+        )}
+      </div>
+
+      {/* Trades Tab Content */}
+      {activeTab === 'trades' && (
+        <>
 
           {/* Trades Table with Loading State */}
           {loading ? (
             <TradeTableSkeleton rows={8} />
           ) : (
-          <div className="glass-card overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+          <div className="glass-card overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
             <div className="overflow-auto flex-1">
               <table className="w-full min-w-[1100px]">
                 <thead className="sticky top-0 bg-card z-10">

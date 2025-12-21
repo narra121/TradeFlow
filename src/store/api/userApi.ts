@@ -60,7 +60,7 @@ export const userApi = api.injectEndpoints({
       query: () => '/subscriptions',
       transformResponse: (response: any) => {
         const subscription = response.subscription;
-        if (response?._apiMessage) {
+        if (response?._apiMessage && subscription && typeof subscription === 'object') {
              Object.defineProperty(subscription, '_apiMessage', {
                 value: response._apiMessage,
                 enumerable: false,
