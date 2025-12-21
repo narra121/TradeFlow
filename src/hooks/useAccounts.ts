@@ -6,7 +6,7 @@ import { useGetAccountsQuery, useCreateAccountMutation, useUpdateAccountMutation
 
 export function useAccounts() {
   const dispatch = useAppDispatch();
-  const { selectedAccountId } = useAppSelector((state) => state.accounts || {});
+  const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
   const { data: accountsData, isLoading: loading, error } = useGetAccountsQuery();
   const [createAccountMutation] = useCreateAccountMutation();
   const [updateAccountMutation] = useUpdateAccountMutation();

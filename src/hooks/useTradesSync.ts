@@ -9,7 +9,7 @@ import { setAccountFilter } from '@/store/slices/tradesSlice';
  */
 export function useTradesSync() {
   const dispatch = useAppDispatch();
-  const { selectedAccountId } = useAppSelector((state) => state.accounts || {});
+  const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
 
   // Sync account filter when selectedAccountId changes
   useEffect(() => {
