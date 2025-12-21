@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
-import { calculateTradeStats } from '@/lib/tradeCalculations';
+import { calculateTradeStats, getEligibleTrades } from '@/lib/tradeCalculations';
 import { useGetTradesQuery } from '@/store/api';
 import { 
   DashboardStatsSkeleton, 
@@ -47,7 +47,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     }));
   };
 
-  const filteredTrades = trades; // No need to filter - backend already filtered
+  const filteredTrades = useMemo(() => getEligibleTrades(trades), [trades]);
 
   // Calculate all stats using centralized function
   const filteredStats = useMemo(() => {

@@ -86,7 +86,7 @@ export const tradesApi = {
       images: trade.images || [],
       tags: trade.tags || [],
       emotions: trade.emotions,
-      accountId: trade.accountId && trade.accountId !== '-1' ? trade.accountId : undefined,
+      accountId: trade.accountId && trade.accountId !== '-1' && trade.accountId !== -1 ? trade.accountId : undefined,
       brokenRuleIds: trade.brokenRuleIds || [],
     }));
     

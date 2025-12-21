@@ -21,8 +21,8 @@ const mapBackendTradeToTrade = (trade: any): Trade => {
   const setupType = trade.setupType ?? trade.strategy ?? trade.setup;
   const tradingSession = trade.tradingSession ?? trade.session;
 
-  // accountId - filter out '-1' which means no account
-  const accountId = trade.accountId && trade.accountId !== '-1' ? trade.accountId : undefined;
+  // accountId - filter out '-1' (string or number) which means no account
+  const accountId = trade.accountId && trade.accountId !== '-1' && trade.accountId !== -1 ? trade.accountId : undefined;
 
   return {
     id,
@@ -67,7 +67,19 @@ export const tradesApi = api.injectEndpoints({
         const tradesArray = Array.isArray(response) ? response : (response?.trades || []);
         
         // Map backend response to frontend Trade type
-        return tradesArray.map(mapBackendTradeToTrade);
+        const mappedTrades = tradesArray.map(mapBackendTradeToTrade);
+
+        // Preserve _apiMessage from baseApi
+        if (response?._apiMessage) {
+            Object.defineProperty(mappedTrades, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+
+        return mappedTrades;
       },
       providesTags: (result) =>
         result
@@ -85,7 +97,19 @@ export const tradesApi = api.injectEndpoints({
       }),
       transformResponse: (response: any) => {
         const trade = response.trade || response;
-        return mapBackendTradeToTrade(trade);
+        const mappedTrade = mapBackendTradeToTrade(trade);
+
+        // Preserve _apiMessage from baseApi
+        if (response?._apiMessage) {
+            Object.defineProperty(mappedTrade, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+
+        return mappedTrade;
       },
       providesTags: (result, error, id) => [{ type: 'Trades', id }],
     }),
@@ -128,12 +152,22 @@ export const tradesApi = api.injectEndpoints({
       },
       transformResponse: (response: any) => {
         const trade = response.trade || response;
-        return mapBackendTradeToTrade(trade);
+        const mappedTrade = mapBackendTradeToTrade(trade);
+        
+        if (response?._apiMessage) {
+             Object.defineProperty(mappedTrade, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return mappedTrade;
       },
       invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics'],
     }),
     
-    updateTrade: builder.mutation<{ updatedTrade: Trade; createdTrades: Trade[] }, { id: string; payload: Partial<CreateTradePayload> }>({
+    updateTrade: builder.mutation<{ updatedTrade: Trade; createdTrades: Trade[]; message?: string }, { id: string; payload: Partial<CreateTradePayload> }>({
       query: ({ id, payload }) => {
         // Map UI fields to backend API fields
         const backendPayload: any = {};
@@ -179,7 +213,18 @@ export const tradesApi = api.injectEndpoints({
         const createdTrades = response.createdTrades 
           ? response.createdTrades.map(mapBackendTradeToTrade)
           : [];
-        return { updatedTrade: mappedTrade, createdTrades };
+        
+        const result = { updatedTrade: mappedTrade, createdTrades, message: response.message };
+
+        if (response?._apiMessage) {
+             Object.defineProperty(result, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return result;
       },
       // Invalidate stats/analytics, and trades list if new trades were created
       invalidatesTags: (result) => {
@@ -229,22 +274,65 @@ export const tradesApi = api.injectEndpoints({
       },
     }),
     
-    deleteTrade: builder.mutation<void, string>({
+    deleteTrade: builder.mutation<{ message: string; trade?: Trade }, string>({
       query: (id) => ({
         url: `/trades/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Trades', id },
-        { type: 'Trades', id: 'LIST' },
-        'Stats',
-        'Analytics',
-      ],
+      transformResponse: (response: any) => {
+        const result = {
+            message: response.message || 'Deleted',
+            trade: response.trade ? mapBackendTradeToTrade(response.trade) : undefined
+        };
+
+        if (response?._apiMessage) {
+             Object.defineProperty(result, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return result;
+      },
+      // Only invalidate Stats and Analytics, not Trades (we update cache manually)
+      invalidatesTags: (result, error) => {
+        if (error) return [];
+        return ['Stats', 'Analytics'];
+      },
+      async onQueryStarted(id, { dispatch, getState, queryFulfilled }) {
+        // Optimistic delete from all getTrades caches
+        const patchResults: any[] = [];
+        const state: any = getState();
+        const queries = state?.[api.reducerPath]?.queries || {};
+        
+        for (const entry of Object.values<any>(queries)) {
+          if (entry?.endpointName !== 'getTrades') continue;
+          
+          const patchResult = dispatch(
+            tradesApi.util.updateQueryData('getTrades', entry.originalArgs, (draft: Trade[]) => {
+              const index = draft.findIndex((t) => t.id === id);
+              if (index !== -1) {
+                draft.splice(index, 1);
+              }
+            })
+          );
+          patchResults.push(patchResult);
+        }
+        
+        try {
+          await queryFulfilled;
+          // Success - optimistic update was correct, no need to refetch
+        } catch {
+          // Revert optimistic updates on error
+          patchResults.forEach(patchResult => patchResult.undo());
+        }
+      },
     }),
     
     bulkImportTrades: builder.mutation<any, BulkImportPayload>({
       query: (payload) => ({
-        url: '/trades/bulk-import',
+        url: '/trades',
         method: 'POST',
         body: payload,
       }),

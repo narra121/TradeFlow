@@ -1,5 +1,6 @@
 import { Trade } from '@/types/trade';
 import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, isWithinInterval } from 'date-fns';
+import { getEligibleTrades } from './tradeCalculations';
 
 export interface GoalProgress {
   current: number;
@@ -31,13 +32,14 @@ export function calculateGoalProgressForAccount(
   }
 ): AccountGoalProgress {
   const safeTrades = trades ?? [];
+  const eligibleTrades = getEligibleTrades(safeTrades);
 
   // Filter trades by account and period
   const now = new Date();
   const periodStart = period === 'weekly' ? startOfWeek(now, { weekStartsOn: 0 }) : startOfMonth(now);
   const periodEnd = period === 'weekly' ? endOfWeek(now, { weekStartsOn: 0 }) : endOfMonth(now);
 
-  const filteredTrades = safeTrades.filter(trade => {
+  const filteredTrades = eligibleTrades.filter(trade => {
     const tradeDate = new Date(trade.exitDate || trade.entryDate);
     const matchesAccount = accountId === 'ALL' || trade.accountId === accountId;
     const matchesPeriod = isWithinInterval(tradeDate, { start: periodStart, end: periodEnd });
@@ -112,8 +114,9 @@ export function calculateBrokenRulesCounts(
   const periodEnd = period === 'weekly' ? endOfWeek(now, { weekStartsOn: 0 }) : endOfMonth(now);
 
   const counts: Record<string, number> = {};
+  const eligibleTrades = getEligibleTrades(trades ?? []);
 
-  (trades ?? []).forEach(trade => {
+  eligibleTrades.forEach(trade => {
     const tradeDate = new Date(trade.entryDate);
     if (isWithinInterval(tradeDate, { start: periodStart, end: periodEnd })) {
       trade.brokenRuleIds?.forEach(ruleId => {

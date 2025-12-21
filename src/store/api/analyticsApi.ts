@@ -45,7 +45,6 @@ export const analyticsApi = api.injectEndpoints({
         url: '/analytics/hourly-stats',
         params: params || undefined,
       }),
-      transformResponse: (response: any) => response.data,
       providesTags: ['Analytics'],
     }),
     
@@ -54,7 +53,6 @@ export const analyticsApi = api.injectEndpoints({
         url: '/analytics/daily-win-rate',
         params: params || undefined,
       }),
-      transformResponse: (response: any) => response.data,
       providesTags: ['Analytics'],
     }),
     
@@ -63,7 +61,6 @@ export const analyticsApi = api.injectEndpoints({
         url: '/analytics/symbol-distribution',
         params: params || undefined,
       }),
-      transformResponse: (response: any) => response.data,
       providesTags: ['Analytics'],
     }),
     
@@ -72,7 +69,6 @@ export const analyticsApi = api.injectEndpoints({
         url: '/analytics/strategy-distribution',
         params: params || undefined,
       }),
-      transformResponse: (response: any) => response.data,
       providesTags: ['Analytics'],
     }),
   }),

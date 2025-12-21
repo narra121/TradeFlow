@@ -43,7 +43,7 @@ const goalTypes: GoalType[] = [
     color: 'text-primary',
   },
   {
-    id: 'winrate',
+    id: 'winRate',
     title: 'Win Rate',
     description: 'Maintain win rate goal',
     unit: '%',
@@ -51,7 +51,7 @@ const goalTypes: GoalType[] = [
     color: 'text-success',
   },
   {
-    id: 'drawdown',
+    id: 'maxDrawdown',
     title: 'Max Drawdown',
     description: 'Keep drawdown under limit',
     unit: '%',
@@ -60,7 +60,7 @@ const goalTypes: GoalType[] = [
     isInverse: true,
   },
   {
-    id: 'trades',
+    id: 'maxTrades',
     title: 'Max Trades',
     description: 'Stay under trade limit',
     unit: ' trades',
@@ -129,6 +129,11 @@ export function GoalsView() {
   // Get account-specific goals for current period
   const accountGoals = useMemo(() => {
     const accountId = selectedAccountId || 'ALL';
+    // If ALL is selected, show all goals for the period
+    // Otherwise, only show goals for the selected account
+    if (accountId === 'ALL') {
+      return goals.filter(g => g.period === periodFilter);
+    }
     return goals.filter(g => g.accountId === accountId && g.period === periodFilter);
   }, [goals, selectedAccountId, periodFilter]);
   
@@ -170,9 +175,7 @@ export function GoalsView() {
     if (!isNaN(newTarget) && newTarget > 0) {
       setSavingGoalKey(goalId);
       try {
-        await dispatch(updateGoalAction({ id: goalId, payload: { target: newTarget } })).unwrap();
-        // Refresh goals after update
-        await dispatch(fetchGoals()).unwrap();
+        await updateGoal({ id: goalId, payload: { target: newTarget } }).unwrap();
       } catch (error) {
         console.error('Failed to update goal:', error);
       }
@@ -196,7 +199,11 @@ export function GoalsView() {
   const handleRuleEditSave = async (ruleId: string) => {
     if (editRuleValue.trim()) {
       setSavingRuleId(ruleId);
-      await dispatch(updateRuleAction({ id: ruleId, payload: { rule: editRuleValue } })).unwrap();
+      try {
+        await updateRule({ id: ruleId, payload: { rule: editRuleValue } }).unwrap();
+      } catch (error) {
+        console.error('Failed to update rule:', error);
+      }
       setSavingRuleId(null);
     }
     setEditingRuleId(null);
@@ -211,22 +218,35 @@ export function GoalsView() {
   const handleAddRule = async () => {
     if (newRuleValue.trim()) {
       setIsAddingRuleLoading(true);
-      await dispatch(createRuleAction({ rule: newRuleValue })).unwrap();
-      setNewRuleValue('');
-      setIsAddingRule(false);
-      setIsAddingRuleLoading(false);
+      try {
+        await createRule({ rule: newRuleValue }).unwrap();
+        setNewRuleValue('');
+        setIsAddingRule(false);
+      } catch (error) {
+        console.error('Failed to create rule:', error);
+      } finally {
+        setIsAddingRuleLoading(false);
+      }
     }
   };
 
   const handleDeleteRule = async (ruleId: string) => {
     setDeletingRuleId(ruleId);
-    await dispatch(deleteRuleAction(ruleId)).unwrap();
+    try {
+      await deleteRule(ruleId).unwrap();
+    } catch (error) {
+      console.error('Failed to delete rule:', error);
+    }
     setDeletingRuleId(null);
   };
 
   const handleToggleRule = async (ruleId: string) => {
     setTogglingRuleId(ruleId);
-    await dispatch(toggleRuleAction(ruleId)).unwrap();
+    try {
+      await toggleRule(ruleId).unwrap();
+    } catch (error) {
+      console.error('Failed to toggle rule:', error);
+    }
     setTogglingRuleId(null);
   };
 
@@ -240,8 +260,8 @@ export function GoalsView() {
       switch (goalType.id) {
         case 'profit': return goalProgress.profit.current;
         case 'winRate': return goalProgress.winRate.current;
-        case 'drawdown': return goalProgress.maxDrawdown.current;
-        case 'trades': return goalProgress.tradeCount.current;
+        case 'maxDrawdown': return goalProgress.maxDrawdown.current;
+        case 'maxTrades': return goalProgress.tradeCount.current;
         default: return 0;
       }
     };

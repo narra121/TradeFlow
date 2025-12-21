@@ -13,10 +13,9 @@ export function TradeList({ trades, limit }: TradeListProps) {
   const displayTrades = limit ? trades.slice(0, limit) : trades;
 
   const isTradeUnmapped = (trade: Trade) => {
-    const id = trade.accountId;
-    if (!id) return true; // No accountId means unmapped
-    const normalized = String(id).trim();
-    return normalized === '-1';
+    // A trade is unmapped if it has no accountId or accountId is -1
+    // Note: The mapping function converts '-1' and -1 to undefined
+    return !trade.accountId || trade.accountId === '-1' || trade.accountId === "-1";
   };
 
   return (

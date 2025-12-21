@@ -27,7 +27,18 @@ export const goalsRulesApi = api.injectEndpoints({
     
     getGoals: builder.query<Goal[], void>({
       query: () => '/goals',
-      transformResponse: (response: any) => response.goals,
+      transformResponse: (response: any) => {
+        const goals = response.goals;
+        if (response?._apiMessage) {
+             Object.defineProperty(goals, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return goals;
+      },
       providesTags: (result) =>
         result
           ? [
@@ -43,16 +54,62 @@ export const goalsRulesApi = api.injectEndpoints({
         method: 'PUT',
         body: payload,
       }),
-      transformResponse: (response: any) => response.goal,
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Goals', id },
-        { type: 'Goals', id: 'LIST' },
-      ],
+      transformResponse: (response: any) => {
+        const goal = response.goal;
+        if (response?._apiMessage) {
+             Object.defineProperty(goal, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return goal;
+      },
+      invalidatesTags: [], // Don't invalidate, use manual cache update
+      async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: updatedGoal } = await queryFulfilled;
+          
+          // Update the getGoals cache
+          dispatch(
+            goalsRulesApi.util.updateQueryData('getGoals', undefined, (draft) => {
+              const index = draft.findIndex((goal) => goal.goalId === id);
+              if (index !== -1) {
+                draft[index] = updatedGoal;
+              }
+            })
+          );
+          
+          // Update the getRulesAndGoals cache
+          dispatch(
+            goalsRulesApi.util.updateQueryData('getRulesAndGoals', undefined, (draft) => {
+              const index = draft.goals.findIndex((goal) => goal.goalId === id);
+              if (index !== -1) {
+                draft.goals[index] = updatedGoal;
+              }
+            })
+          );
+        } catch {
+          // Error handled by component
+        }
+      },
     }),
     
     getRules: builder.query<TradingRule[], void>({
       query: () => '/rules',
-      transformResponse: (response: any) => response.rules,
+      transformResponse: (response: any) => {
+        const rules = response.rules;
+        if (response?._apiMessage) {
+             Object.defineProperty(rules, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return rules;
+      },
       providesTags: (result) =>
         result
           ? [
@@ -68,7 +125,18 @@ export const goalsRulesApi = api.injectEndpoints({
         method: 'POST',
         body: payload,
       }),
-      transformResponse: (response: any) => response.rule,
+      transformResponse: (response: any) => {
+        const rule = response.rule;
+        if (response?._apiMessage) {
+             Object.defineProperty(rule, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return rule;
+      },
       invalidatesTags: [{ type: 'Rules', id: 'LIST' }],
     }),
     
@@ -78,11 +146,46 @@ export const goalsRulesApi = api.injectEndpoints({
         method: 'PUT',
         body: payload,
       }),
-      transformResponse: (response: any) => response.rule,
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Rules', id },
-        { type: 'Rules', id: 'LIST' },
-      ],
+      transformResponse: (response: any) => {
+        const rule = response.rule;
+        if (response?._apiMessage) {
+             Object.defineProperty(rule, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return rule;
+      },
+      invalidatesTags: [], // Don't invalidate, use manual cache update
+      async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: updatedRule } = await queryFulfilled;
+          
+          // Update the getRules cache
+          dispatch(
+            goalsRulesApi.util.updateQueryData('getRules', undefined, (draft) => {
+              const index = draft.findIndex((rule) => rule.ruleId === id);
+              if (index !== -1) {
+                draft[index] = updatedRule;
+              }
+            })
+          );
+          
+          // Update the getRulesAndGoals cache
+          dispatch(
+            goalsRulesApi.util.updateQueryData('getRulesAndGoals', undefined, (draft) => {
+              const index = draft.rules.findIndex((rule) => rule.ruleId === id);
+              if (index !== -1) {
+                draft.rules[index] = updatedRule;
+              }
+            })
+          );
+        } catch {
+          // Error handled by component
+        }
+      },
     }),
     
     toggleRule: builder.mutation<TradingRule, string>({
@@ -90,22 +193,103 @@ export const goalsRulesApi = api.injectEndpoints({
         url: `/rules/${id}/toggle`,
         method: 'PUT',
       }),
-      transformResponse: (response: any) => response.rule,
-      invalidatesTags: (result, error, id) => [
-        { type: 'Rules', id },
-        { type: 'Rules', id: 'LIST' },
-      ],
+      transformResponse: (response: any) => {
+        const rule = response.rule;
+        if (response?._apiMessage) {
+             Object.defineProperty(rule, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return rule;
+      },
+      invalidatesTags: [], // Don't invalidate, use manual cache update
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        try {
+          const { data: updatedRule } = await queryFulfilled;
+          
+          // Update the getRules cache
+          dispatch(
+            goalsRulesApi.util.updateQueryData('getRules', undefined, (draft) => {
+              const index = draft.findIndex((rule) => rule.ruleId === id);
+              if (index !== -1) {
+                draft[index] = updatedRule;
+              }
+            })
+          );
+          
+          // Update the getRulesAndGoals cache
+          dispatch(
+            goalsRulesApi.util.updateQueryData('getRulesAndGoals', undefined, (draft) => {
+              const index = draft.rules.findIndex((rule) => rule.ruleId === id);
+              if (index !== -1) {
+                draft.rules[index] = updatedRule;
+              }
+            })
+          );
+        } catch {
+          // Error handled by component
+        }
+      },
     }),
     
-    deleteRule: builder.mutation<void, string>({
+    deleteRule: builder.mutation<{ message: string; rule: TradingRule }, string>({
       query: (id) => ({
         url: `/rules/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Rules', id },
-        { type: 'Rules', id: 'LIST' },
-      ],
+      transformResponse: (response: any) => {
+        const result = {
+            message: response.message || 'Rule deleted successfully',
+            rule: response.rule
+        };
+        if (response?._apiMessage) {
+             Object.defineProperty(result, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return result;
+      },
+      invalidatesTags: [], // Don't invalidate, use manual cache update
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        // Optimistic delete
+        const patchResults: any[] = [];
+        
+        // Delete from getRules cache
+        const patchRules = dispatch(
+          goalsRulesApi.util.updateQueryData('getRules', undefined, (draft) => {
+            const index = draft.findIndex((rule) => rule.ruleId === id);
+            if (index !== -1) {
+              draft.splice(index, 1);
+            }
+          })
+        );
+        patchResults.push(patchRules);
+        
+        // Delete from getRulesAndGoals cache
+        const patchRulesAndGoals = dispatch(
+          goalsRulesApi.util.updateQueryData('getRulesAndGoals', undefined, (draft) => {
+            const index = draft.rules.findIndex((rule) => rule.ruleId === id);
+            if (index !== -1) {
+              draft.rules.splice(index, 1);
+            }
+          })
+        );
+        patchResults.push(patchRulesAndGoals);
+        
+        try {
+          await queryFulfilled;
+          // Success - optimistic update was correct
+        } catch {
+          // Revert all optimistic updates on error
+          patchResults.forEach(patch => patch.undo());
+        }
+      },
     }),
     
     // Fetch trades for current period (for goal calculations)
@@ -154,7 +338,7 @@ export const goalsRulesApi = api.injectEndpoints({
           images: trade.images || [],
           tags: trade.tags || [],
           emotions: trade.emotions,
-          accountId: trade.accountId && trade.accountId !== '-1' ? trade.accountId : undefined,
+          accountId: trade.accountId && trade.accountId !== '-1' && trade.accountId !== -1 ? trade.accountId : undefined,
           brokenRuleIds: trade.brokenRuleIds || [],
         }));
       },

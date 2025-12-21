@@ -80,7 +80,18 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
 
     // Handle fulfilled actions (success)
     if (actionType.endsWith('/fulfilled')) {
-      const message = successMessages[actionType];
+      let message = successMessages[actionType];
+
+      // Check if payload has a message property (from backend response)
+      // Priority: _apiMessage (hidden property) > message (explicit property)
+      if (action.payload && typeof action.payload === 'object') {
+          if ((action.payload as any)._apiMessage) {
+              message = (action.payload as any)._apiMessage;
+          } else if ('message' in action.payload && typeof (action.payload as any).message === 'string') {
+              message = (action.payload as any).message;
+          }
+      }
+
       if (message) {
         toast.success(message);
       }

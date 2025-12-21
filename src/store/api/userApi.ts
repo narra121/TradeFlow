@@ -14,7 +14,18 @@ export const userApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getProfile: builder.query<UserProfile['user'], void>({
       query: () => '/user/profile',
-      transformResponse: (response: any) => response.user,
+      transformResponse: (response: any) => {
+        const user = response.user;
+        if (response?._apiMessage) {
+             Object.defineProperty(user, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return user;
+      },
       providesTags: ['User'],
     }),
     
@@ -24,7 +35,6 @@ export const userApi = api.injectEndpoints({
         method: 'PUT',
         body: payload,
       }),
-      transformResponse: (response: any) => response.user,
       invalidatesTags: ['User'],
     }),
     
@@ -34,7 +44,6 @@ export const userApi = api.injectEndpoints({
         method: 'PUT',
         body: payload,
       }),
-      transformResponse: (response: any) => response.user,
       invalidatesTags: ['User'],
     }),
     
@@ -44,13 +53,23 @@ export const userApi = api.injectEndpoints({
         method: 'PUT',
         body: payload,
       }),
-      transformResponse: (response: any) => response.user,
       invalidatesTags: ['User'],
     }),
     
     getSubscription: builder.query<Subscription, void>({
       query: () => '/subscriptions',
-      transformResponse: (response: any) => response.subscription,
+      transformResponse: (response: any) => {
+        const subscription = response.subscription;
+        if (response?._apiMessage) {
+             Object.defineProperty(subscription, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return subscription;
+      },
       providesTags: ['Subscription'],
     }),
     

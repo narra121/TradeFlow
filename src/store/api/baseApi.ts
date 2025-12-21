@@ -41,7 +41,37 @@ const baseQueryWithReauth: BaseQueryFn<
     },
     responseHandler: async (response) => {
       const data = await response.json();
-      // Unwrap the envelope format from backend: { data: {...}, error: null, meta: null }
+      
+      // New format: { success, message, data, ... }
+      if (data && typeof data === 'object' && 'success' in data) {
+        if (!data.success) {
+           throw new Error(data.message || 'An error occurred');
+        }
+        
+        let result = data.data;
+        
+        // If result is null/undefined, use an empty object to attach message
+        if (result === null || result === undefined) {
+            result = {};
+        }
+
+        // Attach message to result using non-enumerable property
+        if (result && (typeof result === 'object' || typeof result === 'function') && data.message) {
+           try {
+             Object.defineProperty(result, '_apiMessage', {
+                 value: data.message,
+                 enumerable: false,
+                 writable: true,
+                 configurable: true
+             });
+           } catch (e) {
+             // Ignore if immutable
+           }
+        }
+        return result;
+      }
+
+      // Old format: { data, error, meta }
       if (data && typeof data === 'object' && 'data' in data) {
         // Check if backend returned an error in the envelope
         if (data.error && data.error !== null) {

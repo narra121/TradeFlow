@@ -1,5 +1,19 @@
 import { Trade } from '@/types/trade';
 
+/**
+ * Filter out unmapped trades (no accountId or accountId = '-1')
+ */
+export function getEligibleTrades(trades: Trade[]): Trade[] {
+  return trades.filter((trade) => {
+    const id = trade.accountId;
+    // No accountId means it's unmapped -> exclude
+    if (!id) return false;
+    const normalized = String(id).trim();
+    // accountId '-1' means unmapped -> exclude
+    return normalized !== '-1';
+  });
+}
+
 export interface TradeStats {
   totalPnl: number;
   winRate: number;
@@ -28,14 +42,8 @@ export interface TradeStats {
  * Calculate comprehensive trading statistics from trades array
  */
 export function calculateTradeStats(trades: Trade[]): TradeStats {
-  // Exclude trades that belong to the special "-1" account.
-  // Backend sometimes uses accountId=-1 for unassigned/invalid trades.
-  const eligibleTrades = trades.filter((trade) => {
-    const id = trade.accountId;
-    if (!id) return true; // No accountId means it's eligible
-    const normalized = String(id).trim();
-    return normalized !== '-1';
-  });
+  // Exclude trades that belong to the special "-1" account or have no account.
+  const eligibleTrades = getEligibleTrades(trades);
 
   // Ensure deterministic, chronological calculations for streaks/drawdown.
   // Prefer exitDate when present; otherwise fall back to entryDate.
@@ -193,7 +201,7 @@ export function calculateTradeStats(trades: Trade[]): TradeStats {
  * Calculate symbol distribution from trades
  */
 export function calculateSymbolDistribution(trades: Trade[]): Record<string, number> {
-  return trades.reduce((acc, trade) => {
+  return getEligibleTrades(trades).reduce((acc, trade) => {
     acc[trade.symbol] = (acc[trade.symbol] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -203,7 +211,7 @@ export function calculateSymbolDistribution(trades: Trade[]): Record<string, num
  * Calculate strategy distribution from trades
  */
 export function calculateStrategyDistribution(trades: Trade[]): Record<string, number> {
-  return trades.reduce((acc, trade) => {
+  return getEligibleTrades(trades).reduce((acc, trade) => {
     const strategy = trade.strategy || 'Unknown';
     acc[strategy] = (acc[strategy] || 0) + 1;
     return acc;
@@ -214,8 +222,9 @@ export function calculateStrategyDistribution(trades: Trade[]): Record<string, n
  * Calculate hourly win rate statistics (0-23 hours)
  */
 export function calculateHourlyStats(trades: Trade[]) {
+  const eligibleTrades = getEligibleTrades(trades);
   return Array.from({ length: 24 }, (_, hour) => {
-    const tradesInHour = trades.filter(t => {
+    const tradesInHour = eligibleTrades.filter(t => {
       const entryDate = new Date(t.entryDate);
       return entryDate.getHours() === hour;
     });
@@ -236,10 +245,11 @@ export function calculateHourlyStats(trades: Trade[]) {
  * Calculate daily win rate statistics (by day of week)
  */
 export function calculateDailyWinRate(trades: Trade[]) {
+  const eligibleTrades = getEligibleTrades(trades);
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
   return dayNames.map((day, index) => {
-    const tradesOnDay = trades.filter(t => new Date(t.entryDate).getDay() === index);
+    const tradesOnDay = eligibleTrades.filter(t => new Date(t.entryDate).getDay() === index);
     const wins = tradesOnDay.filter(t => (t.pnl || 0) > 0).length;
     const total = tradesOnDay.length;
     const totalPnl = tradesOnDay.reduce((sum, t) => sum + (t.pnl || 0), 0);
@@ -257,7 +267,7 @@ export function calculateDailyWinRate(trades: Trade[]) {
  * Calculate trade duration statistics
  */
 export function calculateTradeDurations(trades: Trade[]) {
-  const tradeDurations = trades
+  const tradeDurations = getEligibleTrades(trades)
     .filter(t => t.exitDate && t.entryDate)
     .map(trade => {
       const exitDate = new Date(trade.exitDate!);
@@ -334,7 +344,7 @@ export function groupDurationsByRange(trades: Trade[]) {
  * Calculate cumulative P&L over time for equity curve
  */
 export function calculateCumulativePnL(trades: Trade[]) {
-  const sortedTrades = [...trades].sort((a, b) => 
+  const sortedTrades = [...getEligibleTrades(trades)].sort((a, b) => 
     new Date(a.exitDate || a.entryDate).getTime() - new Date(b.exitDate || b.entryDate).getTime()
   );
 
@@ -354,7 +364,7 @@ export function calculateCumulativePnL(trades: Trade[]) {
  * Calculate outcome distribution (TP, SL, BREAKEVEN, PARTIAL)
  */
 export function calculateOutcomeDistribution(trades: Trade[]) {
-  const distribution = trades.reduce((acc, trade) => {
+  const distribution = getEligibleTrades(trades).reduce((acc, trade) => {
     const outcome = trade.outcome || 'UNKNOWN';
     acc[outcome] = (acc[outcome] || 0) + 1;
     return acc;
@@ -371,7 +381,7 @@ export function calculateOutcomeDistribution(trades: Trade[]) {
  * Calculate session distribution (London, New York, Asian, etc.)
  */
 export function calculateSessionDistribution(trades: Trade[]) {
-  const distribution = trades.reduce((acc, trade) => {
+  const distribution = getEligibleTrades(trades).reduce((acc, trade) => {
     const session = trade.session || 'Unknown';
     acc[session] = (acc[session] || 0) + 1;
     return acc;

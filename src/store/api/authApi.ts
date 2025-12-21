@@ -41,11 +41,21 @@ export const authApi = api.injectEndpoints({
         }
         
         // Transform response to match AuthResponse interface
-        return {
+        const result = {
           user: response.user,
           token: response.IdToken,
           refreshToken: response.RefreshToken
         };
+
+        if (response?._apiMessage) {
+             Object.defineProperty(result, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return result;
       },
       invalidatesTags: ['Auth'],
     }),

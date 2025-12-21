@@ -48,6 +48,7 @@ import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/component
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation } from '@/store/api';
+import { getEligibleTrades } from '@/lib/tradeCalculations';
 
 interface TradeLogViewProps {
   onAddTrade: () => void;
@@ -104,6 +105,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
   // Trades are already filtered by backend based on Redux date range
   const dateFilteredTrades = trades;
+  const eligibleTrades = useMemo(() => getEligibleTrades(trades), [trades]);
 
   // Get unique symbols for filter
   const uniqueSymbols = useMemo(() => {
@@ -117,12 +119,10 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     return matchesSymbol && matchesOutcome;
   });
 
-  // Helper to check if a trade is missing additional details
+  // Helper to check if a trade is unmapped (no accountId)
   const isTradeIncomplete = (trade: Trade) => {
-    const hasNoImages = !trade.images || trade.images.length === 0;
-    const hasNoStrategy = !trade.strategy;
-    const hasNoNotes = !trade.notes && !trade.keyLesson;
-    return hasNoImages && hasNoStrategy && hasNoNotes;
+    // A trade is unmapped if it has no accountId or accountId is -1
+    return !trade.accountId || trade.accountId === '-1' ;
   };
 
   // Trade table handlers
@@ -187,7 +187,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   );
 
   const getTradesForDay = (date: Date) => {
-    return dateFilteredTrades.filter(trade => {
+    return eligibleTrades.filter(trade => {
       if (!trade.exitDate) return false;
       return isSameDay(trade.exitDate, date);
     });
@@ -219,7 +219,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
   const tradingDays = useMemo(() => {
     const days: Date[] = [];
-    dateFilteredTrades.forEach(trade => {
+    eligibleTrades.forEach(trade => {
       if (trade.exitDate) {
         const exitDate = new Date(trade.exitDate);
         const exists = days.some(d => isSameDay(d, exitDate));
@@ -401,7 +401,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                                   <span className="w-2 h-2 rounded-full bg-warning animate-pulse" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Missing details (screenshots, strategy, notes)</p>
+                                  <p>This trade is not mapped to any account id and will not be considered in any stats calculation.</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>

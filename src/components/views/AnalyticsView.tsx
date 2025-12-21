@@ -25,13 +25,8 @@ import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/component
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { subDays, isWithinInterval, startOfWeek, endOfWeek, format, addDays, isSameDay } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchTrades } from '@/store/slices/tradesSlice';
-import { 
-  fetchHourlyStats, 
-  fetchDailyWinRate, 
-  fetchSymbolDistribution, 
-  fetchStrategyDistribution 
-} from '@/store/slices/analyticsSlice';
+import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { useGetTradesQuery } from '@/store/api';
 import {
   calculateTradeStats,
   calculateSymbolDistribution,
@@ -41,31 +36,43 @@ import {
   calculateTradeDurations,
   groupDurationsByRange,
   formatDuration,
+  getEligibleTrades,
 } from '@/lib/tradeCalculations';
 
 export function AnalyticsView() {
   const dispatch = useAppDispatch();
-  const { trades = [], loading: tradesLoading } = useAppSelector((state) => state.trades);
+  const filters = useAppSelector((state) => state.trades.filters);
   
-  const [datePreset, setDatePreset] = useState<DatePreset>(30);
+  // Prepare query params
+  const queryParams = useMemo(() => ({
+    accountId: filters.accountId,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+  }), [filters.accountId, filters.startDate, filters.endDate]);
+  
+  const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(queryParams);
+  
+  const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 30);
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
+  
+  const handleDatePresetChange = (preset: DatePreset) => {
+    const range = getDateRangeFromPreset(preset);
+    dispatch(setDateRangeFilter({
+      startDate: range.from.toISOString().split('T')[0],
+      endDate: range.to.toISOString().split('T')[0],
+      datePreset: preset
+    }));
+    setDatePreset(preset);
+  };
 
-  const filteredTrades = useMemo(() => {
-    const range = getDateRangeFromPreset(datePreset, customRange);
-    return trades.filter(trade => {
-      const tradeDate = new Date(trade.exitDate || trade.entryDate);
-      return isWithinInterval(tradeDate, { start: range.from, end: range.to });
-    });
-  }, [trades, datePreset, customRange]);
-
-  const closedTrades = filteredTrades; // All trades are closed now
+  const eligibleTrades = useMemo(() => getEligibleTrades(trades), [trades]);
   
   // Calculate all analytics using centralized functions
-  const stats = useMemo(() => calculateTradeStats(closedTrades), [closedTrades]);
+  const stats = useMemo(() => calculateTradeStats(eligibleTrades), [eligibleTrades]);
   
   // Symbol distribution (computed locally from filtered trades)
   const localSymbolDistribution = useMemo(() => 
-    calculateSymbolDistribution(closedTrades), [closedTrades]
+    calculateSymbolDistribution(eligibleTrades), [eligibleTrades]
   );
 
   const pieData = Object.entries(localSymbolDistribution).map(([name, value]) => ({
@@ -75,7 +82,7 @@ export function AnalyticsView() {
 
   // Strategy distribution (computed locally from filtered trades)
   const localStrategyDistribution = useMemo(() => 
-    calculateStrategyDistribution(closedTrades), [closedTrades]
+    calculateStrategyDistribution(eligibleTrades), [eligibleTrades]
   );
 
   const strategyPieData = Object.entries(localStrategyDistribution).map(([name, value]) => ({
@@ -87,24 +94,24 @@ export function AnalyticsView() {
 
   // Hourly win rate calculation (all 24 hours) - computed locally from filtered trades
   const localHourlyStats = useMemo(() => 
-    calculateHourlyStats(closedTrades), [closedTrades]
+    calculateHourlyStats(eligibleTrades), [eligibleTrades]
   );
 
   // Daily win rate calculation (by day of week) - computed locally from filtered trades
   const localDailyWinRate = useMemo(() => 
-    calculateDailyWinRate(closedTrades), [closedTrades]
+    calculateDailyWinRate(eligibleTrades), [eligibleTrades]
   );
 
   // Trade duration calculation using centralized functions
   const durationStats = useMemo(() => 
-    calculateTradeDurations(closedTrades), [closedTrades]
+    calculateTradeDurations(eligibleTrades), [eligibleTrades]
   );
   
   const tradeDurations = durationStats.durations;
 
   // Group durations for bar chart
   const durationData = useMemo(() => 
-    groupDurationsByRange(closedTrades), [closedTrades]
+    groupDurationsByRange(eligibleTrades), [eligibleTrades]
   );
 
   // Max/Min/Avg duration stats
@@ -114,7 +121,7 @@ export function AnalyticsView() {
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 }); // Sunday
   const dailyPnL = Array.from({ length: 7 }, (_, i) => {
     const dayDate = addDays(currentWeekStart, i);
-    const dayTrades = trades.filter(trade => {
+    const dayTrades = eligibleTrades.filter(trade => {
       const tradeDate = new Date(trade.exitDate || trade.entryDate);
       return isSameDay(tradeDate, dayDate);
     });
@@ -152,14 +159,11 @@ export function AnalyticsView() {
             <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
           </div>
           <div className="flex items-center gap-4">
-            <AccountFilter />
             <DateRangeFilter
               selectedPreset={datePreset}
-              onPresetChange={setDatePreset}
-              customRange={customRange}
-              onCustomRangeChange={setCustomRange}
-              showCustomPicker
+              onPresetChange={handleDatePresetChange}
             />
+            <AccountFilter />
           </div>
         </div>
         <MetricsGridSkeleton />
@@ -184,14 +188,11 @@ export function AnalyticsView() {
           <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
         </div>
         <div className="flex items-center gap-4">
-          <AccountFilter />
           <DateRangeFilter
             selectedPreset={datePreset}
-            onPresetChange={setDatePreset}
-            customRange={customRange}
-            onCustomRangeChange={setCustomRange}
-            showCustomPicker
+            onPresetChange={handleDatePresetChange}
           />
+          <AccountFilter />
         </div>
       </div>
 
@@ -217,7 +218,7 @@ export function AnalyticsView() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Equity Curve */}
-        <PerformanceChart trades={filteredTrades} />
+        <PerformanceChart trades={eligibleTrades} />
 
         {/* Daily P&L Bar Chart - Current Week */}
         <div className="glass-card p-5">

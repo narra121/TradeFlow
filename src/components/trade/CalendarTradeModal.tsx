@@ -307,13 +307,10 @@ export function CalendarTradeModal({
                     <div key={image.id || idx} className="p-4 rounded-xl border border-border/50 bg-card/50">
                       <p className="text-sm font-semibold text-foreground mb-3">{image.timeframe}</p>
                       <div className="rounded-lg overflow-hidden bg-muted/30 mb-3">
-                        <img
+                        <CachedImage
                           src={image.url}
                           alt={`Trade screenshot - ${image.timeframe}`}
                           className="w-full h-auto object-contain"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder.svg';
-                          }}
                         />
                       </div>
                       {image.description && (

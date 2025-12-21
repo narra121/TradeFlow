@@ -25,10 +25,20 @@ export const accountsApi = api.injectEndpoints({
         const accounts = Array.isArray(response?.accounts)
           ? response.accounts.map(normalizeAccount)
           : [];
-        return {
+        const result = {
           ...response,
           accounts,
         };
+
+        if (response?._apiMessage) {
+             Object.defineProperty(result, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return result;
       },
       providesTags: (result) =>
         result
@@ -45,7 +55,18 @@ export const accountsApi = api.injectEndpoints({
         method: 'POST',
         body: payload,
       }),
-      transformResponse: (response: any) => normalizeAccount(response?.account),
+      transformResponse: (response: any) => {
+        const account = normalizeAccount(response?.account);
+        if (response?._apiMessage) {
+             Object.defineProperty(account, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return account;
+      },
       invalidatesTags: [{ type: 'Accounts', id: 'LIST' }],
     }),
     
@@ -55,11 +76,36 @@ export const accountsApi = api.injectEndpoints({
         method: 'PUT',
         body: payload,
       }),
-      transformResponse: (response: any) => normalizeAccount(response?.account),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Accounts', id },
-        { type: 'Accounts', id: 'LIST' },
-      ],
+      transformResponse: (response: any) => {
+        const account = normalizeAccount(response?.account);
+        if (response?._apiMessage) {
+             Object.defineProperty(account, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return account;
+      },
+      invalidatesTags: [], // Don't invalidate, use manual cache update
+      async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: updatedAccount } = await queryFulfilled;
+          
+          // Update the getAccounts cache
+          dispatch(
+            accountsApi.util.updateQueryData('getAccounts', undefined, (draft) => {
+              const index = draft.accounts.findIndex((acc) => acc.id === id);
+              if (index !== -1) {
+                draft.accounts[index] = updatedAccount;
+              }
+            })
+          );
+        } catch {
+          // Error handled by component
+        }
+      },
     }),
     
     updateAccountStatus: builder.mutation<TradingAccount, { id: string; status: AccountStatus }>({
@@ -68,22 +114,82 @@ export const accountsApi = api.injectEndpoints({
         method: 'PUT',
         body: { status },
       }),
-      transformResponse: (response: any) => normalizeAccount(response?.account),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Accounts', id },
-        { type: 'Accounts', id: 'LIST' },
-      ],
+      transformResponse: (response: any) => {
+        const account = normalizeAccount(response?.account);
+        if (response?._apiMessage) {
+             Object.defineProperty(account, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return account;
+      },
+      invalidatesTags: [], // Don't invalidate, use manual cache update
+      async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: updatedAccount } = await queryFulfilled;
+          
+          // Update the getAccounts cache
+          dispatch(
+            accountsApi.util.updateQueryData('getAccounts', undefined, (draft) => {
+              const index = draft.accounts.findIndex((acc) => acc.id === id);
+              if (index !== -1) {
+                draft.accounts[index] = updatedAccount;
+              }
+            })
+          );
+        } catch {
+          // Error handled by component
+        }
+      },
     }),
     
-    deleteAccount: builder.mutation<void, string>({
+    deleteAccount: builder.mutation<{ message: string; account: TradingAccount; tradesDeleted: number; goalsDeleted: number; rulesDeleted: number }, string>({
       query: (id) => ({
         url: `/accounts/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Accounts', id },
-        { type: 'Accounts', id: 'LIST' },
-      ],
+      transformResponse: (response: any) => {
+        const result = {
+            message: response.message || 'Account deleted successfully',
+            account: normalizeAccount(response?.account),
+            tradesDeleted: response.tradesDeleted || 0,
+            goalsDeleted: response.goalsDeleted || 0,
+            rulesDeleted: response.rulesDeleted || 0,
+        };
+
+        if (response?._apiMessage) {
+             Object.defineProperty(result, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return result;
+      },
+      invalidatesTags: ['Stats', 'Analytics', 'Trades', 'Goals', 'Rules'], // Invalidate related data
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        // Optimistic delete
+        const patchResult = dispatch(
+          accountsApi.util.updateQueryData('getAccounts', undefined, (draft) => {
+            const index = draft.accounts.findIndex((acc) => acc.id === id);
+            if (index !== -1) {
+              draft.accounts.splice(index, 1);
+            }
+          })
+        );
+        
+        try {
+          await queryFulfilled;
+          // Success - optimistic update was correct, no need to refetch
+        } catch {
+          // Revert optimistic update on error
+          patchResult.undo();
+        }
+      },
     }),
   }),
 });
