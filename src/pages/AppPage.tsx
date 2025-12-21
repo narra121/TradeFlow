@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardView } from '@/components/views/DashboardView';
 import { TradeLogView } from '@/components/views/TradeLogView';
@@ -17,13 +18,17 @@ import type { Trade } from '@/types/trade';
 export function AppPage() {
   const [createTrade] = useCreateTradeMutation();
   const [bulkImportTrades] = useBulkImportTradesMutation();
+  const location = useLocation();
+  const navigate = useNavigate();
   
   // Centralized trades sync with account selection
   useTradesSync();
-  const [activeView, setActiveView] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
   const [isImportTradesOpen, setIsImportTradesOpen] = useState(false);
+  
+  // Derive active view from URL
+  const activeView = location.pathname.split('/')[2] || 'dashboard';
 
   const handleAddTrade = async (newTrade: Omit<Trade, 'id'>) => {
     // Map frontend Trade format to backend API format
@@ -99,32 +104,13 @@ export function AppPage() {
     }
   };
 
-  const renderView = () => {
-    switch (activeView) {
-      case 'dashboard':
-        return <DashboardView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
-      case 'accounts':
-        return <AccountsView />;
-      case 'tradelog':
-        return <TradeLogView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
-      case 'analytics':
-        return <AnalyticsView />;
-      case 'goals':
-        return <GoalsView />;
-      case 'profile':
-        return <ProfileView />;
-      case 'settings':
-        return <SettingsView />;
-      default:
-        return <DashboardView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />;
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-background bg-glow">
       <Sidebar 
         activeView={activeView} 
-        onViewChange={setActiveView}
+        onViewChange={(view) => navigate(`/app/${view}`)}
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
       />
@@ -134,7 +120,16 @@ export function AppPage() {
         sidebarCollapsed ? "ml-[72px]" : "ml-[240px]"
       )}>
         <div className="max-w-7xl mx-auto animate-fade-in">
-          {renderView()}
+          <Routes>
+            <Route index element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />} />
+            <Route path="accounts" element={<AccountsView />} />
+            <Route path="tradelog" element={<TradeLogView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />} />
+            <Route path="analytics" element={<AnalyticsView />} />
+            <Route path="goals" element={<GoalsView />} />
+            <Route path="profile" element={<ProfileView />} />
+            <Route path="settings" element={<SettingsView />} />
+          </Routes>
         </div>
       </main>
 
