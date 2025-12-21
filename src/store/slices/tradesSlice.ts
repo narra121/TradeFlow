@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { DatePreset } from '@/components/filters/DateRangeFilter';
+import { startOfWeek, endOfWeek } from 'date-fns';
 
 export interface TradesState {
   filters: {
@@ -10,11 +11,11 @@ export interface TradesState {
   };
 }
 
-// Default to last 30 days
+// Default to this week
 const getDefaultDateRange = () => {
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 30);
+  const now = new Date();
+  const startDate = startOfWeek(now);
+  const endDate = endOfWeek(now);
   return {
     startDate: startDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
     endDate: endDate.toISOString().split('T')[0]      // Format as YYYY-MM-DD
@@ -24,7 +25,7 @@ const getDefaultDateRange = () => {
 const initialState: TradesState = {
   filters: {
     accountId: 'ALL',
-    datePreset: 30,
+    datePreset: 'thisWeek',
     ...getDefaultDateRange()
   },
 };
@@ -50,7 +51,7 @@ const tradesSlice = createSlice({
     clearFilters: (state) => {
       state.filters = {
         accountId: 'ALL',
-        datePreset: 30,
+        datePreset: 'thisWeek',
         ...getDefaultDateRange()
       };
     },
