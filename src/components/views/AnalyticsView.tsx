@@ -42,6 +42,9 @@ import {
 export function AnalyticsView() {
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.trades.filters);
+  const [customRange, setCustomRange] = useState<{ from: Date; to: Date }>(
+    { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() }
+  );
   
   // Prepare query params
   const queryParams = useMemo(() => ({
@@ -56,12 +59,15 @@ export function AnalyticsView() {
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
   
   const handleDatePresetChange = (preset: DatePreset) => {
-    const range = getDateRangeFromPreset(preset);
+    const range = getDateRangeFromPreset(preset, customRange);
     dispatch(setDateRangeFilter({
       startDate: range.from.toISOString().split('T')[0],
       endDate: range.to.toISOString().split('T')[0],
       datePreset: preset
     }));
+    if (preset === 'custom') {
+      setCustomRange(range);
+    }
     setDatePreset(preset);
   };
 
@@ -158,12 +164,15 @@ export function AnalyticsView() {
             <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
             <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <AccountFilter />
             <DateRangeFilter
               selectedPreset={datePreset}
               onPresetChange={handleDatePresetChange}
+              customRange={customRange}
+              onCustomRangeChange={setCustomRange}
+              showCustomPicker
             />
-            <AccountFilter />
           </div>
         </div>
         <MetricsGridSkeleton />
@@ -187,12 +196,15 @@ export function AnalyticsView() {
           <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
           <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          <AccountFilter />
           <DateRangeFilter
             selectedPreset={datePreset}
             onPresetChange={handleDatePresetChange}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+            showCustomPicker
           />
-          <AccountFilter />
         </div>
       </div>
 

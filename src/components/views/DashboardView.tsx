@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { TradeList } from '@/components/dashboard/TradeList';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
@@ -28,6 +28,9 @@ interface DashboardViewProps {
 export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps) {
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.trades.filters);
+  const [customRange, setCustomRange] = useState<{ from: Date; to: Date }>(
+    { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() }
+  );
   
   // Prepare query params
   const queryParams = useMemo(() => ({
@@ -39,12 +42,15 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
   const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(queryParams);
   
   const handleDatePresetChange = (preset: DatePreset) => {
-    const range = getDateRangeFromPreset(preset);
+    const range = getDateRangeFromPreset(preset, customRange);
     dispatch(setDateRangeFilter({
       startDate: range.from.toISOString().split('T')[0],
       endDate: range.to.toISOString().split('T')[0],
       datePreset: preset
     }));
+    if (preset === 'custom') {
+      setCustomRange(range);
+    }
   };
 
   const filteredTrades = useMemo(() => getEligibleTrades(trades), [trades]);
@@ -76,12 +82,15 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
             </Button>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          <AccountFilter />
           <DateRangeFilter
             selectedPreset={filters.datePreset}
             onPresetChange={handleDatePresetChange}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+            showCustomPicker
           />
-          <AccountFilter />
         </div>
       </div>
 

@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { format, subDays } from 'date-fns';
+import { format, subDays, startOfWeek, startOfMonth } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
-export type DatePreset = 7 | 30 | 60 | 90 | 365 | 'all' | 'custom';
+export type DatePreset = 'thisWeek' | 'thisMonth' | 7 | 30 | 60 | 90 | 365 | 'all' | 'custom';
 
 interface DateRangeFilterProps {
   selectedPreset: DatePreset;
@@ -26,13 +26,18 @@ export function DateRangeFilter({
   const [fromOpen, setFromOpen] = useState(false);
   const [toOpen, setToOpen] = useState(false);
 
-  const presets: { value: DatePreset; label: string }[] = [
+  const daysPresets: { value: DatePreset; label: string }[] = [
     { value: 7, label: '7 days' },
     { value: 30, label: '30 days' },
     { value: 60, label: '60 days' },
     { value: 90, label: '90 days' },
     { value: 365, label: '1 year' },
     { value: 'all', label: 'All time' },
+  ];
+
+  const periodPresets: { value: DatePreset; label: string }[] = [
+    { value: 'thisWeek', label: 'This week' },
+    { value: 'thisMonth', label: 'This month' },
   ];
 
   const handleFromSelect = (date: Date | undefined) => {
@@ -50,10 +55,10 @@ export function DateRangeFilter({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <>
       <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg">
         <span className="px-2 text-sm text-muted-foreground">Last</span>
-        {presets.map((preset) => (
+        {daysPresets.map((preset) => (
           <button
             key={preset.value}
             onClick={() => onPresetChange(preset.value)}
@@ -80,6 +85,23 @@ export function DateRangeFilter({
             Custom
           </button>
         )}
+      </div>
+
+      <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg">
+        {periodPresets.map((preset) => (
+          <button
+            key={preset.value}
+            onClick={() => onPresetChange(preset.value)}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+              selectedPreset === preset.value
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {preset.label}
+          </button>
+        ))}
       </div>
 
       {showCustomPicker && selectedPreset === 'custom' && customRange && (
@@ -139,7 +161,7 @@ export function DateRangeFilter({
           </Popover>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -151,6 +173,14 @@ export function getDateRangeFromPreset(preset: DatePreset, customRange?: { from:
   if (preset === 'all') {
     // All time: start from Jan 1, 2000 to cover any possible trade date
     return { from: new Date('2000-01-01'), to: now };
+  }
+  if (preset === 'thisWeek') {
+    // Start from the beginning of this week (Sunday)
+    return { from: startOfWeek(now), to: now };
+  }
+  if (preset === 'thisMonth') {
+    // Start from the beginning of this month
+    return { from: startOfMonth(now), to: now };
   }
   const days = typeof preset === 'number' ? preset : 30;
   return { from: subDays(now, days), to: now };

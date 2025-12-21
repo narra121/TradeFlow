@@ -89,7 +89,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename="/TradeFlow">
+      <BrowserRouter basename={import.meta.env.PROD ? "/TradeFlow" : ""}>
         <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>
