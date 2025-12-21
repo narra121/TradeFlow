@@ -42,7 +42,7 @@ export function TradeDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[60vw] max-h-[90vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-[90vw] w-[90vw] max-h-[90vh] p-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b border-border/50 flex flex-row items-center justify-between">
           <div className="flex items-center gap-4">
             <DialogTitle className="text-lg font-semibold">
@@ -77,7 +77,7 @@ export function TradeDetailModal({
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(90vh-80px)]">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+          <div className="grid grid-cols-[30%_70%] gap-6 p-6">
             {/* Left Column - Trade Info */}
             <div className="space-y-4">
               {/* Header Card */}
