@@ -56,7 +56,6 @@ export function AnalyticsView() {
   const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(queryParams);
   
   const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 30);
-  const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
   
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
