@@ -22,6 +22,21 @@
     
     <link rel="canonical" href="https://tradeflow.app" />
     
+    <!-- Single Page Apps for GitHub Pages -->
+    <script>
+      // This script checks for redirected paths from 404.html
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null,
+              l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
+    
     <!-- Razorpay Checkout Script -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="module" crossorigin src="/TradeFlow/assets/index-B5X7Xc7m.js"></script>
