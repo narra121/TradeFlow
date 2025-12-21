@@ -1,4 +1,5 @@
-import { Trade } from '@/types/trade';
+import { useState } from 'react';
+import { Trade, TradeImage } from '@/types/trade';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -10,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CachedImage } from '@/components/trade/CachedImage';
+import { ImageViewerModal } from '@/components/trade/ImageViewerModal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChevronLeft, ChevronRight, X, TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -36,6 +38,8 @@ export function TradeDetailModal({
   currentIndex,
   totalCount,
 }: TradeDetailModalProps) {
+  const [selectedImage, setSelectedImage] = useState<TradeImage | null>(null);
+
   if (!trade) return null;
 
   const isWin = (trade.pnl || 0) >= 0;
@@ -199,7 +203,10 @@ export function TradeDetailModal({
                 trade.images.map((image, idx) => (
                   <div key={image.id || idx} className="p-4 rounded-xl border border-border/50 bg-card/50">
                     <p className="text-sm font-semibold text-foreground mb-3">{image.timeframe}</p>
-                    <div className="rounded-lg overflow-hidden bg-muted/30 mb-3">
+                    <div 
+                      className="rounded-lg overflow-hidden bg-muted/30 mb-3 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                      onClick={() => setSelectedImage(image)}
+                    >
                       <CachedImage
                         src={image.url}
                         alt={`Trade screenshot - ${image.timeframe}`}
@@ -227,6 +234,15 @@ export function TradeDetailModal({
           </div>
         </ScrollArea>
       </DialogContent>
+
+      {/* Image Viewer Modal */}
+      <ImageViewerModal
+        isOpen={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+        imageUrl={selectedImage?.url || ''}
+        timeframe={selectedImage?.timeframe}
+        description={selectedImage?.description}
+      />
     </Dialog>
   );
 }
