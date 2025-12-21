@@ -47,7 +47,7 @@ import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
-import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation } from '@/store/api';
+import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation, useGetAccountsQuery } from '@/store/api';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
 
 interface TradeLogViewProps {
@@ -70,7 +70,9 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     endDate: filters.endDate,
   }), [filters.accountId, filters.startDate, filters.endDate]);
   
-  const { data: trades = [], isLoading: loading } = useGetTradesQuery(queryParams, );
+  const { data: trades = [], isLoading: loading } = useGetTradesQuery(queryParams);
+  const { data: accountsData } = useGetAccountsQuery();
+  const accounts = accountsData?.accounts || [];
   const [updateTrade] = useUpdateTradeMutation();
   const [deleteTrade] = useDeleteTradeMutation();
   
@@ -358,12 +360,13 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           {loading ? (
             <TradeTableSkeleton rows={8} />
           ) : (
-          <div className="glass-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
+          <div className="glass-card overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+            <div className="overflow-auto flex-1">
+              <table className="w-full min-w-[1100px]">
+                <thead className="sticky top-0 bg-card z-10">
                   <tr className="border-b border-border/50">
                     <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Symbol</th>
+                    <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Account</th>
                     <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Direction</th>
                     <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Entry</th>
                     <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Exit</th>
@@ -375,7 +378,9 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
-                  {filteredTrades.map((trade, index) => (
+                  {filteredTrades.map((trade, index) => {
+                    const account = accounts.find(a => a.id === trade.accountId);
+                    return (
                     <tr 
                       key={trade.id} 
                       className="hover:bg-secondary/30 transition-colors animate-fade-in"
@@ -407,6 +412,9 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                             </TooltipProvider>
                           )}
                         </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm text-foreground">{account?.name || '—'}</span>
                       </td>
                       <td className="px-5 py-4">
                         <span className={cn(
@@ -501,7 +509,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>
