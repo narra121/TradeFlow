@@ -30,7 +30,8 @@ export const imageApi = api.injectEndpoints({
           }
 
           // Construct the Lambda endpoint URL
-          const imageUrl = `${baseUrl}/images/${imageId}`;
+          // imageId already contains the full S3 key path (e.g., "images/...")
+          const imageUrl = `${baseUrl}/images/${imageId.replace(/^images\//, '')}`;
 
           // Fetch the image through the Lambda function
           const response = await fetch(imageUrl, {
