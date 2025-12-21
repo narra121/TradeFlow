@@ -23,7 +23,7 @@ export const imageApi = api.injectEndpoints({
           
           // Get auth token from the Redux state
           const state = api.getState() as any;
-          const token = state.auth?.accessToken || localStorage.getItem('accessToken');
+          const token = state.auth?.token || localStorage.getItem('idToken');
           
           if (!token) {
             throw new Error('No authentication token available');
