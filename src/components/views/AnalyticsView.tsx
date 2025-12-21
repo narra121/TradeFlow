@@ -43,7 +43,7 @@ export function AnalyticsView() {
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.trades.filters);
   const [customRange, setCustomRange] = useState<{ from: Date; to: Date }>(
-    { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() }
+    { from: startOfWeek(new Date()), to: endOfWeek(new Date()) }
   );
   
   // Prepare query params
@@ -55,7 +55,7 @@ export function AnalyticsView() {
   
   const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(queryParams);
   
-  const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 30);
+  const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 'thisWeek');
   
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
