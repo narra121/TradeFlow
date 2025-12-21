@@ -89,7 +89,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename="/TradeFlow">
         <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>
