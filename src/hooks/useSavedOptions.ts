@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { useGetSavedOptionsQuery, useUpdateSavedOptionsMutation, SavedOptions } from '@/store/api';
+import { useGetSavedOptionsQuery, useUpdateSavedOptionsMutation } from '@/store/api';
+import type { SavedOptions } from '@/store/api';
 
 // Default options - used as fallback
 const defaultOptions: SavedOptions = {
