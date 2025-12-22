@@ -1,137 +1,133 @@
 import { Middleware } from '@reduxjs/toolkit';
 import { toast } from 'sonner';
+import { isFulfilled, isRejectedWithValue } from '@reduxjs/toolkit';
 
 // Type for Redux actions
 interface ReduxAction {
   type: string;
   payload?: any;
+  meta?: any;
 }
 
-// Actions to skip toast notifications
-const skipToastActions = [
-  'auth/login/fulfilled',
-  'auth/login/rejected',
-  'trades/fetchTrades/fulfilled',
-  'trades/fetchTrades/rejected',
-  'accounts/fetchAccounts/fulfilled',
-  'accounts/fetchAccounts/rejected',
-  'stats/fetchStats/fulfilled',
-  'stats/fetchStats/rejected',
-  'stats/fetchDailyStats/fulfilled',
-  'stats/fetchDailyStats/rejected',
-  'analytics/fetchHourlyStats/fulfilled',
-  'analytics/fetchHourlyStats/rejected',
-  'analytics/fetchDailyWinRate/fulfilled',
-  'analytics/fetchDailyWinRate/rejected',
-  'analytics/fetchSymbolDistribution/fulfilled',
-  'analytics/fetchSymbolDistribution/rejected',
-  'analytics/fetchStrategyDistribution/fulfilled',
-  'analytics/fetchStrategyDistribution/rejected',
-  'goalsRules/fetchGoals/fulfilled',
-  'goalsRules/fetchGoals/rejected',
-  'goalsRules/fetchRules/fulfilled',
-  'goalsRules/fetchRules/rejected',
-  'user/fetchProfile/fulfilled',
-  'user/fetchProfile/rejected',
-  'user/fetchSubscription/fulfilled',
-  'user/fetchSubscription/rejected',
-  'user/fetchSavedOptions/fulfilled',
-  'user/fetchSavedOptions/rejected',
+// RTK Query endpoints to skip toast notifications (queries only, not mutations)
+const skipToastEndpoints = [
+  'getProfile',
+  'getSubscription',
+  'getSavedOptions',
+  'getStats',
+  'getDailyStats',
+  'getHourlyStats',
+  'getDailyWinRate',
+  'getSymbolDistribution',
+  'getStrategyDistribution',
+  'getGoals',
+  'getRules',
+  'getTrades',
+  'getAccounts',
+  'login', // Skip login toasts, handled in auth component
 ];
 
-// Success messages for specific actions
-const successMessages: Record<string, string> = {
-  'trades/createTrade/fulfilled': 'Trade created successfully',
-  'trades/updateTrade/fulfilled': 'Trade updated successfully',
-  'trades/deleteTrade/fulfilled': 'Trade deleted successfully',
-  'trades/bulkImportTrades/fulfilled': 'Trades imported successfully',
-  'accounts/createAccount/fulfilled': 'Account created successfully',
-  'accounts/updateAccount/fulfilled': 'Account updated successfully',
-  'accounts/updateAccountStatus/fulfilled': 'Account status updated',
-  'accounts/deleteAccount/fulfilled': 'Account deleted successfully',
-  'goalsRules/updateGoal/fulfilled': 'Goal updated successfully',
-  'goalsRules/createRule/fulfilled': 'Rule created successfully',
-  'goalsRules/updateRule/fulfilled': 'Rule updated successfully',
-  'goalsRules/toggleRule/fulfilled': 'Rule toggled successfully',
-  'goalsRules/deleteRule/fulfilled': 'Rule deleted successfully',
-  'user/updateProfile/fulfilled': 'Profile updated successfully',
-  'user/updatePreferences/fulfilled': 'Preferences updated successfully',
-  'user/updateNotifications/fulfilled': 'Notifications updated successfully',
-  'user/createSubscription/fulfilled': 'Subscription created successfully',
-  'user/cancelSubscription/fulfilled': 'Subscription cancelled successfully',
-  'user/addOption/fulfilled': 'Option saved successfully',
-  'auth/signup/fulfilled': 'Account created! Please check your email to verify.',
-  'auth/confirmSignup/fulfilled': 'Email verified successfully!',
-  'auth/forgotPassword/fulfilled': 'Reset code sent to your email',
-  'auth/resetPassword/fulfilled': 'Password reset successfully',
-  'auth/logoutAll/fulfilled': 'Logged out from all devices',
-  'auth/deleteAccount/fulfilled': 'Account deleted successfully',
+// Endpoint-specific success messages (for RTK Query mutations)
+const endpointSuccessMessages: Record<string, string> = {
+  'createTrade': 'Trade created successfully',
+  'updateTrade': 'Trade updated successfully',
+  'deleteTrade': 'Trade deleted successfully',
+  'bulkDeleteTrades': 'Trades deleted successfully',
+  'bulkImportTrades': 'Trades imported successfully',
+  'createAccount': 'Account created successfully',
+  'updateAccount': 'Account updated successfully',
+  'updateAccountStatus': 'Account status updated',
+  'deleteAccount': 'Account deleted successfully',
+  'updateGoal': 'Goal updated successfully',
+  'createRule': 'Rule created successfully',
+  'updateRule': 'Rule updated successfully',
+  'toggleRule': 'Rule toggled successfully',
+  'deleteRule': 'Rule deleted successfully',
+  'updateProfile': 'Profile updated successfully',
+  'updatePreferences': 'Preferences updated successfully',
+  'updateNotifications': 'Notifications updated successfully',
+  'createSubscription': 'Subscription created successfully',
+  'cancelSubscription': 'Subscription cancelled successfully',
+  'addOption': 'Option saved successfully',
+  'updateSavedOptions': 'Options updated successfully',
+  'signup': 'Account created! Please check your email to verify.',
+  'confirmSignup': 'Email verified successfully!',
+  'forgotPassword': 'Reset code sent to your email',
+  'resetPassword': 'Password reset successfully',
+  'logoutAll': 'Logged out from all devices',
 };
 
 export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction) => {
-  // Check if this is an async action (fulfilled or rejected)
+  const result = next(action);
+
+  // Handle RTK Query mutations and queries
   if (action.type && typeof action.type === 'string') {
     const actionType = action.type;
-
-    // Skip toast for certain fetch actions
-    if (skipToastActions.includes(actionType)) {
-      return next(action);
-    }
-
-    // Handle fulfilled actions (success)
-    if (actionType.endsWith('/fulfilled')) {
-      let message = successMessages[actionType];
-
-      // Check if payload has a message property (from backend response)
-      // Priority: _apiMessage (hidden property) > message (explicit property)
-      if (action.payload && typeof action.payload === 'object') {
-          if ((action.payload as any)._apiMessage) {
-              message = (action.payload as any)._apiMessage;
-          } else if ('message' in action.payload && typeof (action.payload as any).message === 'string') {
-              message = (action.payload as any).message;
-          }
-      }
-
-      if (message) {
-        toast.success(message);
-      }
-    }
-
-    // Handle rejected actions (error)
-    if (actionType.endsWith('/rejected')) {
-      // Extract error message from payload
-      let errorMessage = 'An error occurred';
+    
+    // Check if this is an RTK Query action
+    const isRTKQuery = actionType.startsWith('api/executeQuery') || actionType.startsWith('api/executeMutation');
+    
+    if (isRTKQuery && action.meta?.arg) {
+      const endpointName = action.meta.arg.endpointName;
       
-      if (action.payload) {
-        if (typeof action.payload === 'string') {
-          // Direct string error message (from rejectWithValue)
-          errorMessage = action.payload;
-        } else if (typeof action.payload === 'object' && action.payload !== null) {
+      // Skip toasts for specific endpoints (queries)
+      if (skipToastEndpoints.includes(endpointName)) {
+        return result;
+      }
+      
+      // Handle successful responses (fulfilled)
+      if (isFulfilled(action)) {
+        // Get message from API response (_apiMessage) or use default
+        let message = endpointSuccessMessages[endpointName];
+        
+        if (action.payload && typeof action.payload === 'object') {
+          // Check for _apiMessage (hidden property from API response)
+          if ((action.payload as any)._apiMessage) {
+            message = (action.payload as any)._apiMessage;
+          } else if ('message' in action.payload && typeof (action.payload as any).message === 'string') {
+            message = (action.payload as any).message;
+          }
+        }
+        
+        if (message) {
+          toast.success(message);
+        }
+      }
+      
+      // Handle errors (rejected)
+      if (isRejectedWithValue(action)) {
+        let errorMessage = 'An error occurred';
+        
+        if (action.payload) {
           const payload = action.payload as any;
           
-          // Try multiple possible error message locations
-          // Priority: message > error.message > data > error (string)
-          if (payload.message && typeof payload.message === 'string') {
-            errorMessage = payload.message;
-          } else if (payload.error && typeof payload.error === 'object' && payload.error.message) {
-            errorMessage = payload.error.message;
-          } else if (payload.data && typeof payload.data === 'string') {
+          // Extract error message from various possible structures
+          if (payload.data && typeof payload.data === 'string') {
             errorMessage = payload.data;
+          } else if (payload.data && typeof payload.data === 'object') {
+            if (payload.data.message) {
+              errorMessage = payload.data.message;
+            } else if (payload.data.error && typeof payload.data.error === 'object' && payload.data.error.message) {
+              errorMessage = payload.data.error.message;
+            } else if (payload.data.error && typeof payload.data.error === 'string') {
+              errorMessage = payload.data.error;
+            }
+          } else if (payload.message && typeof payload.message === 'string') {
+            errorMessage = payload.message;
           } else if (payload.error && typeof payload.error === 'string') {
             errorMessage = payload.error;
           }
+        } else if (action.error?.message) {
+          errorMessage = action.error.message;
         }
-      } else if ((action as any).error?.message) {
-        // Fallback to action.error.message (standard Redux Toolkit error structure)
-        errorMessage = (action as any).error.message;
-      }
-      
-      // Skip auth errors - they're handled in the auth component
-      if (!actionType.startsWith('auth/')) {
-        toast.error(errorMessage);
+        
+        // Skip auth errors - handled in auth component
+        if (endpointName !== 'login' && endpointName !== 'signup') {
+          toast.error(errorMessage);
+        }
       }
     }
   }
 
-  return next(action);
+  return result;
 };
