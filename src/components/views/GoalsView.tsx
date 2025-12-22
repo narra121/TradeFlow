@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useAppDispatch } from '@/store/hooks';
 import { useGetRulesAndGoalsQuery, useGetGoalPeriodTradesQuery, useUpdateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation } from '@/store/api';
 import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/goalsRules';
-import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, addWeeks, addMonths, format, isSameWeek, isSameMonth } from 'date-fns';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { useAccounts } from '@/hooks/useAccounts';
 import { GoalCardSkeleton, RulesListSkeleton } from '@/components/ui/loading-skeleton';
@@ -87,7 +87,61 @@ const defaultGoalData: GoalData[] = [
 export function GoalsView() {
   const dispatch = useAppDispatch();
   const { data: rulesGoalsData, isLoading: rulesGoalsLoading } = useGetRulesAndGoalsQuery();
-  const { data: periodTrades = [], isLoading: periodTradesLoading } = useGetGoalPeriodTradesQuery();
+  
+  // State declarations
+  const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [editingGoalKey, setEditingGoalKey] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [savingGoalKey, setSavingGoalKey] = useState<string | null>(null);
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [editRuleValue, setEditRuleValue] = useState<string>('');
+  const [newRuleValue, setNewRuleValue] = useState<string>('');
+  const [isAddingRule, setIsAddingRule] = useState(false);
+  const [savingRuleId, setSavingRuleId] = useState<string | null>(null);
+  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
+  const [isAddingRuleLoading, setIsAddingRuleLoading] = useState(false);
+  const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null);
+  
+  // Calculate period date range based on selected date and period filter
+  const periodRange = useMemo(() => {
+    if (periodFilter === 'weekly') {
+      return {
+        start: startOfWeek(selectedDate, { weekStartsOn: 0 }),
+        end: endOfWeek(selectedDate, { weekStartsOn: 0 })
+      };
+    } else {
+      return {
+        start: startOfMonth(selectedDate),
+        end: endOfMonth(selectedDate)
+      };
+    }
+  }, [selectedDate, periodFilter]);
+  
+  // Check if viewing current period
+  const isCurrentPeriod = useMemo(() => {
+    const now = new Date();
+    if (periodFilter === 'weekly') {
+      return isSameWeek(selectedDate, now, { weekStartsOn: 0 });
+    } else {
+      return isSameMonth(selectedDate, now);
+    }
+  }, [selectedDate, periodFilter]);
+  
+  // Format period label
+  const periodLabel = useMemo(() => {
+    if (periodFilter === 'weekly') {
+      return `${format(periodRange.start, 'MMM d')} - ${format(periodRange.end, 'MMM d, yyyy')}`;
+    } else {
+      return format(periodRange.start, 'MMMM yyyy');
+    }
+  }, [periodRange, periodFilter]);
+  
+  const { data: periodTrades = [], isLoading: periodTradesLoading } = useGetGoalPeriodTradesQuery({
+    startDate: periodRange.start.toISOString(),
+    endDate: periodRange.end.toISOString()
+  });
+  
   const [updateGoal] = useUpdateGoalMutation();
   const [createRule] = useCreateRuleMutation();
   const [updateRule] = useUpdateRuleMutation();
@@ -102,29 +156,38 @@ export function GoalsView() {
   
   const rules = reduxRules || [];
   
-  // State declarations - must be before useMemo hooks
-  const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
-  const [editingGoalKey, setEditingGoalKey] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
-  const [savingGoalKey, setSavingGoalKey] = useState<string | null>(null);
-  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
-  const [editRuleValue, setEditRuleValue] = useState<string>('');
-  const [newRuleValue, setNewRuleValue] = useState<string>('');
-  const [isAddingRule, setIsAddingRule] = useState(false);
-  const [savingRuleId, setSavingRuleId] = useState<string | null>(null);
-  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
-  const [isAddingRuleLoading, setIsAddingRuleLoading] = useState(false);
-  const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null);
+  // Navigate to previous period
+  const goToPreviousPeriod = () => {
+    if (periodFilter === 'weekly') {
+      setSelectedDate(subWeeks(selectedDate, 1));
+    } else {
+      setSelectedDate(subMonths(selectedDate, 1));
+    }
+  };
+  
+  // Navigate to next period
+  const goToNextPeriod = () => {
+    if (periodFilter === 'weekly') {
+      setSelectedDate(addWeeks(selectedDate, 1));
+    } else {
+      setSelectedDate(addMonths(selectedDate, 1));
+    }
+  };
+  
+  // Go to current period
+  const goToCurrentPeriod = () => {
+    setSelectedDate(new Date());
+  };
   
   // Use period trades if available, otherwise use main trades
   const tradesForCalculations = useMemo(() => {
     return periodTrades ?? [];
   }, [periodTrades]);
   
-  // Calculate broken rule counts for current period
+  // Calculate broken rule counts for selected period
   const brokenRuleCounts = useMemo(() => {
-    return calculateBrokenRulesCounts(tradesForCalculations, periodFilter);
-  }, [tradesForCalculations, periodFilter]);
+    return calculateBrokenRulesCounts(tradesForCalculations, periodFilter, periodRange);
+  }, [tradesForCalculations, periodFilter, periodRange]);
   
   // Get account-specific goals for current period
   const accountGoals = useMemo(() => {
@@ -156,9 +219,10 @@ export function GoalsView() {
         winRate: winRateGoal?.target || 0,
         maxDrawdown: drawdownGoal?.target || 0,
         maxTrades: tradesGoal?.target || 0
-      }
+      },
+      periodRange
     );
-  }, [accountGoals, tradesForCalculations, selectedAccountId, periodFilter]);
+  }, [accountGoals, tradesForCalculations, selectedAccountId, periodFilter, periodRange]);
 
   // Get goal data for a specific goal type and period
   const getGoalForType = (goalType: string) => {
@@ -433,19 +497,59 @@ export function GoalsView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Goals & Rules</h1>
-          <p className="text-muted-foreground mt-1">Track your trading objectives</p>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Goals & Rules</h1>
+            <p className="text-muted-foreground mt-1">Track your trading objectives</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <AccountFilter showLabel={false} />
+            <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as 'weekly' | 'monthly')}>
+              <TabsList className="bg-secondary/50">
+                <TabsTrigger value="weekly" className="text-sm">Weekly</TabsTrigger>
+                <TabsTrigger value="monthly" className="text-sm">Monthly</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <AccountFilter showLabel={false} />
-          <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as 'weekly' | 'monthly')}>
-            <TabsList className="bg-secondary/50">
-              <TabsTrigger value="weekly" className="text-sm">Weekly</TabsTrigger>
-              <TabsTrigger value="monthly" className="text-sm">Monthly</TabsTrigger>
-            </TabsList>
-          </Tabs>
+        
+        {/* Period Navigation */}
+        <div className="flex items-center justify-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={goToPreviousPeriod}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground min-w-[180px] text-center">
+              {periodLabel}
+            </span>
+            {!isCurrentPeriod && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={goToCurrentPeriod}
+              >
+                Today
+              </Button>
+            )}
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={goToNextPeriod}
+            disabled={isCurrentPeriod}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
