@@ -1,6 +1,17 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// API Client Module
+/**
+ * API Client Module with Automatic Token Refresh
+ * 
+ * Flow for 401 errors:
+ * 1. First 401 → Attempt token refresh using refreshToken
+ * 2. If refresh succeeds → Retry original request with new token
+ * 3. If refresh fails (401) → Clear tokens and redirect to login
+ * 4. If retried request gets 401 again → Clear tokens and redirect to login
+ * 
+ * Multiple concurrent 401s are queued and processed together after refresh completes.
+ */
+
 // API Base URL from environment variable
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.tradeflow.com/v1';
 
@@ -89,6 +100,8 @@ apiClient.interceptors.response.use(
       const status = error.response.status;
       
       if (status === 401) {
+        console.log('[API] 401 Unauthorized received, retry count:', originalRequest._retryCount || 0);
+        
         // Initialize retry count
         if (!originalRequest._retryCount) {
           originalRequest._retryCount = 0;
@@ -111,6 +124,11 @@ apiClient.interceptors.response.use(
               // Backend returns envelope format: { data: { IdToken, ... }, error: null }
               const tokens = response.data?.data || response.data;
               const newToken = tokens.IdToken;
+              
+              if (!newToken) {
+                throw new Error('No token received from refresh endpoint');
+              }
+              
               localStorage.setItem('idToken', newToken);
               
               // Update the original request with new token
@@ -126,7 +144,8 @@ apiClient.interceptors.response.use(
               return apiClient(originalRequest);
             } catch (refreshError) {
               // Refresh failed - clear tokens and dispatch unauthorized event
-              processQueue(error);
+              console.warn('Token refresh failed, logging out user');
+              processQueue(refreshError as AxiosError);
               isRefreshing = false;
               localStorage.removeItem('idToken');
               localStorage.removeItem('refreshToken');
