@@ -294,12 +294,12 @@ export const goalsRulesApi = api.injectEndpoints({
     
     // Fetch trades for a specific period (for goal calculations)
     // This query is separate from the main trades query to avoid cache conflicts
-    getGoalPeriodTrades: builder.query<Trade[], { startDate: string; endDate: string }>({
+    getGoalPeriodTrades: builder.query<Trade[], { startDate: string; endDate: string; accountId?: string }>({
       query: (params) => {
         return {
           url: '/trades',
           params: {
-            accountId: 'ALL',
+            accountId: params.accountId || 'ALL',
             startDate: params.startDate,
             endDate: params.endDate
           },
@@ -339,9 +339,9 @@ export const goalsRulesApi = api.injectEndpoints({
           brokenRuleIds: trade.brokenRuleIds || [],
         }));
       },
-      // Use custom cache key based on date range to keep it separate from main trades query
+      // Use custom cache key based on date range and account to keep it separate from main trades query
       providesTags: (result, error, arg) => [
-        { type: 'GoalPeriodTrades' as const, id: `${arg.startDate}-${arg.endDate}` }
+        { type: 'GoalPeriodTrades' as const, id: `${arg.accountId || 'ALL'}-${arg.startDate}-${arg.endDate}` }
       ],
     }),
   }),

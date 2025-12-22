@@ -139,7 +139,8 @@ export function GoalsView() {
   
   const { data: periodTrades = [], isLoading: periodTradesLoading } = useGetGoalPeriodTradesQuery({
     startDate: periodRange.start.toISOString(),
-    endDate: periodRange.end.toISOString()
+    endDate: periodRange.end.toISOString(),
+    accountId: selectedAccountId
   });
   
   const [updateGoal] = useUpdateGoalMutation();
