@@ -18,6 +18,9 @@ dist-ssr
 .env.development.local
 .env.production.local
 
+# Scripts with secrets
+set-github-secrets.ps1
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
