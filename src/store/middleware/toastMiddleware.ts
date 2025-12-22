@@ -104,17 +104,26 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
       
       if (action.payload) {
         if (typeof action.payload === 'string') {
+          // Direct string error message (from rejectWithValue)
           errorMessage = action.payload;
         } else if (typeof action.payload === 'object' && action.payload !== null) {
-          // Handle RTK Query error object structure
-          if ('data' in action.payload && typeof action.payload.data === 'string') {
-            errorMessage = action.payload.data;
-          } else if ('error' in action.payload && typeof action.payload.error === 'string') {
-            errorMessage = action.payload.error;
-          } else if ('message' in action.payload && typeof action.payload.message === 'string') {
-            errorMessage = action.payload.message;
+          const payload = action.payload as any;
+          
+          // Try multiple possible error message locations
+          // Priority: message > error.message > data > error (string)
+          if (payload.message && typeof payload.message === 'string') {
+            errorMessage = payload.message;
+          } else if (payload.error && typeof payload.error === 'object' && payload.error.message) {
+            errorMessage = payload.error.message;
+          } else if (payload.data && typeof payload.data === 'string') {
+            errorMessage = payload.data;
+          } else if (payload.error && typeof payload.error === 'string') {
+            errorMessage = payload.error;
           }
         }
+      } else if ((action as any).error?.message) {
+        // Fallback to action.error.message (standard Redux Toolkit error structure)
+        errorMessage = (action as any).error.message;
       }
       
       // Skip auth errors - they're handled in the auth component

@@ -49,7 +49,7 @@ const baseQueryWithReauth: BaseQueryFn<
       // New format: { success, message, data, ... }
       if (data && typeof data === 'object' && 'success' in data) {
         if (!data.success) {
-           throw new Error(data.message || 'An error occurred');
+           throw new Error(data.message || 'Request failed');
         }
         
         let result = data.data;
@@ -79,7 +79,8 @@ const baseQueryWithReauth: BaseQueryFn<
       if (data && typeof data === 'object' && 'data' in data) {
         // Check if backend returned an error in the envelope
         if (data.error && data.error !== null) {
-          throw new Error(data.error.message || 'An error occurred');
+          const errorMsg = typeof data.error === 'object' ? data.error.message : data.error;
+          throw new Error(errorMsg || 'Request failed');
         }
         return data.data;
       }

@@ -213,30 +213,51 @@ apiClient.interceptors.response.use(
 // Helper function to handle API errors
 export const handleApiError = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ error?: { message?: string; code?: string }; message?: string }>;
+    const axiosError = error as AxiosError<{ 
+      error?: { message?: string; code?: string } | string; 
+      message?: string;
+      success?: boolean;
+    }>;
+    
     if (axiosError.response?.data) {
-      // Try different possible error message formats from backend
       const data = axiosError.response.data as any;
       
-      // Check for envelope error format: { error: { message, code }, data: null }
-      if (data.error && data.error.message) {
-        return data.error.message;
-      }
+      // Priority order for extracting error messages:
+      // 1. message field (direct)
+      // 2. error.message (nested object)
+      // 3. error (if string)
+      // 4. axios error message
       
-      // Check for direct message
-      if (data.message) {
+      // Check for direct message field
+      if (data.message && typeof data.message === 'string') {
         return data.message;
       }
       
+      // Check for envelope error format: { error: { message, code }, data: null }
+      if (data.error && typeof data.error === 'object' && data.error.message) {
+        return data.error.message;
+      }
+      
       // Check for string error
-      if (typeof data.error === 'string') {
+      if (data.error && typeof data.error === 'string') {
         return data.error;
       }
       
-      return axiosError.message || 'An error occurred';
+      // Fallback to axios error message
+      if (axiosError.message) {
+        return axiosError.message;
+      }
     }
-    return axiosError.message || 'An error occurred';
+    
+    // No response data, use axios error message
+    return axiosError.message || 'Network error occurred';
   }
+  
+  // Non-axios error
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
   return 'An unexpected error occurred';
 };
 
