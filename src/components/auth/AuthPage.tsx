@@ -78,8 +78,22 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
   useEffect(() => {
     if (error) {
       const errorData = (error as any)?.data;
-      const errorCode = errorData?.code || errorData?.error;
-      const errorMessage = errorData?.message || (error as any)?.message || 'An error occurred';
+
+      const errorCode =
+        (typeof errorData === 'object' && errorData !== null
+          ? (errorData as any).errorCode || (errorData as any).code || (errorData as any).error
+          : undefined) ||
+        (error as any)?.errorCode ||
+        (error as any)?.code;
+
+      const errorMessage =
+        (typeof errorData === 'string'
+          ? errorData
+          : typeof errorData === 'object' && errorData !== null
+            ? (errorData as any).message || (errorData as any).error
+            : undefined) ||
+        (error as any)?.message ||
+        'An error occurred';
       
       // Check if user's email is not verified
       if (errorCode === 'EMAIL_NOT_VERIFIED') {
@@ -102,7 +116,13 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       await login({ email, password }).unwrap();
     } catch (err: any) {
       // Check if email is not verified
-      const errorCode = err?.data?.code || err?.data?.error;
+      const errData = err?.data;
+      const errorCode =
+        (typeof errData === 'object' && errData !== null
+          ? errData.errorCode || errData.code || errData.error
+          : undefined) ||
+        err?.errorCode ||
+        err?.code;
       if (errorCode === 'EMAIL_NOT_VERIFIED') {
         setView("otp");
       }

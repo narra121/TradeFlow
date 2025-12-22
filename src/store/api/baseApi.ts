@@ -59,7 +59,7 @@ const baseQueryWithReauth: BaseQueryFn<
         return {
           error: {
             status: 'CUSTOM_ERROR',
-            data: data.message || 'Request failed',
+            data,
             error: data.message || 'Request failed',
           } as FetchBaseQueryError,
         };
@@ -96,26 +96,15 @@ const baseQueryWithReauth: BaseQueryFn<
         return {
           error: {
             status: 'CUSTOM_ERROR',
-            data: errorMsg || 'Request failed',
+            data: {
+              message: errorMsg || 'Request failed',
+              error: data.error,
+            },
             error: errorMsg || 'Request failed',
           } as FetchBaseQueryError,
         };
       }
       result = { data: data.data };
-    }
-  }
-  
-  // Handle errors with proper message extraction
-  if (result.error) {
-    const error = result.error as any;
-    
-    // Try to extract message from error data
-    if (error.data && typeof error.data === 'object') {
-      if (error.data.message) {
-        error.data = error.data.message;
-      } else if (error.data.error && typeof error.data.error === 'string') {
-        error.data = error.data.error;
-      }
     }
   }
 
