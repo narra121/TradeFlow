@@ -89,20 +89,6 @@ export const userApi = api.injectEndpoints({
       }),
       invalidatesTags: ['Subscription'],
     }),
-    
-    getSavedOptions: builder.query<SavedOptions, void>({
-      query: () => '/saved-options',
-      providesTags: ['SavedOptions'],
-    }),
-    
-    addOption: builder.mutation<SavedOptions, { category: string; payload: AddOptionPayload }>({
-      query: ({ category, payload }) => ({
-        url: `/saved-options/${category}`,
-        method: 'POST',
-        body: payload,
-      }),
-      invalidatesTags: ['SavedOptions'],
-    }),
   }),
 });
 
@@ -114,6 +100,4 @@ export const {
   useGetSubscriptionQuery,
   useCreateSubscriptionMutation,
   useCancelSubscriptionMutation,
-  useGetSavedOptionsQuery,
-  useAddOptionMutation,
 } = userApi;
