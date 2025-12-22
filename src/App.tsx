@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { clearAuth } from "@/store/slices/authSlice";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
@@ -26,6 +28,7 @@ const queryClient = new QueryClient({
 function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useAppDispatch();
   const isHandlingUnauthorized = useRef(false);
 
   useEffect(() => {
@@ -43,6 +46,7 @@ function AppRoutes() {
       
       isHandlingUnauthorized.current = true;
       tokenRefreshScheduler.stop();
+      dispatch(clearAuth());
       navigate('/login', { replace: true });
       
       // Reset flag after navigation
@@ -56,7 +60,7 @@ function AppRoutes() {
     return () => {
       window.removeEventListener('unauthorized', handleUnauthorized);
     };
-  }, [navigate, location.pathname]);
+  }, [dispatch, navigate, location.pathname]);
 
   // Separate effect to start scheduler only once on mount
   useEffect(() => {

@@ -41,8 +41,9 @@ import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
 export function ProfileView() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { data: profile, isLoading: loading } = useGetProfileQuery();
-  const { data: subscription } = useGetSubscriptionQuery();
+  const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useGetProfileQuery();
+  const { data: subscription, isLoading: subscriptionLoading, isFetching: subscriptionFetching } = useGetSubscriptionQuery();
+  const loading = profileLoading || profileFetching || subscriptionLoading || subscriptionFetching;
   const [updateProfile] = useUpdateProfileMutation();
   const [createSubscription] = useCreateSubscriptionMutation();
   const [logout] = useLogoutMutation();

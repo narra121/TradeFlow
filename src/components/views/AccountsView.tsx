@@ -22,7 +22,8 @@ import { AccountCardSkeleton, StatCardSkeleton } from '@/components/ui/loading-s
 export function AccountsView() {
   const dispatch = useAppDispatch();
   const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
-  const { data: accountsData, isLoading: loading } = useGetAccountsQuery();
+  const { data: accountsData, isLoading, isFetching } = useGetAccountsQuery();
+  const loading = isLoading || isFetching;
   const [createAccount] = useCreateAccountMutation();
   const [updateAccount] = useUpdateAccountMutation();
   const [deleteAccount] = useDeleteAccountMutation();

@@ -15,10 +15,23 @@ export interface AddOptionPayload {
   value: string;
 }
 
+function applySavedOptionsCache(draft: SavedOptions, updated: SavedOptions) {
+  draft.strategies = updated.strategies;
+  draft.newsEvents = updated.newsEvents;
+  draft.sessions = updated.sessions;
+  draft.marketConditions = updated.marketConditions;
+  draft.mistakes = updated.mistakes;
+  draft.symbols = updated.symbols;
+  draft.lessons = updated.lessons;
+  draft.timeframes = updated.timeframes;
+}
+
 export const savedOptionsApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getSavedOptions: builder.query<SavedOptions, void>({
       query: () => '/options',
+      // This data is effectively global app config; keep it around.
+      keepUnusedDataFor: 60 * 60,
       transformResponse: (response: any) => {
         const options = response.options || response;
         if (response?._apiMessage) {
@@ -31,7 +44,6 @@ export const savedOptionsApi = api.injectEndpoints({
         }
         return options;
       },
-      providesTags: [{ type: 'SavedOptions', id: 'LIST' }],
     }),
     
     updateSavedOptions: builder.mutation<SavedOptions, SavedOptions>({
@@ -52,7 +64,17 @@ export const savedOptionsApi = api.injectEndpoints({
         }
         return options;
       },
-      invalidatesTags: [{ type: 'SavedOptions', id: 'LIST' }],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data: updated } = await queryFulfilled;
+          dispatch(
+            // Use upsert to ensure the query cache is updated even if nothing is currently subscribed.
+            savedOptionsApi.util.upsertQueryData('getSavedOptions', undefined, updated)
+          );
+        } catch {
+          // handled by caller
+        }
+      },
     }),
     
     addOption: builder.mutation<SavedOptions, { category: string; payload: AddOptionPayload }>({
@@ -73,7 +95,17 @@ export const savedOptionsApi = api.injectEndpoints({
         }
         return options;
       },
-      invalidatesTags: [{ type: 'SavedOptions', id: 'LIST' }],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data: updated } = await queryFulfilled;
+          dispatch(
+            // Use upsert to ensure the query cache is updated even if nothing is currently subscribed.
+            savedOptionsApi.util.upsertQueryData('getSavedOptions', undefined, updated)
+          );
+        } catch {
+          // handled by caller
+        }
+      },
     }),
   }),
 });

@@ -12,6 +12,8 @@ interface DropdownOptionsManagerProps {
   onAdd: (value: string) => void;
   onRemove: (value: string) => void;
   isLoading?: boolean;
+  pendingValue?: string;
+  pendingAction?: 'add' | 'remove';
   placeholder?: string;
 }
 
@@ -22,10 +24,15 @@ export function DropdownOptionsManager({
   onAdd,
   onRemove,
   isLoading = false,
+  pendingValue,
+  pendingAction,
   placeholder = 'Add new option...',
 }: DropdownOptionsManagerProps) {
   const [newValue, setNewValue] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+
+  const isPendingAdd = pendingAction === 'add';
+  const isPendingRemove = pendingAction === 'remove';
 
   const handleAdd = () => {
     const trimmed = newValue.trim();
@@ -50,7 +57,12 @@ export function DropdownOptionsManager({
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="font-medium text-foreground">{title}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium text-foreground">{title}</h3>
+          {(isPendingAdd || isPendingRemove) && (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+          )}
+        </div>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       
@@ -61,15 +73,24 @@ export function DropdownOptionsManager({
             variant="secondary"
             className="pl-3 pr-1 py-1.5 text-sm flex items-center gap-1.5 group hover:bg-secondary/80"
           >
-            {option}
-            <button
-              type="button"
-              onClick={() => onRemove(option)}
-              className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
-              disabled={isLoading}
-            >
-              <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />
-            </button>
+            <span className="flex items-center gap-1.5">
+              {option}
+              {isPendingRemove && pendingValue === option && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+              )}
+            </span>
+            {isPendingRemove && pendingValue === option ? (
+              <span className="ml-1 p-0.5 inline-flex" aria-hidden="true" />
+            ) : (
+              <button
+                type="button"
+                onClick={() => onRemove(option)}
+                className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
+                disabled={isLoading}
+              >
+                <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+              </button>
+            )}
           </Badge>
         ))}
         
@@ -116,8 +137,12 @@ export function DropdownOptionsManager({
             className="h-8 gap-1.5"
             disabled={isLoading}
           >
-            <Plus className="w-3.5 h-3.5" />
-            Add
+            {isPendingAdd ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Plus className="w-3.5 h-3.5" />
+            )}
+            {isPendingAdd ? 'Saving' : 'Add'}
           </Button>
         )}
       </div>

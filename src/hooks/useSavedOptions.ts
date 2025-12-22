@@ -15,8 +15,12 @@ const defaultOptions: SavedOptions = {
 };
 
 export function useSavedOptions() {
-  const { data: apiOptions, isLoading } = useGetSavedOptionsQuery();
-  const [updateOptions] = useUpdateSavedOptionsMutation();
+  const { data: apiOptions, isLoading: queryLoading, isFetching } = useGetSavedOptionsQuery(undefined, {
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+    refetchOnReconnect: false,
+  });
+  const [updateOptions, { isLoading: isUpdating }] = useUpdateSavedOptionsMutation();
 
   const options = useMemo(() => apiOptions || defaultOptions, [apiOptions]);
 
@@ -144,9 +148,12 @@ export function useSavedOptions() {
     updateOptions(defaultOptions);
   }, [updateOptions]);
 
+  const isLoading = queryLoading || isFetching || isUpdating;
+
   return {
     options,
     isLoading,
+    isUpdating,
     addSymbol,
     removeSymbol,
     addStrategy,

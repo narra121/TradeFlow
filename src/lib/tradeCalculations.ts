@@ -41,7 +41,7 @@ export interface TradeStats {
 /**
  * Calculate comprehensive trading statistics from trades array
  */
-export function calculateTradeStats(trades: Trade[]): TradeStats {
+export function calculateTradeStats(trades: Trade[], totalCapital?: number): TradeStats {
   // Exclude trades that belong to the special "-1" account or have no account.
   const eligibleTrades = getEligibleTrades(trades);
 
@@ -128,26 +128,40 @@ export function calculateTradeStats(trades: Trade[]): TradeStats {
   });
   
   // Calculate max drawdown (%)
-  // Naive drawdown from a 0 start can exceed 100% if cumulative PnL goes below 0 after a small peak.
-  // To keep drawdown meaningful as a percentage, compute it from a shifted equity curve with a
-  // strictly-positive starting equity.
-  let runningPnl = 0;
-  let minRunningPnl = 0;
-  for (const trade of closedTrades) {
-    runningPnl += (trade.pnl || 0);
-    if (runningPnl < minRunningPnl) minRunningPnl = runningPnl;
-  }
-
-  const startingEquity = (minRunningPnl < 0 ? -minRunningPnl : 0) + 1;
+  // If totalCapital is provided, calculate drawdown as percentage of initial capital
+  // Otherwise use the equity curve method for backward compatibility
   let maxDrawdown = 0;
-  let peakEquity = startingEquity;
-  let equity = startingEquity;
+  
+  if (totalCapital && totalCapital > 0) {
+    // Calculate drawdown based on total capital
+    let peak = totalCapital;
+    let equity = totalCapital;
+    
+    for (const trade of closedTrades) {
+      equity += (trade.pnl || 0);
+      if (equity > peak) peak = equity;
+      const drawdown = peak > 0 ? ((peak - equity) / totalCapital) * 100 : 0;
+      if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+    }
+  } else {
+    // Original equity curve method
+    let runningPnl = 0;
+    let minRunningPnl = 0;
+    for (const trade of closedTrades) {
+      runningPnl += (trade.pnl || 0);
+      if (runningPnl < minRunningPnl) minRunningPnl = runningPnl;
+    }
 
-  for (const trade of closedTrades) {
-    equity += (trade.pnl || 0);
-    if (equity > peakEquity) peakEquity = equity;
-    const drawdown = peakEquity > 0 ? ((peakEquity - equity) / peakEquity) * 100 : 0;
-    if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+    const startingEquity = (minRunningPnl < 0 ? -minRunningPnl : 0) + 1;
+    let peakEquity = startingEquity;
+    let equity = startingEquity;
+
+    for (const trade of closedTrades) {
+      equity += (trade.pnl || 0);
+      if (equity > peakEquity) peakEquity = equity;
+      const drawdownCalc = peakEquity > 0 ? ((peakEquity - equity) / peakEquity) * 100 : 0;
+      if (drawdownCalc > maxDrawdown) maxDrawdown = drawdownCalc;
+    }
   }
   
   // Expectancy (average profit per trade)

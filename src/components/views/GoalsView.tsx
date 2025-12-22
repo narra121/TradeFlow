@@ -87,7 +87,7 @@ const defaultGoalData: GoalData[] = [
 
 export function GoalsView() {
   const dispatch = useAppDispatch();
-  const { data: rulesGoalsData, isLoading: rulesGoalsLoading } = useGetRulesAndGoalsQuery();
+  const { data: rulesGoalsData, isLoading: rulesGoalsLoading, isFetching: rulesGoalsFetching } = useGetRulesAndGoalsQuery();
   
   // State declarations
   const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
@@ -160,7 +160,7 @@ export function GoalsView() {
   
   const { selectedAccountId, accounts } = useAccounts();
   
-  const { data: periodTrades = [], isLoading: periodTradesLoading } = useGetGoalPeriodTradesQuery({
+  const { data: periodTrades = [], isLoading: periodTradesLoading, isFetching: periodTradesFetching } = useGetGoalPeriodTradesQuery({
     startDate: formatLocalDateTime(periodRange.start),
     endDate: formatLocalDateTime(periodRange.end),
     accountId: selectedAccountId
@@ -172,7 +172,7 @@ export function GoalsView() {
   const [deleteRule] = useDeleteRuleMutation();
   const [toggleRule] = useToggleRuleMutation();
 
-  const loading = rulesGoalsLoading || periodTradesLoading;
+  const loading = rulesGoalsLoading || rulesGoalsFetching || periodTradesLoading || periodTradesFetching;
   
   const goals = rulesGoalsData?.goals || [];
   const reduxRules = rulesGoalsData?.rules || [];
@@ -215,12 +215,37 @@ export function GoalsView() {
   // Get account-specific goals for current period
   const accountGoals = useMemo(() => {
     const accountId = selectedAccountId || 'ALL';
-    // If ALL is selected, show all goals for the period
-    // Otherwise, only show goals for the selected account
+    
+    // Filter goals by period
+    const periodGoals = goals.filter(g => g.period === periodFilter);
+    
     if (accountId === 'ALL') {
-      return goals.filter(g => g.period === periodFilter);
+      // When "All Accounts" is selected, aggregate targets and values from all account-specific goals
+      // Group by goal type
+      const aggregatedGoals: Record<string, APIGoal> = {};
+      
+      periodGoals.forEach(goal => {
+        // Skip goals without accountId (should not happen) or with accountId === '-1'
+        if (!goal.accountId || goal.accountId === '-1') return;
+        
+        const key = goal.goalType;
+        if (!aggregatedGoals[key]) {
+          // Initialize with first goal found for this type
+          aggregatedGoals[key] = {
+            ...goal,
+            accountId: 'ALL', // Mark as aggregated
+          };
+        } else {
+          // Sum the targets for this goal type
+          aggregatedGoals[key].target += goal.target;
+        }
+      });
+      
+      return Object.values(aggregatedGoals);
     }
-    return goals.filter(g => g.accountId === accountId && g.period === periodFilter);
+    
+    // For specific account, return only goals for that account
+    return periodGoals.filter(g => g.accountId === accountId);
   }, [goals, selectedAccountId, periodFilter]);
   
   // Calculate goal progress from trades
@@ -600,7 +625,7 @@ export function GoalsView() {
           <h2 className="text-xl font-semibold text-foreground">Trading Rules</h2>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">
-              {rules.filter(r => r.completed).length}/{rules.length} followed today
+              {rules.length - Object.keys(brokenRuleCounts).filter(ruleId => brokenRuleCounts[ruleId] > 0).length}/{rules.length} followed {periodFilter === 'weekly' ? 'this week' : 'this month'}
             </span>
             <Button
               variant="outline"
@@ -691,7 +716,7 @@ export function GoalsView() {
                       {brokenCount > 0 && (
                         <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
                           <AlertTriangle className="w-3 h-3" />
-                          {brokenCount}× this week
+                          {brokenCount}× {periodFilter === 'weekly' ? 'this week' : 'this month'}
                         </span>
                       )}
                     </div>

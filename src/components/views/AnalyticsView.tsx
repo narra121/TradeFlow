@@ -28,6 +28,8 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { useGetTradesQuery } from '@/store/api';
+import { useSavedOptions } from '@/hooks/useSavedOptions';
+import { useAccounts } from '@/hooks/useAccounts';
 import {
   calculateTradeStats,
   calculateSymbolDistribution,
@@ -47,6 +49,12 @@ export function AnalyticsView() {
     { from: startOfWeek(new Date()), to: endOfWeek(new Date()) }
   );
   
+  // Get saved options for sessions
+  const { options } = useSavedOptions();
+  
+  // Get accounts for balance calculations
+  const { selectedAccountId, accounts } = useAccounts();
+  
   // Prepare query params
   const queryParams = useMemo(() => ({
     accountId: filters.accountId,
@@ -54,7 +62,8 @@ export function AnalyticsView() {
     endDate: filters.endDate,
   }), [filters.accountId, filters.startDate, filters.endDate]);
   
-  const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(queryParams);
+  const { data: trades = [], isLoading: tradesLoading, isFetching: tradesFetching } = useGetTradesQuery(queryParams);
+  const showShimmer = tradesLoading || tradesFetching;
   
   const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 'thisWeek');
   
@@ -73,8 +82,23 @@ export function AnalyticsView() {
 
   const eligibleTrades = useMemo(() => getEligibleTrades(trades), [trades]);
   
+  // Calculate total capital based on selected accounts
+  const totalCapital = useMemo(() => {
+    const accountId = selectedAccountId || 'ALL';
+    if (accountId === 'ALL') {
+      // Sum up initial balances from all accounts (excluding id -1 or undefined)
+      return accounts
+        .filter(acc => acc.id && acc.id !== '-1')
+        .reduce((sum, acc) => sum + (acc.initialBalance || 0), 0);
+    } else {
+      // Get balance for specific account
+      const account = accounts.find(acc => acc.id === accountId);
+      return account?.initialBalance || 0;
+    }
+  }, [selectedAccountId, accounts]);
+  
   // Calculate all analytics using centralized functions
-  const stats = useMemo(() => calculateTradeStats(eligibleTrades), [eligibleTrades]);
+  const stats = useMemo(() => calculateTradeStats(eligibleTrades, totalCapital), [eligibleTrades, totalCapital]);
   
   // Symbol distribution (computed locally from filtered trades)
   const localSymbolDistribution = useMemo(() => 
@@ -123,6 +147,24 @@ export function AnalyticsView() {
   // Max/Min/Avg duration stats
   const { maxDuration, minDuration, avgDuration } = durationStats;
 
+  // Calculate performance by session
+  const sessionPerformance = useMemo(() => {
+    return options.sessions.map(sessionName => {
+      const sessionTrades = eligibleTrades.filter(trade => trade.session === sessionName);
+      const wins = sessionTrades.filter(t => (t.pnl || 0) > 0).length;
+      const losses = sessionTrades.filter(t => (t.pnl || 0) < 0).length;
+      const totalPnl = sessionTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+      const winRate = sessionTrades.length > 0 ? (wins / sessionTrades.length) * 100 : 0;
+      
+      return {
+        name: sessionName,
+        trades: sessionTrades.length,
+        winRate: winRate,
+        pnl: totalPnl,
+      };
+    });
+  }, [options.sessions, eligibleTrades]);
+
   // Daily P&L for current week (Sunday to Saturday)
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Sunday
   const dailyPnL = Array.from({ length: 7 }, (_, i) => {
@@ -155,7 +197,7 @@ export function AnalyticsView() {
     { label: 'Loss Streak', value: stats.consecutiveLosses.toString(), isPositive: false },
   ];
 
-  if (tradesLoading) {
+  if (showShimmer) {
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -260,6 +302,8 @@ export function AnalyticsView() {
                     border: '1px solid hsl(220, 16%, 18%)',
                     borderRadius: '8px',
                   }}
+                  labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }}
+                  cursor={{ fill: 'hsla(160, 84%, 39%, 0.05)' }}
                   formatter={(value: number) => [`$${value.toFixed(2)}`, 'P&L']}
                   labelFormatter={(label, payload) => payload?.[0]?.payload?.date || label}
                 />
@@ -313,6 +357,8 @@ export function AnalyticsView() {
                     border: '1px solid hsl(220, 16%, 18%)',
                     borderRadius: '8px',
                   }}
+                  labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }}
+                  cursor={{ fill: 'hsla(160, 84%, 39%, 0.05)' }}
                   formatter={(value: number, name: string) => {
                     if (name === 'winRate') return [`${value.toFixed(1)}%`, 'Win Rate'];
                     return [value, name];
@@ -362,6 +408,8 @@ export function AnalyticsView() {
                     border: '1px solid hsl(220, 16%, 18%)',
                     borderRadius: '8px',
                   }}
+                  labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }}
+                  cursor={{ fill: 'hsla(160, 84%, 39%, 0.05)' }}
                   formatter={(value: number) => [`${value.toFixed(1)}%`, 'Win Rate']}
                   labelFormatter={(label) => `${label}`}
                 />
@@ -420,6 +468,8 @@ export function AnalyticsView() {
                     border: '1px solid hsl(220, 16%, 18%)',
                     borderRadius: '8px',
                   }}
+                  labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }}
+                  cursor={{ fill: 'hsla(160, 84%, 39%, 0.05)' }}
                 />
                 <Bar dataKey="wins" stackId="a" fill="hsl(160, 84%, 39%)" radius={[0, 0, 0, 0]} name="Wins" />
                 <Bar dataKey="losses" stackId="a" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} name="Losses" />
@@ -466,6 +516,7 @@ export function AnalyticsView() {
                     border: '1px solid hsl(220, 16%, 18%)',
                     borderRadius: '8px',
                   }}
+                  labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -508,6 +559,7 @@ export function AnalyticsView() {
                     border: '1px solid hsl(220, 16%, 18%)',
                     borderRadius: '8px',
                   }}
+                  labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -529,11 +581,7 @@ export function AnalyticsView() {
         <div className="glass-card p-5">
           <h3 className="font-semibold text-foreground mb-6">Performance by Session</h3>
           <div className="grid grid-cols-1 gap-4">
-            {[
-              { name: 'Asian', trades: 8, winRate: 62.5, pnl: 420 },
-              { name: 'London', trades: 15, winRate: 73.3, pnl: 1250 },
-              { name: 'New York', trades: 12, winRate: 58.3, pnl: 780 },
-            ].map((session, index) => (
+            {sessionPerformance.map((session, index) => (
               <div 
                 key={session.name}
                 className="p-4 bg-secondary/30 rounded-xl animate-fade-in"
@@ -547,11 +595,21 @@ export function AnalyticsView() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Win Rate</span>
-                    <span className="font-mono text-success">{session.winRate}%</span>
+                    <span className={cn(
+                      "font-mono",
+                      session.winRate >= 50 ? "text-success" : "text-destructive"
+                    )}>
+                      {session.trades > 0 ? session.winRate.toFixed(1) : '0.0'}%
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">P&L</span>
-                    <span className="font-mono text-success">+${session.pnl}</span>
+                    <span className={cn(
+                      "font-mono",
+                      session.pnl >= 0 ? "text-success" : "text-destructive"
+                    )}>
+                      {session.pnl >= 0 ? '+' : ''}{session.pnl > 0 ? `$${session.pnl.toFixed(0)}` : session.pnl < 0 ? `-$${Math.abs(session.pnl).toFixed(0)}` : '$0'}
+                    </span>
                   </div>
                 </div>
               </div>

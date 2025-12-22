@@ -12,6 +12,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { calculateTradeStats, getEligibleTrades } from '@/lib/tradeCalculations';
+import { useAccounts } from '@/hooks/useAccounts';
 import { useGetTradesQuery } from '@/store/api';
 import { 
   DashboardStatsSkeleton, 
@@ -33,6 +34,9 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() }
   );
   
+  // Get accounts for balance calculations
+  const { selectedAccountId, accounts } = useAccounts();
+  
   // Prepare query params
   const queryParams = useMemo(() => ({
     accountId: filters.accountId,
@@ -40,7 +44,8 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     endDate: filters.endDate,
   }), [filters.accountId, filters.startDate, filters.endDate]);
   
-  const { data: trades = [], isLoading: tradesLoading } = useGetTradesQuery(queryParams);
+  const { data: trades = [], isLoading, isFetching } = useGetTradesQuery(queryParams);
+  const tradesLoading = isLoading || isFetching;
   
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
@@ -56,10 +61,25 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
 
   const filteredTrades = useMemo(() => getEligibleTrades(trades), [trades]);
 
+  // Calculate total capital based on selected accounts
+  const totalCapital = useMemo(() => {
+    const accountId = selectedAccountId || 'ALL';
+    if (accountId === 'ALL') {
+      // Sum up initial balances from all accounts (excluding accountId -1 or undefined)
+      return accounts
+        .filter(acc => acc.id && acc.id !== '-1')
+        .reduce((sum, acc) => sum + (acc.initialBalance || 0), 0);
+    } else {
+      // Get balance for specific account
+      const account = accounts.find(acc => acc.id === accountId);
+      return account?.initialBalance || 0;
+    }
+  }, [selectedAccountId, accounts]);
+
   // Calculate all stats using centralized function
   const filteredStats = useMemo(() => {
-    return calculateTradeStats(filteredTrades);
-  }, [filteredTrades]);
+    return calculateTradeStats(filteredTrades, totalCapital);
+  }, [filteredTrades, totalCapital]);
 
   // All trades are closed - no open trades section needed
 
@@ -106,7 +126,10 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
             prefix="$"
             icon={DollarSign}
             variant={filteredStats.totalPnl >= 0 ? 'success' : 'danger'}
-            trend={{ value: 12.5, isPositive: filteredStats.totalPnl >= 0 }}
+            trend={{ 
+              value: totalCapital > 0 ? Math.abs((filteredStats.totalPnl / totalCapital) * 100) : 0, 
+              isPositive: filteredStats.totalPnl >= 0 
+            }}
             className="stagger-1"
           />
           <StatCard

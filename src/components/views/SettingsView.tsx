@@ -13,7 +13,8 @@ import {
   DollarSign,
   Globe,
   ListChecks,
-  RotateCcw
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,8 @@ import { DropdownOptionsManager } from '@/components/settings/DropdownOptionsMan
 import { useSavedOptions } from '@/hooks/useSavedOptions';
 
 export function SettingsView() {
-  const { data: profile, isLoading: loading } = useGetProfileQuery();
+  const { data: profile, isLoading, isFetching } = useGetProfileQuery();
+  const loading = isLoading || isFetching;
   const [updateProfile] = useUpdateProfileMutation();
   const [updatePreferences] = useUpdatePreferencesMutation();
   const [updateNotifications] = useUpdateNotificationsMutation();
@@ -35,6 +37,8 @@ export function SettingsView() {
   // Saved options hook for managing dropdown options
   const {
     options,
+    isLoading: tradeOptionsLoading,
+    isUpdating: tradeOptionsUpdating,
     addStrategy,
     removeStrategy,
     addNewsEvent,
@@ -47,6 +51,15 @@ export function SettingsView() {
     removeMistake,
     resetToDefaults,
   } = useSavedOptions();
+
+  const [pendingTradeOption, setPendingTradeOption] = useState<
+    | {
+        category: 'strategies' | 'newsEvents' | 'sessions' | 'marketConditions' | 'mistakes';
+        action: 'add' | 'remove';
+        value: string;
+      }
+    | null
+  >(null);
   
   const [notifications, setNotifications] = useState(profile?.preferences?.notifications?.tradeReminders ?? true);
   const [darkMode, setDarkMode] = useState(profile?.preferences?.darkMode ?? true);
@@ -63,6 +76,43 @@ export function SettingsView() {
       setNotifications(profile.preferences?.notifications?.tradeReminders ?? true);
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (pendingTradeOption && !tradeOptionsUpdating) {
+      setPendingTradeOption(null);
+    }
+  }, [pendingTradeOption, tradeOptionsUpdating]);
+
+  const wrapAdd = (
+    category: 'strategies' | 'newsEvents' | 'sessions' | 'marketConditions' | 'mistakes',
+    fn: (value: string) => void
+  ) => {
+    return (value: string) => {
+      setPendingTradeOption({ category, action: 'add', value });
+      fn(value);
+    };
+  };
+
+  const wrapRemove = (
+    category: 'strategies' | 'newsEvents' | 'sessions' | 'marketConditions' | 'mistakes',
+    fn: (value: string) => void
+  ) => {
+    return (value: string) => {
+      setPendingTradeOption({ category, action: 'remove', value });
+      fn(value);
+    };
+  };
+
+  const addStrategyWithLoading = wrapAdd('strategies', addStrategy);
+  const removeStrategyWithLoading = wrapRemove('strategies', removeStrategy);
+  const addNewsEventWithLoading = wrapAdd('newsEvents', addNewsEvent);
+  const removeNewsEventWithLoading = wrapRemove('newsEvents', removeNewsEvent);
+  const addSessionWithLoading = wrapAdd('sessions', addSession);
+  const removeSessionWithLoading = wrapRemove('sessions', removeSession);
+  const addMarketConditionWithLoading = wrapAdd('marketConditions', addMarketCondition);
+  const removeMarketConditionWithLoading = wrapRemove('marketConditions', removeMarketCondition);
+  const addMistakeWithLoading = wrapAdd('mistakes', addMistake);
+  const removeMistakeWithLoading = wrapRemove('mistakes', removeMistake);
   
   const handleUpdateProfile = async () => {
     await updateProfile({ name: displayName, email }).unwrap();
@@ -117,7 +167,7 @@ export function SettingsView() {
       </div>
 
       {/* Preferences Section */}
-      <div className="glass-card p-6 animate-fade-in stagger-1">
+      <div className="glass-card p-6 animate-fade-in stagger-1 hidden">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
             <Palette className="w-5 h-5 text-accent" />
@@ -181,7 +231,7 @@ export function SettingsView() {
       </div>
 
       {/* Notifications Section */}
-      <div className="glass-card p-6 animate-fade-in stagger-2">
+      <div className="glass-card p-6 animate-fade-in stagger-2 hidden">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
             <Bell className="w-5 h-5 text-warning" />
@@ -224,7 +274,12 @@ export function SettingsView() {
               <ListChecks className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Trade Options</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-foreground">Trade Options</h2>
+                {tradeOptionsLoading && (
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">Manage dropdown options for trade forms</p>
             </div>
           </div>
@@ -233,6 +288,7 @@ export function SettingsView() {
             size="sm"
             onClick={resetToDefaults}
             className="gap-1.5"
+            disabled={tradeOptionsLoading}
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset All
@@ -244,9 +300,12 @@ export function SettingsView() {
             title="Setups / Strategies"
             description="Trading setups and strategies for your trades"
             options={options.strategies}
-            onAdd={addStrategy}
-            onRemove={removeStrategy}
+            onAdd={addStrategyWithLoading}
+            onRemove={removeStrategyWithLoading}
             placeholder="Add new setup..."
+            isLoading={tradeOptionsLoading}
+            pendingAction={pendingTradeOption?.category === 'strategies' ? pendingTradeOption.action : undefined}
+            pendingValue={pendingTradeOption?.category === 'strategies' ? pendingTradeOption.value : undefined}
           />
 
           <div className="border-t border-border pt-6">
@@ -254,9 +313,12 @@ export function SettingsView() {
               title="News Events"
               description="Economic events and news that affect your trades"
               options={options.newsEvents}
-              onAdd={addNewsEvent}
-              onRemove={removeNewsEvent}
+              onAdd={addNewsEventWithLoading}
+              onRemove={removeNewsEventWithLoading}
               placeholder="Add new event..."
+              isLoading={tradeOptionsLoading}
+              pendingAction={pendingTradeOption?.category === 'newsEvents' ? pendingTradeOption.action : undefined}
+              pendingValue={pendingTradeOption?.category === 'newsEvents' ? pendingTradeOption.value : undefined}
             />
           </div>
 
@@ -265,9 +327,12 @@ export function SettingsView() {
               title="Trading Sessions"
               description="Market sessions for your trades"
               options={options.sessions}
-              onAdd={addSession}
-              onRemove={removeSession}
+              onAdd={addSessionWithLoading}
+              onRemove={removeSessionWithLoading}
               placeholder="Add new session..."
+              isLoading={tradeOptionsLoading}
+              pendingAction={pendingTradeOption?.category === 'sessions' ? pendingTradeOption.action : undefined}
+              pendingValue={pendingTradeOption?.category === 'sessions' ? pendingTradeOption.value : undefined}
             />
           </div>
 
@@ -276,9 +341,12 @@ export function SettingsView() {
               title="Market Conditions"
               description="Market conditions when you take trades"
               options={options.marketConditions}
-              onAdd={addMarketCondition}
-              onRemove={removeMarketCondition}
+              onAdd={addMarketConditionWithLoading}
+              onRemove={removeMarketConditionWithLoading}
               placeholder="Add new condition..."
+              isLoading={tradeOptionsLoading}
+              pendingAction={pendingTradeOption?.category === 'marketConditions' ? pendingTradeOption.action : undefined}
+              pendingValue={pendingTradeOption?.category === 'marketConditions' ? pendingTradeOption.value : undefined}
             />
           </div>
 
@@ -287,9 +355,12 @@ export function SettingsView() {
               title="Common Mistakes"
               description="Trading mistakes to track and avoid"
               options={options.mistakes}
-              onAdd={addMistake}
-              onRemove={removeMistake}
+              onAdd={addMistakeWithLoading}
+              onRemove={removeMistakeWithLoading}
               placeholder="Add new mistake..."
+              isLoading={tradeOptionsLoading}
+              pendingAction={pendingTradeOption?.category === 'mistakes' ? pendingTradeOption.action : undefined}
+              pendingValue={pendingTradeOption?.category === 'mistakes' ? pendingTradeOption.value : undefined}
             />
           </div>
         </div>

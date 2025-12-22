@@ -42,6 +42,8 @@ export function calculateGoalProgressForAccount(
 
   const filteredTrades = eligibleTrades.filter(trade => {
     const tradeDate = new Date(trade.exitDate || trade.entryDate);
+    // For 'ALL' accounts, include all trades that have valid accountId (already filtered by getEligibleTrades)
+    // For specific account, match the accountId
     const matchesAccount = accountId === 'ALL' || trade.accountId === accountId;
     const matchesPeriod = isWithinInterval(tradeDate, { start: periodStart, end: periodEnd });
     return matchesAccount && matchesPeriod;

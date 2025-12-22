@@ -22,7 +22,11 @@ export function AppPage() {
   const navigate = useNavigate();
   
   // Fetch saved options on initial load (will be cached)
-  useGetSavedOptionsQuery();
+  useGetSavedOptionsQuery(undefined, {
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+    refetchOnReconnect: false,
+  });
   
   // Centralized trades sync with account selection
   useTradesSync();
