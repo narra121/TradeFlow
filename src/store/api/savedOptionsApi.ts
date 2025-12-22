@@ -11,6 +11,10 @@ export interface SavedOptions {
   timeframes: string[];
 }
 
+export interface AddOptionPayload {
+  value: string;
+}
+
 export const savedOptionsApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getSavedOptions: builder.query<SavedOptions, void>({
@@ -50,10 +54,32 @@ export const savedOptionsApi = api.injectEndpoints({
       },
       invalidatesTags: [{ type: 'SavedOptions', id: 'LIST' }],
     }),
+    
+    addOption: builder.mutation<SavedOptions, { category: string; payload: AddOptionPayload }>({
+      query: ({ category, payload }) => ({
+        url: `/options/${category}`,
+        method: 'POST',
+        body: payload,
+      }),
+      transformResponse: (response: any) => {
+        const options = response.options || response;
+        if (response?._apiMessage) {
+          Object.defineProperty(options, '_apiMessage', {
+            value: response._apiMessage,
+            enumerable: false,
+            writable: true,
+            configurable: true
+          });
+        }
+        return options;
+      },
+      invalidatesTags: [{ type: 'SavedOptions', id: 'LIST' }],
+    }),
   }),
 });
 
 export const {
   useGetSavedOptionsQuery,
   useUpdateSavedOptionsMutation,
+  useAddOptionMutation,
 } = savedOptionsApi;
