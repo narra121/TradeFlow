@@ -292,19 +292,19 @@ export const goalsRulesApi = api.injectEndpoints({
       },
     }),
     
-    // Fetch trades for current period (for goal calculations)
-    getGoalPeriodTrades: builder.query<Trade[], void>({
-      query: () => {
+    // Fetch trades for a specific period (for goal calculations)
+    getGoalPeriodTrades: builder.query<Trade[], { startDate: string; endDate: string } | undefined>({
+      query: (params) => {
         const now = new Date();
-        const monthStart = startOfMonth(now).toISOString();
-        const monthEnd = endOfMonth(now).toISOString();
+        const startDate = params ? params.startDate : startOfMonth(now).toISOString();
+        const endDate = params ? params.endDate : endOfMonth(now).toISOString();
         
         return {
           url: '/trades',
           params: {
             accountId: 'ALL',
-            startDate: monthStart,
-            endDate: monthEnd
+            startDate,
+            endDate
           },
         };
       },
