@@ -102,23 +102,52 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
           const payload = action.payload as any;
           
           // Extract error message from various possible structures
-          if (payload.data && typeof payload.data === 'string') {
-            errorMessage = payload.data;
-          } else if (payload.data && typeof payload.data === 'object') {
-            if (payload.data.message) {
-              errorMessage = payload.data.message;
-            } else if (payload.data.error && typeof payload.data.error === 'object' && payload.data.error.message) {
-              errorMessage = payload.data.error.message;
-            } else if (payload.data.error && typeof payload.data.error === 'string') {
-              errorMessage = payload.data.error;
+          // Priority: data.message > data.error.message > data.error > data > message > error
+          if (payload.data) {
+            if (typeof payload.data === 'string') {
+              errorMessage = payload.data;
+            } else if (typeof payload.data === 'object') {
+              if (payload.data.message && typeof payload.data.message === 'string') {
+                errorMessage = payload.data.message;
+              } else if (payload.data.error) {
+                if (typeof payload.data.error === 'object' && payload.data.error.message) {
+                  errorMessage = payload.data.error.message;
+                } else if (typeof payload.data.error === 'string') {
+                  errorMessage = payload.data.error;
+                }
+              }
             }
           } else if (payload.message && typeof payload.message === 'string') {
             errorMessage = payload.message;
-          } else if (payload.error && typeof payload.error === 'string') {
-            errorMessage = payload.error;
+          } else if (payload.error) {
+            if (typeof payload.error === 'object' && payload.error.message) {
+              errorMessage = payload.error.message;
+            } else if (typeof payload.error === 'string') {
+              errorMessage = payload.error;
+            }
           }
-        } else if (action.error?.message) {
+        }
+        
+        // Also check action.error for RTK Query errors
+        if (errorMessage === 'An error occurred' && action.error?.message) {
           errorMessage = action.error.message;
+        }
+        
+        // Skip auth errors - handled in auth component
+        if (endpointName !== 'login' && endpointName !== 'signup') {
+          toast.error(errorMessage);
+        }
+      }
+      
+      // Handle generic errors (rejected but not with value)
+      if (action.type.includes('rejected') && !isRejectedWithValue(action)) {
+        let errorMessage = 'An error occurred';
+        
+        // Try to get error message from action.error
+        if (action.error?.message) {
+          errorMessage = action.error.message;
+        } else if (action.payload && typeof action.payload === 'string') {
+          errorMessage = action.payload;
         }
         
         // Skip auth errors - handled in auth component
