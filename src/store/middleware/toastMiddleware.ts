@@ -102,39 +102,27 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
       if (isRejectedWithValue(action) || action.type.includes('rejected')) {
         let errorMessage = 'An error occurred';
         
-        // First, check action.error.message (where thrown errors end up)
-        if (action.error?.message) {
-          errorMessage = action.error.message;
-        }
-        // Then check payload structures
-        else if (action.payload) {
+        // RTK Query error structure: payload.data contains the error message
+        if (action.payload) {
           const payload = action.payload as any;
           
-          // Extract error message from various possible structures
-          // Priority: message (root) > data.message > data.error.message > data.error > data
-          if (payload.message && typeof payload.message === 'string') {
-            errorMessage = payload.message;
-          } else if (payload.data) {
+          // Priority: payload.data (RTK Query error) > payload.message > action.error.message
+          if (payload.data) {
             if (typeof payload.data === 'string') {
               errorMessage = payload.data;
-            } else if (typeof payload.data === 'object') {
-              if (payload.data.message && typeof payload.data.message === 'string') {
-                errorMessage = payload.data.message;
-              } else if (payload.data.error) {
-                if (typeof payload.data.error === 'object' && payload.data.error.message) {
-                  errorMessage = payload.data.error.message;
-                } else if (typeof payload.data.error === 'string') {
-                  errorMessage = payload.data.error;
-                }
-              }
+            } else if (typeof payload.data === 'object' && payload.data.message) {
+              errorMessage = payload.data.message;
             }
-          } else if (payload.error) {
-            if (typeof payload.error === 'object' && payload.error.message) {
-              errorMessage = payload.error.message;
-            } else if (typeof payload.error === 'string') {
-              errorMessage = payload.error;
-            }
+          } else if (payload.error && typeof payload.error === 'string') {
+            errorMessage = payload.error;
+          } else if (payload.message && typeof payload.message === 'string') {
+            errorMessage = payload.message;
           }
+        }
+        
+        // Fallback to action.error.message
+        if (errorMessage === 'An error occurred' && action.error?.message) {
+          errorMessage = action.error.message;
         }
         
         // Skip auth errors - handled in auth component

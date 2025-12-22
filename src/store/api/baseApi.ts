@@ -43,57 +43,81 @@ const baseQueryWithReauth: BaseQueryFn<
       }
       return headers;
     },
-    responseHandler: async (response) => {
-      const data = await response.json();
-      
-      // New format: { success, message, data, ... }
-      if (data && typeof data === 'object' && 'success' in data) {
-        if (!data.success) {
-          // Return error with the message so RTK Query can handle it
-          const error = new Error(data.message || 'Request failed');
-          (error as any).data = data; // Preserve the full response data
-          throw error;
-        }
-        
-        let result = data.data;
-        
-        // If result is null/undefined, use an empty object to attach message
-        if (result === null || result === undefined) {
-            result = {};
-        }
-
-        // Attach message to result using non-enumerable property
-        if (result && (typeof result === 'object' || typeof result === 'function') && data.message) {
-           try {
-             Object.defineProperty(result, '_apiMessage', {
-                 value: data.message,
-                 enumerable: false,
-                 writable: true,
-                 configurable: true
-             });
-           } catch (e) {
-             // Ignore if immutable
-           }
-        }
-        return result;
-      }
-
-      // Old format: { data, error, meta }
-      if (data && typeof data === 'object' && 'data' in data) {
-        // Check if backend returned an error in the envelope
-        if (data.error && data.error !== null) {
-          const errorMsg = typeof data.error === 'object' ? data.error.message : data.error;
-          const error = new Error(errorMsg || 'Request failed');
-          (error as any).data = data; // Preserve the full response data
-          throw error;
-        }
-        return data.data;
-      }
-      return data;
-    },
+    validateStatus: (response) => response.ok, // Only treat 2xx as success
   });
 
   let result = await baseQuery(args, api, extraOptions);
+  
+  // Handle response data transformation for successful requests
+  if (result.data) {
+    const data = result.data as any;
+    
+    // New format: { success, message, data, ... }
+    if (data && typeof data === 'object' && 'success' in data) {
+      if (!data.success) {
+        // Convert to error with proper message
+        return {
+          error: {
+            status: 'CUSTOM_ERROR',
+            data: data.message || 'Request failed',
+            error: data.message || 'Request failed',
+          } as FetchBaseQueryError,
+        };
+      }
+      
+      let responseData = data.data;
+      
+      // If result is null/undefined, use an empty object to attach message
+      if (responseData === null || responseData === undefined) {
+        responseData = {};
+      }
+
+      // Attach message to result using non-enumerable property
+      if (responseData && (typeof responseData === 'object' || typeof responseData === 'function') && data.message) {
+        try {
+          Object.defineProperty(responseData, '_apiMessage', {
+            value: data.message,
+            enumerable: false,
+            writable: true,
+            configurable: true
+          });
+        } catch (e) {
+          // Ignore if immutable
+        }
+      }
+      
+      result = { data: responseData };
+    }
+    // Old format: { data, error, meta }
+    else if (data && typeof data === 'object' && 'data' in data) {
+      // Check if backend returned an error in the envelope
+      if (data.error && data.error !== null) {
+        const errorMsg = typeof data.error === 'object' ? data.error.message : data.error;
+        return {
+          error: {
+            status: 'CUSTOM_ERROR',
+            data: errorMsg || 'Request failed',
+            error: errorMsg || 'Request failed',
+          } as FetchBaseQueryError,
+        };
+      }
+      result = { data: data.data };
+    }
+  }
+  
+  // Handle errors with proper message extraction
+  if (result.error) {
+    const error = result.error as any;
+    
+    // Try to extract message from error data
+    if (error.data && typeof error.data === 'object') {
+      if (error.data.message) {
+        error.data = error.data.message;
+      } else if (error.data.error && typeof error.data.error === 'string') {
+        error.data = error.data.error;
+      }
+    }
+  }
 
   if (result.error && result.error.status === 401) {
     const refreshToken = localStorage.getItem('refreshToken');
