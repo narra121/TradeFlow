@@ -7,6 +7,10 @@ interface ReduxAction {
   type: string;
   payload?: any;
   meta?: any;
+  error?: {
+    message?: string;
+    [key: string]: any;
+  };
 }
 
 // RTK Query endpoints to skip toast notifications (queries only, not mutations)
