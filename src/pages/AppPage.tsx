@@ -10,7 +10,7 @@ import { SettingsView } from '@/components/views/SettingsView';
 import { AccountsView } from '@/components/views/AccountsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
-import { useCreateTradeMutation, useBulkImportTradesMutation } from '@/store/api';
+import { useCreateTradeMutation, useBulkImportTradesMutation, useGetSavedOptionsQuery } from '@/store/api';
 import { useTradesSync } from '@/hooks/useTradesSync';
 import { cn } from '@/lib/utils';
 import type { Trade } from '@/types/trade';
@@ -20,6 +20,9 @@ export function AppPage() {
   const [bulkImportTrades] = useBulkImportTradesMutation();
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Fetch saved options on initial load (will be cached)
+  useGetSavedOptionsQuery();
   
   // Centralized trades sync with account selection
   useTradesSync();

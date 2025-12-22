@@ -26,6 +26,7 @@ import { AccountFilter } from '@/components/account/AccountFilter';
 import { subDays, isWithinInterval, startOfWeek, endOfWeek, format, addDays, isSameDay } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { useGetTradesQuery } from '@/store/api';
 import {
   calculateTradeStats,
@@ -60,8 +61,8 @@ export function AnalyticsView() {
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
     dispatch(setDateRangeFilter({
-      startDate: range.from.toISOString().split('T')[0],
-      endDate: range.to.toISOString().split('T')[0],
+      startDate: formatLocalDateOnly(range.from),
+      endDate: formatLocalDateOnly(range.to),
       datePreset: preset
     }));
     if (preset === 'custom') {

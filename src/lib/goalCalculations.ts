@@ -1,5 +1,5 @@
 import { Trade } from '@/types/trade';
-import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, isWithinInterval } from 'date-fns';
+import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, endOfDay, isWithinInterval } from 'date-fns';
 import { getEligibleTrades } from './tradeCalculations';
 
 export interface GoalProgress {
@@ -38,7 +38,7 @@ export function calculateGoalProgressForAccount(
   // Use custom date range if provided, otherwise calculate from current date
   const now = new Date();
   const periodStart = customDateRange?.start || (period === 'weekly' ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now));
-  const periodEnd = customDateRange?.end || (period === 'weekly' ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now));
+  const periodEnd = customDateRange?.end || (period === 'weekly' ? endOfDay(endOfWeek(now, { weekStartsOn: 1 })) : endOfDay(endOfMonth(now)));
 
   const filteredTrades = eligibleTrades.filter(trade => {
     const tradeDate = new Date(trade.exitDate || trade.entryDate);
@@ -113,7 +113,7 @@ export function calculateBrokenRulesCounts(
 ): Record<string, number> {
   const now = new Date();
   const periodStart = customDateRange?.start || (period === 'weekly' ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now));
-  const periodEnd = customDateRange?.end || (period === 'weekly' ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now));
+  const periodEnd = customDateRange?.end || (period === 'weekly' ? endOfDay(endOfWeek(now, { weekStartsOn: 1 })) : endOfDay(endOfMonth(now)));
 
   const counts: Record<string, number> = {};
   const eligibleTrades = getEligibleTrades(trades ?? []);
@@ -138,12 +138,12 @@ export function getCurrentPeriodRange(period: 'weekly' | 'monthly'): { start: Da
   if (period === 'weekly') {
     return {
       start: startOfWeek(now, { weekStartsOn: 1 }),
-      end: endOfWeek(now, { weekStartsOn: 1 })
+      end: endOfDay(endOfWeek(now, { weekStartsOn: 1 }))
     };
   } else {
     return {
       start: startOfMonth(now),
-      end: endOfMonth(now)
+      end: endOfDay(endOfMonth(now))
     };
   }
 }

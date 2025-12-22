@@ -1,169 +1,151 @@
-import { useState, useCallback, useEffect } from 'react';
-import { SavedOptions } from '@/types/trade';
+import { useCallback, useMemo } from 'react';
+import { useGetSavedOptionsQuery, useUpdateSavedOptionsMutation, SavedOptions } from '@/store/api';
 
-// Storage key for persisting options
-const STORAGE_KEY = 'tradingJournal_savedOptions';
-
-// Default options - in production these would come from a database
+// Default options - used as fallback
 const defaultOptions: SavedOptions = {
-  symbols: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'NAS100', 'US30', 'BTC/USD', 'ETH/USD'],
+  symbols: [],
   strategies: ['Breakout', 'Support Bounce', 'Resistance Rejection', 'Trend Continuation', 'Range Trade', 'News Trade'],
   sessions: ['Asian', 'London Open', 'London Close', 'NY Open', 'NY PM', 'London/NY Overlap'],
   marketConditions: ['Trending', 'Ranging', 'Choppy', 'High Volatility', 'Low Volatility', 'Consolidation'],
   newsEvents: ['NFP Release', 'FOMC Meeting', 'CPI Data', 'GDP Report', 'Interest Rate Decision', 'Employment Data'],
   mistakes: ['FOMO', 'Early Entry', 'Late Entry', 'Early Exit', 'Moved Stop Loss', 'Wrong Position Size', 'Revenge Trade', 'Overtrading', 'No Stop Loss'],
-  lessons: ['Wait for candle close', 'Stick to the plan', 'Reduce position size', 'Take partials', 'Trust the setup', 'Be patient'],
-  timeframes: ['1m', '5m', '15m', '30m', '1H', '4H', 'Daily', 'Weekly'],
+  lessons: [],
+  timeframes: [],
 };
 
-// Load options from localStorage
-function loadOptions(): SavedOptions {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return { ...defaultOptions, ...JSON.parse(stored) };
-    }
-  } catch (e) {
-    console.error('Failed to load saved options:', e);
-  }
-  return defaultOptions;
-}
-
-// Save options to localStorage
-function saveOptions(options: SavedOptions) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
-  } catch (e) {
-    console.error('Failed to save options:', e);
-  }
-}
-
 export function useSavedOptions() {
-  const [options, setOptions] = useState<SavedOptions>(loadOptions);
+  const { data: apiOptions, isLoading } = useGetSavedOptionsQuery();
+  const [updateOptions] = useUpdateSavedOptionsMutation();
 
-  // Persist options when they change
-  useEffect(() => {
-    saveOptions(options);
-  }, [options]);
+  const options = useMemo(() => apiOptions || defaultOptions, [apiOptions]);
+
+  const updateWithNewOptions = useCallback(
+    (updater: (prev: SavedOptions) => SavedOptions) => {
+      const newOptions = updater(options);
+      updateOptions(newOptions);
+    },
+    [options, updateOptions]
+  );
 
   const addSymbol = useCallback((symbol: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       symbols: [...prev.symbols, symbol],
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const removeSymbol = useCallback((symbol: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       symbols: prev.symbols.filter(s => s !== symbol),
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const addStrategy = useCallback((strategy: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       strategies: [...prev.strategies, strategy],
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const removeStrategy = useCallback((strategy: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       strategies: prev.strategies.filter(s => s !== strategy),
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const addSession = useCallback((session: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       sessions: [...prev.sessions, session],
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const removeSession = useCallback((session: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       sessions: prev.sessions.filter(s => s !== session),
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const addMarketCondition = useCallback((condition: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       marketConditions: [...prev.marketConditions, condition],
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const removeMarketCondition = useCallback((condition: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       marketConditions: prev.marketConditions.filter(c => c !== condition),
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const addNewsEvent = useCallback((event: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       newsEvents: [...prev.newsEvents, event],
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const removeNewsEvent = useCallback((event: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       newsEvents: prev.newsEvents.filter(e => e !== event),
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const addMistake = useCallback((mistake: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       mistakes: [...prev.mistakes, mistake],
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const removeMistake = useCallback((mistake: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       mistakes: prev.mistakes.filter(m => m !== mistake),
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const addLesson = useCallback((lesson: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       lessons: [...prev.lessons, lesson],
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const removeLesson = useCallback((lesson: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       lessons: prev.lessons.filter(l => l !== lesson),
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const addTimeframe = useCallback((timeframe: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       timeframes: [...prev.timeframes, timeframe],
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const removeTimeframe = useCallback((timeframe: string) => {
-    setOptions((prev) => ({
+    updateWithNewOptions((prev) => ({
       ...prev,
       timeframes: prev.timeframes.filter(t => t !== timeframe),
     }));
-  }, []);
+  }, [updateWithNewOptions]);
 
   const resetToDefaults = useCallback(() => {
-    setOptions(defaultOptions);
-  }, []);
+    updateOptions(defaultOptions);
+  }, [updateOptions]);
 
   return {
     options,
+    isLoading,
     addSymbol,
     removeSymbol,
     addStrategy,
@@ -183,3 +165,4 @@ export function useSavedOptions() {
     resetToDefaults,
   };
 }
+

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { calculateTradeStats, getEligibleTrades } from '@/lib/tradeCalculations';
 import { useGetTradesQuery } from '@/store/api';
 import { 
@@ -44,8 +45,8 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
     dispatch(setDateRangeFilter({
-      startDate: range.from.toISOString().split('T')[0],
-      endDate: range.to.toISOString().split('T')[0],
+      startDate: formatLocalDateOnly(range.from),
+      endDate: formatLocalDateOnly(range.to),
       datePreset: preset
     }));
     if (preset === 'custom') {

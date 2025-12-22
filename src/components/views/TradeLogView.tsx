@@ -47,6 +47,7 @@ import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation, useGetAccountsQuery } from '@/store/api';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
 
@@ -85,8 +86,8 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
     dispatch(setDateRangeFilter({
-      startDate: range.from.toISOString().split('T')[0],
-      endDate: range.to.toISOString().split('T')[0],
+      startDate: formatLocalDateOnly(range.from),
+      endDate: formatLocalDateOnly(range.to),
       datePreset: preset
     }));
   };

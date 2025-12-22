@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch } from '@/store/hooks';
 import { useGetRulesAndGoalsQuery, useGetGoalPeriodTradesQuery, useUpdateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation } from '@/store/api';
+import { formatLocalDateTime } from '@/lib/dateUtils';
 import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/goalsRules';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, addWeeks, addMonths, format, isSameWeek, isSameMonth } from 'date-fns';
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, addWeeks, addMonths, format, isSameWeek, isSameMonth, endOfDay } from 'date-fns';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { useAccounts } from '@/hooks/useAccounts';
 import { GoalCardSkeleton, RulesListSkeleton } from '@/components/ui/loading-skeleton';
@@ -91,6 +92,7 @@ export function GoalsView() {
   // State declarations
   const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [debouncedDate, setDebouncedDate] = useState<Date>(new Date());
   const [editingGoalKey, setEditingGoalKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [savingGoalKey, setSavingGoalKey] = useState<string | null>(null);
@@ -103,20 +105,29 @@ export function GoalsView() {
   const [isAddingRuleLoading, setIsAddingRuleLoading] = useState(false);
   const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null);
   
-  // Calculate period date range based on selected date and period filter
+  // Debounce date changes - wait 2 seconds after last click before making API call
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedDate(selectedDate);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [selectedDate, periodFilter]);
+  
+  // Calculate period date range based on debounced date and period filter
   const periodRange = useMemo(() => {
     if (periodFilter === 'weekly') {
       return {
-        start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
-        end: endOfWeek(selectedDate, { weekStartsOn: 1 })
+        start: startOfWeek(debouncedDate, { weekStartsOn: 1 }),
+        end: endOfDay(endOfWeek(debouncedDate, { weekStartsOn: 1 }))
       };
     } else {
       return {
-        start: startOfMonth(selectedDate),
-        end: endOfMonth(selectedDate)
+        start: startOfMonth(debouncedDate),
+        end: endOfDay(endOfMonth(debouncedDate))
       };
     }
-  }, [selectedDate, periodFilter]);
+  }, [debouncedDate, periodFilter]);
   
   // Check if viewing current period
   const isCurrentPeriod = useMemo(() => {
@@ -128,18 +139,30 @@ export function GoalsView() {
     }
   }, [selectedDate, periodFilter]);
   
-  // Format period label
+  // Format period label based on selected date (not debounced) for immediate UI feedback
   const periodLabel = useMemo(() => {
+    const displayRange = periodFilter === 'weekly' 
+      ? {
+          start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
+          end: endOfDay(endOfWeek(selectedDate, { weekStartsOn: 1 }))
+        }
+      : {
+          start: startOfMonth(selectedDate),
+          end: endOfDay(endOfMonth(selectedDate))
+        };
+    
     if (periodFilter === 'weekly') {
-      return `${format(periodRange.start, 'MMM d')} - ${format(periodRange.end, 'MMM d, yyyy')}`;
+      return `${format(displayRange.start, 'MMM d')} - ${format(displayRange.end, 'MMM d, yyyy')}`;
     } else {
-      return format(periodRange.start, 'MMMM yyyy');
+      return format(displayRange.start, 'MMMM yyyy');
     }
-  }, [periodRange, periodFilter]);
+  }, [selectedDate, periodFilter]);
+  
+  const { selectedAccountId, accounts } = useAccounts();
   
   const { data: periodTrades = [], isLoading: periodTradesLoading } = useGetGoalPeriodTradesQuery({
-    startDate: periodRange.start.toISOString(),
-    endDate: periodRange.end.toISOString(),
+    startDate: formatLocalDateTime(periodRange.start),
+    endDate: formatLocalDateTime(periodRange.end),
     accountId: selectedAccountId
   });
   
@@ -153,7 +176,6 @@ export function GoalsView() {
   
   const goals = rulesGoalsData?.goals || [];
   const reduxRules = rulesGoalsData?.rules || [];
-  const { selectedAccountId, accounts } = useAccounts();
   
   const rules = reduxRules || [];
   

@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { DatePreset } from '@/components/filters/DateRangeFilter';
-import { startOfWeek, endOfWeek } from 'date-fns';
+import { startOfWeek, endOfWeek, endOfDay } from 'date-fns';
+import { formatLocalDateOnly } from '@/lib/dateUtils';
 
 export interface TradesState {
   filters: {
@@ -14,11 +15,11 @@ export interface TradesState {
 // Default to this week
 const getDefaultDateRange = () => {
   const now = new Date();
-  const startDate = startOfWeek(now);
-  const endDate = endOfWeek(now);
+  const startDate = startOfWeek(now, { weekStartsOn: 1 });
+  const endDate = endOfDay(endOfWeek(now, { weekStartsOn: 1 }));
   return {
-    startDate: startDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
-    endDate: endDate.toISOString().split('T')[0]      // Format as YYYY-MM-DD
+    startDate: formatLocalDateOnly(startDate),
+    endDate: formatLocalDateOnly(endDate)
   };
 };
 

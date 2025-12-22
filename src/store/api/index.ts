@@ -8,3 +8,4 @@ export * from './analyticsApi';
 export * from './goalsRulesApi';
 export * from './userApi';
 export * from './textApi';
+export * from './savedOptionsApi';
