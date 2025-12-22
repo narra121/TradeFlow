@@ -11,7 +11,9 @@ import {
   Moon,
   Sun,
   DollarSign,
-  Globe
+  Globe,
+  ListChecks,
+  RotateCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,12 +23,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAppSelector } from '@/store/hooks';
 import { useGetProfileQuery, useUpdateProfileMutation, useUpdatePreferencesMutation, useUpdateNotificationsMutation } from '@/store/api';
 import { SettingsSectionSkeleton } from '@/components/ui/loading-skeleton';
+import { DropdownOptionsManager } from '@/components/settings/DropdownOptionsManager';
+import { useSavedOptions } from '@/hooks/useSavedOptions';
 
 export function SettingsView() {
   const { data: profile, isLoading: loading } = useGetProfileQuery();
   const [updateProfile] = useUpdateProfileMutation();
   const [updatePreferences] = useUpdatePreferencesMutation();
   const [updateNotifications] = useUpdateNotificationsMutation();
+  
+  // Saved options hook for managing dropdown options
+  const {
+    options,
+    addStrategy,
+    removeStrategy,
+    addNewsEvent,
+    removeNewsEvent,
+    addSession,
+    removeSession,
+    addMarketCondition,
+    removeMarketCondition,
+    addMistake,
+    removeMistake,
+    resetToDefaults,
+  } = useSavedOptions();
   
   const [notifications, setNotifications] = useState(profile?.preferences?.notifications?.tradeReminders ?? true);
   const [darkMode, setDarkMode] = useState(profile?.preferences?.darkMode ?? true);
@@ -196,7 +216,85 @@ export function SettingsView() {
         </div>
       </div>
 
-      {/* Data Management */}
+      {/* Trade Options Section */}
+      <div className="glass-card p-6 animate-fade-in stagger-3">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <ListChecks className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Trade Options</h2>
+              <p className="text-sm text-muted-foreground">Manage dropdown options for trade forms</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetToDefaults}
+            className="gap-1.5"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Reset All
+          </Button>
+        </div>
+
+        <div className="space-y-6">
+          <DropdownOptionsManager
+            title="Setups / Strategies"
+            description="Trading setups and strategies for your trades"
+            options={options.strategies}
+            onAdd={addStrategy}
+            onRemove={removeStrategy}
+            placeholder="Add new setup..."
+          />
+
+          <div className="border-t border-border pt-6">
+            <DropdownOptionsManager
+              title="News Events"
+              description="Economic events and news that affect your trades"
+              options={options.newsEvents}
+              onAdd={addNewsEvent}
+              onRemove={removeNewsEvent}
+              placeholder="Add new event..."
+            />
+          </div>
+
+          <div className="border-t border-border pt-6">
+            <DropdownOptionsManager
+              title="Trading Sessions"
+              description="Market sessions for your trades"
+              options={options.sessions}
+              onAdd={addSession}
+              onRemove={removeSession}
+              placeholder="Add new session..."
+            />
+          </div>
+
+          <div className="border-t border-border pt-6">
+            <DropdownOptionsManager
+              title="Market Conditions"
+              description="Market conditions when you take trades"
+              options={options.marketConditions}
+              onAdd={addMarketCondition}
+              onRemove={removeMarketCondition}
+              placeholder="Add new condition..."
+            />
+          </div>
+
+          <div className="border-t border-border pt-6">
+            <DropdownOptionsManager
+              title="Common Mistakes"
+              description="Trading mistakes to track and avoid"
+              options={options.mistakes}
+              onAdd={addMistake}
+              onRemove={removeMistake}
+              placeholder="Add new mistake..."
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="glass-card p-6 animate-fade-in stagger-3">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
