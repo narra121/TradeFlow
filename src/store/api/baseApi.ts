@@ -49,7 +49,10 @@ const baseQueryWithReauth: BaseQueryFn<
       // New format: { success, message, data, ... }
       if (data && typeof data === 'object' && 'success' in data) {
         if (!data.success) {
-           throw new Error(data.message || 'Request failed');
+          // Return error with the message so RTK Query can handle it
+          const error = new Error(data.message || 'Request failed');
+          (error as any).data = data; // Preserve the full response data
+          throw error;
         }
         
         let result = data.data;
@@ -80,7 +83,9 @@ const baseQueryWithReauth: BaseQueryFn<
         // Check if backend returned an error in the envelope
         if (data.error && data.error !== null) {
           const errorMsg = typeof data.error === 'object' ? data.error.message : data.error;
-          throw new Error(errorMsg || 'Request failed');
+          const error = new Error(errorMsg || 'Request failed');
+          (error as any).data = data; // Preserve the full response data
+          throw error;
         }
         return data.data;
       }

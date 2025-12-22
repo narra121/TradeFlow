@@ -99,15 +99,22 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
       }
       
       // Handle errors (rejected)
-      if (isRejectedWithValue(action)) {
+      if (isRejectedWithValue(action) || action.type.includes('rejected')) {
         let errorMessage = 'An error occurred';
         
-        if (action.payload) {
+        // First, check action.error.message (where thrown errors end up)
+        if (action.error?.message) {
+          errorMessage = action.error.message;
+        }
+        // Then check payload structures
+        else if (action.payload) {
           const payload = action.payload as any;
           
           // Extract error message from various possible structures
-          // Priority: data.message > data.error.message > data.error > data > message > error
-          if (payload.data) {
+          // Priority: message (root) > data.message > data.error.message > data.error > data
+          if (payload.message && typeof payload.message === 'string') {
+            errorMessage = payload.message;
+          } else if (payload.data) {
             if (typeof payload.data === 'string') {
               errorMessage = payload.data;
             } else if (typeof payload.data === 'object') {
@@ -121,8 +128,6 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
                 }
               }
             }
-          } else if (payload.message && typeof payload.message === 'string') {
-            errorMessage = payload.message;
           } else if (payload.error) {
             if (typeof payload.error === 'object' && payload.error.message) {
               errorMessage = payload.error.message;
@@ -130,28 +135,6 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
               errorMessage = payload.error;
             }
           }
-        }
-        
-        // Also check action.error for RTK Query errors
-        if (errorMessage === 'An error occurred' && action.error?.message) {
-          errorMessage = action.error.message;
-        }
-        
-        // Skip auth errors - handled in auth component
-        if (endpointName !== 'login' && endpointName !== 'signup') {
-          toast.error(errorMessage);
-        }
-      }
-      
-      // Handle generic errors (rejected but not with value)
-      if (action.type.includes('rejected') && !isRejectedWithValue(action)) {
-        let errorMessage = 'An error occurred';
-        
-        // Try to get error message from action.error
-        if (action.error?.message) {
-          errorMessage = action.error.message;
-        } else if (action.payload && typeof action.payload === 'string') {
-          errorMessage = action.payload;
         }
         
         // Skip auth errors - handled in auth component
