@@ -107,8 +107,8 @@ export function GoalsView() {
   const periodRange = useMemo(() => {
     if (periodFilter === 'weekly') {
       return {
-        start: startOfWeek(selectedDate, { weekStartsOn: 0 }),
-        end: endOfWeek(selectedDate, { weekStartsOn: 0 })
+        start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
+        end: endOfWeek(selectedDate, { weekStartsOn: 1 })
       };
     } else {
       return {
@@ -122,7 +122,7 @@ export function GoalsView() {
   const isCurrentPeriod = useMemo(() => {
     const now = new Date();
     if (periodFilter === 'weekly') {
-      return isSameWeek(selectedDate, now, { weekStartsOn: 0 });
+      return isSameWeek(selectedDate, now, { weekStartsOn: 1 });
     } else {
       return isSameMonth(selectedDate, now);
     }

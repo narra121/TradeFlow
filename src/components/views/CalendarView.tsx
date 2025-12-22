@@ -21,7 +21,7 @@ export function CalendarView({ trades }: CalendarViewProps) {
   // Get all weeks that overlap with this month
   const weeks = eachWeekOfInterval(
     { start: monthStart, end: monthEnd },
-    { weekStartsOn: 0 }
+    { weekStartsOn: 1 }
   );
 
   // Get trades for a specific day
@@ -51,7 +51,7 @@ export function CalendarView({ trades }: CalendarViewProps) {
 
   // Calculate weekly stats
   const getWeekStats = (weekStart: Date) => {
-    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
     const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
     
     let totalTrades = 0;
@@ -169,7 +169,7 @@ export function CalendarView({ trades }: CalendarViewProps) {
         {weeks.map((weekStart, weekIndex) => {
           const weekDays = eachDayOfInterval({
             start: weekStart,
-            end: endOfWeek(weekStart, { weekStartsOn: 0 }),
+            end: endOfWeek(weekStart, { weekStartsOn: 1 }),
           });
           const weekStats = getWeekStats(weekStart);
 
@@ -286,9 +286,9 @@ export function CalendarView({ trades }: CalendarViewProps) {
       {/* Monthly Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Trading Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 0 }) })).filter(d => getDayStats(d)).length },
-          { label: 'Profitable Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 0 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl > 0; }).length },
-          { label: 'Loss Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 0 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl < 0; }).length },
+          { label: 'Trading Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 1 }) })).filter(d => getDayStats(d)).length },
+          { label: 'Profitable Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 1 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl > 0; }).length },
+          { label: 'Loss Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 1 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl < 0; }).length },
           { label: 'Monthly P&L', value: `$${weeks.reduce((sum, w) => sum + getWeekStats(w).pnl, 0).toFixed(2)}` },
         ].map((stat, index) => (
           <div 

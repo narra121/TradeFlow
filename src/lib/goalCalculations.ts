@@ -37,8 +37,8 @@ export function calculateGoalProgressForAccount(
 
   // Use custom date range if provided, otherwise calculate from current date
   const now = new Date();
-  const periodStart = customDateRange?.start || (period === 'weekly' ? startOfWeek(now, { weekStartsOn: 0 }) : startOfMonth(now));
-  const periodEnd = customDateRange?.end || (period === 'weekly' ? endOfWeek(now, { weekStartsOn: 0 }) : endOfMonth(now));
+  const periodStart = customDateRange?.start || (period === 'weekly' ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now));
+  const periodEnd = customDateRange?.end || (period === 'weekly' ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now));
 
   const filteredTrades = eligibleTrades.filter(trade => {
     const tradeDate = new Date(trade.exitDate || trade.entryDate);
@@ -112,8 +112,8 @@ export function calculateBrokenRulesCounts(
   customDateRange?: { start: Date; end: Date }
 ): Record<string, number> {
   const now = new Date();
-  const periodStart = customDateRange?.start || (period === 'weekly' ? startOfWeek(now, { weekStartsOn: 0 }) : startOfMonth(now));
-  const periodEnd = customDateRange?.end || (period === 'weekly' ? endOfWeek(now, { weekStartsOn: 0 }) : endOfMonth(now));
+  const periodStart = customDateRange?.start || (period === 'weekly' ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now));
+  const periodEnd = customDateRange?.end || (period === 'weekly' ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now));
 
   const counts: Record<string, number> = {};
   const eligibleTrades = getEligibleTrades(trades ?? []);
@@ -137,8 +137,8 @@ export function getCurrentPeriodRange(period: 'weekly' | 'monthly'): { start: Da
   const now = new Date();
   if (period === 'weekly') {
     return {
-      start: startOfWeek(now, { weekStartsOn: 0 }),
-      end: endOfWeek(now, { weekStartsOn: 0 })
+      start: startOfWeek(now, { weekStartsOn: 1 }),
+      end: endOfWeek(now, { weekStartsOn: 1 })
     };
   } else {
     return {

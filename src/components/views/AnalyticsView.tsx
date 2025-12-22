@@ -123,7 +123,7 @@ export function AnalyticsView() {
   const { maxDuration, minDuration, avgDuration } = durationStats;
 
   // Daily P&L for current week (Sunday to Saturday)
-  const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 }); // Sunday
+  const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Sunday
   const dailyPnL = Array.from({ length: 7 }, (_, i) => {
     const dayDate = addDays(currentWeekStart, i);
     const dayTrades = eligibleTrades.filter(trade => {
