@@ -77,7 +77,18 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
   // Handle errors
   useEffect(() => {
     if (error) {
-      toast.error((error as any)?.data?.message || (error as any)?.message || 'An error occurred');
+      const errorData = (error as any)?.data;
+      const errorCode = errorData?.code || errorData?.error;
+      const errorMessage = errorData?.message || (error as any)?.message || 'An error occurred';
+      
+      // Check if user's email is not verified
+      if (errorCode === 'EMAIL_NOT_VERIFIED') {
+        toast.error(errorMessage);
+        setView("otp"); // Redirect to OTP verification page
+        return;
+      }
+      
+      toast.error(errorMessage);
     }
   }, [error]);
 
@@ -87,7 +98,15 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Please fill in all fields");
       return;
     }
-    await login({ email, password }).unwrap();
+    try {
+      await login({ email, password }).unwrap();
+    } catch (err: any) {
+      // Check if email is not verified
+      const errorCode = err?.data?.code || err?.data?.error;
+      if (errorCode === 'EMAIL_NOT_VERIFIED') {
+        setView("otp");
+      }
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -104,7 +123,16 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       toast.error("Password must be at least 8 characters");
       return;
     }
-    await signup({ name, email, password }).unwrap();
+    try {
+      const response = await signup({ name, email, password }).unwrap();
+      // Check if this was a resend scenario (user already exists but unverified)
+      if ((response as any)?.resent) {
+        toast.success((response as any)?.message || "Verification code resent to your email");
+        setView("otp");
+      }
+    } catch (err: any) {
+      // Error is handled by useEffect
+    }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
