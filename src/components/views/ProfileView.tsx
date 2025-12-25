@@ -542,7 +542,7 @@ export function ProfileView() {
                   <div className="space-y-3">
                     <div className="p-3 rounded-md bg-orange-500/10 border border-orange-500/20 text-sm text-orange-200">
                       <p className="font-semibold mb-1">Payment Required</p>
-                      <p>Your subscription has been created but not yet activated. Complete the payment to activate your subscription and start enjoying all features.</p>
+                      <p>Your subscription has been created but not yet activated. Complete the payment to support the developer and help keep TradeFlow running.</p>
                     </div>
                     <Button
                       variant="default"
