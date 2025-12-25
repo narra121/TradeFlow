@@ -252,6 +252,55 @@ export function ProfileView() {
     }
   };
 
+  const handleRetryPayment = async () => {
+    if (!subscriptionDetails?.planId) {
+      toast.error("Unable to retry payment - plan information not found");
+      return;
+    }
+
+    setIsSubscribing(true);
+    try {
+      // Find the plan details
+      const plan = availablePlans.find(p => p.planId === subscriptionDetails.planId);
+      
+      if (!plan) {
+        toast.error("Plan details not found. Please contact support.");
+        return;
+      }
+
+      await initiateSubscription({
+        planId: plan.planId,
+        name: plan.name,
+        description: plan.description || `${plan.period === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ₹${plan.amount}`,
+        onSuccess: async (subscriptionId) => {
+          console.log('Subscription activated:', subscriptionId);
+          
+          toast.success("Your payment was successful and your subscription is now active.");
+          
+          // Refresh subscription details immediately
+          try {
+            await createSubscription({ 
+              amount: plan.amount, 
+              billingCycle: plan.period as 'monthly' | 'annual'
+            }).unwrap();
+            const { data: updatedSubscription } = await refetchSubscription();
+            if (updatedSubscription) {
+              setSubscriptionDetails(updatedSubscription as unknown as SubscriptionDetails);
+            }
+          } catch (e) {
+            console.error('Failed to refresh details after success', e);
+          }
+        },
+        onFailure: (error) => {
+          console.error('Subscription failed:', error);
+          toast.error(error.message || "Failed to initiate subscription");
+        },
+      });
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -490,9 +539,24 @@ export function ProfileView() {
                 )}
 
                 {subscriptionDetails.status === 'created' && (
-                  <div className="p-3 rounded-md bg-orange-500/10 border border-orange-500/20 text-sm text-orange-200">
-                    <p className="font-semibold mb-1">Payment Required</p>
-                    <p>Your subscription has been created but not yet activated. Complete the payment to activate your subscription and start enjoying all features.</p>
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-md bg-orange-500/10 border border-orange-500/20 text-sm text-orange-200">
+                      <p className="font-semibold mb-1">Payment Required</p>
+                      <p>Your subscription has been created but not yet activated. Complete the payment to activate your subscription and start enjoying all features.</p>
+                    </div>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleRetryPayment}
+                      disabled={isSubscribing}
+                      className="w-full bg-primary hover:bg-primary/90"
+                    >
+                      {isSubscribing ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing Payment...</>
+                      ) : (
+                        'Complete Payment'
+                      )}
+                    </Button>
                   </div>
                 )}
 
