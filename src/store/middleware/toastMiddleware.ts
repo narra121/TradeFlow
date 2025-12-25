@@ -52,6 +52,8 @@ const endpointSuccessMessages: Record<string, string> = {
   'updateNotifications': 'Notifications updated successfully',
   'createSubscription': 'Subscription created successfully',
   'cancelSubscription': 'Subscription cancelled successfully',
+  'pauseSubscription': 'Subscription paused successfully',
+  'resumeSubscription': 'Subscription resumed successfully',
   'addOption': 'Option saved successfully',
   'updateSavedOptions': 'Options updated successfully',
   'signup': 'Account created! Please check your email to verify.',

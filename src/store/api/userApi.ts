@@ -9,6 +9,7 @@ import type {
   SavedOptions,
   AddOptionPayload
 } from '@/lib/api';
+import type { PlanResponse } from '@/lib/api/razorpay';
 
 export const userApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -85,12 +86,38 @@ export const userApi = api.injectEndpoints({
       invalidatesTags: ['Subscription'],
     }),
     
-    cancelSubscription: builder.mutation<void, void>({
-      query: () => ({
+    cancelSubscription: builder.mutation<void, { cancelAtCycleEnd?: boolean }>({
+      query: (payload = {}) => ({
         url: '/subscriptions',
         method: 'DELETE',
+        body: payload,
       }),
       invalidatesTags: ['Subscription'],
+    }),
+    
+    pauseSubscription: builder.mutation<void, { pauseAt?: string | number }>({
+      query: (payload) => ({
+        url: '/subscriptions',
+        method: 'PUT',
+        body: { action: 'pause', ...payload },
+      }),
+      invalidatesTags: ['Subscription'],
+    }),
+    
+    resumeSubscription: builder.mutation<void, { resumeAt?: string | number }>({
+      query: (payload) => ({
+        url: '/subscriptions',
+        method: 'PUT',
+        body: { action: 'resume', ...payload },
+      }),
+      invalidatesTags: ['Subscription'],
+    }),
+    
+    getPlans: builder.query<PlanResponse[], void>({
+      query: () => '/subscriptions/plans',
+      transformResponse: (response: any) => {
+        return response.plans || [];
+      },
     }),
   }),
 });
@@ -103,4 +130,7 @@ export const {
   useGetSubscriptionQuery,
   useCreateSubscriptionMutation,
   useCancelSubscriptionMutation,
+  usePauseSubscriptionMutation,
+  useResumeSubscriptionMutation,
+  useGetPlansQuery,
 } = userApi;

@@ -31,10 +31,10 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useCreateSubscriptionMutation, useLogoutMutation } from '@/store/api';
+import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useCreateSubscriptionMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation } from '@/store/api';
 import { useRazorpay } from '@/hooks/useRazorpay';
-import { razorpayApi, SubscriptionDetails, PlanResponse, authApi } from '@/lib/api';
-import { toast } from '@/hooks/use-toast';
+import { SubscriptionDetails, PlanResponse, authApi } from '@/lib/api';
+import { toast } from 'sonner';
 import { ProfileCardSkeleton, SubscriptionCardSkeleton, SubscriptionPlansCardSkeleton } from '@/components/ui/loading-skeleton';
 import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
 
@@ -42,10 +42,14 @@ export function ProfileView() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useGetProfileQuery();
-  const { data: subscription, isLoading: subscriptionLoading, isFetching: subscriptionFetching } = useGetSubscriptionQuery();
+  const { data: subscription, isLoading: subscriptionLoading, isFetching: subscriptionFetching, refetch: refetchSubscription } = useGetSubscriptionQuery();
+  const { data: availablePlans = [], isLoading: plansLoading } = useGetPlansQuery();
   const loading = profileLoading || profileFetching || subscriptionLoading || subscriptionFetching;
   const [updateProfile] = useUpdateProfileMutation();
   const [createSubscription] = useCreateSubscriptionMutation();
+  const [cancelSubscription] = useCancelSubscriptionMutation();
+  const [pauseSubscription] = usePauseSubscriptionMutation();
+  const [resumeSubscription] = useResumeSubscriptionMutation();
   const [logout] = useLogoutMutation();
   const { initiateSubscription, loading: paymentLoading, error: paymentError } = useRazorpay();
   
@@ -53,44 +57,15 @@ export function ProfileView() {
     try {
       await logout().unwrap();
       
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
+      toast.success("You have been successfully logged out.");
       
       // Navigate to login
       navigate('/login', { replace: true });
     } catch (error) {
-      toast({
-        title: "Logout failed",
-        description: "There was an error logging out.",
-        variant: "destructive",
-      });
+      toast.error("There was an error logging out.");
     }
   };
-  
-  const [availablePlans, setAvailablePlans] = useState<PlanResponse[]>([]);
-  const [loadingPlans, setLoadingPlans] = useState(false);
-  const [plansLoaded, setPlansLoaded] = useState(false);
-  
-  useEffect(() => {
-    if (!plansLoaded) {
-      loadAvailablePlans();
-    }
-  }, [plansLoaded]);
-  
-  const loadAvailablePlans = async () => {
-    try {
-      setLoadingPlans(true);
-      const response = await razorpayApi.getPlans();
-      setAvailablePlans(response.plans || []);
-      setPlansLoaded(true);
-    } catch (error) {
-      console.error('Failed to load plans:', error);
-    } finally {
-      setLoadingPlans(false);
-    }
-  };
+
   
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -99,7 +74,6 @@ export function ProfileView() {
   const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(999);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
-  const [loadingSubscription, setLoadingSubscription] = useState(false);
   const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
   const [managingSubscription, setManagingSubscription] = useState(false);
   
@@ -174,26 +148,13 @@ export function ProfileView() {
     }
   };
 
-  // Fetch current subscription on mount
+  // Sync RTK Query subscription data to local state
   useEffect(() => {
-    const fetchSubscriptionDetails = async () => {
-      if (subscriptionLoaded) return;
-      
-      try {
-        setLoadingSubscription(true);
-        const details = await razorpayApi.getSubscription();
-        setSubscriptionDetails(details);
-        setSubscriptionLoaded(true);
-      } catch (error) {
-        console.log('No active subscription found');
-        setSubscriptionLoaded(true);
-      } finally {
-        setLoadingSubscription(false);
-      }
-    };
-
-    fetchSubscriptionDetails();
-  }, [subscriptionLoaded]);
+    if (subscription && !subscriptionLoaded) {
+      setSubscriptionDetails(subscription as unknown as SubscriptionDetails);
+      setSubscriptionLoaded(true);
+    }
+  }, [subscription, subscriptionLoaded]);
 
   const handleSubscribe = async (amount: number, cycle: 'monthly' | 'annual') => {
     setIsSubscribing(true);
@@ -214,32 +175,27 @@ export function ProfileView() {
         onSuccess: async (subscriptionId) => {
           console.log('Subscription activated:', subscriptionId);
           
-          toast({
-            title: "Subscription Active!",
-            description: "Your payment was successful and your subscription is now active.",
-            variant: "default", // Success style
-          });
+          toast.success("Your payment was successful and your subscription is now active.");
           
           // Refresh subscription details immediately
           try {
-            const details = await razorpayApi.getSubscription();
-            setSubscriptionDetails(details);
             // Update Redux store
             await createSubscription({ 
               amount, 
               billingCycle: cycle 
             }).unwrap();
+            // Refetch to get latest data
+            const { data: updatedSubscription } = await refetchSubscription();
+            if (updatedSubscription) {
+              setSubscriptionDetails(updatedSubscription as unknown as SubscriptionDetails);
+            }
           } catch (e) {
             console.error('Failed to refresh details after success', e);
           }
         },
         onFailure: (error) => {
           console.error('Subscription failed:', error);
-          toast({
-            title: "Subscription Failed",
-            description: error.message || "Failed to initiate subscription",
-            variant: "destructive",
-          });
+          toast.error(error.message || "Failed to initiate subscription");
         },
       });
     } finally {
@@ -254,9 +210,11 @@ export function ProfileView() {
 
     setManagingSubscription(true);
     try {
-      await razorpayApi.cancelSubscription(!immediate);
-      const details = await razorpayApi.getSubscription();
-      setSubscriptionDetails(details);
+      await cancelSubscription({ cancelAtCycleEnd: !immediate }).unwrap();
+      const { data: details } = await refetchSubscription();
+      if (details) {
+        setSubscriptionDetails(details as unknown as SubscriptionDetails);
+      }
     } catch (error) {
       console.error('Failed to cancel subscription:', error);
     } finally {
@@ -267,9 +225,11 @@ export function ProfileView() {
   const handlePauseSubscription = async () => {
     setManagingSubscription(true);
     try {
-      await razorpayApi.pauseSubscription('now');
-      const details = await razorpayApi.getSubscription();
-      setSubscriptionDetails(details);
+      await pauseSubscription({ pauseAt: 'now' }).unwrap();
+      const { data: details } = await refetchSubscription();
+      if (details) {
+        setSubscriptionDetails(details as unknown as SubscriptionDetails);
+      }
     } catch (error) {
       console.error('Failed to pause subscription:', error);
     } finally {
@@ -280,9 +240,11 @@ export function ProfileView() {
   const handleResumeSubscription = async () => {
     setManagingSubscription(true);
     try {
-      await razorpayApi.resumeSubscription('now');
-      const details = await razorpayApi.getSubscription();
-      setSubscriptionDetails(details);
+      await resumeSubscription({ resumeAt: 'now' }).unwrap();
+      const { data: details } = await refetchSubscription();
+      if (details) {
+        setSubscriptionDetails(details as unknown as SubscriptionDetails);
+      }
     } catch (error) {
       console.error('Failed to resume subscription:', error);
     } finally {
@@ -446,26 +408,16 @@ export function ProfileView() {
                 variant="outline" 
                 size="sm" 
                 className="h-8 text-xs"
-                onClick={async () => {
-                  setLoadingSubscription(true);
-                  try {
-                    const details = await razorpayApi.getSubscription();
-                    setSubscriptionDetails(details);
-                    toast({ title: "Status Refreshed", description: "Subscription details updated." });
-                  } catch (e) {
-                    toast({ title: "Refresh Failed", variant: "destructive" });
-                  } finally {
-                    setLoadingSubscription(false);
-                  }
-                }}
+                onClick={() => refetchSubscription()}
+                disabled={subscriptionFetching}
               >
-                Refresh Status
+                {subscriptionFetching ? 'Refreshing...' : 'Refresh Status'}
               </Button>
             </CardTitle>
             <CardDescription>Your current plan</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {loadingSubscription && !subscriptionLoaded ? (
+            {subscriptionFetching && !subscriptionLoaded ? (
               <SubscriptionCardSkeleton />
             ) : subscriptionDetails ? (
               <>
@@ -569,7 +521,7 @@ export function ProfileView() {
       </div>
 
       {/* Subscription Plans */}
-      {(loading && !profile) || (loadingPlans && !plansLoaded) ? (
+      {(loading && !profile) || plansLoading ? (
         <SubscriptionPlansCardSkeleton />
       ) : (
       <Card className="bg-card/50 backdrop-blur border-border/50">
