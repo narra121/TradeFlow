@@ -63,6 +63,7 @@ export interface CreateSubscriptionResponse {
   planId: string;
   status: string;
   shortUrl: string;
+  paymentLink: string; // Added per refactor plan
   authAttempts: number;
 }
 

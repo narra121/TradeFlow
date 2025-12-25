@@ -206,20 +206,25 @@ export function ProfileView() {
         name: plan.name,
         description: plan.description || `${cycle === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ₹${amount}`,
         onSuccess: async (subscriptionId) => {
-          console.log('Subscription created:', subscriptionId);
+          console.log('Subscription initiated:', subscriptionId);
           
-          // Refresh subscription details
-          const details = await razorpayApi.getSubscription();
-          setSubscriptionDetails(details);
+          // Show payment pending dialog
+          toast({
+            title: "Payment Page Opened",
+            description: "Please complete the payment in the new tab. Your subscription will activate automatically once confirmed.",
+            duration: 10000,
+          });
           
-          // Update Redux store
-          await createSubscription({ 
-            amount, 
-            billingCycle: cycle 
-          }).unwrap();
+          // We don't immediately refresh details here because the payment is async
+          // The user needs to complete it on the hosted page first
         },
         onFailure: (error) => {
           console.error('Subscription failed:', error);
+          toast({
+            title: "Subscription Failed",
+            description: error.message || "Failed to initiate subscription",
+            variant: "destructive",
+          });
         },
       });
     } finally {
@@ -417,9 +422,30 @@ export function ProfileView() {
         ) : (
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-primary" />
-              Subscription
+            <CardTitle className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-primary" />
+                Subscription
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-xs"
+                onClick={async () => {
+                  setLoadingSubscription(true);
+                  try {
+                    const details = await razorpayApi.getSubscription();
+                    setSubscriptionDetails(details);
+                    toast({ title: "Status Refreshed", description: "Subscription details updated." });
+                  } catch (e) {
+                    toast({ title: "Refresh Failed", variant: "destructive" });
+                  } finally {
+                    setLoadingSubscription(false);
+                  }
+                }}
+              >
+                Refresh Status
+              </Button>
             </CardTitle>
             <CardDescription>Your current plan</CardDescription>
           </CardHeader>
@@ -438,17 +464,22 @@ export function ProfileView() {
                       className={
                         subscriptionDetails.status === 'active' 
                           ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          : subscriptionDetails.status === 'cancellation_requested'
+                          ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                           : subscriptionDetails.status === 'paused'
                           ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                           : 'bg-red-500/20 text-red-400 border-red-500/30'
                       }
                     >
-                      {subscriptionDetails.status}
+                      {subscriptionDetails.status === 'cancellation_requested' ? 'Cancelling' : subscriptionDetails.status}
                     </Badge>
                   </div>
                   {subscriptionDetails.currentEnd && (
                     <p className="text-sm text-muted-foreground">
-                      Next billing: {new Date(subscriptionDetails.currentEnd).toLocaleDateString()}
+                      {subscriptionDetails.status === 'cancellation_requested' 
+                        ? `Access until: ${new Date(subscriptionDetails.currentEnd).toLocaleDateString()}`
+                        : `Next billing: ${new Date(subscriptionDetails.currentEnd).toLocaleDateString()}`
+                      }
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
@@ -482,6 +513,12 @@ export function ProfileView() {
                     >
                       Cancel at End of Cycle
                     </Button>
+                  </div>
+                )}
+
+                {subscriptionDetails.status === 'cancellation_requested' && (
+                  <div className="p-3 rounded-md bg-orange-500/10 border border-orange-500/20 text-sm text-orange-200">
+                    Your subscription is scheduled to cancel at the end of the current billing period. You will not be charged again.
                   </div>
                 )}
 
