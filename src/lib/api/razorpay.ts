@@ -85,6 +85,7 @@ export interface SubscriptionDetails {
   currentEnd?: string;
   chargeAt?: string;
   endedAt?: string;
+  cancelAt?: string;
   createdAt: string;
   updatedAt: string;
   razorpayDetails?: {

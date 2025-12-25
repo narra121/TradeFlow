@@ -499,9 +499,14 @@ export function ProfileView() {
                   {subscriptionDetails.currentEnd && (
                     <p className="text-sm text-muted-foreground">
                       {subscriptionDetails.status === 'cancellation_requested' 
-                        ? `Access until: ${new Date(subscriptionDetails.currentEnd).toLocaleDateString()}`
+                        ? `Cancels on: ${new Date(subscriptionDetails.currentEnd).toLocaleDateString()}`
                         : `Next billing: ${new Date(subscriptionDetails.currentEnd).toLocaleDateString()}`
                       }
+                    </p>
+                  )}
+                  {subscriptionDetails.status === 'cancellation_requested' && (
+                    <p className="text-xs text-orange-400 mt-1">
+                      Your subscription will remain active until the end of your current billing period.
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
