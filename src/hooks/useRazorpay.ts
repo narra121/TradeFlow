@@ -5,6 +5,7 @@ import {
   VerifyPaymentPayload,
 } from '@/lib/api';
 import type { CreateSubscriptionPayload } from '@/lib/api/razorpay';
+import { toast } from 'sonner';
 
 declare global {
   interface Window {
@@ -144,7 +145,12 @@ export const useRazorpay = () => {
           );
 
           if (!popup) {
-            throw new Error('Popup blocked. Please allow popups for this site.');
+            const errorMsg = 'Popup blocked! Please allow popups for this site to complete payment.';
+            toast.error(errorMsg, {
+              duration: 5000,
+              description: 'Click the popup blocker icon in your browser address bar and allow popups.'
+            });
+            throw new Error(errorMsg);
           }
 
           // Poll for subscription status
