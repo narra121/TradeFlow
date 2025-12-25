@@ -10,7 +10,7 @@ import { SettingsView } from '@/components/views/SettingsView';
 import { AccountsView } from '@/components/views/AccountsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
-import { useCreateTradeMutation, useBulkImportTradesMutation, useGetSavedOptionsQuery } from '@/store/api';
+import { useCreateTradeMutation, useBulkImportTradesMutation, useGetSavedOptionsQuery, useGetSubscriptionQuery } from '@/store/api';
 import { useTradesSync } from '@/hooks/useTradesSync';
 import { cn } from '@/lib/utils';
 import type { Trade } from '@/types/trade';
@@ -23,6 +23,13 @@ export function AppPage() {
   
   // Fetch saved options on initial load (will be cached)
   useGetSavedOptionsQuery(undefined, {
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  // Fetch subscription status on initial load (will be cached)
+  useGetSubscriptionQuery(undefined, {
     refetchOnMountOrArgChange: false,
     refetchOnFocus: false,
     refetchOnReconnect: false,

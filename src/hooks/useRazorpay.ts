@@ -131,12 +131,54 @@ export const useRazorpay = () => {
         console.log('Subscription created:', subscriptionResponse);
 
         if (subscriptionResponse.paymentLink) {
-          // Open the payment link in a new tab
-          window.open(subscriptionResponse.paymentLink, '_blank');
+          // Open the payment link in a popup window
+          const width = 500;
+          const height = 700;
+          const left = window.screen.width / 2 - width / 2;
+          const top = window.screen.height / 2 - height / 2;
           
-          // Notify success immediately as we hand off to Razorpay
-          // The actual activation will be handled by webhook
-          options.onSuccess?.(subscriptionResponse.subscriptionId);
+          const popup = window.open(
+            subscriptionResponse.paymentLink,
+            'RazorpaySubscription',
+            `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
+
+          if (!popup) {
+            throw new Error('Popup blocked. Please allow popups for this site.');
+          }
+
+          // Poll for subscription status
+          await new Promise<void>((resolve, reject) => {
+            const pollInterval = setInterval(async () => {
+              // Check if popup was closed by user
+              if (popup.closed) {
+                clearInterval(pollInterval);
+                // We resolve here because the user might have completed it and closed it manually
+                // The UI will just stop loading. The user can refresh manually if needed.
+                resolve();
+                return;
+              }
+
+              try {
+                // Check status from backend
+                const details = await razorpayApi.getSubscription();
+                
+                // Check if the subscription ID matches and status is active/authenticated
+                if (
+                  details.subscriptionId === subscriptionResponse.subscriptionId && 
+                  (details.status === 'active' || details.status === 'authenticated')
+                ) {
+                  clearInterval(pollInterval);
+                  popup.close();
+                  options.onSuccess?.(subscriptionResponse.subscriptionId);
+                  resolve();
+                }
+              } catch (e) {
+                // Ignore errors during polling (e.g. if subscription record isn't fully propagated yet)
+                console.log('Polling status...', e);
+              }
+            }, 2000); // Poll every 2 seconds
+          });
         } else {
           throw new Error('No payment link received from server');
         }

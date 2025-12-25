@@ -145,8 +145,14 @@ export function ProfileView() {
           nextBilling: subscription.nextBillingDate
         }
       }));
+      
+      // Sync RTK Query data to local state if not already loaded
+      if (!subscriptionDetails) {
+        setSubscriptionDetails(subscription as unknown as SubscriptionDetails);
+        setSubscriptionLoaded(true);
+      }
     }
-  }, [subscription]);
+  }, [subscription, subscriptionDetails]);
 
   const supportTiers = [
     { amount: 99, label: 'Basic', description: 'Minimum support' },
@@ -206,17 +212,26 @@ export function ProfileView() {
         name: plan.name,
         description: plan.description || `${cycle === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ₹${amount}`,
         onSuccess: async (subscriptionId) => {
-          console.log('Subscription initiated:', subscriptionId);
+          console.log('Subscription activated:', subscriptionId);
           
-          // Show payment pending dialog
           toast({
-            title: "Payment Page Opened",
-            description: "Please complete the payment in the new tab. Your subscription will activate automatically once confirmed.",
-            duration: 10000,
+            title: "Subscription Active!",
+            description: "Your payment was successful and your subscription is now active.",
+            variant: "default", // Success style
           });
           
-          // We don't immediately refresh details here because the payment is async
-          // The user needs to complete it on the hosted page first
+          // Refresh subscription details immediately
+          try {
+            const details = await razorpayApi.getSubscription();
+            setSubscriptionDetails(details);
+            // Update Redux store
+            await createSubscription({ 
+              amount, 
+              billingCycle: cycle 
+            }).unwrap();
+          } catch (e) {
+            console.error('Failed to refresh details after success', e);
+          }
         },
         onFailure: (error) => {
           console.error('Subscription failed:', error);
@@ -691,7 +706,7 @@ export function ProfileView() {
               {isSubscribing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
+                  Processing Payment...
                 </>
               ) : (
                 <>
@@ -701,6 +716,12 @@ export function ProfileView() {
               )}
             </Button>
           </div>
+          
+          {isSubscribing && (
+            <p className="text-center text-sm text-muted-foreground mt-2 animate-pulse">
+              Please complete the payment in the popup window...
+            </p>
+          )}
 
           {/* Features included */}
           <div className="mt-8 pt-6 border-t border-border/50">
