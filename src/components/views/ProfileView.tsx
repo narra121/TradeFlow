@@ -424,13 +424,15 @@ export function ProfileView() {
                 <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-lg font-semibold text-foreground">
-                      Active Subscription
+                      Subscription Status
                     </span>
                     <Badge 
                       variant="default" 
                       className={
                         subscriptionDetails.status === 'active' 
                           ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          : subscriptionDetails.status === 'created'
+                          ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                           : subscriptionDetails.status === 'cancellation_requested'
                           ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                           : subscriptionDetails.status === 'paused'
@@ -438,7 +440,11 @@ export function ProfileView() {
                           : 'bg-red-500/20 text-red-400 border-red-500/30'
                       }
                     >
-                      {subscriptionDetails.status === 'cancellation_requested' ? 'Cancelling' : subscriptionDetails.status}
+                      {subscriptionDetails.status === 'active' ? 'Active' 
+                        : subscriptionDetails.status === 'created' ? 'Pending Payment'
+                        : subscriptionDetails.status === 'cancellation_requested' ? 'Cancelling' 
+                        : subscriptionDetails.status === 'paused' ? 'Paused'
+                        : subscriptionDetails.status}
                     </Badge>
                   </div>
                   {subscriptionDetails.currentEnd && (
@@ -483,6 +489,13 @@ export function ProfileView() {
                   </div>
                 )}
 
+                {subscriptionDetails.status === 'created' && (
+                  <div className="p-3 rounded-md bg-orange-500/10 border border-orange-500/20 text-sm text-orange-200">
+                    <p className="font-semibold mb-1">Payment Required</p>
+                    <p>Your subscription has been created but not yet activated. Complete the payment to activate your subscription and start enjoying all features.</p>
+                  </div>
+                )}
+
                 {subscriptionDetails.status === 'cancellation_requested' && (
                   <div className="p-3 rounded-md bg-orange-500/10 border border-orange-500/20 text-sm text-orange-200">
                     Your subscription is scheduled to cancel at the end of the current billing period. You will not be charged again.
@@ -505,9 +518,11 @@ export function ProfileView() {
                   </Button>
                 )}
 
-                <div className="text-sm text-muted-foreground">
-                  <p>Thank you for supporting TradeFlow! Payments are automatically processed on your billing date.</p>
-                </div>
+                {subscriptionDetails.status === 'active' && (
+                  <div className="text-sm text-muted-foreground">
+                    <p>Thank you for supporting TradeFlow! Payments are automatically processed on your billing date.</p>
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-center p-4 text-muted-foreground">
