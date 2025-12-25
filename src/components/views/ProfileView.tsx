@@ -169,6 +169,14 @@ export function ProfileView() {
         return;
       }
 
+      // Check if user already has a subscription
+      if (subscriptionDetails && ['active', 'authenticated', 'created', 'cancellation_requested'].includes(subscriptionDetails.status)) {
+        toast.error('You already have an active subscription', {
+          description: 'Please manage your existing subscription instead of creating a new one.'
+        });
+        return;
+      }
+
       await initiateSubscription({
         planId: plan.planId,
         name: plan.name,
