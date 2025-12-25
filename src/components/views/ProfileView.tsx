@@ -604,11 +604,13 @@ export function ProfileView() {
         )}
       </div>
 
-      {/* Subscription Plans */}
-      {(loading && !profile) || plansLoading ? (
-        <SubscriptionPlansCardSkeleton />
-      ) : (
-      <Card className="bg-card/50 backdrop-blur border-border/50">
+      {/* Subscription Plans - Only show if user doesn't have an active/valid subscription */}
+      {!subscriptionDetails || 
+       (!['active', 'authenticated', 'paused', 'cancellation_requested'].includes(subscriptionDetails.status)) ? (
+        (loading && !profile) || plansLoading ? (
+          <SubscriptionPlansCardSkeleton />
+        ) : (
+        <Card className="bg-card/50 backdrop-blur border-border/50">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
             <Heart className="w-6 h-6 text-primary-foreground" />
@@ -782,7 +784,8 @@ export function ProfileView() {
           </div>
         </CardContent>
       </Card>
-      )}
+      )
+      ) : null}
     </div>
   );
 }
