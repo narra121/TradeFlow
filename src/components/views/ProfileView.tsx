@@ -31,7 +31,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useCreateSubscriptionMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation } from '@/store/api';
+import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useCreateSubscriptionMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation, useUndoCancellationMutation } from '@/store/api';
 import { useRazorpay } from '@/hooks/useRazorpay';
 import { SubscriptionDetails, PlanResponse, authApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -50,6 +50,7 @@ export function ProfileView() {
   const [cancelSubscription] = useCancelSubscriptionMutation();
   const [pauseSubscription] = usePauseSubscriptionMutation();
   const [resumeSubscription] = useResumeSubscriptionMutation();
+  const [undoCancellation] = useUndoCancellationMutation();
   const [logout] = useLogoutMutation();
   const { initiateSubscription, loading: paymentLoading, error: paymentError } = useRazorpay();
   
@@ -247,6 +248,21 @@ export function ProfileView() {
       }
     } catch (error) {
       console.error('Failed to resume subscription:', error);
+    } finally {
+      setManagingSubscription(false);
+    }
+  };
+
+  const handleUndoCancellation = async () => {
+    setManagingSubscription(true);
+    try {
+      await undoCancellation().unwrap();
+      const { data: details } = await refetchSubscription();
+      if (details) {
+        setSubscriptionDetails(details as unknown as SubscriptionDetails);
+      }
+    } catch (error) {
+      console.error('Failed to undo cancellation:', error);
     } finally {
       setManagingSubscription(false);
     }
@@ -573,11 +589,11 @@ export function ProfileView() {
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={handleRetryPayment}
-                      disabled={isSubscribing}
+                      onClick={handleUndoCancellation}
+                      disabled={managingSubscription}
                       className="w-full"
                     >
-                      {isSubscribing ? (
+                      {managingSubscription ? (
                         <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
                       ) : (
                         'Keep My Subscription'

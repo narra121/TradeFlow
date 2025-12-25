@@ -54,6 +54,7 @@ const endpointSuccessMessages: Record<string, string> = {
   'cancelSubscription': 'Subscription cancelled successfully',
   'pauseSubscription': 'Subscription paused successfully',
   'resumeSubscription': 'Subscription resumed successfully',
+  'undoCancellation': 'Cancellation undone - your subscription will continue',
   'addOption': 'Option saved successfully',
   'updateSavedOptions': 'Options updated successfully',
   'signup': 'Account created! Please check your email to verify.',

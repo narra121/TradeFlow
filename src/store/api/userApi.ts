@@ -113,6 +113,15 @@ export const userApi = api.injectEndpoints({
       invalidatesTags: ['Subscription'],
     }),
     
+    undoCancellation: builder.mutation<void, void>({
+      query: () => ({
+        url: '/subscriptions',
+        method: 'PATCH',
+        body: { action: 'undo_cancellation' },
+      }),
+      invalidatesTags: ['Subscription'],
+    }),
+    
     getPlans: builder.query<PlanResponse[], void>({
       query: () => '/subscriptions/plans',
       transformResponse: (response: any) => {
@@ -132,5 +141,6 @@ export const {
   useCancelSubscriptionMutation,
   usePauseSubscriptionMutation,
   useResumeSubscriptionMutation,
+  useUndoCancellationMutation,
   useGetPlansQuery,
 } = userApi;
