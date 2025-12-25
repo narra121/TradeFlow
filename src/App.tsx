@@ -12,6 +12,7 @@ import { SignupPage } from "./pages/SignupPage";
 import { AppPage } from "./pages/AppPage";
 import NotFound from "./pages/NotFound";
 import { tokenRefreshScheduler } from "./lib/tokenRefreshScheduler";
+import { RequireAuth } from "./components/auth/RequireAuth";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -81,7 +82,11 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="/app/*" element={<AppPage />} />
+      <Route path="/app/*" element={
+        <RequireAuth>
+          <AppPage />
+        </RequireAuth>
+      } />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
