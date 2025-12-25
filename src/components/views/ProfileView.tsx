@@ -566,8 +566,23 @@ export function ProfileView() {
                 )}
 
                 {subscriptionDetails.status === 'cancellation_requested' && (
-                  <div className="p-3 rounded-md bg-orange-500/10 border border-orange-500/20 text-sm text-orange-200">
-                    Your subscription is scheduled to cancel at the end of the current billing period. You will not be charged again.
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-md bg-orange-500/10 border border-orange-500/20 text-sm text-orange-200">
+                      Your subscription is scheduled to cancel at the end of the current billing period. You will not be charged again.
+                    </div>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleRetryPayment}
+                      disabled={isSubscribing}
+                      className="w-full"
+                    >
+                      {isSubscribing ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                      ) : (
+                        'Keep My Subscription'
+                      )}
+                    </Button>
                   </div>
                 )}
 
