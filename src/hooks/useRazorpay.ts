@@ -153,12 +153,29 @@ export const useRazorpay = () => {
             throw new Error(errorMsg);
           }
 
+          // Show info banner about automatic window closure
+          toast.info('Payment window opened', {
+            duration: 10000,
+            description: 'The payment window will close automatically after successful payment. Please complete the payment within 5 minutes.'
+          });
+
+          // Set timeout to close popup after 5 minutes
+          const popupTimeout = setTimeout(() => {
+            if (popup && !popup.closed) {
+              popup.close();
+              toast.warning('Payment window closed', {
+                description: 'The payment window was automatically closed after 5 minutes. Please try again if you didn\'t complete the payment.'
+              });
+            }
+          }, 5 * 60 * 1000); // 5 minutes
+
           // Poll for subscription status
           await new Promise<void>((resolve, reject) => {
             const pollInterval = setInterval(async () => {
               // Check if popup was closed by user
               if (popup.closed) {
                 clearInterval(pollInterval);
+                clearTimeout(popupTimeout);
                 // We resolve here because the user might have completed it and closed it manually
                 // The UI will just stop loading. The user can refresh manually if needed.
                 resolve();
@@ -175,6 +192,7 @@ export const useRazorpay = () => {
                   (details.status === 'active' || details.status === 'authenticated')
                 ) {
                   clearInterval(pollInterval);
+                  clearTimeout(popupTimeout);
                   popup.close();
                   options.onSuccess?.(subscriptionResponse.subscriptionId);
                   resolve();
