@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:local": "vite --mode localdev",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-static-routes.js",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
