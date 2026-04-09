@@ -43,24 +43,27 @@ async function setupAuth(page: Page) {
 
 /**
  * Mock API responses so the app can render without a real backend.
- * The app uses RTK Query and calls various endpoints on load.
+ * The app uses RTK Query with base URL like:
+ *   https://<id>.execute-api.us-east-1.amazonaws.com/tradeflow-dev/v1
+ * Routes are matched with **/v1/** to cover both dev and prod API URLs.
  */
 async function mockAPIRoutes(page: Page) {
   // Mock the trades endpoint
-  await page.route('**/api/**/trades**', (route) => {
+  await page.route('**/v1/trades**', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ data: [], error: null }),
+      body: JSON.stringify({ success: true, data: [], message: 'OK' }),
     });
   });
 
   // Mock accounts endpoint
-  await page.route('**/api/**/accounts**', (route) => {
+  await page.route('**/v1/accounts**', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
+        success: true,
         data: {
           accounts: [
             {
@@ -72,77 +75,92 @@ async function mockAPIRoutes(page: Page) {
             },
           ],
         },
-        error: null,
+        message: 'OK',
       }),
     });
   });
 
   // Mock saved options endpoint
-  await page.route('**/api/**/saved-options**', (route) => {
+  await page.route('**/v1/saved-options**', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ data: {}, error: null }),
+      body: JSON.stringify({ success: true, data: {}, message: 'OK' }),
     });
   });
 
   // Mock subscription endpoint
-  await page.route('**/api/**/subscription**', (route) => {
+  await page.route('**/v1/subscription**', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
+        success: true,
         data: { plan: 'free', status: 'active' },
-        error: null,
+        message: 'OK',
       }),
     });
   });
 
   // Mock goals endpoint
-  await page.route('**/api/**/goals**', (route) => {
+  await page.route('**/v1/goals**', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ data: [], error: null }),
+      body: JSON.stringify({ success: true, data: [], message: 'OK' }),
     });
   });
 
   // Mock rules endpoint
-  await page.route('**/api/**/rules**', (route) => {
+  await page.route('**/v1/rules**', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ data: [], error: null }),
+      body: JSON.stringify({ success: true, data: [], message: 'OK' }),
     });
   });
 
   // Mock analytics endpoint
-  await page.route('**/api/**/analytics**', (route) => {
+  await page.route('**/v1/analytics**', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ data: {}, error: null }),
+      body: JSON.stringify({ success: true, data: {}, message: 'OK' }),
     });
   });
 
-  // Mock token refresh endpoint
-  await page.route('**/auth/refresh', (route) => {
+  // Mock user profile endpoint
+  await page.route('**/v1/user**', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        data: { IdToken: createFakeJWT() },
-        error: null,
+        success: true,
+        data: { id: 'test-user-id-123', name: 'Test User', email: 'test@example.com' },
+        message: 'OK',
       }),
     });
   });
 
-  // Catch-all for any other API routes
-  await page.route('**/api/**', (route) => {
+  // Mock token refresh endpoint
+  await page.route('**/v1/auth/refresh', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ data: null, error: null }),
+      body: JSON.stringify({
+        success: true,
+        data: { IdToken: createFakeJWT() },
+        message: 'OK',
+      }),
+    });
+  });
+
+  // Catch-all for any other API v1 routes
+  await page.route('**/v1/**', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, data: null, message: 'OK' }),
     });
   });
 }
