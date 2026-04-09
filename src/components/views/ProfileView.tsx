@@ -33,7 +33,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useCreateSubscriptionMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation, useUndoCancellationMutation } from '@/store/api';
 import { useRazorpay } from '@/hooks/useRazorpay';
-import { SubscriptionDetails, PlanResponse, authApi } from '@/lib/api';
+import { SubscriptionDetails, PlanResponse } from '@/lib/api';
 import { toast } from 'sonner';
 import { ProfileCardSkeleton, SubscriptionCardSkeleton, SubscriptionPlansCardSkeleton } from '@/components/ui/loading-skeleton';
 import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
@@ -472,21 +472,19 @@ export function ProfileView() {
         ) : (
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-primary" />
-                Subscription
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 text-xs"
-                onClick={() => refetchSubscription()}
-                disabled={subscriptionFetching}
-              >
-                {subscriptionFetching ? 'Refreshing...' : 'Refresh Status'}
-              </Button>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" />
+              Subscription
             </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs mt-2"
+              onClick={() => refetchSubscription()}
+              disabled={subscriptionFetching}
+            >
+              {subscriptionFetching ? 'Refreshing...' : 'Refresh Status'}
+            </Button>
             <CardDescription>Your current plan</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -495,7 +493,7 @@ export function ProfileView() {
             ) : subscriptionDetails ? (
               <>
                 <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span className="text-lg font-semibold text-foreground">
                       Subscription Status
                     </span>

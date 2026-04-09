@@ -1,73 +1,102 @@
-# Welcome to your Lovable project
+# TradeFlow Frontend
 
-## Project info
+React + TypeScript trading journal frontend. Deployed to GitHub Pages.
 
-**URL**: https://lovable.dev/projects/47e9ccb6-e2e3-40bd-bbf0-c65c23e2078d
+## Tech Stack
 
-## How can I edit this code?
+React 18, TypeScript, Vite, Redux Toolkit (RTK Query), shadcn/ui, Tailwind CSS, Recharts, React Router, Axios, Zod.
 
-There are several ways of editing your application.
+## Local Development
 
-**Use Lovable**
+### Against remote dev API (default)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/47e9ccb6-e2e3-40bd-bbf0-c65c23e2078d) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```powershell
+bun install
+cp .env.example .env.development   # fill in values from deployed backend
+bun run dev                         # http://localhost:8080 -> remote AWS dev API
 ```
 
-**Edit a file directly in GitHub**
+### Against local backend (full stack)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Requires Docker Desktop running + backend SAM local (see JournalAWSSetup README).
 
-**Use GitHub Codespaces**
+**Terminal 1 - Backend:**
+```powershell
+cd ..\JournalAWSSetup
+sam build --parallel --cached
+sam local start-api --port 3001 --env-vars env-local.json
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+**Terminal 2 - Frontend:**
+```powershell
+bun run dev:local                   # http://localhost:8080 -> proxied to localhost:3001
+```
 
-## What technologies are used for this project?
+`dev:local` uses `.env.localdev` which sets `VITE_API_URL=/v1`. Vite proxies `/v1/*` requests to `http://127.0.0.1:3001` to avoid CORS issues.
 
-This project is built with:
+### Environment Variables
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Copy `.env.example` and fill in values from the backend stack outputs:
 
-## How can I deploy this project?
+```bash
+# Get values from deployed backend
+aws cloudformation describe-stacks --stack-name tradeflow-dev \
+  --query "Stacks[0].Outputs" --output table
+```
 
-Simply open [Lovable](https://lovable.dev/projects/47e9ccb6-e2e3-40bd-bbf0-c65c23e2078d) and click on Share -> Publish.
+| Variable | Source |
+|----------|--------|
+| `VITE_API_URL` | Backend stack output `ApiBaseUrl` |
+| `VITE_AWS_REGION` | AWS region (e.g. `us-east-1`) |
+| `VITE_COGNITO_USER_POOL_ID` | Backend stack output `UserPoolId` |
+| `VITE_COGNITO_CLIENT_ID` | Backend stack output `UserPoolClientId` |
+| `VITE_RAZORPAY_KEY_ID` | [Razorpay Dashboard](https://dashboard.razorpay.com/app/keys) - Test or Live key |
 
-## Can I connect a custom domain to my Lovable project?
+## Build
 
-Yes, you can!
+```bash
+bun run build     # production build -> dist/
+bun run preview   # preview production build locally
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Deploy to GitHub Pages
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Deployment is automated via GitHub Actions on push to `main`.
+
+### Setup (one-time)
+
+1. **Enable GitHub Pages**: Repository Settings -> Pages -> Source: `gh-pages` branch
+2. **Add secrets** in Repository Settings -> Secrets and variables -> Actions:
+   - `VITE_API_URL_PROD`
+   - `VITE_AWS_REGION`
+   - `VITE_COGNITO_USER_POOL_ID_PROD`
+   - `VITE_COGNITO_CLIENT_ID_PROD`
+   - `VITE_RAZORPAY_KEY_ID_PROD`
+
+3. Push to `main` -> GitHub Actions builds and deploys automatically.
+
+### Custom Domain (optional)
+
+1. Add CNAME DNS record pointing to `your-username.github.io`
+2. Uncomment the `cname` line in `.github/workflows/deploy.yml`
+3. Enable HTTPS in Repository Settings -> Pages
+
+## Project Structure
+
+```
+src/
+  components/
+    views/       # Page views (Dashboard, TradeLog, Analytics, Goals, etc.)
+    ui/          # shadcn/ui primitives
+    trade/       # Trade-specific components
+    account/     # Account components
+    dashboard/   # Dashboard components
+  store/
+    api/         # RTK Query endpoints
+    slices/      # Redux slices (auth, accounts, trades)
+  lib/
+    api/         # Type definitions + extractTrades API
+    api.ts       # Axios client with token refresh
+  hooks/         # Custom React hooks
+  types/         # TypeScript interfaces
+```

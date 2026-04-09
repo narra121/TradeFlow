@@ -4,10 +4,7 @@ import {
   User, 
   Palette, 
   Bell, 
-  Shield, 
-  Download, 
-  Trash2,
-  ChevronRight,
+  Shield,
   Moon,
   Sun,
   DollarSign,
@@ -167,7 +164,7 @@ export function SettingsView() {
       </div>
 
       {/* Preferences Section */}
-      <div className="glass-card p-6 animate-fade-in stagger-1 hidden">
+      <div className="glass-card p-6 animate-fade-in stagger-1">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
             <Palette className="w-5 h-5 text-accent" />
@@ -231,7 +228,7 @@ export function SettingsView() {
       </div>
 
       {/* Notifications Section */}
-      <div className="glass-card p-6 animate-fade-in stagger-2 hidden">
+      <div className="glass-card p-6 animate-fade-in stagger-2">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
             <Bell className="w-5 h-5 text-warning" />
@@ -374,29 +371,7 @@ export function SettingsView() {
           <h2 className="text-lg font-semibold text-foreground">Data Management</h2>
         </div>
 
-        <div className="space-y-4">
-          <button className="w-full flex items-center justify-between p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors">
-            <div className="flex items-center gap-3">
-              <Download className="w-5 h-5 text-muted-foreground" />
-              <div className="text-left">
-                <p className="font-medium text-foreground">Export Data</p>
-                <p className="text-sm text-muted-foreground">Download all your trades as CSV</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-
-          <button className="w-full flex items-center justify-between p-4 rounded-xl bg-destructive/5 hover:bg-destructive/10 transition-colors border border-destructive/20">
-            <div className="flex items-center gap-3">
-              <Trash2 className="w-5 h-5 text-destructive" />
-              <div className="text-left">
-                <p className="font-medium text-destructive">Delete All Data</p>
-                <p className="text-sm text-muted-foreground">Permanently remove all trades</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-destructive" />
-          </button>
-        </div>
+        <p className="text-sm text-muted-foreground">Data export and management features coming soon.</p>
       </div>
     </div>
   );

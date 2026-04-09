@@ -15,6 +15,12 @@ export default defineConfig(({ mode }) => ({
     watch: {
       usePolling: false,
     },
+    proxy: mode === 'localdev' ? {
+      '/v1': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+      },
+    } : undefined,
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

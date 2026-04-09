@@ -6,8 +6,6 @@ import type {
   UpdateNotificationsPayload,
   Subscription,
   UserCreateSubscriptionPayload,
-  SavedOptions,
-  AddOptionPayload
 } from '@/lib/api';
 import type { PlanResponse } from '@/lib/api/razorpay';
 

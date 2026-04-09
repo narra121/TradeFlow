@@ -76,21 +76,6 @@ export const authApi = api.injectEndpoints({
       }),
     }),
     
-    logoutAll: builder.mutation<void, void>({
-      query: () => ({
-        url: '/auth/logout-all',
-        method: 'POST',
-      }),
-      async onQueryStarted(_, { queryFulfilled }) {
-        try {
-          await queryFulfilled;
-        } finally {
-          localStorage.removeItem('idToken');
-          localStorage.removeItem('refreshToken');
-        }
-      },
-    }),
-    
     logout: builder.mutation<void, void>({
       queryFn: async () => {
         localStorage.removeItem('idToken');
@@ -99,22 +84,6 @@ export const authApi = api.injectEndpoints({
       },
     }),
     
-    deleteUserAccount: builder.mutation<void, string>({
-      query: (confirmPassword) => ({
-        url: '/auth/delete-account',
-        method: 'DELETE',
-        body: { confirmPassword },
-      }),
-      async onQueryStarted(_, { queryFulfilled }) {
-        try {
-          await queryFulfilled;
-        } finally {
-          localStorage.removeItem('idToken');
-          localStorage.removeItem('refreshToken');
-        }
-      },
-      invalidatesTags: ['Auth'],
-    }),
   }),
 });
 
@@ -124,7 +93,5 @@ export const {
   useLoginMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
-  useLogoutAllMutation,
   useLogoutMutation,
-  useDeleteUserAccountMutation,
 } = authApi;

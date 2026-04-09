@@ -1,10 +1,8 @@
 import { api } from './baseApi';
-import type { 
-  CreateTradePayload, 
-  TradesQueryParams, 
-  BulkImportPayload, 
-  TradesResponse,
-  UploadUrlResponse
+import type {
+  CreateTradePayload,
+  TradesQueryParams,
+  BulkImportPayload,
 } from '@/lib/api';
 import type { Trade } from '@/types/trade';
 
@@ -90,30 +88,6 @@ export const tradesApi = api.injectEndpoints({
           : [{ type: 'Trades', id: 'LIST' }],
     }),
 
-    // GET /trades/:id
-    getTrade: builder.query<Trade, string>({
-      query: (id) => ({
-        url: `/trades/${id}`,
-      }),
-      transformResponse: (response: any) => {
-        const trade = response.trade || response;
-        const mappedTrade = mapBackendTradeToTrade(trade);
-
-        // Preserve _apiMessage from baseApi
-        if (response?._apiMessage) {
-            Object.defineProperty(mappedTrade, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
-
-        return mappedTrade;
-      },
-      providesTags: (result, error, id) => [{ type: 'Trades', id }],
-    }),
-    
     createTrade: builder.mutation<Trade, CreateTradePayload>({
       query: (payload) => {
         // Map UI fields to backend API fields
@@ -164,9 +138,9 @@ export const tradesApi = api.injectEndpoints({
         }
         return mappedTrade;
       },
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics'],
+      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics', 'Accounts'],
     }),
-    
+
     updateTrade: builder.mutation<{ updatedTrade: Trade; createdTrades: Trade[]; message?: string }, { id: string; payload: Partial<CreateTradePayload> }>({
       query: ({ id, payload }) => {
         // Map UI fields to backend API fields
@@ -226,10 +200,9 @@ export const tradesApi = api.injectEndpoints({
         }
         return result;
       },
-      // Invalidate stats/analytics, and trades list if new trades were created
+      // Invalidate stats/analytics/accounts, and trades list if new trades were created
       invalidatesTags: (result) => {
-        const tags: any[] = ['Stats', 'Analytics'];
-        // If additional trades were created for other accounts, invalidate the list
+        const tags: any[] = ['Stats', 'Analytics', 'Accounts'];
         if (result?.createdTrades && result.createdTrades.length > 0) {
           tags.push({ type: 'Trades', id: 'LIST' });
         }
@@ -241,13 +214,6 @@ export const tradesApi = api.injectEndpoints({
           const { data } = await queryFulfilled;
           const updatedTrade = data.updatedTrade;
           const createdTrades = data.createdTrades || [];
-
-          // Update the single-trade cache if it exists.
-          dispatch(
-            tradesApi.util.updateQueryData('getTrade', id, (draft) => {
-              Object.assign(draft, updatedTrade);
-            })
-          );
 
           // Patch all cached getTrades query results in-place (no network refetch).
           const state: any = getState();
@@ -295,10 +261,10 @@ export const tradesApi = api.injectEndpoints({
         }
         return result;
       },
-      // Only invalidate Stats and Analytics, not Trades (we update cache manually)
+      // Only invalidate Stats, Analytics, Accounts - not Trades (we update cache manually)
       invalidatesTags: (result, error) => {
         if (error) return [];
-        return ['Stats', 'Analytics'];
+        return ['Stats', 'Analytics', 'Accounts'];
       },
       async onQueryStarted(id, { dispatch, getState, queryFulfilled }) {
         // Optimistic delete from all getTrades caches
@@ -336,11 +302,7 @@ export const tradesApi = api.injectEndpoints({
         method: 'POST',
         body: payload,
       }),
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics'],
-    }),
-    
-    getUploadUrl: builder.query<UploadUrlResponse, void>({
-      query: () => '/trades/upload-url',
+      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics', 'Accounts'],
     }),
   }),
 });
@@ -348,12 +310,8 @@ export const tradesApi = api.injectEndpoints({
 export const {
   useGetTradesQuery,
   useLazyGetTradesQuery,
-  useGetTradeQuery,
-  useLazyGetTradeQuery,
   useCreateTradeMutation,
   useUpdateTradeMutation,
   useDeleteTradeMutation,
   useBulkImportTradesMutation,
-  useGetUploadUrlQuery,
-  useLazyGetUploadUrlQuery,
 } = tradesApi;

@@ -1,11 +1,8 @@
 # Logs
 logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+bun-debug.log*
+.chrome-debug
 
 node_modules
 dist
@@ -17,9 +14,15 @@ dist-ssr
 .env.local
 .env.development.local
 .env.production.local
+.env.localdev
 
 # Scripts with secrets
 set-github-secrets.ps1
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
 
 # Editor directories and files
 .vscode/*

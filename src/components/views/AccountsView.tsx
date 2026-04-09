@@ -45,8 +45,7 @@ export function AccountsView() {
         await deleteAccount(deletingAccountId).unwrap();
         setDeletingAccountId(null);
       } catch (error: any) {
-        console.error('Failed to delete account:', error);
-        alert(`Failed to delete account: ${error?.message || 'Unknown error'}`);
+        // Toast middleware handles error display
       } finally {
         setIsDeleting(false);
       }
@@ -67,7 +66,7 @@ export function AccountsView() {
       }
       setIsAddModalOpen(false);
     } catch (error) {
-      console.error('Failed to save account:', error);
+      // Toast middleware handles error display
     } finally {
       setIsSaving(false);
     }

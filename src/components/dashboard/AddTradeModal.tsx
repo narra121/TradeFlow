@@ -69,13 +69,18 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
   const {
     options,
     addSymbol,
+    removeSymbol,
     addStrategy,
+    removeStrategy,
     addSession,
+    removeSession,
     addMarketCondition,
+    removeMarketCondition,
     addNewsEvent,
     addMistake,
     addLesson,
     addTimeframe,
+    removeTimeframe,
   } = useSavedOptions();
 
   // Trading rules hook
@@ -347,6 +352,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                       onChange={setSymbol}
                       options={options.symbols}
                       onAddNew={addSymbol}
+                      onRemove={removeSymbol}
                       placeholder="Select..."
                     />
                   </div>
@@ -473,6 +479,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                       onChange={setStrategy}
                       options={options.strategies}
                       onAddNew={addStrategy}
+                      onRemove={removeStrategy}
                       placeholder="Select..."
                     />
                   </div>
@@ -483,6 +490,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                       onChange={setSession}
                       options={options.sessions}
                       onAddNew={addSession}
+                      onRemove={removeSession}
                       placeholder="Select..."
                     />
                   </div>
@@ -493,6 +501,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                       onChange={setMarketCondition}
                       options={options.marketConditions}
                       onAddNew={addMarketCondition}
+                      onRemove={removeMarketCondition}
                       placeholder="Select..."
                     />
                   </div>
@@ -618,6 +627,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   onChange={setImages}
                   timeframeOptions={options.timeframes}
                   onAddTimeframe={addTimeframe}
+                  onRemoveTimeframe={removeTimeframe}
                 />
               </section>
             </div>

@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { useAppDispatch } from '@/store/hooks';
 import { useGetRulesAndGoalsQuery, useGetGoalPeriodTradesQuery, useUpdateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation } from '@/store/api';
 import { formatLocalDateTime } from '@/lib/dateUtils';
 import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/goalsRules';
@@ -86,7 +85,7 @@ const defaultGoalData: GoalData[] = [
 ];
 
 export function GoalsView() {
-  const dispatch = useAppDispatch();
+
   const { data: rulesGoalsData, isLoading: rulesGoalsLoading, isFetching: rulesGoalsFetching } = useGetRulesAndGoalsQuery();
   
   // State declarations
@@ -289,7 +288,7 @@ export function GoalsView() {
       try {
         await updateGoal({ id: goalId, payload: { target: newTarget } }).unwrap();
       } catch (error) {
-        console.error('Failed to update goal:', error);
+        // Toast middleware handles error display
       }
       setSavingGoalKey(null);
     }
@@ -314,7 +313,7 @@ export function GoalsView() {
       try {
         await updateRule({ id: ruleId, payload: { rule: editRuleValue } }).unwrap();
       } catch (error) {
-        console.error('Failed to update rule:', error);
+        // Toast middleware handles error display
       }
       setSavingRuleId(null);
     }
@@ -335,7 +334,7 @@ export function GoalsView() {
         setNewRuleValue('');
         setIsAddingRule(false);
       } catch (error) {
-        console.error('Failed to create rule:', error);
+        // Toast middleware handles error display
       } finally {
         setIsAddingRuleLoading(false);
       }
@@ -347,7 +346,7 @@ export function GoalsView() {
     try {
       await deleteRule(ruleId).unwrap();
     } catch (error) {
-      console.error('Failed to delete rule:', error);
+      // Toast middleware handles error display
     }
     setDeletingRuleId(null);
   };
@@ -357,7 +356,7 @@ export function GoalsView() {
     try {
       await toggleRule(ruleId).unwrap();
     } catch (error) {
-      console.error('Failed to toggle rule:', error);
+      // Toast middleware handles error display
     }
     setTogglingRuleId(null);
   };

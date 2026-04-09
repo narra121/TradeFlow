@@ -104,7 +104,7 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
         ]);
         setDeletingTradeId(null);
       } catch (error: any) {
-        console.error('Failed to delete trade:', error);
+        // Toast middleware handles error display
       } finally {
         setIsDeleting(false);
       }

@@ -7,13 +7,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Check, ChevronDown, Plus } from 'lucide-react';
+import { Check, ChevronDown, Plus, X } from 'lucide-react';
 
 interface DynamicSelectProps {
   value: string;
   onChange: (value: string) => void;
   options: string[];
   onAddNew?: (value: string) => void;
+  onRemove?: (value: string) => void;
   placeholder?: string;
   className?: string;
 }
@@ -23,6 +24,7 @@ export function DynamicSelect({
   onChange,
   options,
   onAddNew,
+  onRemove,
   placeholder = 'Select...',
   className,
 }: DynamicSelectProps) {
@@ -65,15 +67,32 @@ export function DynamicSelect({
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-popover border-border" align="start">
         <div className="max-h-60 overflow-y-auto">
           {options.map((option) => (
-            <button
+            <div
               key={option}
-              type="button"
-              onClick={() => handleSelect(option)}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-accent/50 transition-colors flex items-center justify-between"
+              className="group flex items-center hover:bg-accent/50 transition-colors"
             >
-              {option}
-              {value === option && <Check className="w-4 h-4 text-primary" />}
-            </button>
+              <button
+                type="button"
+                onClick={() => handleSelect(option)}
+                className="flex-1 px-3 py-2 text-left text-sm flex items-center justify-between"
+              >
+                {option}
+                {value === option && <Check className="w-4 h-4 text-primary" />}
+              </button>
+              {onRemove && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (value === option) onChange('');
+                    onRemove(option);
+                  }}
+                  className="px-2 py-2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
         {onAddNew && (

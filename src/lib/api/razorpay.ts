@@ -27,15 +27,6 @@ export interface VerifyPaymentResponse {
 }
 
 // Subscription interfaces
-export interface CreatePlanPayload {
-  name: string;
-  amount: number;
-  period: 'daily' | 'weekly' | 'monthly' | 'yearly';
-  interval?: number;
-  currency?: string;
-  description?: string;
-}
-
 export interface PlanResponse {
   planId: string;
   name: string;
@@ -117,11 +108,6 @@ export const razorpayApi = {
     return response;
   },
 
-  createPlan: async (payload: CreatePlanPayload): Promise<PlanResponse> => {
-    const response: any = await apiClient.post('/subscriptions/plans', payload);
-    return response as PlanResponse;
-  },
-
   // Subscription management
   createSubscription: async (
     payload: CreateSubscriptionPayload
@@ -147,15 +133,6 @@ export const razorpayApi = {
     const response: any = await apiClient.put('/subscriptions', {
       action: 'resume',
       resumeAt,
-    });
-    return response;
-  },
-
-  cancelSubscription: async (
-    cancelAtCycleEnd = false
-  ): Promise<{ message: string; subscriptionId: string }> => {
-    const response: any = await apiClient.delete('/subscriptions', {
-      data: { cancelAtCycleEnd },
     });
     return response;
   },

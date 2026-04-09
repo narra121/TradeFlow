@@ -1,5 +1,3 @@
-import apiClient from './api';
-
 export interface Goal {
   userId: string;
   goalId: string;
@@ -42,57 +40,3 @@ export interface CreateRulePayload {
 export interface UpdateRulePayload {
   rule: string;
 }
-
-export const goalsApi = {
-  // GET /v1/goals
-  getGoals: async (): Promise<{ goals: Goal[] }> => {
-    return apiClient.get('/goals');
-  },
-
-  // PUT /v1/goals/:id
-  updateGoal: async (id: string, payload: UpdateGoalPayload): Promise<{ goal: Goal }> => {
-    return apiClient.put(`/goals/${id}`, payload);
-  },
-};
-
-export const rulesApi = {
-  // GET /v1/rules
-  getRules: async (): Promise<{ rules: TradingRule[] }> => {
-    return apiClient.get('/rules');
-  },
-
-  // POST /v1/rules
-  createRule: async (payload: CreateRulePayload): Promise<{ rule: TradingRule }> => {
-    return apiClient.post('/rules', payload);
-  },
-
-  // PUT /v1/rules/:id
-  updateRule: async (id: string, payload: UpdateRulePayload): Promise<{ rule: TradingRule }> => {
-    return apiClient.put(`/rules/${id}`, payload);
-  },
-
-  // PATCH /v1/rules/:id/toggle
-  toggleRule: async (id: string): Promise<{ rule: TradingRule }> => {
-    return apiClient.patch(`/rules/${id}/toggle`);
-  },
-
-  // DELETE /v1/rules/:id
-  deleteRule: async (id: string): Promise<void> => {
-    return apiClient.delete(`/rules/${id}`);
-  },
-};
-
-// Combined API for fetching both rules and goals in one request
-export const goalsRulesApi = {
-  // GET /v1/rules-goals
-  getRulesAndGoals: async (): Promise<{ 
-    rules: TradingRule[]; 
-    goals: Goal[];
-    meta: {
-      rulesCount: number;
-      goalsCount: number;
-    };
-  }> => {
-    return apiClient.get('/rules-goals');
-  },
-};

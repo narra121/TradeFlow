@@ -62,18 +62,6 @@ const authSlice = createSlice({
         tokenRefreshScheduler.start();
       });
 
-    // Logout All
-    builder
-      .addMatcher(authApi.endpoints.logoutAll.matchFulfilled, (state) => {
-        state.user = null;
-        state.token = null;
-        state.refreshToken = null;
-        state.isAuthenticated = false;
-        
-        // Stop token refresh scheduler
-        tokenRefreshScheduler.stop();
-      });
-
     // Logout
     builder
       .addMatcher(authApi.endpoints.logout.matchFulfilled, (state) => {
@@ -81,16 +69,7 @@ const authSlice = createSlice({
         state.token = null;
         state.refreshToken = null;
         state.isAuthenticated = false;
-      });
 
-    // Delete Account
-    builder
-      .addMatcher(authApi.endpoints.deleteUserAccount.matchFulfilled, (state) => {
-        state.user = null;
-        state.token = null;
-        state.refreshToken = null;
-        state.isAuthenticated = false;
-        
         // Stop token refresh scheduler
         tokenRefreshScheduler.stop();
       });

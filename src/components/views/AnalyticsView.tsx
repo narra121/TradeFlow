@@ -149,7 +149,7 @@ export function AnalyticsView() {
 
   // Calculate performance by session
   const sessionPerformance = useMemo(() => {
-    return options.sessions.map(sessionName => {
+    return (options?.sessions || []).map(sessionName => {
       const sessionTrades = eligibleTrades.filter(trade => trade.session === sessionName);
       const wins = sessionTrades.filter(t => (t.pnl || 0) > 0).length;
       const losses = sessionTrades.filter(t => (t.pnl || 0) < 0).length;

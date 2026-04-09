@@ -163,7 +163,6 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
     }
     try {
       await forgotPassword({ email }).unwrap();
-      toast.success("Reset code sent to your email");
       setView("reset");
     } catch (error) {
       // Error toast is handled by useEffect

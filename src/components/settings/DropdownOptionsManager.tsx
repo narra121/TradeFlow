@@ -36,7 +36,7 @@ export function DropdownOptionsManager({
 
   const handleAdd = () => {
     const trimmed = newValue.trim();
-    if (trimmed && !options.includes(trimmed)) {
+    if (trimmed && !(options || []).includes(trimmed)) {
       onAdd(trimmed);
       setNewValue('');
       setIsAdding(false);
@@ -67,7 +67,7 @@ export function DropdownOptionsManager({
       </div>
       
       <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
+        {(options || []).map((option) => (
           <Badge
             key={option}
             variant="secondary"

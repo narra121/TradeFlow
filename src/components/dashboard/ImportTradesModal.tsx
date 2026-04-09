@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -175,8 +176,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
 
       setExtractedTrades(extracted);
     } catch (error) {
-      console.error('Failed to extract trades:', error);
-      // You could add a toast notification here
+      toast.error('Failed to extract trades from image');
     } finally {
       setIsProcessing(false);
     }
@@ -269,8 +269,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
       }
       // If not successful, keep dialog open for user to retry
     } catch (error) {
-      console.error('Error saving trades:', error);
-      // Keep dialog open on error
+      toast.error('Failed to save trades');
     } finally {
       setIsSaving(false);
     }
@@ -529,7 +528,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                                       className="h-8 w-24"
                                     />
                                   ) : (
-                                    trade.entryPrice.toFixed(4)
+                                    trade.entryPrice.toFixed(2)
                                   )}
                                 </TableCell>
                                 <TableCell>
@@ -542,7 +541,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                                       className="h-8 w-24"
                                     />
                                   ) : (
-                                    trade.exitPrice.toFixed(4)
+                                    trade.exitPrice.toFixed(2)
                                   )}
                                 </TableCell>
                                 <TableCell>
@@ -555,7 +554,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                                       className="h-8 w-24"
                                     />
                                   ) : (
-                                    trade.stopLoss.toFixed(4)
+                                    trade.stopLoss.toFixed(2)
                                   )}
                                 </TableCell>
                                 <TableCell>
@@ -568,7 +567,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                                       className="h-8 w-24"
                                     />
                                   ) : (
-                                    trade.takeProfit.toFixed(4)
+                                    trade.takeProfit.toFixed(2)
                                   )}
                                 </TableCell>
                                 <TableCell>
@@ -581,7 +580,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                                       className="h-8 w-20"
                                     />
                                   ) : (
-                                    trade.size
+                                    trade.size.toFixed(2)
                                   )}
                                 </TableCell>
                                 <TableCell>

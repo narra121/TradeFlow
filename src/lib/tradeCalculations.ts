@@ -378,7 +378,8 @@ export function calculateCumulativePnL(trades: Trade[]) {
  * Calculate outcome distribution (TP, SL, BREAKEVEN, PARTIAL)
  */
 export function calculateOutcomeDistribution(trades: Trade[]) {
-  const distribution = getEligibleTrades(trades).reduce((acc, trade) => {
+  const eligible = getEligibleTrades(trades);
+  const distribution = eligible.reduce((acc, trade) => {
     const outcome = trade.outcome || 'UNKNOWN';
     acc[outcome] = (acc[outcome] || 0) + 1;
     return acc;
@@ -387,7 +388,7 @@ export function calculateOutcomeDistribution(trades: Trade[]) {
   return Object.entries(distribution).map(([outcome, count]) => ({
     outcome,
     count,
-    percentage: (count / trades.length) * 100,
+    percentage: eligible.length > 0 ? (count / eligible.length) * 100 : 0,
   }));
 }
 
@@ -395,7 +396,8 @@ export function calculateOutcomeDistribution(trades: Trade[]) {
  * Calculate session distribution (London, New York, Asian, etc.)
  */
 export function calculateSessionDistribution(trades: Trade[]) {
-  const distribution = getEligibleTrades(trades).reduce((acc, trade) => {
+  const eligible = getEligibleTrades(trades);
+  const distribution = eligible.reduce((acc, trade) => {
     const session = trade.session || 'Unknown';
     acc[session] = (acc[session] || 0) + 1;
     return acc;
@@ -404,7 +406,7 @@ export function calculateSessionDistribution(trades: Trade[]) {
   return Object.entries(distribution).map(([session, count]) => ({
     session,
     count,
-    percentage: (count / trades.length) * 100,
+    percentage: eligible.length > 0 ? (count / eligible.length) * 100 : 0,
   }));
 }
 

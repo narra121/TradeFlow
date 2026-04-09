@@ -18,13 +18,10 @@ const skipToastEndpoints = [
   'getProfile',
   'getSubscription',
   'getSavedOptions',
-  'getStats',
-  'getDailyStats',
   'getHourlyStats',
   'getDailyWinRate',
   'getSymbolDistribution',
   'getStrategyDistribution',
-  'getGoals',
   'getRules',
   'getTrades',
   'getAccounts',
@@ -55,13 +52,11 @@ const endpointSuccessMessages: Record<string, string> = {
   'pauseSubscription': 'Subscription paused successfully',
   'resumeSubscription': 'Subscription resumed successfully',
   'undoCancellation': 'Cancellation undone - your subscription will continue',
-  'addOption': 'Option saved successfully',
   'updateSavedOptions': 'Options updated successfully',
   'signup': 'Account created! Please check your email to verify.',
   'confirmSignup': 'Email verified successfully!',
   'forgotPassword': 'Reset code sent to your email',
   'resetPassword': 'Password reset successfully',
-  'logoutAll': 'Logged out from all devices',
 };
 
 export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction) => {

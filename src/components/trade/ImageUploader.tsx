@@ -14,6 +14,7 @@ interface ImageUploaderProps {
   onChange: (images: TradeImage[]) => void;
   timeframeOptions: string[];
   onAddTimeframe: (timeframe: string) => void;
+  onRemoveTimeframe?: (timeframe: string) => void;
   className?: string;
 }
 
@@ -22,6 +23,7 @@ export function ImageUploader({
   onChange,
   timeframeOptions,
   onAddTimeframe,
+  onRemoveTimeframe,
   className,
 }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -158,6 +160,7 @@ export function ImageUploader({
                     onChange={(value) => updateImage(image.id, { timeframe: value })}
                     options={timeframeOptions}
                     onAddNew={onAddTimeframe}
+                    onRemove={onRemoveTimeframe}
                     placeholder="Select timeframe..."
                   />
                 </div>

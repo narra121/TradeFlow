@@ -98,7 +98,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename={import.meta.env.PROD ? "/TradeFlow" : ""}>
+      <BrowserRouter basename={import.meta.env.PROD ? "/TradeFlow" : ""} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>

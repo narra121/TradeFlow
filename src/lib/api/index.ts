@@ -1,8 +1,7 @@
-// Export all API modules
+// Export type definitions
 export * from './auth';
 export * from './accounts';
 export * from './trades';
-export * from './stats';
 export * from './analytics';
 export * from './goalsRules';
 export * from './user';

@@ -7,7 +7,6 @@ import type {
   UpdateRulePayload
 } from '@/lib/api';
 import type { Trade } from '@/types/trade';
-import { startOfMonth, endOfMonth } from 'date-fns';
 
 interface RulesAndGoalsResponse {
   rules: TradingRule[];
@@ -23,29 +22,6 @@ export const goalsRulesApi = api.injectEndpoints({
         { type: 'Goals', id: 'LIST' },
         { type: 'Rules', id: 'LIST' },
       ],
-    }),
-    
-    getGoals: builder.query<Goal[], void>({
-      query: () => '/goals',
-      transformResponse: (response: any) => {
-        const goals = response.goals;
-        if (response?._apiMessage) {
-             Object.defineProperty(goals, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
-        return goals;
-      },
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map(({ goalId }) => ({ type: 'Goals' as const, id: goalId })),
-              { type: 'Goals', id: 'LIST' },
-            ]
-          : [{ type: 'Goals', id: 'LIST' }],
     }),
     
     updateGoal: builder.mutation<Goal, { id: string; payload: UpdateGoalPayload }>({
@@ -70,17 +46,7 @@ export const goalsRulesApi = api.injectEndpoints({
       async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
         try {
           const { data: updatedGoal } = await queryFulfilled;
-          
-          // Update the getGoals cache
-          dispatch(
-            goalsRulesApi.util.updateQueryData('getGoals', undefined, (draft) => {
-              const index = draft.findIndex((goal) => goal.goalId === id);
-              if (index !== -1) {
-                draft[index] = updatedGoal;
-              }
-            })
-          );
-          
+
           // Update the getRulesAndGoals cache
           dispatch(
             goalsRulesApi.util.updateQueryData('getRulesAndGoals', undefined, (draft) => {
@@ -95,7 +61,7 @@ export const goalsRulesApi = api.injectEndpoints({
         }
       },
     }),
-    
+
     getRules: builder.query<TradingRule[], void>({
       query: () => '/rules',
       transformResponse: (response: any) => {
@@ -349,7 +315,6 @@ export const goalsRulesApi = api.injectEndpoints({
 
 export const {
   useGetRulesAndGoalsQuery,
-  useGetGoalsQuery,
   useUpdateGoalMutation,
   useGetRulesQuery,
   useCreateRuleMutation,
