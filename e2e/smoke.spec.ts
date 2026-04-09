@@ -168,12 +168,12 @@ test.describe('Legal & Company Pages', () => {
     await page.goto('/refund');
 
     await expect(page.getByRole('heading', { name: 'Refund & Cancellation Policy' })).toBeVisible();
-    await expect(page.getByText('Refund Eligibility')).toBeVisible();
-    await expect(page.getByText('Cancellation Policy')).toBeVisible();
-    await expect(page.getByText('Refund Processing')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Refund Eligibility/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Cancellation Policy/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Refund Processing/ })).toBeVisible();
     // PayU requires mode of refund and timeframe
-    await expect(page.getByText('original payment method')).toBeVisible();
-    await expect(page.getByText('5-7 business days')).toBeVisible();
+    await expect(page.getByText(/original payment method/)).toBeVisible();
+    await expect(page.getByText(/5-7 business days/)).toBeVisible();
   });
 
   test('Contact Us page loads with all contact details', async ({ page }) => {
