@@ -39,15 +39,16 @@ test.describe('Trade Log', () => {
     const page = authedPage;
 
     // Table column headers from TradeLogView
-    await expect(page.getByText('Symbol')).toBeVisible();
-    await expect(page.getByText('Account')).toBeVisible();
-    await expect(page.getByText('Direction')).toBeVisible();
-    await expect(page.getByText('Entry')).toBeVisible();
-    await expect(page.getByText('Exit')).toBeVisible();
-    await expect(page.getByText('Size')).toBeVisible();
-    await expect(page.getByText('R:R')).toBeVisible();
-    await expect(page.getByText('Outcome')).toBeVisible();
-    await expect(page.getByText('P&L')).toBeVisible();
+    const table = page.locator('table');
+    await expect(table.getByText('Symbol')).toBeVisible();
+    await expect(table.getByText('Account')).toBeVisible();
+    await expect(table.getByText('Direction')).toBeVisible();
+    await expect(table.getByText('Entry')).toBeVisible();
+    await expect(table.getByText('Exit')).toBeVisible();
+    await expect(table.getByText('Size')).toBeVisible();
+    await expect(table.getByText('R:R')).toBeVisible();
+    await expect(table.getByText('Outcome')).toBeVisible();
+    await expect(table.getByText('P&L')).toBeVisible();
   });
 
   test('shows "No trades found" when there are no trades', async ({ authedPage }) => {
@@ -69,11 +70,11 @@ test.describe('Trade Log', () => {
     await page.getByRole('button', { name: 'Calendar' }).click();
 
     // Calendar view should show day headers
-    await expect(page.getByText('Mon')).toBeVisible();
-    await expect(page.getByText('Tue')).toBeVisible();
-    await expect(page.getByText('Wed')).toBeVisible();
-    await expect(page.getByText('Thu')).toBeVisible();
-    await expect(page.getByText('Fri')).toBeVisible();
+    await expect(page.getByText('Mon').first()).toBeVisible();
+    await expect(page.getByText('Tue').first()).toBeVisible();
+    await expect(page.getByText('Wed').first()).toBeVisible();
+    await expect(page.getByText('Thu').first()).toBeVisible();
+    await expect(page.getByText('Fri').first()).toBeVisible();
   });
 
   test('can switch back to Trades tab from Calendar', async ({ authedPage }) => {
@@ -81,7 +82,7 @@ test.describe('Trade Log', () => {
 
     // Go to Calendar
     await page.getByRole('button', { name: 'Calendar' }).click();
-    await expect(page.getByText('Mon')).toBeVisible();
+    await expect(page.getByText('Mon').first()).toBeVisible();
 
     // Switch back to Trades
     await page.getByRole('button', { name: 'Trades' }).click();

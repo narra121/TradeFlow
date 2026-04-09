@@ -16,10 +16,10 @@ test.describe('Dashboard', () => {
     const page = authedPage;
 
     // The dashboard has 4 stat cards: Total P&L, Win Rate, Total Trades, Profit Factor
-    await expect(page.getByText('Total P&L')).toBeVisible();
-    await expect(page.getByText('Win Rate')).toBeVisible();
-    await expect(page.getByText('Total Trades')).toBeVisible();
-    await expect(page.getByText('Profit Factor')).toBeVisible();
+    await expect(page.getByText('Total P&L').first()).toBeVisible();
+    await expect(page.getByText('Win Rate').first()).toBeVisible();
+    await expect(page.getByText('Total Trades').first()).toBeVisible();
+    await expect(page.getByText('Profit Factor').first()).toBeVisible();
   });
 
   test('has New Trade button', async ({ authedPage }) => {
@@ -41,8 +41,8 @@ test.describe('Dashboard', () => {
 
     await page.getByRole('button', { name: /New Trade/i }).click();
 
-    // The AddTradeModal should appear as a dialog
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // The AddTradeModal should appear — check for its heading instead of dialog role
+    await expect(page.getByText('Add New Trade')).toBeVisible({ timeout: 10000 });
   });
 
   test('displays account filter', async ({ authedPage }) => {

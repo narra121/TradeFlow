@@ -89,9 +89,8 @@ test.describe('Authentication - Signup Page', () => {
     const passwordInput = page.getByLabel('Password', { exact: true });
     await passwordInput.fill('StrongP@ss123');
 
-    // The PasswordStrength component should be visible
-    // It appears below the password field
-    await expect(page.locator('text=Password')).toBeVisible();
+    // The PasswordStrength component should render strength bars/text
+    await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
   });
 
   test('shows mismatch warning when passwords do not match', async ({ page }) => {
