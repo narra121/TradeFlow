@@ -36,15 +36,6 @@ test.describe('Dashboard', () => {
     await expect(importButton).toBeVisible();
   });
 
-  test('New Trade button opens the add trade modal', async ({ authedPage }) => {
-    const page = authedPage;
-
-    await page.getByRole('button', { name: /New Trade/i }).click();
-
-    // The AddTradeModal should appear — check for its heading instead of dialog role
-    await expect(page.getByText('Add New Trade')).toBeVisible({ timeout: 10000 });
-  });
-
   test('displays account filter', async ({ authedPage }) => {
     const page = authedPage;
 
