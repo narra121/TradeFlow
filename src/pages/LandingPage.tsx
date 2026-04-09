@@ -506,6 +506,18 @@ export function LandingPage() {
             </div>
 
             <div>
+              <h4 className="font-semibold text-foreground mb-4">Company</h4>
+              <ul className="space-y-3">
+                <li>
+                  <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors text-sm">About Us</Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Contact Us</Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
               <h4 className="font-semibold text-foreground mb-4">Legal</h4>
               <ul className="space-y-3">
                 <li>
@@ -516,9 +528,6 @@ export function LandingPage() {
                 </li>
                 <li>
                   <Link to="/refund" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Refund Policy</Link>
-                </li>
-                <li>
-                  <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Contact Us</Link>
                 </li>
               </ul>
             </div>

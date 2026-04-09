@@ -179,6 +179,7 @@ export function TermsOfServicePage() {
             &copy; {new Date().getFullYear()} TradeFlow. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm">
+            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
             <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="text-primary hover:text-primary/80 transition-colors">Terms of Service</Link>
             <Link to="/refund" className="text-muted-foreground hover:text-foreground transition-colors">Refund Policy</Link>

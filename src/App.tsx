@@ -15,6 +15,7 @@ import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
 import { TermsOfServicePage } from "./pages/TermsOfServicePage";
 import { RefundPolicyPage } from "./pages/RefundPolicyPage";
 import { ContactPage } from "./pages/ContactPage";
+import { AboutPage } from "./pages/AboutPage";
 import { tokenRefreshScheduler } from "./lib/tokenRefreshScheduler";
 import { RequireAuth } from "./components/auth/RequireAuth";
 
@@ -91,6 +92,7 @@ function AppRoutes() {
           <AppPage />
         </RequireAuth>
       } />
+      <Route path="/about" element={<AboutPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />
       <Route path="/refund" element={<RefundPolicyPage />} />
