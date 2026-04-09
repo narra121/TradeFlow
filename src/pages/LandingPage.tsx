@@ -508,11 +508,18 @@ export function LandingPage() {
             <div>
               <h4 className="font-semibold text-foreground mb-4">Legal</h4>
               <ul className="space-y-3">
-                {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-muted-foreground hover:text-foreground transition-colors text-sm">{item}</a>
-                  </li>
-                ))}
+                <li>
+                  <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Privacy Policy</Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Terms of Service</Link>
+                </li>
+                <li>
+                  <Link to="/refund" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Refund Policy</Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Contact Us</Link>
+                </li>
               </ul>
             </div>
           </div>

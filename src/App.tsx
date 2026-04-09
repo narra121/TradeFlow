@@ -11,6 +11,10 @@ import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { AppPage } from "./pages/AppPage";
 import NotFound from "./pages/NotFound";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
+import { TermsOfServicePage } from "./pages/TermsOfServicePage";
+import { RefundPolicyPage } from "./pages/RefundPolicyPage";
+import { ContactPage } from "./pages/ContactPage";
 import { tokenRefreshScheduler } from "./lib/tokenRefreshScheduler";
 import { RequireAuth } from "./components/auth/RequireAuth";
 
@@ -87,6 +91,10 @@ function AppRoutes() {
           <AppPage />
         </RequireAuth>
       } />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsOfServicePage />} />
+      <Route path="/refund" element={<RefundPolicyPage />} />
+      <Route path="/contact" element={<ContactPage />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
