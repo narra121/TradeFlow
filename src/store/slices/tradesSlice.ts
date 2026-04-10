@@ -1,6 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { DatePreset } from '@/components/filters/DateRangeFilter';
-import { startOfWeek, endOfWeek, endOfDay } from 'date-fns';
+import { startOfWeek } from 'date-fns/startOfWeek';
+import { endOfWeek } from 'date-fns/endOfWeek';
+import { endOfDay } from 'date-fns/endOfDay';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 
 export interface TradesState {

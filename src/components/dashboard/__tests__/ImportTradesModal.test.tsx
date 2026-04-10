@@ -198,6 +198,121 @@ describe('ImportTradesModal', () => {
   });
 });
 
+describe('ImportTradesModal - Error Handling', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onImportTrades: vi.fn().mockResolvedValue({ success: true }),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Helper: upload a fake image via the hidden file input to get into "images uploaded" state */
+  async function uploadFakeImage(user: ReturnType<typeof userEvent.setup>) {
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['fake-image-data'], 'trade.png', { type: 'image/png' });
+
+    // Mock FileReader to synchronously set the image
+    const originalFileReader = globalThis.FileReader;
+    const mockReader = {
+      readAsDataURL: vi.fn(),
+      onload: null as any,
+      result: 'data:image/png;base64,fakedata',
+    };
+    vi.spyOn(globalThis, 'FileReader').mockImplementation(() => mockReader as any);
+
+    await user.upload(fileInput, file);
+
+    // Trigger the onload callback that processImageFile registered
+    if (mockReader.onload) {
+      mockReader.onload({ target: { result: mockReader.result } });
+    }
+
+    globalThis.FileReader = originalFileReader;
+  }
+
+  /** Helper: run extractTrades with a successful API response returning one trade row */
+  async function extractWithOneTrade(user: ReturnType<typeof userEvent.setup>) {
+    const { tradesApi } = await import('@/lib/api/trades');
+    (tradesApi.extractTrades as ReturnType<typeof vi.fn>).mockResolvedValue({
+      items: [
+        {
+          symbol: 'EURUSD',
+          side: 'BUY',
+          entryPrice: '1.1000',
+          exitPrice: '1.1050',
+          stopLoss: '1.0950',
+          takeProfit: '1.1100',
+          quantity: '1',
+          pnl: '50',
+          openDate: '2024-06-01T10:00:00Z',
+          closeDate: '2024-06-01T14:00:00Z',
+        },
+      ],
+    });
+
+    const extractButton = screen.getByRole('button', { name: /extract trades/i });
+    await user.click(extractButton);
+
+    // Wait for extraction to complete
+    await vi.waitFor(() => {
+      expect(screen.getByText('EURUSD')).toBeInTheDocument();
+    });
+  }
+
+  it('keeps dialog open when onImportTrades returns { success: false }', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onOpenChange = vi.fn();
+    const onImportTrades = vi.fn().mockResolvedValue({ success: false });
+
+    render(
+      <ImportTradesModal
+        {...defaultProps}
+        onOpenChange={onOpenChange}
+        onImportTrades={onImportTrades}
+      />
+    );
+
+    await uploadFakeImage(user);
+    await extractWithOneTrade(user);
+
+    const saveAllButton = screen.getByRole('button', { name: /save all/i });
+    await user.click(saveAllButton);
+
+    await vi.waitFor(() => {
+      expect(onImportTrades).toHaveBeenCalled();
+    });
+
+    // Dialog should NOT have been closed
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    // Modal content should still be visible
+    expect(screen.getByText('Import Trades from Screenshot')).toBeInTheDocument();
+  });
+
+  it('shows toast.error when extract API fails', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { toast } = await import('sonner');
+    const { tradesApi } = await import('@/lib/api/trades');
+
+    (tradesApi.extractTrades as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('API unavailable')
+    );
+
+    render(<ImportTradesModal {...defaultProps} />);
+
+    await uploadFakeImage(user);
+
+    const extractButton = screen.getByRole('button', { name: /extract trades/i });
+    await user.click(extractButton);
+
+    await vi.waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to extract trades from image');
+    });
+  });
+});
+
 describe('ImportTradesModal - outcome derivation', () => {
   it('derives TP outcome for positive PnL', () => {
     // The outcome logic: pnl > 0 = TP, pnl < 0 = SL, pnl == 0 = BREAKEVEN

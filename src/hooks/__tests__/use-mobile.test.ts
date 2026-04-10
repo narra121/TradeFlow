@@ -165,3 +165,76 @@ describe('useIsMobile', () => {
     expect(result.current).toBe(false);
   });
 });
+
+describe('useIsMobile - Additional Breakpoint and Resize Tests', () => {
+  let addEventListenerSpy: ReturnType<typeof vi.fn>;
+  let removeEventListenerSpy: ReturnType<typeof vi.fn>;
+  let matchMediaSpy: ReturnType<typeof vi.spyOn>;
+
+  const createMockMatchMedia = () => {
+    addEventListenerSpy = vi.fn();
+    removeEventListenerSpy = vi.fn();
+
+    return vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: addEventListenerSpy,
+      removeEventListener: removeEventListenerSpy,
+      dispatchEvent: vi.fn(),
+    }));
+  };
+
+  beforeEach(() => {
+    matchMediaSpy = vi.spyOn(window, 'matchMedia').mockImplementation(createMockMatchMedia());
+  });
+
+  afterEach(() => {
+    matchMediaSpy.mockRestore();
+  });
+
+  it('returns true for mobile width (375px)', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 375, writable: true });
+
+    const { result } = renderHook(() => useIsMobile());
+
+    expect(result.current).toBe(true);
+  });
+
+  it('returns false for desktop width (1024px)', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+
+    const { result } = renderHook(() => useIsMobile());
+
+    expect(result.current).toBe(false);
+  });
+
+  it('handles exact breakpoint boundary (768px) as non-mobile', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 768, writable: true });
+
+    const { result } = renderHook(() => useIsMobile());
+
+    // 768 is NOT < 768, so it should be false (desktop)
+    expect(result.current).toBe(false);
+  });
+
+  it('handles window resize from mobile to desktop', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 375, writable: true });
+
+    const { result } = renderHook(() => useIsMobile());
+
+    expect(result.current).toBe(true);
+
+    // Simulate resize to desktop
+    Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+
+    const changeHandler = addEventListenerSpy.mock.calls[0][1];
+    act(() => {
+      changeHandler();
+    });
+
+    expect(result.current).toBe(false);
+  });
+});

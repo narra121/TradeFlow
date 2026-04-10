@@ -83,54 +83,54 @@ export function ImageViewerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] max-h-[95vh] p-0 bg-background/95 backdrop-blur-xl border-border/50 overflow-hidden">
+      <DialogContent className="w-[98vw] max-w-[98vw] sm:w-[95vw] sm:max-w-[95vw] h-[95vh] max-h-[95vh] p-0 bg-background/95 backdrop-blur-xl border-border/50 overflow-hidden">
         {/* Header */}
-        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-background/90 to-transparent">
-          <div className="flex items-center gap-3">
+        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-2 py-2 sm:px-4 sm:py-3 bg-gradient-to-b from-background/90 to-transparent">
+          <div className="flex items-center gap-2 sm:gap-3">
             {timeframe && (
-              <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
+              <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm text-xs">
                 {timeframe}
               </Badge>
             )}
           </div>
-          
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Zoom Controls */}
-            <div className="flex items-center gap-1 bg-background/80 backdrop-blur-sm rounded-lg p-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-background/80 backdrop-blur-sm rounded-lg p-0.5 sm:p-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-7 w-7 sm:h-8 sm:w-8"
                 onClick={handleZoomOut}
                 disabled={scale <= 0.5}
               >
-                <ZoomOut className="w-4 h-4" />
+                <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
-              <span className="text-xs font-mono w-12 text-center">{Math.round(scale * 100)}%</span>
+              <span className="text-xs font-mono w-9 sm:w-12 text-center hidden xs:inline">{Math.round(scale * 100)}%</span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-7 w-7 sm:h-8 sm:w-8"
                 onClick={handleZoomIn}
                 disabled={scale >= 5}
               >
-                <ZoomIn className="w-4 h-4" />
+                <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-7 w-7 sm:h-8 sm:w-8"
                 onClick={handleReset}
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
             </div>
 
-            {/* Fit to Screen */}
+            {/* Fit to Screen - hide on very small screens */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+              className="h-7 w-7 sm:h-8 sm:w-8 bg-background/80 backdrop-blur-sm hidden sm:flex"
               onClick={handleReset}
             >
               <Minimize2 className="w-4 h-4" />
@@ -142,12 +142,12 @@ export function ImageViewerModal({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-8 w-8 bg-background/80 backdrop-blur-sm",
+                  "h-7 w-7 sm:h-8 sm:w-8 bg-background/80 backdrop-blur-sm",
                   showDescription && "bg-primary/20"
                 )}
                 onClick={() => setShowDescription(!showDescription)}
               >
-                {showDescription ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                {showDescription ? <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
               </Button>
             )}
 
@@ -155,10 +155,10 @@ export function ImageViewerModal({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+              className="h-7 w-7 sm:h-8 sm:w-8 bg-background/80 backdrop-blur-sm"
               onClick={onClose}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Button>
           </div>
         </div>
@@ -201,10 +201,10 @@ export function ImageViewerModal({
 
         {/* Description Panel */}
         {description && showDescription && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 px-6 py-4 bg-gradient-to-t from-background/95 to-transparent">
+          <div className="absolute bottom-0 left-0 right-0 z-20 px-3 py-2 sm:px-6 sm:py-4 bg-gradient-to-t from-background/95 to-transparent">
             <div className="max-w-3xl mx-auto">
-              <div className="bg-background/80 backdrop-blur-sm rounded-lg p-4 border border-border/50">
-                <p className="text-sm text-muted-foreground">{description}</p>
+              <div className="bg-background/80 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-border/50">
+                <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
               </div>
             </div>
           </div>

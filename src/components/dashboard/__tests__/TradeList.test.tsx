@@ -114,9 +114,10 @@ describe('TradeList', () => {
   it('renders empty state gracefully', () => {
     const { container } = render(<TradeList trades={[]} />);
     expect(screen.getByText('Recent Trades')).toBeInTheDocument();
-    // The divider area should be empty
+    // The divider area should contain the empty state message
     const divider = container.querySelector('.divide-y');
-    expect(divider?.children.length).toBe(0);
+    expect(divider?.children.length).toBe(1);
+    expect(screen.getByText('No recent trades')).toBeInTheDocument();
   });
 
   it('shows unmapped trade warning for trades without accountId', () => {
@@ -138,5 +139,117 @@ describe('TradeList', () => {
     ];
     render(<TradeList trades={unmappedTrade} />);
     expect(screen.getByText('AUDUSD')).toBeInTheDocument();
+  });
+});
+
+describe('TradeList – extended coverage', () => {
+  it('renders with empty trades array showing heading only', () => {
+    render(<TradeList trades={[]} />);
+    expect(screen.getByText('Recent Trades')).toBeInTheDocument();
+    // No trade symbols should be rendered
+    expect(screen.queryByText('EURUSD')).not.toBeInTheDocument();
+  });
+
+  it('shows limit correctly (default 5) by displaying only first N trades', () => {
+    const manyTrades: Trade[] = Array.from({ length: 8 }, (_, i) => ({
+      id: String(i + 1),
+      symbol: `SYM${i + 1}`,
+      direction: 'LONG' as const,
+      entryPrice: 1.0 + i * 0.01,
+      exitPrice: 1.01 + i * 0.01,
+      stopLoss: 0.99 + i * 0.01,
+      takeProfit: 1.02 + i * 0.01,
+      size: 1,
+      entryDate: `2025-01-${String(i + 10).padStart(2, '0')}T10:00:00Z`,
+      exitDate: `2025-01-${String(i + 10).padStart(2, '0')}T14:00:00Z`,
+      outcome: 'TP' as const,
+      pnl: 100,
+      riskRewardRatio: 1.5,
+      accountId: 'acc1',
+    }));
+
+    render(<TradeList trades={manyTrades} limit={5} />);
+
+    // First 5 trades should be visible
+    for (let i = 1; i <= 5; i++) {
+      expect(screen.getByText(`SYM${i}`)).toBeInTheDocument();
+    }
+    // Trades beyond limit should not appear
+    expect(screen.queryByText('SYM6')).not.toBeInTheDocument();
+    expect(screen.queryByText('SYM7')).not.toBeInTheDocument();
+    expect(screen.queryByText('SYM8')).not.toBeInTheDocument();
+  });
+
+  it('renders correct PnL colors (green for positive, red for negative)', () => {
+    const trades: Trade[] = [
+      {
+        id: '1',
+        symbol: 'EURUSD',
+        direction: 'LONG',
+        entryPrice: 1.1,
+        exitPrice: 1.12,
+        stopLoss: 1.09,
+        takeProfit: 1.13,
+        size: 1,
+        entryDate: '2025-01-15T10:00:00Z',
+        exitDate: '2025-01-15T14:00:00Z',
+        outcome: 'TP',
+        pnl: 200,
+        riskRewardRatio: 2.0,
+        accountId: 'acc1',
+      },
+      {
+        id: '2',
+        symbol: 'GBPUSD',
+        direction: 'SHORT',
+        entryPrice: 1.3,
+        exitPrice: 1.32,
+        stopLoss: 1.31,
+        takeProfit: 1.27,
+        size: 1,
+        entryDate: '2025-01-16T09:00:00Z',
+        exitDate: '2025-01-16T12:00:00Z',
+        outcome: 'SL',
+        pnl: -150,
+        riskRewardRatio: 1.5,
+        accountId: 'acc1',
+      },
+    ];
+
+    render(<TradeList trades={trades} />);
+
+    // Positive PnL should have text-success class
+    const positivePnl = screen.getByText('+200.00');
+    expect(positivePnl).toHaveClass('text-success');
+
+    // Negative PnL should have text-destructive class
+    const negativePnl = screen.getByText('-150.00');
+    expect(negativePnl).toHaveClass('text-destructive');
+  });
+
+  it('handles trades without exitDate', () => {
+    const tradesNoExit: Trade[] = [
+      {
+        id: '10',
+        symbol: 'NZDUSD',
+        direction: 'LONG',
+        entryPrice: 0.62,
+        stopLoss: 0.61,
+        takeProfit: 0.64,
+        size: 2,
+        entryDate: '2025-02-01T08:00:00Z',
+        // no exitDate
+        outcome: 'TP',
+        pnl: 300,
+        riskRewardRatio: 2.0,
+        accountId: 'acc1',
+      },
+    ];
+
+    render(<TradeList trades={tradesNoExit} />);
+
+    expect(screen.getByText('NZDUSD')).toBeInTheDocument();
+    expect(screen.getByText('+300.00')).toBeInTheDocument();
+    expect(screen.getByText('LONG')).toBeInTheDocument();
   });
 });

@@ -329,15 +329,15 @@ export function ProfileView() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Profile</h1>
-          <p className="text-muted-foreground mt-1">Manage your account and subscription</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Profile</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your profile and subscription</p>
         </div>
         <RefreshButton onRefresh={refetchSubscription} isFetching={profileFetching || subscriptionFetching} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* User Profile Card */}
         {loading && !profile ? (
           <div className="lg:col-span-2">
@@ -379,11 +379,11 @@ export function ProfileView() {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Avatar Section */}
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <Avatar className="w-24 h-24 border-4 border-primary/20">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className="relative shrink-0">
+                <Avatar className="w-16 h-16 sm:w-24 sm:h-24 border-4 border-primary/20">
                   <AvatarImage src={user.avatar} />
-                  <AvatarFallback className="text-2xl bg-gradient-primary text-primary-foreground">
+                  <AvatarFallback className="text-xl sm:text-2xl bg-gradient-primary text-primary-foreground">
                     {user.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
@@ -397,11 +397,11 @@ export function ProfileView() {
                   </Button>
                 )}
               </div>
-              <div>
-                <h3 className="text-xl font-semibold text-foreground">{user.name}</h3>
-                <p className="text-muted-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Member since {user.joinedDate}
+              <div className="min-w-0">
+                <h3 className="text-lg sm:text-xl font-semibold text-foreground truncate">{user.name}</h3>
+                <p className="text-sm sm:text-base text-muted-foreground flex items-center gap-2">
+                  <Calendar className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Member since {user.joinedDate}</span>
                 </p>
               </div>
             </div>
@@ -656,8 +656,8 @@ export function ProfileView() {
           <div className="mx-auto w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
             <Heart className="w-6 h-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">Support the Developer (Optional)</CardTitle>
-          <CardDescription className="max-w-xl mx-auto mt-2">
+          <CardTitle className="text-xl sm:text-2xl">Support the Developer (Optional)</CardTitle>
+          <CardDescription className="max-w-xl mx-auto mt-2 text-sm sm:text-base">
             TradeFlow is <span className="text-success font-semibold">100% free to use</span> with all features included.
             If you love TradeFlow and want to support the developer, you can contribute a small amount 
             to help cover hosting and development costs.
@@ -696,14 +696,14 @@ export function ProfileView() {
           {/* Monthly Tiers */}
           {billingCycle === 'monthly' && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 {supportTiers
                   .filter(tier => availablePlans.some(p => p.period === 'monthly' && p.amount === tier.amount))
                   .map((tier) => (
                   <button
                     key={tier.amount}
                     onClick={() => setSelectedAmount(tier.amount)}
-                    className={`p-6 rounded-xl border-2 transition-all duration-200 text-left ${
+                    className={`p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 text-left ${
                       selectedAmount === tier.amount
                         ? 'border-primary bg-primary/10'
                         : 'border-border/50 hover:border-primary/50 bg-background/30'
@@ -730,14 +730,14 @@ export function ProfileView() {
           {/* Annual Tiers */}
           {billingCycle === 'annual' && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
                 {annualTiers
                   .filter(tier => availablePlans.some(p => p.period === 'yearly' && p.amount === tier.amount))
                   .map((tier) => (
                   <button
                     key={tier.amount}
                     onClick={() => setSelectedAnnualAmount(tier.amount)}
-                    className={`p-6 rounded-xl border-2 transition-all duration-200 text-left ${
+                    className={`p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 text-left ${
                       selectedAnnualAmount === tier.amount
                         ? 'border-primary bg-primary/10'
                         : 'border-border/50 hover:border-primary/50 bg-background/30'
@@ -805,7 +805,7 @@ export function ProfileView() {
           {/* Features included */}
           <div className="mt-8 pt-6 border-t border-border/50">
             <p className="text-center text-sm text-muted-foreground mb-4">All supporters get access to:</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {[
                 'Unlimited trades',
                 'Full analytics',

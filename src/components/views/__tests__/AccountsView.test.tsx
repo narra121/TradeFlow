@@ -114,10 +114,11 @@ describe('AccountsView', () => {
 
     // No account cards should render
     expect(screen.queryAllByTestId('account-card')).toHaveLength(0);
-    // The "Add New Account" card should still be visible
-    expect(screen.getByText('Add New Account')).toBeInTheDocument();
-    // Stats should show 0
-    expect(screen.getByText('0')).toBeInTheDocument();
+    // The empty state heading and button should be visible
+    expect(screen.getByText('Set up your first trading account')).toBeInTheDocument();
+    // Both header and empty state show "Add Account" buttons
+    const addButtons = screen.getAllByRole('button', { name: /add account/i });
+    expect(addButtons.length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows loading skeletons when data is loading', () => {
@@ -133,5 +134,56 @@ describe('AccountsView', () => {
     expect(screen.getByRole('heading', { name: /accounts/i, level: 1 })).toBeInTheDocument();
     // Account cards should not render when loading
     expect(screen.queryAllByTestId('account-card')).toHaveLength(0);
+  });
+});
+
+describe('AccountsView - Error States', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders header and "Add Account" button when API returns an error', () => {
+    vi.mocked(useGetAccountsQuery).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      error: { status: 500, data: 'Internal Server Error' },
+    } as any);
+
+    render(<AccountsView />);
+
+    expect(screen.getByRole('heading', { name: /accounts/i, level: 1 })).toBeInTheDocument();
+    // Both header and empty state may show "Add Account" buttons
+    const addButtons = screen.getAllByRole('button', { name: /add account/i });
+    expect(addButtons.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders empty state when accounts data is an empty array', () => {
+    vi.mocked(useGetAccountsQuery).mockReturnValue({
+      data: { accounts: [] },
+      isLoading: false,
+      isFetching: false,
+    } as any);
+
+    render(<AccountsView />);
+
+    expect(screen.queryAllByTestId('account-card')).toHaveLength(0);
+    expect(screen.getByText('Set up your first trading account')).toBeInTheDocument();
+    expect(screen.getByText('Total Accounts')).toBeInTheDocument();
+  });
+
+  it('shows loading skeleton when isLoading is true', () => {
+    vi.mocked(useGetAccountsQuery).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isFetching: false,
+    } as any);
+
+    render(<AccountsView />);
+
+    expect(screen.getByRole('heading', { name: /accounts/i, level: 1 })).toBeInTheDocument();
+    expect(screen.queryAllByTestId('account-card')).toHaveLength(0);
+    // The "Add New Account" card should not appear during loading (replaced by skeletons)
+    expect(screen.queryByText('Add New Account')).not.toBeInTheDocument();
   });
 });

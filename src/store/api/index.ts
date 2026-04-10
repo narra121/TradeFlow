@@ -3,7 +3,7 @@ export * from './baseApi';
 export * from './authApi';
 export * from './tradesApi';
 export * from './accountsApi';
-export * from './analyticsApi';
+export * from './statsApi';
 export * from './goalsRulesApi';
 export * from './userApi';
 export * from './textApi';

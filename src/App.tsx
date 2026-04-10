@@ -3,21 +3,32 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
 import { clearAuth } from "@/store/slices/authSlice";
-import { LandingPage } from "./pages/LandingPage";
-import { LoginPage } from "./pages/LoginPage";
-import { SignupPage } from "./pages/SignupPage";
-import { AppPage } from "./pages/AppPage";
-import NotFound from "./pages/NotFound";
-import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
-import { TermsOfServicePage } from "./pages/TermsOfServicePage";
-import { RefundPolicyPage } from "./pages/RefundPolicyPage";
-import { ContactPage } from "./pages/ContactPage";
-import { AboutPage } from "./pages/AboutPage";
 import { tokenRefreshScheduler } from "./lib/tokenRefreshScheduler";
 import { RequireAuth } from "./components/auth/RequireAuth";
+
+// Lazy-loaded page components
+const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const SignupPage = lazy(() => import('./pages/SignupPage').then(m => ({ default: m.SignupPage })));
+const AppPage = lazy(() => import('./pages/AppPage').then(m => ({ default: m.AppPage })));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
+const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage').then(m => ({ default: m.TermsOfServicePage })));
+const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage').then(m => ({ default: m.RefundPolicyPage })));
+const ContactPage = lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
+const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+
+function PageLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,23 +94,25 @@ function AppRoutes() {
   }, []); // Empty dependency array - run only once on mount
 
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="/app/*" element={
-        <RequireAuth>
-          <AppPage />
-        </RequireAuth>
-      } />
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/privacy" element={<PrivacyPolicyPage />} />
-      <Route path="/terms" element={<TermsOfServicePage />} />
-      <Route path="/refund" element={<RefundPolicyPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<PageLoadingFallback />}>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/app/*" element={
+          <RequireAuth>
+            <AppPage />
+          </RequireAuth>
+        } />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/refund" element={<RefundPolicyPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }
 

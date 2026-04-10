@@ -96,3 +96,99 @@ describe('PasswordStrength', () => {
     expect(screen.getByText('Very Weak')).toBeInTheDocument();
   });
 });
+
+describe('PasswordStrength - boundary cases', () => {
+  it('shows "Very Weak" for exactly 8 lowercase characters (only length criterion met)', () => {
+    // Exactly 8 chars, lowercase only => strength 1 => "Very Weak"
+    render(<PasswordStrength password="abcdefgh" />);
+    expect(screen.getByText('Very Weak')).toBeInTheDocument();
+  });
+
+  it('shows "Very Weak" for exactly 7 characters (length criterion not met, has digit)', () => {
+    // 7 chars with a digit => length < 8 (0) + no mixed case (0) + digit (1) + no special (0) = 1 => "Very Weak"
+    render(<PasswordStrength password="abcdef1" />);
+    expect(screen.getByText('Very Weak')).toBeInTheDocument();
+  });
+
+  it('shows correct strength for exactly 12 mixed-case characters with digit and special', () => {
+    // 12 chars, mixed case, digit, special => all 4 criteria => "Strong"
+    render(<PasswordStrength password="Abcdefghij1!" />);
+    expect(screen.getByText('Strong')).toBeInTheDocument();
+  });
+
+  it('shows "Enter password" for a single character that meets no length criterion', () => {
+    // 1 char, lowercase only => strength 0 => "Enter password"
+    render(<PasswordStrength password="a" />);
+    expect(screen.getByText('Enter password')).toBeInTheDocument();
+  });
+});
+
+describe('PasswordStrength - special character detection', () => {
+  it('detects special characters like @#$%', () => {
+    // 8+ chars with special char only => length (1) + no mixed case (0) + no digit (0) + special (1) = 2 => "Weak"
+    render(<PasswordStrength password="abcdefg@" />);
+    expect(screen.getByText('Weak')).toBeInTheDocument();
+  });
+
+  it('detects special characters like underscores and hyphens', () => {
+    // length (1) + no mixed case (0) + no digit (0) + special (1) = 2 => "Weak"
+    render(<PasswordStrength password="abcdefg_" />);
+    expect(screen.getByText('Weak')).toBeInTheDocument();
+  });
+
+  it('does not count spaces as special characters (spaces are non-alphanumeric)', () => {
+    // "abcdefg " => length (1) + no mixed case (0) + no digit (0) + space is special (1) = 2 => "Weak"
+    render(<PasswordStrength password="abcdefg " />);
+    expect(screen.getByText('Weak')).toBeInTheDocument();
+  });
+});
+
+describe('PasswordStrength - mixed case detection', () => {
+  it('does not count mixed case when only uppercase letters are present', () => {
+    // "ABCDEFGH" => length (1) + mixed case needs both lower AND upper (0) + no digit (0) + no special (0) = 1 => "Very Weak"
+    render(<PasswordStrength password="ABCDEFGH" />);
+    expect(screen.getByText('Very Weak')).toBeInTheDocument();
+  });
+
+  it('does not count mixed case when only lowercase letters are present', () => {
+    // "abcdefgh" => length (1) + no mixed case (0) + no digit (0) + no special (0) = 1 => "Very Weak"
+    render(<PasswordStrength password="abcdefgh" />);
+    expect(screen.getByText('Very Weak')).toBeInTheDocument();
+  });
+
+  it('counts mixed case when both lowercase and uppercase are present', () => {
+    // "Abcdefgh" => length (1) + mixed case (1) + no digit (0) + no special (0) = 2 => "Weak"
+    render(<PasswordStrength password="Abcdefgh" />);
+    expect(screen.getByText('Weak')).toBeInTheDocument();
+  });
+});
+
+describe('PasswordStrength - all criteria met shows Strong', () => {
+  it('shows "Strong" for a password with length >= 8, mixed case, digit, and special char', () => {
+    render(<PasswordStrength password="MyPass1!" />);
+    expect(screen.getByText('Strong')).toBeInTheDocument();
+  });
+
+  it('fills all 4 bars when strength is Strong', () => {
+    const { container } = render(<PasswordStrength password="MyPass1!" />);
+    const bars = container.querySelectorAll('.rounded-full');
+    const coloredBars = Array.from(bars).filter(
+      (bar) => !bar.classList.contains('bg-muted')
+    );
+    expect(coloredBars).toHaveLength(4);
+  });
+
+  it('applies emerald color to all bars when Strong', () => {
+    const { container } = render(<PasswordStrength password="MyPass1!" />);
+    const bars = container.querySelectorAll('.rounded-full');
+    const emeraldBars = Array.from(bars).filter((bar) =>
+      bar.classList.contains('bg-emerald-500')
+    );
+    expect(emeraldBars).toHaveLength(4);
+  });
+
+  it('shows "Strong" with a complex password containing multiple special chars', () => {
+    render(<PasswordStrength password="C0mpl3x!@#" />);
+    expect(screen.getByText('Strong')).toBeInTheDocument();
+  });
+});

@@ -74,28 +74,28 @@ export function SmartInput({
       />
       
       {isOpen && (filteredSuggestions.length > 0 || showAddNew) && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
-          <div className="max-h-48 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-w-[calc(100vw-2rem)]">
+          <div className="max-h-40 sm:max-h-48 overflow-y-auto">
             {filteredSuggestions.map((suggestion) => (
               <button
                 key={suggestion}
                 type="button"
                 onClick={() => handleSelect(suggestion)}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-accent/50 transition-colors"
+                className="w-full px-3 py-2 text-left text-xs sm:text-sm hover:bg-accent/50 transition-colors truncate"
               >
                 {suggestion}
               </button>
             ))}
           </div>
-          
+
           {showAddNew && (
             <button
               type="button"
               onClick={handleAddNew}
-              className="w-full px-3 py-2 text-left text-sm border-t border-border bg-secondary/50 hover:bg-secondary transition-colors flex items-center gap-2 text-primary"
+              className="w-full px-3 py-2 text-left text-xs sm:text-sm border-t border-border bg-secondary/50 hover:bg-secondary transition-colors flex items-center gap-2 text-primary"
             >
-              <Plus className="w-4 h-4" />
-              Create "{value.trim()}"
+              <Plus className="w-4 h-4 shrink-0" />
+              <span className="truncate">Create "{value.trim()}"</span>
             </button>
           )}
         </div>

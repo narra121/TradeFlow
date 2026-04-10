@@ -59,24 +59,24 @@ export function QuickStats({ stats }: QuickStatsProps) {
   ];
 
   return (
-    <div className="glass-card p-5 animate-fade-in">
-      <h3 className="font-semibold text-foreground mb-4">Quick Stats</h3>
-      
-      <div className="grid grid-cols-2 gap-3">
+    <div className="glass-card p-3 sm:p-5 animate-fade-in">
+      <h3 className="font-semibold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">Quick Stats</h3>
+
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {items.map((item, index) => {
           const Icon = item.icon;
           return (
-            <div 
+            <div
               key={item.label}
-              className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+              className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
-              <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", item.bgColor)}>
-                <Icon className={cn("w-4 h-4", item.color)} />
+              <div className={cn("w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0", item.bgColor)}>
+                <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", item.color)} />
               </div>
-              <div>
-                <p className={cn("font-semibold font-mono text-sm", item.color)}>{item.value}</p>
-                <p className="text-xs text-muted-foreground">{item.label}</p>
+              <div className="min-w-0">
+                <p className={cn("font-semibold font-mono text-xs sm:text-sm truncate", item.color)}>{item.value}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{item.label}</p>
               </div>
             </div>
           );

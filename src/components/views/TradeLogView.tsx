@@ -1,30 +1,30 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Trade } from '@/types/trade';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, eachWeekOfInterval, subDays, isWithinInterval } from 'date-fns';
-import { 
-  Plus, 
+import {
+  Plus,
   Upload,
-  ArrowUpRight, 
+  ArrowUpRight,
   ArrowDownRight,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUpDown,
   MoreHorizontal,
   Eye,
   ChevronLeft,
   ChevronRight,
   Filter,
-  Loader2
+  Loader2,
+  Trash2,
+  BookOpen
 } from 'lucide-react';
 import { TradeTableSkeleton, CalendarSkeleton } from '@/components/ui/loading-skeleton';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,10 +46,11 @@ import { CalendarTradeModal } from '@/components/trade/CalendarTradeModal';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
+import { TablePagination, getStoredPageSize, type PageSize } from '@/components/ui/table-pagination';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation, useGetAccountsQuery } from '@/store/api';
+import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation, useBulkDeleteTradesMutation, useGetAccountsQuery } from '@/store/api';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
 
 interface TradeLogViewProps {
@@ -78,9 +79,46 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const accounts = accountsData?.accounts || [];
   const [updateTrade] = useUpdateTradeMutation();
   const [deleteTrade] = useDeleteTradeMutation();
-  
+  const [bulkDeleteTrades] = useBulkDeleteTradesMutation();
+
+  // Bulk selection state
+  const [selectedTradeIds, setSelectedTradeIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+
+  const toggleTradeSelection = (tradeId: string) => {
+    setSelectedTradeIds(prev => {
+      const next = new Set(prev);
+      next.has(tradeId) ? next.delete(tradeId) : next.add(tradeId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedTradeIds.size === paginatedTrades.length) {
+      setSelectedTradeIds(new Set());
+    } else {
+      setSelectedTradeIds(new Set(paginatedTrades.map(t => t.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTradeIds.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      await bulkDeleteTrades({ tradeIds: [...selectedTradeIds] }).unwrap();
+      setSelectedTradeIds(new Set());
+      setIsBulkDeleteDialogOpen(false);
+    } catch { /* toast middleware handles error */ }
+    finally { setIsBulkDeleting(false); }
+  };
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSize>(getStoredPageSize);
+
   const [activeTab, setActiveTab] = useState<TabType>('trades');
-  
+
   // Date filter state - customRange only
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
   
@@ -94,9 +132,24 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     }));
   };
   
+  // Sorting state
+  type SortColumn = 'symbol' | 'account' | 'direction' | 'entryDate' | 'exitDate' | 'size' | 'rr' | 'outcome' | 'pnl';
+  type SortDirection = 'asc' | 'desc';
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  };
+
   // Trades table state
-  const [symbolFilter, setSymbolFilter] = useState<string>('ALL');
-  const [outcomeFilter, setOutcomeFilter] = useState<'ALL' | 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN'>('ALL');
+  const [symbolFilters, setSymbolFilters] = useState<Set<string>>(new Set());
+  const [outcomeFilters, setOutcomeFilters] = useState<Set<string>>(new Set());
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
@@ -118,11 +171,71 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     return Array.from(symbols).sort();
   }, [dateFilteredTrades]);
 
-  const filteredTrades = dateFilteredTrades.filter(trade => {
-    const matchesSymbol = symbolFilter === 'ALL' || trade.symbol === symbolFilter;
-    const matchesOutcome = outcomeFilter === 'ALL' || trade.outcome === outcomeFilter;
-    return matchesSymbol && matchesOutcome;
-  });
+  const filteredTrades = useMemo(() => {
+    const filtered = dateFilteredTrades.filter(trade => {
+      const matchesSymbol = symbolFilters.size === 0 || symbolFilters.has(trade.symbol);
+      const matchesOutcome = outcomeFilters.size === 0 || outcomeFilters.has(trade.outcome || '');
+      return matchesSymbol && matchesOutcome;
+    });
+
+    if (!sortColumn) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let cmp = 0;
+      switch (sortColumn) {
+        case 'symbol': cmp = a.symbol.localeCompare(b.symbol); break;
+        case 'account': {
+          const aName = accounts.find(acc => acc.id === a.accountId)?.name || '';
+          const bName = accounts.find(acc => acc.id === b.accountId)?.name || '';
+          cmp = aName.localeCompare(bName); break;
+        }
+        case 'direction': cmp = a.direction.localeCompare(b.direction); break;
+        case 'entryDate': cmp = new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime(); break;
+        case 'exitDate': {
+          const aTime = a.exitDate ? new Date(a.exitDate).getTime() : 0;
+          const bTime = b.exitDate ? new Date(b.exitDate).getTime() : 0;
+          cmp = aTime - bTime; break;
+        }
+        case 'size': cmp = (a.size || 0) - (b.size || 0); break;
+        case 'rr': cmp = (a.riskRewardRatio || 0) - (b.riskRewardRatio || 0); break;
+        case 'outcome': cmp = (a.outcome || '').localeCompare(b.outcome || ''); break;
+        case 'pnl': cmp = (a.pnl || 0) - (b.pnl || 0); break;
+      }
+      return sortDirection === 'desc' ? -cmp : cmp;
+    });
+  }, [dateFilteredTrades, symbolFilters, outcomeFilters, sortColumn, sortDirection, accounts]);
+
+  // --- Pagination: compute paged slice ---
+  const totalFilteredTrades = filteredTrades.length;
+  const totalPages = Math.max(1, Math.ceil(totalFilteredTrades / pageSize));
+
+  // Clamp currentPage when data or filters change
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  // Reset to page 1 when filters, sort, or query params change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [symbolFilters, outcomeFilters, sortColumn, sortDirection, queryParams]);
+
+  const paginatedTrades = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredTrades.slice(start, start + pageSize);
+  }, [filteredTrades, currentPage, pageSize]);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+    setSelectedTradeIds(new Set());
+  }, []);
+
+  const handlePageSizeChange = useCallback((size: PageSize) => {
+    setPageSize(size);
+    setCurrentPage(1);
+    setSelectedTradeIds(new Set());
+  }, []);
 
   // Helper to check if a trade is unmapped (no accountId)
   const isTradeIncomplete = (trade: Trade) => {
@@ -265,25 +378,26 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-4">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Trade Log</h1>
-            <p className="text-muted-foreground mt-1">Track and analyze your trading history</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Trade Log</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">View, filter, and manage all your trades</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <RefreshButton onRefresh={refetch} isFetching={tradesFetching} />
-            <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
-              <Upload className="w-5 h-5" />
+            <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
+              <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
               Import
             </Button>
-            <Button onClick={onAddTrade} size="lg" className="gap-2">
-              <Plus className="w-5 h-5" />
-              New Trade
+            <Button onClick={onAddTrade} size="default" className="gap-2">
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Add Trade</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
         </div>
         {activeTab === 'trades' && (
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <AccountFilter />
             <DateRangeFilter
               selectedPreset={filters.datePreset}
@@ -302,7 +416,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
       </div>
 
       {/* Tabs and Filters */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 flex-wrap">
         <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-fit">
           <button
             onClick={() => setActiveTab('trades')}
@@ -329,38 +443,108 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
         </div>
 
         {activeTab === 'trades' && (
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Filters:</span>
+              <span className="text-sm text-muted-foreground hidden sm:inline">Filters:</span>
             </div>
             
-            {/* Symbol Filter */}
-            <Select value={symbolFilter} onValueChange={setSymbolFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Symbol" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Symbols</SelectItem>
-                {uniqueSymbols.map(symbol => (
-                  <SelectItem key={symbol} value={symbol}>{symbol}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Symbol Filter (multi-select) */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
+                  {symbolFilters.size === 0
+                    ? 'All Symbols'
+                    : symbolFilters.size === 1
+                      ? [...symbolFilters][0]
+                      : `${symbolFilters.size} symbols`}
+                  <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[180px] p-2" align="start">
+                <div className="space-y-1 max-h-[240px] overflow-auto">
+                  {uniqueSymbols.map(symbol => (
+                    <label
+                      key={symbol}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                    >
+                      <Checkbox
+                        checked={symbolFilters.has(symbol)}
+                        onCheckedChange={(checked) => {
+                          setSymbolFilters(prev => {
+                            const next = new Set(prev);
+                            checked ? next.add(symbol) : next.delete(symbol);
+                            return next;
+                          });
+                        }}
+                      />
+                      {symbol}
+                    </label>
+                  ))}
+                </div>
+                {symbolFilters.size > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-2 text-xs"
+                    onClick={() => setSymbolFilters(new Set())}
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </PopoverContent>
+            </Popover>
 
-            {/* Outcome Filter */}
-            <Select value={outcomeFilter} onValueChange={(value: 'ALL' | 'TP' | 'PARTIAL' | 'SL' | 'BREAKEVEN') => setOutcomeFilter(value)}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Outcome" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Outcomes</SelectItem>
-                <SelectItem value="TP">TP (Take Profit)</SelectItem>
-                <SelectItem value="PARTIAL">Partial</SelectItem>
-                <SelectItem value="SL">SL (Stop Loss)</SelectItem>
-                <SelectItem value="BREAKEVEN">Breakeven</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Outcome Filter (multi-select) */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
+                  {outcomeFilters.size === 0
+                    ? 'All Outcomes'
+                    : outcomeFilters.size === 1
+                      ? [...outcomeFilters][0]
+                      : `${outcomeFilters.size} outcomes`}
+                  <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[180px] p-2" align="start">
+                <div className="space-y-1">
+                  {([
+                    { value: 'TP', label: 'TP (Take Profit)' },
+                    { value: 'PARTIAL', label: 'Partial' },
+                    { value: 'SL', label: 'SL (Stop Loss)' },
+                    { value: 'BREAKEVEN', label: 'Breakeven' },
+                  ] as const).map(opt => (
+                    <label
+                      key={opt.value}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                    >
+                      <Checkbox
+                        checked={outcomeFilters.has(opt.value)}
+                        onCheckedChange={(checked) => {
+                          setOutcomeFilters(prev => {
+                            const next = new Set(prev);
+                            checked ? next.add(opt.value) : next.delete(opt.value);
+                            return next;
+                          });
+                        }}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+                {outcomeFilters.size > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-2 text-xs"
+                    onClick={() => setOutcomeFilters(new Set())}
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </PopoverContent>
+            </Popover>
           </div>
         )}
       </div>
@@ -368,6 +552,31 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
       {/* Trades Tab Content */}
       {activeTab === 'trades' && (
         <>
+          {/* Bulk Actions Toolbar */}
+          {selectedTradeIds.size > 0 && (
+            <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg animate-fade-in flex-wrap">
+              <span className="text-sm font-medium text-foreground">
+                {selectedTradeIds.size} trade{selectedTradeIds.size > 1 ? 's' : ''} selected
+              </span>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-2"
+                onClick={() => setIsBulkDeleteDialogOpen(true)}
+                disabled={isBulkDeleting}
+              >
+                {isBulkDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Delete Selected
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedTradeIds(new Set())}
+              >
+                Clear selection
+              </Button>
+            </div>
+          )}
 
           {/* Trades Table with Loading State */}
           {loading ? (
@@ -378,27 +587,66 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
               <table className="w-full min-w-[1100px]">
                 <thead className="sticky top-0 bg-card z-10">
                   <tr className="border-b border-border/50">
-                    <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Symbol</th>
-                    <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Account</th>
-                    <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Direction</th>
-                    <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Entry</th>
-                    <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Exit</th>
-                    <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Size</th>
-                    <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">R:R</th>
-                    <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Outcome</th>
-                    <th className="px-5 py-4 text-right text-sm font-medium text-muted-foreground">P&L</th>
+                    <th className="px-3 py-4 w-10">
+                      <Checkbox
+                        checked={paginatedTrades.length > 0 && selectedTradeIds.size === paginatedTrades.length}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </th>
+                    {([
+                      { key: 'symbol', label: 'Symbol', align: 'left' },
+                      { key: 'account', label: 'Account', align: 'left' },
+                      { key: 'direction', label: 'Direction', align: 'left' },
+                      { key: 'entryDate', label: 'Entry', align: 'left' },
+                      { key: 'exitDate', label: 'Exit', align: 'left' },
+                      { key: 'size', label: 'Size', align: 'left' },
+                      { key: 'rr', label: 'R:R', align: 'left' },
+                      { key: 'outcome', label: 'Outcome', align: 'left' },
+                      { key: 'pnl', label: 'P&L', align: 'right' },
+                    ] as const).map(col => (
+                      <th
+                        key={col.key}
+                        className={cn(
+                          "px-5 py-4 text-sm font-medium text-muted-foreground select-none cursor-pointer hover:text-foreground transition-colors",
+                          col.align === 'right' ? 'text-right' : 'text-left'
+                        )}
+                        onClick={() => handleSort(col.key)}
+                      >
+                        <span className={cn("inline-flex items-center gap-1", col.align === 'right' && "flex-row-reverse")}>
+                          {col.label}
+                          {sortColumn === col.key ? (
+                            sortDirection === 'desc'
+                              ? <ArrowDown className="w-3.5 h-3.5 text-primary" />
+                              : <ArrowUp className="w-3.5 h-3.5 text-primary" />
+                          ) : (
+                            <ChevronsUpDown className="w-3.5 h-3.5 opacity-30" />
+                          )}
+                        </span>
+                      </th>
+                    ))}
                     <th className="px-5 py-4 text-right text-sm font-medium text-muted-foreground"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
-                  {filteredTrades.map((trade, index) => {
+                  {paginatedTrades.map((trade, index) => {
                     const account = accounts.find(a => a.id === trade.accountId);
+                    // Global index within filteredTrades for the detail modal
+                    const globalIndex = (currentPage - 1) * pageSize + index;
                     return (
-                    <tr 
-                      key={trade.id} 
-                      className="hover:bg-secondary/30 transition-colors animate-fade-in"
+                    <tr
+                      key={trade.id}
+                      className={cn(
+                        "hover:bg-secondary/30 transition-colors animate-fade-in",
+                        selectedTradeIds.has(trade.id) && "bg-primary/5"
+                      )}
                       style={{ animationDelay: `${index * 0.03}s` }}
                     >
+                      <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedTradeIds.has(trade.id)}
+                          onCheckedChange={() => toggleTradeSelection(trade.id)}
+                        />
+                      </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className={cn(
@@ -419,7 +667,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                                   <span className="w-2 h-2 rounded-full bg-warning animate-pulse" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>This trade is not mapped to any account id and will not be considered in any stats calculation.</p>
+                                  <p>No account assigned — this trade won't appear in your stats. Click Edit to assign an account.</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
@@ -492,11 +740,11 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="h-8 w-8"
-                            onClick={() => handleViewTrade(index)}
+                            onClick={() => handleViewTrade(globalIndex)}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -507,7 +755,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewTrade(index)}>
+                              <DropdownMenuItem onClick={() => handleViewTrade(globalIndex)}>
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditTrade(trade)}>Edit Trade</DropdownMenuItem>
@@ -528,9 +776,36 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             </div>
 
             {filteredTrades.length === 0 && (
-              <div className="px-5 py-12 text-center">
-                <p className="text-muted-foreground">No trades found</p>
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                  <BookOpen className="w-7 h-7 text-muted-foreground/60" />
+                </div>
+                <h3 className="text-base font-medium text-foreground mb-1">No trades found</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mb-6">
+                  {symbolFilters.size > 0 || outcomeFilters.size > 0
+                    ? "Try adjusting your filters to see more trades."
+                    : "Add your first trade to start building your trading log."}
+                </p>
+                {symbolFilters.size === 0 && outcomeFilters.size === 0 && (
+                  <Button onClick={onAddTrade} size="sm" className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Trade
+                  </Button>
+                )}
               </div>
+            )}
+
+            {/* Pagination bar */}
+            {filteredTrades.length > 0 && (
+              <TablePagination
+                currentPage={currentPage}
+                totalItems={totalFilteredTrades}
+                pageSize={pageSize}
+                isLoading={tradesFetching}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                className="sticky bottom-0 rounded-b-xl"
+              />
             )}
           </div>
           )}
@@ -545,9 +820,9 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           ) : (
             <>
               {/* Calendar Card */}
-              <div className="glass-card p-6">
+              <div className="glass-card p-3 sm:p-6 overflow-x-auto">
                 {/* Month Navigation */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -568,13 +843,13 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                 </div>
 
                 {/* Day Headers */}
-                <div className="grid grid-cols-8 gap-2 mb-2">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
+                <div className="grid grid-cols-8 gap-1 sm:gap-2 mb-2 min-w-[560px]">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                    <div key={day} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
                       {day}
                     </div>
                   ))}
-                  <div className="text-center text-sm font-medium text-muted-foreground py-2">
+                  <div className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
                     Weekly
                   </div>
                 </div>
@@ -588,7 +863,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                   const weekStats = getWeekStats(weekStart);
 
                   return (
-                    <div key={weekStart.toISOString()} className="grid grid-cols-8 gap-2 mb-2">
+                    <div key={weekStart.toISOString()} className="grid grid-cols-8 gap-1 sm:gap-2 mb-1 sm:mb-2 min-w-[560px]">
                       {weekDays.map((day, dayIndex) => {
                         const stats = getDayStats(day);
                         const isToday = isSameDay(day, new Date());
@@ -680,37 +955,37 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                 })}
 
                 {/* Legend */}
-                <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-border/50">
+                <div className="flex items-center justify-center gap-3 sm:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border/50 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-success/20" />
-                    <span className="text-sm text-muted-foreground">Profitable Day</span>
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-success/20" />
+                    <span className="text-xs sm:text-sm text-muted-foreground">Profitable Day</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-destructive/20" />
-                    <span className="text-sm text-muted-foreground">Loss Day</span>
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-destructive/20" />
+                    <span className="text-xs sm:text-sm text-muted-foreground">Loss Day</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded ring-2 ring-primary" />
-                    <span className="text-sm text-muted-foreground">Today</span>
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded ring-2 ring-primary" />
+                    <span className="text-xs sm:text-sm text-muted-foreground">Today</span>
                   </div>
                 </div>
               </div>
 
               {/* Monthly Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 {[
                   { label: 'Trading Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 1 }) })).filter(d => getDayStats(d)).length },
                   { label: 'Profitable Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 1 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl > 0; }).length },
                   { label: 'Loss Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 1 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl < 0; }).length },
                   { label: 'Monthly P&L', value: `$${weeks.reduce((sum, w) => sum + getWeekStats(w).pnl, 0).toFixed(2)}` },
                 ].map((stat, index) => (
-                  <div 
+                  <div
                     key={stat.label}
-                    className="glass-card p-4 animate-fade-in"
+                    className="glass-card p-3 sm:p-4 animate-fade-in"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                    <p className="text-2xl font-semibold text-foreground font-mono mt-1">{stat.value}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
+                    <p className="text-lg sm:text-2xl font-semibold text-foreground font-mono mt-1 truncate">{stat.value}</p>
                   </div>
                 ))}
               </div>
@@ -788,6 +1063,35 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                 </>
               ) : (
                 'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedTradeIds.size} trade{selectedTradeIds.size > 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the selected trades. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                `Delete ${selectedTradeIds.size} trade${selectedTradeIds.size > 1 ? 's' : ''}`
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

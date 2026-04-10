@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardView } from '@/components/views/DashboardView';
@@ -12,7 +12,9 @@ import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
 import { useCreateTradeMutation, useBulkImportTradesMutation, useGetSavedOptionsQuery, useGetSubscriptionQuery } from '@/store/api';
 import { useTradesSync } from '@/hooks/useTradesSync';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { Menu } from 'lucide-react';
 import type { Trade } from '@/types/trade';
 
 export function AppPage() {
@@ -37,9 +39,31 @@ export function AppPage() {
   
   // Centralized trades sync with account selection
   useTradesSync();
+  const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
   const [isImportTradesOpen, setIsImportTradesOpen] = useState(false);
+
+  // Auto-collapse sidebar on tablet-sized screens (768-1024px)
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width >= 768 && width <= 1024) {
+        setSidebarCollapsed(true);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close mobile sidebar when switching away from mobile
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileSidebarOpen(false);
+    }
+  }, [isMobile]);
   
   // Derive active view from URL
   const activeView = location.pathname.split('/')[2] || 'dashboard';
@@ -95,17 +119,34 @@ export function AppPage() {
 
   return (
     <div className="min-h-screen bg-background bg-glow">
-      <Sidebar 
-        activeView={activeView} 
+      <Sidebar
+        activeView={activeView}
         onViewChange={(view) => navigate(`/app/${view}`)}
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
+        mobileOpen={mobileSidebarOpen}
+        onMobileOpenChange={setMobileSidebarOpen}
       />
-      
+
       <main className={cn(
-        "transition-all duration-300 min-h-screen p-8",
-        sidebarCollapsed ? "ml-[72px]" : "ml-[240px]"
+        "transition-all duration-300 min-h-screen",
+        // Padding: smaller on mobile, full on desktop
+        "p-4 md:p-8",
+        // Margin: none on mobile (sidebar overlays), collapsed on tablet, dynamic on desktop
+        isMobile
+          ? "ml-0"
+          : sidebarCollapsed ? "ml-[72px]" : "ml-[240px]"
       )}>
+        {/* Mobile hamburger button */}
+        {isMobile && (
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="mb-4 p-2 rounded-lg hover:bg-accent text-foreground/70 hover:text-foreground transition-colors"
+            aria-label="Open sidebar menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        )}
         <div className="max-w-7xl mx-auto animate-fade-in">
           <Routes>
             <Route index element={<Navigate to="/app/dashboard" replace />} />

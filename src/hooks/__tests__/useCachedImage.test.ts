@@ -131,3 +131,111 @@ describe('useCachedImage', () => {
     expect(mockUseGetImageQuery).toHaveBeenLastCalledWith('image-2', { skip: false });
   });
 });
+
+describe('useCachedImage - Error Scenarios', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns error for 404 image not found', () => {
+    const notFoundError = { status: 404, data: 'Image not found' };
+    mockUseGetImageQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: notFoundError,
+    });
+
+    const { result } = renderHook(() => useCachedImage('nonexistent/image.png'));
+
+    expect(result.current.error).toEqual(notFoundError);
+    expect(result.current.error).toHaveProperty('status', 404);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('returns error for 401 unauthorized', () => {
+    const unauthorizedError = { status: 401, data: 'Unauthorized' };
+    mockUseGetImageQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: unauthorizedError,
+    });
+
+    const { result } = renderHook(() => useCachedImage('protected/image.png'));
+
+    expect(result.current.error).toEqual(unauthorizedError);
+    expect(result.current.error).toHaveProperty('status', 401);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('returns undefined src when error occurs', () => {
+    mockUseGetImageQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: { status: 500, data: 'Internal Server Error' },
+    });
+
+    const { result } = renderHook(() => useCachedImage('broken/image.png'));
+
+    expect(result.current.src).toBeUndefined();
+    expect(result.current.error).toBeDefined();
+  });
+});
+
+describe('useCachedImage - Edge Cases', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockUseGetImageQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: undefined,
+    });
+  });
+
+  it('handles empty string imageId by passing it and not skipping', () => {
+    renderHook(() => useCachedImage(''));
+
+    // '' is falsy, so the hook will pass '' and skip: true
+    expect(mockUseGetImageQuery).toHaveBeenCalledWith('', { skip: true });
+  });
+
+  it('handles imageId with special characters', () => {
+    const specialId = 'images/account@1/trade#2/screenshot (1).png';
+    mockUseGetImageQuery.mockReturnValue({
+      data: 'blob:http://localhost/special-123',
+      isLoading: false,
+      error: undefined,
+    });
+
+    const { result } = renderHook(() => useCachedImage(specialId));
+
+    expect(mockUseGetImageQuery).toHaveBeenCalledWith(specialId, { skip: false });
+    expect(result.current.src).toBe('blob:http://localhost/special-123');
+  });
+
+  it('re-renders when imageId changes from valid to undefined', () => {
+    mockUseGetImageQuery.mockReturnValue({
+      data: 'blob:http://localhost/valid',
+      isLoading: false,
+      error: undefined,
+    });
+
+    const { rerender } = renderHook(
+      ({ imageId }) => useCachedImage(imageId),
+      { initialProps: { imageId: 'valid-image' as string | undefined } }
+    );
+
+    expect(mockUseGetImageQuery).toHaveBeenLastCalledWith('valid-image', { skip: false });
+
+    // Now change to undefined
+    mockUseGetImageQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: undefined,
+    });
+
+    rerender({ imageId: undefined });
+
+    expect(mockUseGetImageQuery).toHaveBeenLastCalledWith('', { skip: true });
+  });
+});

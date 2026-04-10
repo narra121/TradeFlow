@@ -84,3 +84,60 @@ describe('formatLocalDateTime', () => {
     expect(formatLocalDateTime(date)).toBe('2025-12-31T23:59:59');
   });
 });
+
+describe('formatLocalDateOnly – extended', () => {
+  it('handles epoch 0 (Jan 1, 1970 in local time)', () => {
+    const date = new Date(0);
+    // epoch 0 is midnight UTC; in local time the date components come from the local offset
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    expect(formatLocalDateOnly(date)).toBe(`${year}-${month}-${day}`);
+  });
+
+  it('handles a far future date', () => {
+    const date = new Date(2099, 11, 31); // Dec 31, 2099
+    expect(formatLocalDateOnly(date)).toBe('2099-12-31');
+  });
+
+  it('handles a date constructed from a date-only string', () => {
+    // Date-only strings are parsed as UTC – formatLocalDateOnly uses local getters
+    const date = new Date('2025-06-15');
+    const expected = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    expect(formatLocalDateOnly(date)).toBe(expected);
+  });
+
+  it('handles a date constructed from a datetime string', () => {
+    const date = new Date('2025-06-15T18:30:00');
+    expect(formatLocalDateOnly(date)).toBe(
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+    );
+  });
+
+  it('returns NaN-containing string for invalid date input', () => {
+    const date = new Date('not-a-date');
+    // Date methods return NaN for invalid dates
+    const result = formatLocalDateOnly(date);
+    expect(result).toContain('NaN');
+  });
+});
+
+describe('formatLocalDateTime – extended', () => {
+  it('handles epoch 0 in local time', () => {
+    const date = new Date(0);
+    const result = formatLocalDateTime(date);
+    // Should contain a T separator and be well-formed
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
+  });
+
+  it('returns NaN-containing string for invalid date input', () => {
+    const date = new Date('not-a-date');
+    const result = formatLocalDateTime(date);
+    expect(result).toContain('NaN');
+  });
+
+  it('handles a far future date with time', () => {
+    const date = new Date(2099, 5, 15, 8, 5, 3);
+    expect(formatLocalDateTime(date)).toBe('2099-06-15T08:05:03');
+  });
+});

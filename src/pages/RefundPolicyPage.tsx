@@ -7,7 +7,7 @@ export function RefundPolicyPage() {
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-5 h-5 text-primary-foreground" />
@@ -17,20 +17,21 @@ export function RefundPolicyPage() {
           <Button variant="ghost" asChild className="gap-2">
             <Link to="/">
               <ArrowLeft className="w-4 h-4" />
-              Back to Home
+              <span className="hidden sm:inline">Back to Home</span>
+              <span className="sm:hidden">Back</span>
             </Link>
           </Button>
         </div>
       </nav>
 
       {/* Content */}
-      <div className="pt-32 pb-20 px-6">
+      <div className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Refund & Cancellation Policy</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">Refund & Cancellation Policy</h1>
           <p className="text-muted-foreground mb-12">Last updated: April 9, 2026</p>
 
           <div className="space-y-10 text-foreground/90">
-            <section className="bg-card rounded-2xl border border-success/20 p-8">
+            <section className="bg-card rounded-2xl border border-success/20 p-6 sm:p-8">
               <h2 className="text-2xl font-semibold text-success mb-4">TradeFlow is Free</h2>
               <p className="text-muted-foreground leading-relaxed">
                 TradeFlow is a <span className="text-foreground font-medium">100% free trading journal</span> with
@@ -92,29 +93,29 @@ export function RefundPolicyPage() {
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">5. Refund Processing</h2>
               <div className="space-y-4">
-                <div className="flex items-start gap-4 bg-card rounded-xl border border-border/50 p-6">
+                <div className="flex items-start gap-3 sm:gap-4 bg-card rounded-xl border border-border/50 p-4 sm:p-6">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <span className="text-primary font-bold">1</span>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-foreground font-medium mb-1">Submit Request</h3>
-                    <p className="text-muted-foreground text-sm">Email us at Narra77888@gmail.com with your refund details</p>
+                    <p className="text-muted-foreground text-sm break-words">Email us at Narra77888@gmail.com with your refund details</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4 bg-card rounded-xl border border-border/50 p-6">
+                <div className="flex items-start gap-3 sm:gap-4 bg-card rounded-xl border border-border/50 p-4 sm:p-6">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <span className="text-primary font-bold">2</span>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-foreground font-medium mb-1">Review</h3>
                     <p className="text-muted-foreground text-sm">We will review your request within 3-5 business days</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4 bg-card rounded-xl border border-border/50 p-6">
+                <div className="flex items-start gap-3 sm:gap-4 bg-card rounded-xl border border-border/50 p-4 sm:p-6">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <span className="text-primary font-bold">3</span>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-foreground font-medium mb-1">Processing</h3>
                     <p className="text-muted-foreground text-sm">Approved refunds will be credited to the original payment method within 5-7 business days</p>
                   </div>
@@ -131,7 +132,7 @@ export function RefundPolicyPage() {
               </p>
             </section>
 
-            <section className="bg-card rounded-2xl border border-border/50 p-8">
+            <section className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
               <h2 className="text-2xl font-semibold text-foreground mb-4">7. Contact Us</h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
                 For refund requests or any payment-related queries, please reach out to us:
@@ -148,12 +149,12 @@ export function RefundPolicyPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/50 py-8 px-6">
+      <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} TradeFlow. All rights reserved.
           </p>
-          <div className="flex items-center gap-6 text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
             <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
             <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>

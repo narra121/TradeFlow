@@ -179,3 +179,66 @@ describe('CachedImage', () => {
     expect(img.src).toContain('/placeholder.svg');
   });
 });
+
+describe('CachedImage – additional coverage', () => {
+  beforeEach(() => {
+    mockUseCachedImage.mockReset();
+  });
+
+  it('shows skeleton during loading and hides the img element', () => {
+    mockUseCachedImage.mockReturnValue({
+      src: undefined,
+      isLoading: true,
+      error: null,
+    });
+
+    render(<CachedImage src="loading-key" alt="Loading image" />);
+
+    expect(screen.getByTestId('skeleton')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('shows fallback image on error with default fallbackSrc', () => {
+    mockUseCachedImage.mockReturnValue({
+      src: undefined,
+      isLoading: false,
+      error: { status: 404, data: 'Not found' },
+    });
+
+    render(<CachedImage src="missing-key" alt="Missing image" />);
+
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', '/placeholder.svg');
+    expect(img).toHaveAttribute('alt', 'Missing image');
+  });
+
+  it('renders actual image when loaded successfully', () => {
+    mockUseCachedImage.mockReturnValue({
+      src: 'blob:http://localhost/success-url',
+      isLoading: false,
+      error: null,
+    });
+
+    render(<CachedImage src="success-key" alt="Loaded image" />);
+
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', 'blob:http://localhost/success-url');
+    expect(img).toHaveAttribute('alt', 'Loaded image');
+    expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
+  });
+
+  it('handles empty src string by passing it to the hook', () => {
+    mockUseCachedImage.mockReturnValue({
+      src: undefined,
+      isLoading: false,
+      error: { status: 400, data: 'Bad request' },
+    });
+
+    render(<CachedImage src="" alt="Empty src" />);
+
+    expect(mockUseCachedImage).toHaveBeenCalledWith('');
+    // Should show fallback since there is an error
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', '/placeholder.svg');
+  });
+});

@@ -61,57 +61,57 @@ export function AccountSelect({ accounts, selectedAccountIds, onChange }: Accoun
           )} />
         </button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-[var(--radix-popover-trigger-width)] p-0 bg-card border-border z-50" 
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] min-w-[280px] p-0 bg-card border-border z-50"
         align="start"
         sideOffset={4}
       >
-        <div className="p-3 border-b border-border">
+        <div className="p-2.5 sm:p-3 border-b border-border">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={selectAll}
-              className="hover:text-foreground transition-colors"
+              className="hover:text-foreground transition-colors min-h-[44px] sm:min-h-0 flex items-center"
             >
               Select All
             </button>
             <span>•</span>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={selectNone}
-              className="hover:text-foreground transition-colors"
+              className="hover:text-foreground transition-colors min-h-[44px] sm:min-h-0 flex items-center"
             >
               Clear
             </button>
           </div>
         </div>
 
-        <div className="max-h-64 overflow-y-auto p-2">
+        <div className="max-h-64 overflow-y-auto p-1.5 sm:p-2">
           {accounts.map((account) => {
             const isSelected = selectedAccountIds.includes(account.id);
-            
+
             return (
               <button
                 key={account.id}
                 type="button"
                 onClick={() => toggleAccount(account.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all text-left",
+                  "w-full flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all text-left min-h-[44px]",
                   "hover:bg-secondary/50"
                 )}
               >
                 <div className={cn(
                   "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                  isSelected 
-                    ? "border-primary bg-primary" 
+                  isSelected
+                    ? "border-primary bg-primary"
                     : "border-muted-foreground/40"
                 )}>
                   {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-sm text-foreground">{account.name}</span>
+                    <span className="font-medium text-sm text-foreground truncate">{account.name}</span>
                     <span className={cn(
                       "text-[9px] px-1.5 py-0.5 rounded-full border uppercase shrink-0 font-medium",
                       accountStatusColors[account.status]
@@ -119,7 +119,7 @@ export function AccountSelect({ accounts, selectedAccountIds, onChange }: Accoun
                       {accountStatusLabels[account.status]}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
                     {account.broker} • {accountTypeLabels[account.type]}
                   </p>
                 </div>

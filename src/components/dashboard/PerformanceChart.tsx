@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { cn } from '@/lib/utils';
-import { Trade } from '@/types/trade';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 
-interface ChartDataPoint {
+interface DailyPnlEntry {
   date: string;
   pnl: number;
-  cumulative: number;
+  cumulativePnl: number;
 }
 
 interface CustomTooltipProps {
@@ -34,38 +33,21 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 };
 
 interface PerformanceChartProps {
-  trades?: Trade[];
+  dailyPnl?: DailyPnlEntry[];
 }
 
-export function PerformanceChart({ trades = [] }: PerformanceChartProps) {
+export function PerformanceChart({ dailyPnl = [] }: PerformanceChartProps) {
   const chartData = useMemo(() => {
-    if (trades.length === 0) {
+    if (dailyPnl.length === 0) {
       return [];
     }
 
-    // Sort trades by date
-    const sortedTrades = [...trades].sort((a, b) => 
-      new Date(a.exitDate || a.entryDate).getTime() - new Date(b.exitDate || b.entryDate).getTime()
-    );
-
-    // Group trades by date and calculate cumulative P&L
-    const dailyData: Record<string, number> = {};
-    sortedTrades.forEach(trade => {
-      const dateKey = format(new Date(trade.exitDate || trade.entryDate), 'MMM dd');
-      dailyData[dateKey] = (dailyData[dateKey] || 0) + (trade.pnl || 0);
-    });
-
-    // Convert to chart data with cumulative values
-    let cumulative = 0;
-    return Object.entries(dailyData).map(([date, pnl]) => {
-      cumulative += pnl;
-      return {
-        date,
-        pnl,
-        cumulative,
-      };
-    });
-  }, [trades]);
+    return dailyPnl.map((entry) => ({
+      date: format(new Date(entry.date), 'MMM dd'),
+      pnl: entry.pnl,
+      cumulative: entry.cumulativePnl,
+    }));
+  }, [dailyPnl]);
 
   return (
     <div className="glass-card p-5 animate-fade-in">

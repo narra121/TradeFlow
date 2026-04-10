@@ -265,13 +265,13 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-[90vw] h-[85vh] max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
-        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-          <DialogTitle className="text-xl font-semibold">{editMode ? 'Edit Trade' : 'Add New Trade'}</DialogTitle>
+      <DialogContent className="w-[95vw] sm:w-[90vw] max-w-[95vw] sm:max-w-[90vw] h-[95vh] sm:h-[85vh] max-h-[95vh] sm:max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
+          <DialogTitle className="text-lg sm:text-xl font-semibold">{editMode ? 'Edit Trade' : 'Add New Trade'}</DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">
-          <form onSubmit={handleSubmit} className="px-6 pb-6">
+          <form onSubmit={handleSubmit} className="px-4 sm:px-6 pb-4 sm:pb-6">
             <div className="space-y-6">
               {/* Account Selection - Only show if creating new trade or editing unmapped trade */}
               {accounts.length > 0 && canSelectAccount && (
@@ -317,9 +317,10 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   <TrendingUp className="w-4 h-4" />
                   Core Details
                 </div>
+                <p className="text-xs text-muted-foreground -mt-2">Required fields are marked with <span className="text-destructive">*</span></p>
 
                 {/* Direction Toggle */}
-                <div className="flex gap-2 max-w-xs">
+                <div className="flex gap-2 w-full sm:max-w-xs">
                   <button
                     type="button"
                     onClick={() => setDirection('LONG')}
@@ -349,20 +350,20 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                 </div>
 
                 {/* Compact Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Symbol</Label>
+                    <Label className="text-xs">Symbol <span className="text-destructive">*</span></Label>
                     <DynamicSelect
                       value={symbol}
                       onChange={setSymbol}
                       options={options.symbols}
                       onAddNew={addSymbol}
                       onRemove={removeSymbol}
-                      placeholder="Select..."
+                      placeholder="e.g. EURUSD"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Entry Price</Label>
+                    <Label className="text-xs">Entry Price <span className="text-destructive">*</span></Label>
                     <Input
                       type="number"
                       step="any"
@@ -385,7 +386,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Size (lots)</Label>
+                    <Label className="text-xs">Size (lots) <span className="text-destructive">*</span></Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -397,9 +398,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Entry Date & Time</Label>
+                    <Label className="text-xs">Entry Date & Time <span className="text-destructive">*</span></Label>
                     <DateTimePicker
                       value={entryDateTime}
                       onChange={setEntryDateTime}
@@ -439,7 +440,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Net PnL ($)</Label>
                     <Input
@@ -454,6 +455,10 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                         parseFloat(displayPnl) < 0 && "text-destructive"
                       )}
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {calculatedPnl && !manualPnl ? 'Auto-calculated from entry/exit prices. Enter a value to override.' :
+                       manualPnl ? 'Manual override active.' : 'Enter prices above for auto-calculation, or type a value.'}
+                    </p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Outcome</Label>
@@ -461,7 +466,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                       value={outcome}
                       onChange={(value) => setOutcome(value as TradeOutcome)}
                       options={['TP', 'PARTIAL', 'SL', 'BREAKEVEN']}
-                      placeholder="Select outcome..."
+                      placeholder="Select outcome"
                     />
                   </div>
                 </div>
@@ -475,8 +480,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   <Clock className="w-4 h-4" />
                   Trade Context
                 </div>
+                <p className="text-xs text-muted-foreground -mt-2">Optional — helps with pattern analysis</p>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Strategy / Setup</Label>
                     <DynamicSelect
@@ -485,7 +491,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                       options={options.strategies}
                       onAddNew={addStrategy}
                       onRemove={removeStrategy}
-                      placeholder="Select..."
+                      placeholder="e.g. Breakout"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -496,7 +502,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                       options={options.sessions}
                       onAddNew={addSession}
                       onRemove={removeSession}
-                      placeholder="Select..."
+                      placeholder="e.g. London"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -507,7 +513,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                       options={options.marketConditions}
                       onAddNew={addMarketCondition}
                       onRemove={removeMarketCondition}
-                      placeholder="Select..."
+                      placeholder="e.g. Trending"
                     />
                   </div>
                 </div>
@@ -521,8 +527,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   <BarChart3 className="w-4 h-4" />
                   Analysis
                 </div>
+                <p className="text-xs text-muted-foreground -mt-2">Optional — track lessons and mistakes</p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 h-6">
                       <Label className="text-xs">News / Events</Label>
@@ -597,6 +604,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   <FileText className="w-4 h-4" />
                   Trade Notes
                 </div>
+                <p className="text-xs text-muted-foreground -mt-2">Optional — add context for future review</p>
 
                 <div className="space-y-1.5 relative">
                   <div className="relative">
@@ -626,6 +634,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   <Camera className="w-4 h-4" />
                   Visual Evidence
                 </div>
+                <p className="text-xs text-muted-foreground -mt-2">Optional — attach chart screenshots</p>
 
                 <ImageUploader
                   images={images}
@@ -640,12 +649,12 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
         </ScrollArea>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex justify-end gap-3 shrink-0">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border bg-secondary/30 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 shrink-0">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="w-28"
+            className="w-full sm:w-28"
             disabled={isSubmitting}
           >
             Cancel
@@ -653,7 +662,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
           <Button
             type="submit"
             onClick={handleSubmit}
-            className="w-28"
+            className="w-full sm:w-28"
             disabled={isSubmitting}
           >
             {isSubmitting ? (

@@ -51,4 +51,59 @@ describe('RequireAuth', () => {
     const html = renderAuth(true, '/app/dashboard');
     expect(html).toContain('Secret Content');
   });
+
+  describe('RequireAuth - Auth State Edge Cases', () => {
+    it('redirects to /login when auth state has null token (not authenticated)', () => {
+      // Simulate a state where token is null, meaning isAuthenticated is false
+      mockUseAppSelector.mockReturnValue({ isAuthenticated: false, token: null });
+      const html = renderToString(
+        createElement(MemoryRouter, { initialEntries: ['/app/dashboard'] },
+          createElement(RequireAuth, null,
+            createElement('div', { 'data-testid': 'protected' }, 'Secret Content')
+          )
+        )
+      );
+      expect(html).not.toContain('Secret Content');
+      expect(html).not.toContain('data-testid="protected"');
+    });
+
+    it('handles undefined auth state gracefully (treats as unauthenticated)', () => {
+      // If the selector returns an object where isAuthenticated is undefined/falsy
+      mockUseAppSelector.mockReturnValue({ isAuthenticated: undefined });
+      const html = renderToString(
+        createElement(MemoryRouter, { initialEntries: ['/app/settings'] },
+          createElement(RequireAuth, null,
+            createElement('div', { 'data-testid': 'protected' }, 'Secret Content')
+          )
+        )
+      );
+      expect(html).not.toContain('Secret Content');
+      expect(html).not.toContain('data-testid="protected"');
+    });
+
+    it('does not render children when isAuthenticated is explicitly false', () => {
+      mockUseAppSelector.mockReturnValue({ isAuthenticated: false });
+      const html = renderToString(
+        createElement(MemoryRouter, { initialEntries: ['/'] },
+          createElement(RequireAuth, null,
+            createElement('div', { 'data-testid': 'protected' }, 'Should Not Appear')
+          )
+        )
+      );
+      expect(html).not.toContain('Should Not Appear');
+    });
+
+    it('renders children when isAuthenticated is true regardless of route', () => {
+      mockUseAppSelector.mockReturnValue({ isAuthenticated: true });
+      const html = renderToString(
+        createElement(MemoryRouter, { initialEntries: ['/app/some-deep/route'] },
+          createElement(RequireAuth, null,
+            createElement('div', { 'data-testid': 'protected' }, 'Deep Route Content')
+          )
+        )
+      );
+      expect(html).toContain('Deep Route Content');
+      expect(html).toContain('data-testid="protected"');
+    });
+  });
 });

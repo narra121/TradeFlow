@@ -268,7 +268,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
       </div>
 
       {/* Right Panel - Auth Forms */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+      <div className="flex-1 flex items-center justify-center px-4 py-6 sm:p-6 lg:p-12">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
@@ -298,6 +298,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-11 h-12 bg-card border-border"
+                      required
                     />
                   </div>
                 </div>
@@ -322,6 +323,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-11 pr-11 h-12 bg-card border-border"
+                      required
                     />
                     <button
                       type="button"
@@ -390,6 +392,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="pl-11 h-12 bg-card border-border"
+                      required
                     />
                   </div>
                 </div>
@@ -405,6 +408,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-11 h-12 bg-card border-border"
+                      required
                     />
                   </div>
                 </div>
@@ -420,6 +424,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-11 pr-11 h-12 bg-card border-border"
+                      required
                     />
                     <button
                       type="button"
@@ -446,6 +451,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                         "pl-11 pr-11 h-12 bg-card border-border",
                         confirmPassword && password !== confirmPassword && "border-red-500 focus-visible:ring-red-500"
                       )}
+                      required
                     />
                     <button
                       type="button"
@@ -516,6 +522,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-11 h-12 bg-card border-border"
+                      required
                     />
                   </div>
                 </div>
@@ -554,32 +561,40 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                   <Mail className="w-8 h-8 text-primary" />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">Check your email</h2>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground break-words">
                   We sent a verification code to
                   <br />
-                  <span className="text-foreground font-medium">{email || "your email"}</span>
+                  <span className="text-foreground font-medium break-all">{email || "your email"}</span>
                 </p>
               </div>
 
-              <div className="py-4">
-                <OTPInput onComplete={handleOTPComplete} />
+              <div className="py-4 relative">
+                <OTPInput onComplete={handleOTPComplete} disabled={loading} />
+                {loading && (
+                  <div className="flex items-center justify-center gap-2 mt-4">
+                    <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    <span className="text-sm text-muted-foreground">Verifying...</span>
+                  </div>
+                )}
               </div>
 
               <p className="text-center text-sm text-muted-foreground">
                 Didn't receive the code?{" "}
                 <button
-                  onClick={() => toast.success("Code resent!")}
-                  className="text-primary hover:text-primary/80 font-semibold transition-colors"
+                  onClick={async () => {
+                    try {
+                      await signup({ name, email, password }).unwrap();
+                      toast.success("Verification code resent to your email");
+                    } catch {
+                      toast.error("Failed to resend code. Please try again.");
+                    }
+                  }}
+                  disabled={loading}
+                  className="text-primary hover:text-primary/80 font-semibold transition-colors disabled:opacity-50"
                 >
                   Resend
                 </button>
               </p>
-
-              {loading && (
-                <div className="flex justify-center">
-                  <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                </div>
-              )}
             </div>
           )}
 
@@ -599,10 +614,10 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                   <Mail className="w-8 h-8 text-primary" />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">Enter reset code</h2>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground break-words">
                   We sent a code to
                   <br />
-                  <span className="text-foreground font-medium">{email || "your email"}</span>
+                  <span className="text-foreground font-medium break-all">{email || "your email"}</span>
                 </p>
               </div>
 
@@ -680,8 +695,16 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
               <p className="text-center text-sm text-muted-foreground">
                 Didn't receive the code?{" "}
                 <button
-                  onClick={() => handleForgotPassword(new Event('submit') as any)}
-                  className="text-primary hover:text-primary/80 font-semibold transition-colors"
+                  onClick={async () => {
+                    try {
+                      await forgotPassword({ email }).unwrap();
+                      toast.success("Reset code resent to your email");
+                    } catch {
+                      toast.error("Failed to resend code. Please try again.");
+                    }
+                  }}
+                  disabled={loading}
+                  className="text-primary hover:text-primary/80 font-semibold transition-colors disabled:opacity-50"
                 >
                   Resend
                 </button>

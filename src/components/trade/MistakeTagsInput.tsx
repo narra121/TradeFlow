@@ -52,14 +52,14 @@ export function MistakeTagsInput({
               type="button"
               onClick={() => toggleTag(tag)}
               className={cn(
-                'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
+                'px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all max-w-full',
                 isSelected
                   ? 'bg-destructive text-destructive-foreground shadow-lg shadow-destructive/25'
                   : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80'
               )}
             >
-              {tag}
-              {isSelected && <X className="w-3 h-3 ml-1.5 inline" />}
+              <span className="truncate">{tag}</span>
+              {isSelected && <X className="w-3 h-3 ml-1 sm:ml-1.5 inline shrink-0" />}
             </button>
           );
         })}
@@ -67,12 +67,12 @@ export function MistakeTagsInput({
 
       {/* Add New */}
       {isAdding ? (
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2">
           <Input
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
             placeholder="Enter new mistake..."
-            className="h-8 text-sm flex-1"
+            className="h-8 text-xs sm:text-sm flex-1 min-w-0"
             autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') {

@@ -124,3 +124,94 @@ describe('BrokenRulesSelect', () => {
     expect(unselectedButton).not.toHaveClass('bg-destructive/10');
   });
 });
+
+describe('BrokenRulesSelect – additional coverage', () => {
+  const defaultProps = {
+    rules: mockRules,
+    selectedRuleIds: [] as string[],
+    onChange: vi.fn(),
+  };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders with empty rules list showing empty state message', () => {
+    render(<BrokenRulesSelect rules={[]} selectedRuleIds={[]} onChange={vi.fn()} />);
+
+    expect(
+      screen.getByText('No trading rules defined. Add rules in Goals & Rules page.')
+    ).toBeInTheDocument();
+  });
+
+  it('selects multiple rules in sequence', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    // Render with rule-1 already selected, then click rule-2
+    render(
+      <BrokenRulesSelect
+        {...defaultProps}
+        selectedRuleIds={['rule-1']}
+        onChange={onChange}
+      />
+    );
+
+    await user.click(screen.getByText('Max 3 trades per day'));
+    expect(onChange).toHaveBeenCalledWith(['rule-1', 'rule-2']);
+  });
+
+  it('deselects a rule when a selected rule is clicked', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <BrokenRulesSelect
+        {...defaultProps}
+        selectedRuleIds={['rule-1', 'rule-2', 'rule-3']}
+        onChange={onChange}
+      />
+    );
+
+    await user.click(screen.getByText('Max 3 trades per day'));
+
+    expect(onChange).toHaveBeenCalledWith(['rule-1', 'rule-3']);
+  });
+
+  it('shows all rules as options', () => {
+    render(<BrokenRulesSelect {...defaultProps} />);
+
+    const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(3);
+    expect(screen.getByText('Always use a stop loss')).toBeInTheDocument();
+    expect(screen.getByText('Max 3 trades per day')).toBeInTheDocument();
+    expect(screen.getByText('No trading during news')).toBeInTheDocument();
+  });
+
+  it('handles undefined/empty selectedRuleIds gracefully', () => {
+    render(
+      <BrokenRulesSelect
+        rules={mockRules}
+        selectedRuleIds={[]}
+        onChange={vi.fn()}
+      />
+    );
+
+    // All rules should render without destructive styling
+    const buttons = screen.getAllByRole('button');
+    buttons.forEach((btn) => {
+      expect(btn).not.toHaveClass('bg-destructive/10');
+    });
+  });
+
+  it('renders each rule as a button element for accessibility', () => {
+    render(<BrokenRulesSelect {...defaultProps} />);
+
+    const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(3);
+
+    // Each button should have type="button"
+    buttons.forEach((btn) => {
+      expect(btn).toHaveAttribute('type', 'button');
+    });
+  });
+});

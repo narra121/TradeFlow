@@ -3,7 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { format, subDays, startOfWeek, startOfMonth } from 'date-fns';
+import { format } from 'date-fns/format';
+import { subDays } from 'date-fns/subDays';
+import { startOfWeek } from 'date-fns/startOfWeek';
+import { startOfMonth } from 'date-fns/startOfMonth';
 import { CalendarIcon } from 'lucide-react';
 
 export type DatePreset = 'thisWeek' | 'thisMonth' | 7 | 30 | 60 | 90 | 365 | 'all' | 'custom';
@@ -56,14 +59,14 @@ export function DateRangeFilter({
 
   return (
     <>
-      <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg">
-        <span className="px-2 text-sm text-muted-foreground">Last</span>
+      <div className="flex flex-wrap items-center gap-1 p-1 bg-secondary/50 rounded-lg overflow-x-auto">
+        <span className="px-1.5 sm:px-2 text-xs sm:text-sm text-muted-foreground shrink-0">Last</span>
         {daysPresets.map((preset) => (
           <button
             key={preset.value}
             onClick={() => onPresetChange(preset.value)}
             className={cn(
-              "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+              "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0",
               selectedPreset === preset.value
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -76,7 +79,7 @@ export function DateRangeFilter({
           <button
             onClick={() => onPresetChange('custom')}
             className={cn(
-              "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+              "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0",
               selectedPreset === 'custom'
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -93,7 +96,7 @@ export function DateRangeFilter({
             key={preset.value}
             onClick={() => onPresetChange(preset.value)}
             className={cn(
-              "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+              "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
               selectedPreset === preset.value
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -105,18 +108,18 @@ export function DateRangeFilter({
       </div>
 
       {showCustomPicker && selectedPreset === 'custom' && customRange && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
           <Popover open={fromOpen} onOpenChange={setFromOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "justify-start text-left font-normal gap-2",
+                  "w-full sm:w-auto justify-start text-left font-normal gap-2 text-xs sm:text-sm",
                   !customRange.from && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="h-4 w-4" />
+                <CalendarIcon className="h-4 w-4 shrink-0" />
                 {customRange.from ? format(customRange.from, "MMM d, yyyy") : "From"}
               </Button>
             </PopoverTrigger>
@@ -132,7 +135,7 @@ export function DateRangeFilter({
             </PopoverContent>
           </Popover>
 
-          <span className="text-muted-foreground">to</span>
+          <span className="text-muted-foreground hidden sm:inline">to</span>
 
           <Popover open={toOpen} onOpenChange={setToOpen}>
             <PopoverTrigger asChild>
@@ -140,11 +143,11 @@ export function DateRangeFilter({
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "justify-start text-left font-normal gap-2",
+                  "w-full sm:w-auto justify-start text-left font-normal gap-2 text-xs sm:text-sm",
                   !customRange.to && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="h-4 w-4" />
+                <CalendarIcon className="h-4 w-4 shrink-0" />
                 {customRange.to ? format(customRange.to, "MMM d, yyyy") : "To"}
               </Button>
             </PopoverTrigger>

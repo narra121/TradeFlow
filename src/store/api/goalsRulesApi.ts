@@ -6,7 +6,28 @@ import type {
   CreateRulePayload,
   UpdateRulePayload
 } from '@/lib/api';
-import type { Trade } from '@/types/trade';
+interface GoalProgressItem {
+  current: number;
+  target: number;
+  progress: number;
+  achieved: boolean;
+}
+
+interface GoalsProgressResponse {
+  goalProgress: {
+    profit: GoalProgressItem;
+    winRate: GoalProgressItem;
+    maxDrawdown: GoalProgressItem;
+    tradeCount: GoalProgressItem;
+  };
+  ruleCompliance: {
+    totalRules: number;
+    followedCount: number;
+    brokenRulesCounts: Record<string, number>;
+  };
+  goals: Goal[];
+  rules: TradingRule[];
+}
 
 interface RulesAndGoalsResponse {
   rules: TradingRule[];
@@ -258,57 +279,14 @@ export const goalsRulesApi = api.injectEndpoints({
       },
     }),
     
-    // Fetch trades for a specific period (for goal calculations)
-    // This query is separate from the main trades query to avoid cache conflicts
-    getGoalPeriodTrades: builder.query<Trade[], { startDate: string; endDate: string; accountId?: string }>({
-      query: (params) => {
-        return {
-          url: '/trades',
-          params: {
-            accountId: params.accountId || 'ALL',
-            startDate: params.startDate,
-            endDate: params.endDate
-          },
-        };
-      },
-      transformResponse: (response: any) => {
-        const tradesArray = Array.isArray(response) ? response : (response?.trades || []);
-        
-        // Map backend response to frontend Trade type
-        return tradesArray.map((trade: any) => ({
-          id: trade.tradeId,
-          symbol: trade.symbol,
-          direction: trade.side === 'BUY' ? 'LONG' : 'SHORT',
-          entryPrice: trade.entryPrice || 0,
-          exitPrice: trade.exitPrice || undefined,
-          stopLoss: trade.stopLoss || 0,
-          takeProfit: trade.takeProfit || 0,
-          size: trade.quantity,
-          entryDate: trade.openDate,
-          exitDate: trade.closeDate || undefined,
-          outcome: trade.outcome || 'TP',
-          pnl: trade.pnl || 0,
-          pnlPercent: trade.pnlPercent,
-          riskRewardRatio: trade.riskRewardRatio || 0,
-          notes: trade.tradeNotes,
-          setup: trade.setupType,
-          strategy: trade.setupType,
-          session: trade.tradingSession,
-          marketCondition: trade.marketCondition,
-          newsEvents: trade.newsEvents || [],
-          mistakes: trade.mistakes || [],
-          keyLesson: trade.lessons?.[0],
-          images: trade.images || [],
-          tags: trade.tags || [],
-          emotions: trade.emotions,
-          accountId: trade.accountId && trade.accountId !== '-1' && trade.accountId !== -1 ? trade.accountId : undefined,
-          brokenRuleIds: trade.brokenRuleIds || [],
-        }));
-      },
-      // Use custom cache key based on date range and account to keep it separate from main trades query
-      providesTags: (result, error, arg) => [
-        { type: 'GoalPeriodTrades' as const, id: `${arg.accountId || 'ALL'}-${arg.startDate}-${arg.endDate}` }
-      ],
+    getGoalsProgress: builder.query<GoalsProgressResponse, {
+      accountId: string;
+      startDate: string;
+      endDate: string;
+      period: 'weekly' | 'monthly';
+    }>({
+      query: (params) => ({ url: '/goals/progress', params }),
+      providesTags: ['Goals', 'Rules', 'Stats'],
     }),
   }),
 });
@@ -321,6 +299,5 @@ export const {
   useUpdateRuleMutation,
   useToggleRuleMutation,
   useDeleteRuleMutation,
-  useGetGoalPeriodTradesQuery,
-  useLazyGetGoalPeriodTradesQuery,
+  useGetGoalsProgressQuery,
 } = goalsRulesApi;

@@ -87,3 +87,51 @@ describe('StatCard', () => {
     expect(svg).toBeInTheDocument();
   });
 });
+
+describe('StatCard – extended coverage', () => {
+  const defaultProps = {
+    title: 'Total P&L',
+    value: 1250,
+    icon: DollarSign,
+  };
+
+  it('renders with prefix ($)', () => {
+    render(<StatCard {...defaultProps} value={750} prefix="$" />);
+    expect(screen.getByText(/\$750/)).toBeInTheDocument();
+  });
+
+  it('renders with suffix (%)', () => {
+    render(<StatCard {...defaultProps} value={62} suffix="%" />);
+    expect(screen.getByText(/62%/)).toBeInTheDocument();
+  });
+
+  it('renders with zero trend value', () => {
+    render(
+      <StatCard
+        {...defaultProps}
+        trend={{ value: 0, isPositive: true }}
+      />
+    );
+    // isPositive is true so prefix is '+', value.toFixed(1) => '+0.0%'
+    expect(screen.getByText('+0.0%')).toBeInTheDocument();
+  });
+
+  it('renders danger variant for negative values', () => {
+    const { container } = render(
+      <StatCard {...defaultProps} value={-500} variant="danger" />
+    );
+    // The component should render without crashing
+    expect(screen.getByText('Total P&L')).toBeInTheDocument();
+    // danger variant uses 'bg-destructive/10' for the icon background
+    const iconWrapper = container.querySelector('.bg-destructive\\/10');
+    expect(iconWrapper).toBeInTheDocument();
+  });
+
+  it('has accessible stat value in the DOM', () => {
+    render(<StatCard {...defaultProps} value={999} prefix="$" suffix=" USD" />);
+    // The value is rendered inside a <p> tag with the formatted text
+    const valueElement = screen.getByText(/\$999 USD/);
+    expect(valueElement).toBeInTheDocument();
+    expect(valueElement.tagName).toBe('P');
+  });
+});

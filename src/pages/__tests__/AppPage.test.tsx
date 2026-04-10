@@ -8,7 +8,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 // Mock all heavy child components to isolate AppPage
 vi.mock('@/components/layout/Sidebar', () => ({
   Sidebar: (props: any) => (
-    <div data-testid="sidebar" data-active-view={props.activeView}>
+    <div data-testid="sidebar" data-active-view={props.activeView} data-mobile-open={String(props.mobileOpen)}>
       Sidebar
     </div>
   ),
@@ -61,7 +61,12 @@ vi.mock('@/hooks/useTradesSync', () => ({
   useTradesSync: () => {},
 }));
 
+vi.mock('@/hooks/use-mobile', () => ({
+  useIsMobile: vi.fn(() => false),
+}));
+
 import { AppPage } from '../AppPage';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 /**
  * AppPage uses nested <Routes> with relative paths (e.g., "dashboard").
@@ -141,5 +146,86 @@ describe('AppPage', () => {
     renderAppPage('/app/analytics');
     const sidebar = screen.getByTestId('sidebar');
     expect(sidebar).toHaveAttribute('data-active-view', 'analytics');
+  });
+});
+
+describe('AppPage - default route redirect', () => {
+  it('redirects /app to /app/dashboard (index route)', () => {
+    renderAppPage('/app');
+    expect(screen.getByTestId('dashboard-view')).toBeInTheDocument();
+  });
+
+  it('shows dashboard as the active view when redirected from /app', () => {
+    renderAppPage('/app');
+    const sidebar = screen.getByTestId('sidebar');
+    expect(sidebar).toHaveAttribute('data-active-view', 'dashboard');
+  });
+});
+
+describe('AppPage - unknown nested routes', () => {
+  it('does not render any known view for an unrecognized nested route', () => {
+    renderAppPage('/app/nonexistent');
+    expect(screen.queryByTestId('dashboard-view')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tradelog-view')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('analytics-view')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('goals-view')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('profile-view')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('settings-view')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('accounts-view')).not.toBeInTheDocument();
+  });
+
+  it('still renders the sidebar for an unknown nested route', () => {
+    renderAppPage('/app/unknown-route');
+    expect(screen.getByTestId('sidebar')).toBeInTheDocument();
+    expect(screen.getByText('Sidebar')).toBeInTheDocument();
+  });
+
+  it('derives the unknown path segment as activeView for the sidebar', () => {
+    renderAppPage('/app/foobar');
+    const sidebar = screen.getByTestId('sidebar');
+    expect(sidebar).toHaveAttribute('data-active-view', 'foobar');
+  });
+});
+
+describe('AppPage - Mobile Sidebar', () => {
+  // useIsMobile is mocked with vi.fn() at the module level above and imported at the top.
+  const mockedUseIsMobile = vi.mocked(useIsMobile);
+
+  afterEach(() => {
+    // Reset to default (desktop) after each test
+    mockedUseIsMobile.mockReturnValue(false);
+  });
+
+  it('renders hamburger button when on mobile', () => {
+    mockedUseIsMobile.mockReturnValue(true);
+    renderAppPage('/app/dashboard');
+    const hamburgerButton = screen.getByLabelText('Open sidebar menu');
+    expect(hamburgerButton).toBeInTheDocument();
+  });
+
+  it('does not render hamburger button on desktop', () => {
+    mockedUseIsMobile.mockReturnValue(false);
+    renderAppPage('/app/dashboard');
+    expect(screen.queryByLabelText('Open sidebar menu')).not.toBeInTheDocument();
+  });
+
+  it('passes mobileSidebarOpen to Sidebar component', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+
+    mockedUseIsMobile.mockReturnValue(true);
+    renderAppPage('/app/dashboard');
+
+    const sidebar = screen.getByTestId('sidebar');
+
+    // Initially mobileSidebarOpen should be false
+    expect(sidebar).toHaveAttribute('data-mobile-open', 'false');
+
+    // Click the hamburger button to open the mobile sidebar
+    const hamburgerButton = screen.getByLabelText('Open sidebar menu');
+    await user.click(hamburgerButton);
+
+    // After clicking, mobileSidebarOpen should be true, passed as mobileOpen prop
+    expect(sidebar).toHaveAttribute('data-mobile-open', 'true');
   });
 });

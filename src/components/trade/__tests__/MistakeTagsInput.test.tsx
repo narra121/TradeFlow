@@ -144,3 +144,98 @@ describe('MistakeTagsInput', () => {
     expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
   });
 });
+
+describe('MistakeTagsInput – additional coverage', () => {
+  const defaultProps = {
+    selectedTags: [] as string[],
+    onChange: vi.fn(),
+    availableTags: ['FOMO', 'Revenge Trading', 'No Stop Loss', 'Over-leveraged'],
+    onAddNew: vi.fn(),
+  };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('handles empty availableTags array', () => {
+    render(
+      <MistakeTagsInput
+        {...defaultProps}
+        availableTags={[]}
+      />
+    );
+
+    // No tag buttons should render, but "Add New Mistake" should still be available
+    expect(screen.queryByText('FOMO')).not.toBeInTheDocument();
+    expect(screen.getByText('Add New Mistake')).toBeInTheDocument();
+  });
+
+  it('removes a tag on click when it is selected', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MistakeTagsInput
+        {...defaultProps}
+        selectedTags={['FOMO', 'No Stop Loss', 'Over-leveraged']}
+        onChange={onChange}
+      />
+    );
+
+    await user.click(screen.getByText('No Stop Loss'));
+
+    expect(onChange).toHaveBeenCalledWith(['FOMO', 'Over-leveraged']);
+  });
+
+  it('prevents adding a duplicate tag via the input', async () => {
+    const user = userEvent.setup();
+    const onAddNew = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <MistakeTagsInput
+        {...defaultProps}
+        onAddNew={onAddNew}
+        onChange={onChange}
+      />
+    );
+
+    await user.click(screen.getByText('Add New Mistake'));
+    const input = screen.getByPlaceholderText('Enter new mistake...');
+    await user.type(input, 'Revenge Trading{Enter}');
+
+    // "Revenge Trading" already exists in availableTags, so it should not be added
+    expect(onAddNew).not.toHaveBeenCalled();
+  });
+
+  it('handles very long tag text by rendering it fully', () => {
+    const longTag = 'This is a very long mistake tag that describes a complex trading error in great detail';
+    render(
+      <MistakeTagsInput
+        {...defaultProps}
+        availableTags={[longTag]}
+      />
+    );
+
+    expect(screen.getByText(longTag)).toBeInTheDocument();
+  });
+
+  it('trims whitespace from input before adding new tag', async () => {
+    const user = userEvent.setup();
+    const onAddNew = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <MistakeTagsInput
+        {...defaultProps}
+        selectedTags={[]}
+        onAddNew={onAddNew}
+        onChange={onChange}
+      />
+    );
+
+    await user.click(screen.getByText('Add New Mistake'));
+    const input = screen.getByPlaceholderText('Enter new mistake...');
+    await user.type(input, '  Trimmed Tag  {Enter}');
+
+    expect(onAddNew).toHaveBeenCalledWith('Trimmed Tag');
+    expect(onChange).toHaveBeenCalledWith(['Trimmed Tag']);
+  });
+});

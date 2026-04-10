@@ -3,6 +3,7 @@ import { render, RenderOptions } from '@testing-library/react';
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import authReducer from '@/store/slices/authSlice';
 import accountsReducer from '@/store/slices/accountsSlice';
 import tradesReducer from '@/store/slices/tradesSlice';
@@ -43,7 +44,9 @@ export function renderWithProviders(
     return (
       <Provider store={store}>
         <MemoryRouter initialEntries={[route]}>
-          {children}
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
         </MemoryRouter>
       </Provider>
     );

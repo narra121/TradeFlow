@@ -58,25 +58,25 @@ export function DropdownOptionsManager({
     <div className="space-y-3">
       <div>
         <div className="flex items-center gap-2">
-          <h3 className="font-medium text-foreground">{title}</h3>
+          <h3 className="font-medium text-foreground text-sm sm:text-base">{title}</h3>
           {(isPendingAdd || isPendingRemove) && (
             <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
           )}
         </div>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
       </div>
-      
+
       <div className="flex flex-wrap gap-2">
         {(options || []).map((option) => (
           <Badge
             key={option}
             variant="secondary"
-            className="pl-3 pr-1 py-1.5 text-sm flex items-center gap-1.5 group hover:bg-secondary/80"
+            className="pl-2.5 sm:pl-3 pr-1 py-1.5 text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 group hover:bg-secondary/80 max-w-full"
           >
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 truncate">
               {option}
               {isPendingRemove && pendingValue === option && (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />
               )}
             </span>
             {isPendingRemove && pendingValue === option ? (
@@ -85,7 +85,7 @@ export function DropdownOptionsManager({
               <button
                 type="button"
                 onClick={() => onRemove(option)}
-                className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
+                className="ml-1 p-1 sm:p-0.5 rounded-full hover:bg-destructive/20 transition-colors min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                 disabled={isLoading}
               >
                 <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />
@@ -93,14 +93,14 @@ export function DropdownOptionsManager({
             )}
           </Badge>
         ))}
-        
+
         {isAdding ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Input
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
               placeholder={placeholder}
-              className="h-8 w-40 text-sm"
+              className="h-10 sm:h-8 flex-1 sm:flex-none sm:w-40 text-sm"
               autoFocus
               onKeyDown={handleKeyDown}
               disabled={isLoading}
@@ -110,7 +110,7 @@ export function DropdownOptionsManager({
               size="sm"
               onClick={handleAdd}
               disabled={!newValue.trim() || isLoading}
-              className="h-8 px-3"
+              className="h-10 sm:h-8 px-3 min-w-[44px]"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
             </Button>
@@ -123,7 +123,7 @@ export function DropdownOptionsManager({
                 setNewValue('');
               }}
               disabled={isLoading}
-              className="h-8 px-2"
+              className="h-10 sm:h-8 px-2 min-w-[44px]"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -134,7 +134,7 @@ export function DropdownOptionsManager({
             variant="outline"
             size="sm"
             onClick={() => setIsAdding(true)}
-            className="h-8 gap-1.5"
+            className="h-10 sm:h-8 gap-1.5 min-w-[44px]"
             disabled={isLoading}
           >
             {isPendingAdd ? (

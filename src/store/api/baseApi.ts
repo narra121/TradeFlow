@@ -270,6 +270,6 @@ export const api = createApi({
   refetchOnReconnect: false,
   refetchOnFocus: false,
   refetchOnMountOrArgChange: false,
-  tagTypes: ['Auth', 'Accounts', 'Trades', 'Stats', 'Analytics', 'Goals', 'Rules', 'User', 'Subscription', 'SavedOptions', 'GoalPeriodTrades'],
+  tagTypes: ['Auth', 'Accounts', 'Trades', 'Stats', 'Analytics', 'Goals', 'Rules', 'User', 'Subscription', 'SavedOptions'],
   endpoints: () => ({}),
 });

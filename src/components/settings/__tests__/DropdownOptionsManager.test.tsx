@@ -171,3 +171,115 @@ describe('DropdownOptionsManager', () => {
     expect(screen.getByText('Saving')).toBeInTheDocument();
   });
 });
+
+describe('DropdownOptionsManager - additional edge cases', () => {
+  const defaultProps = {
+    title: 'Trading Strategies',
+    description: 'Manage your trading strategy options',
+    options: ['Scalping', 'Swing Trading', 'Day Trading'],
+    onAdd: vi.fn(),
+    onRemove: vi.fn(),
+  };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('handles adding duplicate option by preventing the call to onAdd', async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn();
+    render(<DropdownOptionsManager {...defaultProps} onAdd={onAdd} />);
+
+    await user.click(screen.getByRole('button', { name: /Add/i }));
+
+    const input = screen.getByPlaceholderText('Add new option...');
+
+    // Try to add an existing option (case-sensitive match)
+    await user.type(input, 'Scalping');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it('handles empty option name by keeping the Add button disabled', async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn();
+    render(<DropdownOptionsManager {...defaultProps} onAdd={onAdd} />);
+
+    await user.click(screen.getByRole('button', { name: /Add/i }));
+
+    const input = screen.getByPlaceholderText('Add new option...');
+    // Type only spaces
+    await user.type(input, '   ');
+
+    const addBtn = screen.getByRole('button', { name: 'Add' });
+    // Button should be disabled since trimmed value is empty
+    expect(addBtn).toBeDisabled();
+
+    // Try pressing Enter with whitespace-only input
+    await user.type(input, '{Enter}');
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it('handles removing last option from the list', async () => {
+    const user = userEvent.setup();
+    const onRemove = vi.fn();
+    render(
+      <DropdownOptionsManager
+        {...defaultProps}
+        options={['Only Option']}
+        onRemove={onRemove}
+      />
+    );
+
+    expect(screen.getByText('Only Option')).toBeInTheDocument();
+
+    // Find the remove button (the X icon button on the badge)
+    const removeButtons = screen.getAllByRole('button').filter(
+      (btn) => btn.querySelector('svg.lucide-x')
+    );
+
+    await user.click(removeButtons[0]);
+
+    expect(onRemove).toHaveBeenCalledWith('Only Option');
+  });
+
+  it('shows loading state during update with spinner icon and disabled input', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownOptionsManager
+        {...defaultProps}
+        isLoading={true}
+        pendingAction="remove"
+        pendingValue="Scalping"
+      />
+    );
+
+    // The spinner should be visible (Loader2 component renders as an SVG)
+    const spinners = document.querySelectorAll('svg.lucide-loader2, svg.animate-spin');
+    expect(spinners.length).toBeGreaterThanOrEqual(1);
+
+    // The Add button should be disabled during loading
+    const addButton = screen.getByRole('button', { name: /Add/i });
+    expect(addButton).toBeDisabled();
+  });
+
+  it('handles very long option name by accepting it as a valid input', async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn();
+    render(<DropdownOptionsManager {...defaultProps} onAdd={onAdd} />);
+
+    await user.click(screen.getByRole('button', { name: /Add/i }));
+
+    const input = screen.getByPlaceholderText('Add new option...');
+    const longName = 'ThisIsAVeryLongOptionNameForTesting';
+
+    // Use fireEvent for speed instead of userEvent.type for long strings
+    await user.clear(input);
+    await user.type(input, longName);
+
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+
+    expect(onAdd).toHaveBeenCalledWith(longName);
+  });
+});

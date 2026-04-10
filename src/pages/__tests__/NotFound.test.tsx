@@ -37,3 +37,47 @@ describe('NotFound', () => {
     );
   });
 });
+
+describe('NotFound - extended', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('renders the 404 text as a heading element', () => {
+    renderWithProviders(<NotFound />);
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toBeInTheDocument();
+    expect(heading).toHaveTextContent('404');
+  });
+
+  it('renders the "Page not found" message in a paragraph', () => {
+    renderWithProviders(<NotFound />);
+    const message = screen.getByText(/oops! page not found/i);
+    expect(message).toBeInTheDocument();
+    expect(message.tagName).toBe('P');
+  });
+
+  it('has a link back to home with href="/"', () => {
+    renderWithProviders(<NotFound />);
+    const link = screen.getByRole('link', { name: /return to home/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/');
+  });
+
+  it('the home link contains the text "Return to Home"', () => {
+    renderWithProviders(<NotFound />);
+    const link = screen.getByRole('link');
+    expect(link).toHaveTextContent('Return to Home');
+  });
+
+  it('has a heading role for accessibility', () => {
+    renderWithProviders(<NotFound />);
+    const headings = screen.getAllByRole('heading');
+    expect(headings.length).toBeGreaterThanOrEqual(1);
+    expect(headings[0]).toHaveTextContent('404');
+  });
+});

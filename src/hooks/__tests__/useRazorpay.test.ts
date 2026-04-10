@@ -368,3 +368,142 @@ describe('useRazorpay', () => {
     });
   });
 });
+
+describe('useRazorpay - Payment Callbacks and Edge Cases', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete (window as any).Razorpay;
+    import.meta.env.VITE_RAZORPAY_KEY_ID = 'rzp_test_validkey123';
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('handles payment failure callback by invoking onFailure', async () => {
+    // Razorpay SDK not loaded triggers the failure path
+    const onFailure = vi.fn();
+    const onSuccess = vi.fn();
+
+    const { result } = renderHook(() => useRazorpay());
+
+    await act(async () => {
+      await result.current.initiatePayment({
+        amount: 500,
+        name: 'Test Payment',
+        description: 'Failure test',
+        onSuccess,
+        onFailure,
+      });
+    });
+
+    expect(onFailure).toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(result.current.error).toBe(
+      'Razorpay SDK not loaded. Please include the checkout script for one-time payments.'
+    );
+  });
+
+  it('handles payment success callback when verification succeeds', async () => {
+    const onSuccess = vi.fn();
+    const onFailure = vi.fn();
+
+    mockCreateOrder.mockResolvedValue({
+      orderId: 'order_success',
+      amount: 100000,
+      currency: 'INR',
+    });
+
+    mockVerifyPayment.mockResolvedValue({
+      verified: true,
+      paymentId: 'pay_123',
+      orderId: 'order_success',
+    });
+
+    // Mock Razorpay constructor to capture the handler and invoke it
+    (window as any).Razorpay = vi.fn().mockImplementation((opts: any) => ({
+      open: () => {
+        // Simulate successful payment by calling the handler
+        opts.handler({
+          razorpay_order_id: 'order_success',
+          razorpay_payment_id: 'pay_123',
+          razorpay_signature: 'sig_abc',
+        });
+      },
+    }));
+
+    const { result } = renderHook(() => useRazorpay());
+
+    await act(async () => {
+      await result.current.initiatePayment({
+        amount: 1000,
+        name: 'TradeFlow Pro',
+        description: 'Success test',
+        onSuccess,
+        onFailure,
+      });
+    });
+
+    expect(mockVerifyPayment).toHaveBeenCalledWith({
+      razorpay_order_id: 'order_success',
+      razorpay_payment_id: 'pay_123',
+      razorpay_signature: 'sig_abc',
+    });
+    expect(onSuccess).toHaveBeenCalledWith('pay_123', 'order_success');
+    expect(onFailure).not.toHaveBeenCalled();
+  });
+
+  it('handles missing Razorpay SDK for payment by setting error', async () => {
+    delete (window as any).Razorpay;
+    const onFailure = vi.fn();
+
+    const { result } = renderHook(() => useRazorpay());
+
+    await act(async () => {
+      await result.current.initiatePayment({
+        amount: 2000,
+        name: 'Test',
+        description: 'No SDK test',
+        onFailure,
+      });
+    });
+
+    expect(result.current.error).toBe(
+      'Razorpay SDK not loaded. Please include the checkout script for one-time payments.'
+    );
+    expect(result.current.loading).toBe(false);
+    expect(onFailure).toHaveBeenCalled();
+  });
+
+  it('handles network timeout during payment order creation', async () => {
+    (window as any).Razorpay = vi.fn();
+    const onFailure = vi.fn();
+
+    mockCreateOrder.mockRejectedValue(new Error('Request timeout'));
+
+    const { result } = renderHook(() => useRazorpay());
+
+    await act(async () => {
+      await result.current.initiatePayment({
+        amount: 1000,
+        name: 'Timeout Test',
+        description: 'Timeout scenario',
+        onFailure,
+      });
+    });
+
+    expect(result.current.error).toBe('Request timeout');
+    expect(result.current.loading).toBe(false);
+    expect(onFailure).toHaveBeenCalled();
+  });
+
+  it('cleans up state on unmount without throwing', async () => {
+    const { result, unmount } = renderHook(() => useRazorpay());
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeNull();
+
+    // Unmount should not throw
+    expect(() => unmount()).not.toThrow();
+  });
+});

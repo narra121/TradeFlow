@@ -3,10 +3,70 @@ import { api } from './baseApi';
 const CACHE_NAME = 'tradeflow-images-v1';
 
 // ---------------------------------------------------------------------------
-// Layer 1 — In-memory Map (instant, per-session)
-// Stores object URLs created from blobs. Fastest possible lookup.
+// LRU Cache — bounded in-memory cache with automatic eviction
+// Uses Map insertion-order semantics: delete + re-insert moves to "newest".
+// On eviction the blob object URL is revoked to free browser memory.
 // ---------------------------------------------------------------------------
-const memoryCache = new Map<string, string>();
+class LRUCache {
+  private cache: Map<string, string>;
+  private maxSize: number;
+
+  constructor(maxSize: number) {
+    this.cache = new Map();
+    this.maxSize = maxSize;
+  }
+
+  get(key: string): string | undefined {
+    const value = this.cache.get(key);
+    if (value === undefined) return undefined;
+    // Move to most-recently-used (end of Map iteration order)
+    this.cache.delete(key);
+    this.cache.set(key, value);
+    return value;
+  }
+
+  set(key: string, value: string): void {
+    // If key already exists, remove it first so re-insert moves it to the end
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxSize) {
+      // Evict the least-recently-used entry (first in iteration order)
+      const firstEntry = this.cache.entries().next();
+      if (!firstEntry.done) {
+        const [evictedKey, evictedUrl] = firstEntry.value;
+        URL.revokeObjectURL(evictedUrl);
+        this.cache.delete(evictedKey);
+      }
+    }
+    this.cache.set(key, value);
+  }
+
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
+
+  clear(): void {
+    this.cache.forEach((url) => URL.revokeObjectURL(url));
+    this.cache.clear();
+  }
+
+  get size(): number {
+    return this.cache.size;
+  }
+}
+
+const MAX_MEMORY_CACHE_SIZE = 200;
+
+// ---------------------------------------------------------------------------
+// Layer 1 — In-memory LRU cache (instant, per-session)
+// Stores object URLs created from blobs. Fastest possible lookup.
+// Bounded to MAX_MEMORY_CACHE_SIZE entries; evicts LRU and revokes blob URLs.
+// ---------------------------------------------------------------------------
+const memoryCache = new LRUCache(MAX_MEMORY_CACHE_SIZE);
 
 // ---------------------------------------------------------------------------
 // Layer 2 — Browser Cache API (persistent across sessions)
@@ -91,8 +151,9 @@ export const imageApi = api.injectEndpoints({
           };
         }
       },
-      // Keep in RTK Query cache indefinitely — S3 images are immutable
-      keepUnusedDataFor: Infinity,
+      // Keep unsubscribed entries for 1 hour; the Browser Cache API still
+      // provides persistence across sessions for longer-term caching.
+      keepUnusedDataFor: 3600,
     }),
   }),
 });
@@ -161,7 +222,7 @@ export async function evictImage(imageId: string): Promise<void> {
  * Clear the entire image cache (e.g. on logout).
  */
 export async function clearImageCache(): Promise<void> {
-  memoryCache.forEach((url) => URL.revokeObjectURL(url));
+  // LRUCache.clear() revokes all object URLs internally
   memoryCache.clear();
   if (cacheApiAvailable) {
     try {

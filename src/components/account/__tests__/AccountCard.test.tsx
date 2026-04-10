@@ -83,7 +83,8 @@ describe('AccountCard', () => {
         {...defaultHandlers}
       />
     );
-    expect(screen.getByText('Active')).toBeInTheDocument();
+    // Two badge elements exist (desktop + mobile), so use getAllByText
+    expect(screen.getAllByText('Active').length).toBeGreaterThanOrEqual(1);
   });
 
   it('displays positive P&L correctly', () => {
@@ -145,7 +146,8 @@ describe('AccountCard', () => {
           {...defaultHandlers}
         />
       );
-      expect(screen.getByText(labels[idx])).toBeInTheDocument();
+      // Two badge elements exist (desktop + mobile), so use getAllByText
+      expect(screen.getAllByText(labels[idx]).length).toBeGreaterThanOrEqual(1);
       unmount();
     });
   });
@@ -171,5 +173,108 @@ describe('AccountCard', () => {
       />
     );
     expect(container.firstChild).not.toHaveClass('ring-1');
+  });
+});
+
+describe('AccountCard - status badge colors and formatting', () => {
+  const baseAccount: TradingAccount = {
+    id: 'acc-1',
+    name: 'FTMO Challenge',
+    broker: 'FTMO',
+    type: 'prop_challenge',
+    status: 'active',
+    balance: 110000,
+    initialBalance: 100000,
+    currency: 'USD',
+    createdAt: '2024-01-15T00:00:00.000Z',
+  };
+
+  const defaultHandlers = {
+    onSelect: vi.fn(),
+    onEdit: vi.fn(),
+    onDelete: vi.fn(),
+    onStatusChange: vi.fn(),
+  };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows correct status badge color for active status', () => {
+    render(
+      <AccountCard account={{ ...baseAccount, status: 'active' }} isSelected={false} {...defaultHandlers} />
+    );
+    // Two badge elements exist (desktop + mobile), grab the first
+    const badge = screen.getAllByText('Active')[0];
+    expect(badge).toHaveClass('bg-success/10');
+    expect(badge).toHaveClass('text-success');
+    expect(badge).toHaveClass('border-success/20');
+  });
+
+  it('shows correct status badge color for breached status', () => {
+    render(
+      <AccountCard account={{ ...baseAccount, status: 'breached' }} isSelected={false} {...defaultHandlers} />
+    );
+    const badge = screen.getAllByText('Breached')[0];
+    expect(badge).toHaveClass('bg-destructive/10');
+    expect(badge).toHaveClass('text-destructive');
+    expect(badge).toHaveClass('border-destructive/20');
+  });
+
+  it('shows correct status badge color for passed status', () => {
+    render(
+      <AccountCard account={{ ...baseAccount, status: 'passed' }} isSelected={false} {...defaultHandlers} />
+    );
+    const badge = screen.getAllByText('Passed')[0];
+    expect(badge).toHaveClass('bg-primary/10');
+    expect(badge).toHaveClass('text-primary');
+    expect(badge).toHaveClass('border-primary/20');
+  });
+
+  it('shows correct status badge color for withdrawn status', () => {
+    render(
+      <AccountCard account={{ ...baseAccount, status: 'withdrawn' }} isSelected={false} {...defaultHandlers} />
+    );
+    const badge = screen.getAllByText('Withdrawn')[0];
+    expect(badge).toHaveClass('bg-warning/10');
+    expect(badge).toHaveClass('text-warning');
+    expect(badge).toHaveClass('border-warning/20');
+  });
+
+  it('shows correct status badge color for inactive status', () => {
+    render(
+      <AccountCard account={{ ...baseAccount, status: 'inactive' }} isSelected={false} {...defaultHandlers} />
+    );
+    const badge = screen.getAllByText('Inactive')[0];
+    expect(badge).toHaveClass('bg-muted');
+    expect(badge).toHaveClass('text-muted-foreground');
+    expect(badge).toHaveClass('border-border');
+  });
+
+  it('renders balance formatted with currency', () => {
+    const account = { ...baseAccount, balance: 250000, currency: 'EUR' };
+    render(
+      <AccountCard account={account} isSelected={false} {...defaultHandlers} />
+    );
+    expect(screen.getByText(`EUR ${(250000).toLocaleString()}`)).toBeInTheDocument();
+  });
+
+  it('handles zero balance', () => {
+    const account = { ...baseAccount, balance: 0, initialBalance: 100000 };
+    render(
+      <AccountCard account={account} isSelected={false} {...defaultHandlers} />
+    );
+    expect(screen.getByText(`USD ${(0).toLocaleString()}`)).toBeInTheDocument();
+    // P&L = 0 - 100000 = -100000
+    const pnlText = `USD ${(-100000).toLocaleString()} (-100.00%)`;
+    expect(screen.getByText(pnlText)).toBeInTheDocument();
+  });
+
+  it('renders broker name', () => {
+    const account = { ...baseAccount, broker: 'Interactive Brokers' };
+    render(
+      <AccountCard account={account} isSelected={false} {...defaultHandlers} />
+    );
+    expect(screen.getByText('Interactive Brokers')).toBeInTheDocument();
   });
 });

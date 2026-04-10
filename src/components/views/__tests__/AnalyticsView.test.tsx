@@ -2,6 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithProviders as render, screen } from '@/test/test-utils';
 import { AnalyticsView } from '../AnalyticsView';
 
+// Mock Radix UI Tooltip for RefreshButton
+vi.mock('@radix-ui/react-tooltip', async () => {
+  const React = await import('react');
+  return {
+    Provider: ({ children }: any) => <>{children}</>,
+    Root: ({ children }: any) => <>{children}</>,
+    Trigger: React.forwardRef(({ children, ...props }: any, ref: any) => <div ref={ref} {...props}>{children}</div>),
+    Portal: ({ children }: any) => <>{children}</>,
+    Content: React.forwardRef(({ children, ...props }: any, ref: any) => <div ref={ref} {...props}>{children}</div>),
+    Arrow: React.forwardRef((props: any, ref: any) => <div ref={ref} {...props} />),
+  };
+});
+
 // Mock recharts - it doesn't work in jsdom
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
@@ -25,30 +38,21 @@ vi.mock('recharts', () => ({
 
 // Mock RTK Query hooks
 vi.mock('@/store/api', () => ({
-  useGetTradesQuery: vi.fn().mockReturnValue({
-    data: [
-      {
-        id: '1',
-        symbol: 'EURUSD',
-        direction: 'LONG',
-        entryPrice: 1.1,
-        exitPrice: 1.12,
-        stopLoss: 1.09,
-        takeProfit: 1.13,
-        size: 1,
-        entryDate: '2025-01-15T10:00:00Z',
-        exitDate: '2025-01-15T14:00:00Z',
-        outcome: 'TP',
-        pnl: 200,
-        pnlPercent: 2.0,
-        riskRewardRatio: 2.0,
-        accountId: 'acc1',
-        strategy: 'Breakout',
-        session: 'London Open',
-      },
-    ],
+  useGetStatsQuery: vi.fn().mockReturnValue({
+    data: {
+      totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
+      avgWin: 200, avgLoss: 0, profitFactor: Infinity, bestTrade: 200, worstTrade: 0,
+      maxDrawdown: 0, avgRiskReward: 2.0, consecutiveWins: 1, consecutiveLosses: 0,
+      grossProfit: 200, grossLoss: 0, expectancy: 200, sharpeRatio: 0, avgHoldingTime: 14400,
+      totalVolume: 1, minDuration: 14400, maxDuration: 14400,
+      durationBuckets: [], symbolDistribution: { EURUSD: { count: 1, wins: 1, pnl: 200 } },
+      strategyDistribution: { Breakout: { count: 1, wins: 1, pnl: 200 } },
+      sessionDistribution: { 'London Open': { count: 1, wins: 1, pnl: 200 } },
+      outcomeDistribution: { TP: 1 }, hourlyStats: [], dailyWinRate: [], dailyPnl: [],
+    },
     isLoading: false,
     isFetching: false,
+    refetch: vi.fn(),
   }),
   useGetSavedOptionsQuery: vi.fn().mockReturnValue({
     data: null,
@@ -126,7 +130,7 @@ describe('AnalyticsView', () => {
 
   it('renders the subtitle', () => {
     render(<AnalyticsView />);
-    expect(screen.getByText('Deep dive into your trading performance')).toBeInTheDocument();
+    expect(screen.getByText('Identify patterns and optimize your strategy')).toBeInTheDocument();
   });
 
   it('renders the account filter', () => {
@@ -187,14 +191,70 @@ describe('AnalyticsView', () => {
   });
 
   it('shows loading skeleton when data is loading', async () => {
-    const { useGetTradesQuery } = await import('@/store/api');
-    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: [],
+    const { useGetStatsQuery } = await import('@/store/api');
+    (useGetStatsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: undefined,
       isLoading: true,
       isFetching: false,
+      refetch: vi.fn(),
     });
 
     render(<AnalyticsView />);
     expect(screen.getByTestId('metrics-skeleton')).toBeInTheDocument();
+  });
+});
+
+describe('AnalyticsView - Empty State', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows empty state when no trade data exists', async () => {
+    const { useGetStatsQuery } = await import('@/store/api');
+    (useGetStatsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
+        avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
+        maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
+        grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
+        totalVolume: 0, minDuration: 0, maxDuration: 0,
+        durationBuckets: [], symbolDistribution: {}, strategyDistribution: {},
+        sessionDistribution: {}, outcomeDistribution: {}, hourlyStats: [],
+        dailyWinRate: [], dailyPnl: [],
+      },
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    });
+
+    render(<AnalyticsView />);
+
+    expect(screen.getByText('No analytics data yet')).toBeInTheDocument();
+    expect(screen.getByText(/Head to the Dashboard/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Go to Dashboard/ })).toBeInTheDocument();
+  });
+
+  it('does not show empty state when trades exist', async () => {
+    const { useGetStatsQuery } = await import('@/store/api');
+    (useGetStatsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
+        avgWin: 200, avgLoss: 0, profitFactor: Infinity, bestTrade: 200, worstTrade: 0,
+        maxDrawdown: 0, avgRiskReward: 2.0, consecutiveWins: 1, consecutiveLosses: 0,
+        grossProfit: 200, grossLoss: 0, expectancy: 200, sharpeRatio: 0, avgHoldingTime: 14400,
+        totalVolume: 1, minDuration: 14400, maxDuration: 14400,
+        durationBuckets: [], symbolDistribution: { EURUSD: { count: 1, wins: 1, pnl: 200 } },
+        strategyDistribution: { Breakout: { count: 1, wins: 1, pnl: 200 } },
+        sessionDistribution: { 'London Open': { count: 1, wins: 1, pnl: 200 } },
+        outcomeDistribution: { TP: 1 }, hourlyStats: [], dailyWinRate: [], dailyPnl: [],
+      },
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    });
+
+    render(<AnalyticsView />);
+
+    expect(screen.queryByText('No analytics data yet')).not.toBeInTheDocument();
   });
 });

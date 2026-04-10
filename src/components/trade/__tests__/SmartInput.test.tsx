@@ -131,3 +131,79 @@ describe('SmartInput', () => {
     expect(screen.queryByText('AAPL')).not.toBeInTheDocument();
   });
 });
+
+describe('SmartInput – additional coverage', () => {
+  const defaultProps = {
+    value: '',
+    onChange: vi.fn(),
+    suggestions: ['AAPL', 'AMZN', 'GOOG', 'MSFT', 'TSLA', 'META', 'NVDA'],
+    onAddNew: vi.fn(),
+    placeholder: 'Enter symbol...',
+  };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders with initial value displayed in the input', () => {
+    render(<SmartInput {...defaultProps} value="MSFT" />);
+
+    expect(screen.getByDisplayValue('MSFT')).toBeInTheDocument();
+  });
+
+  it('handles rapid typing by calling onChange for each keystroke', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<SmartInput {...defaultProps} onChange={onChange} />);
+
+    const input = screen.getByPlaceholderText('Enter symbol...');
+    await user.type(input, 'ABC');
+
+    // onChange is called for each character typed
+    expect(onChange).toHaveBeenCalledTimes(3);
+    expect(onChange).toHaveBeenNthCalledWith(1, 'A');
+    expect(onChange).toHaveBeenNthCalledWith(2, 'B');
+    expect(onChange).toHaveBeenNthCalledWith(3, 'C');
+  });
+
+  it('handles paste event by calling onChange', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<SmartInput {...defaultProps} onChange={onChange} />);
+
+    const input = screen.getByPlaceholderText('Enter symbol...');
+    await user.click(input);
+    await user.paste('PASTED');
+
+    expect(onChange).toHaveBeenCalledWith('PASTED');
+  });
+
+  it('shows filtered suggestions after typing partial match', async () => {
+    const user = userEvent.setup();
+    render(<SmartInput {...defaultProps} value="M" />);
+
+    const input = screen.getByPlaceholderText('Enter symbol...');
+    await user.click(input);
+
+    // MSFT and META contain 'M'
+    expect(screen.getByText('MSFT')).toBeInTheDocument();
+    expect(screen.getByText('META')).toBeInTheDocument();
+    // AMZN also contains 'm' (case-insensitive)
+    expect(screen.getByText('AMZN')).toBeInTheDocument();
+  });
+
+  it('shows Create button for unrecognized input and calls onAddNew on click', async () => {
+    const user = userEvent.setup();
+    const onAddNew = vi.fn();
+    render(<SmartInput {...defaultProps} value="NEWSTOCK" onAddNew={onAddNew} />);
+
+    const input = screen.getByPlaceholderText('Enter symbol...');
+    await user.click(input);
+
+    const createBtn = screen.getByText(/Create "NEWSTOCK"/);
+    expect(createBtn).toBeInTheDocument();
+
+    await user.click(createBtn);
+    expect(onAddNew).toHaveBeenCalledWith('NEWSTOCK');
+  });
+});

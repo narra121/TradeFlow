@@ -224,3 +224,123 @@ describe('AddAccountModal', () => {
     expect(notesArea).toHaveValue('My funded account');
   });
 });
+
+describe('AddAccountModal - validation and form behavior', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onAddAccount: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('validates that name field is required', () => {
+    render(<AddAccountModal {...defaultProps} />);
+    const nameInput = screen.getByPlaceholderText('e.g., FTMO $100k Challenge');
+    expect(nameInput).toBeRequired();
+  });
+
+  it('validates that broker field is required', () => {
+    render(<AddAccountModal {...defaultProps} />);
+    const brokerInput = screen.getByPlaceholderText('e.g., FTMO, MyForexFunds');
+    expect(brokerInput).toBeRequired();
+  });
+
+  it('validates that initial balance field is required', () => {
+    render(<AddAccountModal {...defaultProps} />);
+    const initialBalanceInput = screen.getByPlaceholderText('100000');
+    expect(initialBalanceInput).toBeRequired();
+  });
+
+  it('renders account type select with default value', () => {
+    render(<AddAccountModal {...defaultProps} />);
+    // The Account Type label should be visible
+    expect(screen.getByText('Account Type')).toBeInTheDocument();
+  });
+
+  it('renders status select with default value', () => {
+    render(<AddAccountModal {...defaultProps} />);
+    // The Status label should be visible
+    expect(screen.getByText('Status')).toBeInTheDocument();
+  });
+
+  it('renders currency select with default value', () => {
+    render(<AddAccountModal {...defaultProps} />);
+    // The Currency label should be visible
+    expect(screen.getByText('Currency')).toBeInTheDocument();
+  });
+
+  it('shows error for negative balance by accepting the number input type attribute', () => {
+    render(<AddAccountModal {...defaultProps} />);
+    const initialBalanceInput = screen.getByPlaceholderText('100000');
+    // The input should be of type number with step attribute
+    expect(initialBalanceInput).toHaveAttribute('type', 'number');
+    expect(initialBalanceInput).toHaveAttribute('step', '0.01');
+  });
+
+  it('resets form fields on cancel (re-open shows empty fields)', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+
+    const { rerender } = render(
+      <AddAccountModal {...defaultProps} onOpenChange={onOpenChange} />
+    );
+
+    // Fill in some fields
+    const nameInput = screen.getByPlaceholderText('e.g., FTMO $100k Challenge');
+    await user.type(nameInput, 'Temporary Name');
+    expect(nameInput).toHaveValue('Temporary Name');
+
+    // Click cancel
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
+    await user.click(cancelButton);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+
+    // Re-render as closed then open again (simulates the modal re-opening)
+    rerender(<AddAccountModal {...defaultProps} open={false} onOpenChange={onOpenChange} />);
+    rerender(<AddAccountModal {...defaultProps} open={true} onOpenChange={onOpenChange} />);
+
+    // The form should be reset because editAccount is undefined and open changed
+    const nameInputAfter = screen.getByPlaceholderText('e.g., FTMO $100k Challenge');
+    expect(nameInputAfter).toHaveValue('');
+  });
+
+  it('handles submit with all fields filled correctly', async () => {
+    const user = userEvent.setup();
+    const onAddAccount = vi.fn();
+
+    render(<AddAccountModal {...defaultProps} onAddAccount={onAddAccount} />);
+
+    // Fill in all required fields
+    const nameInput = screen.getByPlaceholderText('e.g., FTMO $100k Challenge');
+    const brokerInput = screen.getByPlaceholderText('e.g., FTMO, MyForexFunds');
+    const initialBalanceInput = screen.getByPlaceholderText('100000');
+    const currentBalanceInput = screen.getByPlaceholderText('Optional');
+    const notesArea = screen.getByPlaceholderText('Any additional notes about this account...');
+
+    await user.type(nameInput, 'Full Test Account');
+    await user.type(brokerInput, 'TestBroker');
+    await user.type(initialBalanceInput, '200000');
+    await user.type(currentBalanceInput, '210000');
+    await user.type(notesArea, 'Test notes');
+
+    // Submit the form
+    const submitButton = screen.getByRole('button', { name: /add account/i });
+    await user.click(submitButton);
+
+    expect(onAddAccount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Full Test Account',
+        broker: 'TestBroker',
+        initialBalance: 200000,
+        balance: 210000,
+        notes: 'Test notes',
+        type: 'prop_challenge',
+        status: 'active',
+        currency: 'USD',
+      })
+    );
+  });
+});

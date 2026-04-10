@@ -88,51 +88,52 @@ export function AccountsView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Accounts</h1>
-          <p className="text-muted-foreground mt-1">Manage your trading accounts</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Accounts</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Add, edit, and monitor your trading accounts</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <RefreshButton onRefresh={refetch} isFetching={isFetching} />
           <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
-            <Plus className="w-5 h-5" />
-            Add Account
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Add Account</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
 
       {/* Summary Stats */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="glass-card p-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="glass-card p-4 sm:p-5">
             <div className="flex items-center gap-3 mb-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              <span className="text-sm text-muted-foreground">Total Accounts</span>
+              <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Total Accounts</span>
             </div>
-            <p className="text-2xl font-bold font-mono text-foreground">{accounts.length}</p>
+            <p className="text-xl sm:text-2xl font-bold font-mono text-foreground">{accounts.length}</p>
           </div>
-          <div className="glass-card p-5">
+          <div className="glass-card p-4 sm:p-5">
             <div className="flex items-center gap-3 mb-2">
-              <Building2 className="w-5 h-5 text-accent" />
-              <span className="text-sm text-muted-foreground">Combined Balance</span>
+              <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Combined Balance</span>
             </div>
-            <p className="text-2xl font-bold font-mono text-foreground">
+            <p className="text-xl sm:text-2xl font-bold font-mono text-foreground truncate">
               ${totalBalance.toLocaleString()}
             </p>
           </div>
-          <div className="glass-card p-5">
+          <div className="glass-card p-4 sm:p-5">
             <div className="flex items-center gap-3 mb-2">
-              <Building2 className="w-5 h-5 text-success" />
-              <span className="text-sm text-muted-foreground">Total P&L</span>
+              <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Total P&L</span>
             </div>
-            <p className={`text-2xl font-bold font-mono ${totalPnl >= 0 ? 'text-success' : 'text-destructive'}`}>
+            <p className={`text-xl sm:text-2xl font-bold font-mono truncate ${totalPnl >= 0 ? 'text-success' : 'text-destructive'}`}>
               {totalPnl >= 0 ? '+' : ''}${totalPnl.toLocaleString()}
             </p>
           </div>
@@ -141,13 +142,29 @@ export function AccountsView() {
 
       {/* Accounts Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <AccountCardSkeleton key={i} />
           ))}
         </div>
+      ) : accounts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <Building2 className="w-8 h-8 text-primary/60" />
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">Set up your first trading account</h3>
+          <p className="text-muted-foreground max-w-md mb-8">
+            Create an account to start tracking your trades. You can add prop firm challenges, live accounts, or demo accounts.
+          </p>
+          <div className="flex items-center gap-3">
+            <Button onClick={() => setIsAddModalOpen(true)} size="default" className="gap-2">
+              <Plus className="w-4 h-4" />
+              Add Account
+            </Button>
+          </div>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {accounts.map((account) => (
             <AccountCard
               key={account.id}

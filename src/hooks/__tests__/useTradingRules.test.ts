@@ -140,3 +140,80 @@ describe('useTradingRules', () => {
     expect(result.current.rules).toHaveLength(4);
   });
 });
+
+describe('useTradingRules - Additional Scenarios', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns empty rules array when no data is returned', () => {
+    mockUseGetRulesQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+
+    const { result } = renderHook(() => useTradingRules());
+
+    expect(result.current.rules).toEqual([]);
+    expect(result.current.rules).toHaveLength(0);
+  });
+
+  it('handles rules with active and inactive status', () => {
+    const mixedRules = [
+      {
+        ruleId: 'rule-active',
+        title: 'Active Rule',
+        description: 'This rule is active',
+        category: 'risk',
+        isActive: true,
+      },
+      {
+        ruleId: 'rule-inactive',
+        title: 'Inactive Rule',
+        description: 'This rule is inactive',
+        category: 'discipline',
+        isActive: false,
+      },
+    ];
+
+    mockUseGetRulesQuery.mockReturnValue({
+      data: mixedRules,
+      isLoading: false,
+    });
+
+    const { result } = renderHook(() => useTradingRules());
+
+    expect(result.current.rules).toHaveLength(2);
+    expect(result.current.rules[0].isActive).toBe(true);
+    expect(result.current.rules[1].isActive).toBe(false);
+  });
+
+  it('returns rules that can be filtered by category', () => {
+    mockUseGetRulesQuery.mockReturnValue({
+      data: mockRules,
+      isLoading: false,
+    });
+
+    const { result } = renderHook(() => useTradingRules());
+
+    const riskRules = result.current.rules.filter((r: any) => r.category === 'risk');
+    const disciplineRules = result.current.rules.filter((r: any) => r.category === 'discipline');
+    const psychologyRules = result.current.rules.filter((r: any) => r.category === 'psychology');
+
+    expect(riskRules).toHaveLength(1);
+    expect(disciplineRules).toHaveLength(1);
+    expect(psychologyRules).toHaveLength(1);
+  });
+
+  it('returns loading state correctly during fetch', () => {
+    mockUseGetRulesQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+
+    const { result } = renderHook(() => useTradingRules());
+
+    expect(result.current.loading).toBe(true);
+    expect(result.current.rules).toEqual([]);
+  });
+});

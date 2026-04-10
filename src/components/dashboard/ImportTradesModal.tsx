@@ -288,16 +288,16 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
       if (!isOpen) resetModal();
       onOpenChange(isOpen);
     }}>
-      <DialogContent className="w-[80vw] max-w-[80vw] h-[85vh] max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
-        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-          <DialogTitle className="text-xl font-semibold">Import Trades from Screenshot</DialogTitle>
-          <p className="text-sm text-muted-foreground mt-1">
+      <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[80vw] max-w-[95vw] sm:max-w-[90vw] md:max-w-[80vw] h-[95vh] sm:h-[85vh] max-h-[95vh] sm:max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
+          <DialogTitle className="text-lg sm:text-xl font-semibold">Import Trades from Screenshot</DialogTitle>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Import extracts basic trade data only. To add screenshots, notes, and other details, edit each trade in the Trade Log after importing.
           </p>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">
-          <div className="px-6 pb-6 space-y-6">
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
             {/* Upload Zone */}
             <div
               ref={dropZoneRef}
@@ -305,9 +305,9 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               className={cn(
-                "relative border-2 border-dashed rounded-xl p-8 transition-all duration-200",
-                isDragging 
-                  ? "border-primary bg-primary/5" 
+                "relative border-2 border-dashed rounded-xl p-4 sm:p-8 transition-all duration-200",
+                isDragging
+                  ? "border-primary bg-primary/5"
                   : "border-border hover:border-muted-foreground/50"
               )}
             >
@@ -319,23 +319,23 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              
-              <div className="flex flex-col items-center justify-center text-center space-y-4">
+
+              <div className="flex flex-col items-center justify-center text-center space-y-3 sm:space-y-4">
                 <div className={cn(
-                  "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
+                  "w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-colors",
                   isDragging ? "bg-primary/20" : "bg-muted"
                 )}>
                   <Upload className={cn(
-                    "w-8 h-8 transition-colors",
+                    "w-6 h-6 sm:w-8 sm:h-8 transition-colors",
                     isDragging ? "text-primary" : "text-muted-foreground"
                   )} />
                 </div>
-                
-                <div className="space-y-2">
-                  <p className="text-lg font-medium">
+
+                <div className="space-y-1 sm:space-y-2">
+                  <p className="text-base sm:text-lg font-medium">
                     {isDragging ? "Drop your screenshots here" : "Upload Trade Screenshots"}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Drag & drop, paste from clipboard (Ctrl+V), or click to select
                   </p>
                 </div>
@@ -375,11 +375,11 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                   </Button>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2 sm:gap-3">
                   {uploadedImages.map((img) => (
-                    <div 
-                      key={img.id} 
-                      className="relative group w-24 h-24 rounded-lg overflow-hidden border border-border"
+                    <div
+                      key={img.id}
+                      className="relative group w-16 h-16 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-border"
                     >
                       <img 
                         src={img.url} 
@@ -409,14 +409,14 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
             {/* Extracted Trades Table */}
             {extractedTrades.length > 0 && !isProcessing && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="text-sm font-medium text-muted-foreground">
                     Extracted Trades ({extractedTrades.length})
                   </h3>
-                  
+
                   {selectedCount > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs sm:text-sm text-muted-foreground">
                         {selectedCount} selected
                       </span>
                       {selectedCount >= 2 && (
@@ -677,7 +677,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         </ScrollArea>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex justify-end gap-3 shrink-0">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border bg-secondary/30 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 shrink-0">
           <Button
             type="button"
             variant="outline"
@@ -685,16 +685,16 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
               resetModal();
               onOpenChange(false);
             }}
-            className="w-28"
+            className="w-full sm:w-28"
             disabled={isSaving}
           >
             Cancel
           </Button>
-          
+
           <Button
             onClick={handleSaveAll}
             disabled={extractedTrades.length === 0 || isSaving}
-            className="w-28"
+            className="w-full sm:w-28"
           >
             {isSaving ? (
               <>

@@ -176,4 +176,63 @@ describe('cn (className utility)', () => {
       expect(result).toBe('btn bg-blue-500 text-white px-6 py-3');
     });
   });
+
+  describe('edge cases – extended', () => {
+    it('handles only undefined inputs', () => {
+      const result = cn(undefined, undefined);
+      expect(result).toBe('');
+    });
+
+    it('handles only empty string inputs', () => {
+      const result = cn('', '');
+      expect(result).toBe('');
+    });
+
+    it('merges conflicting tailwind width classes (last wins)', () => {
+      const result = cn('w-4', 'w-8');
+      expect(result).toBe('w-8');
+    });
+
+    it('merges conflicting tailwind height classes (last wins)', () => {
+      const result = cn('h-10', 'h-20');
+      expect(result).toBe('h-20');
+    });
+
+    it('merges conflicting flex direction classes', () => {
+      const result = cn('flex-row', 'flex-col');
+      expect(result).toBe('flex-col');
+    });
+
+    it('merges conflicting justify-content classes', () => {
+      const result = cn('justify-start', 'justify-center');
+      expect(result).toBe('justify-center');
+    });
+
+    it('handles array of classes with conditional values', () => {
+      const result = cn(['text-sm', false && 'hidden', 'p-4']);
+      expect(result).toBe('text-sm p-4');
+    });
+
+    it('handles deeply nested arrays', () => {
+      const result = cn([['a', ['b']], 'c']);
+      expect(result).toBe('a b c');
+    });
+
+    it('handles mix of undefined, null, false, and valid in array', () => {
+      const result = cn([undefined, null, false, 'valid']);
+      expect(result).toBe('valid');
+    });
+
+    it('merges conflicting border-radius with non-conflicting border-color', () => {
+      const result = cn('rounded-sm border-red-500', 'rounded-lg');
+      expect(result).toContain('border-red-500');
+      expect(result).toContain('rounded-lg');
+      expect(result).not.toContain('rounded-sm');
+    });
+
+    it('merges conflicting opacity classes', () => {
+      const result = cn('opacity-50', 'opacity-100');
+      expect(result).toBe('opacity-100');
+    });
+  });
 });

@@ -126,26 +126,27 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Trade Log</h1>
-          <p className="text-muted-foreground mt-1">All your trading history</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Trade Log</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">All your trading history</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
-            <Upload className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
+            <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
             Import
           </Button>
-          <Button onClick={onAddTrade} size="lg" className="gap-2">
-            <Plus className="w-5 h-5" />
-            New Trade
+          <Button onClick={onAddTrade} size="default" className="gap-2">
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Add Trade</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="relative flex-1 sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search by symbol..."
@@ -154,14 +155,14 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
             className="pl-10"
           />
         </div>
-        
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0">
           {(['ALL', 'TP', 'PARTIAL', 'SL', 'BREAKEVEN'] as const).map(outcome => (
             <button
               key={outcome}
               onClick={() => setOutcomeFilter(outcome)}
               className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                "px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0",
                 outcomeFilter === outcome
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground hover:text-foreground"

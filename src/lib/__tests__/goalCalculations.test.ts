@@ -418,3 +418,138 @@ describe('hasCurrentPeriodData', () => {
     expect(hasCurrentPeriodData(trades, 'weekly')).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Extended: calculateGoalProgressForAccount edge cases
+// ---------------------------------------------------------------------------
+
+describe('calculateGoalProgressForAccount – extended', () => {
+  it('handles goal with zero profit target (avoids division by zero)', () => {
+    const trades = [
+      makeTrade({ id: '1', pnl: 500, exitDate: '2025-03-12T10:00:00' }),
+    ];
+    const targets = { profit: 0, winRate: 60, maxDrawdown: 10, maxTrades: 20 };
+    const result = calculateGoalProgressForAccount(
+      trades,
+      'acct-1',
+      'weekly',
+      targets,
+      FIXED_RANGE,
+    );
+    expect(result.profit.progress).toBe(0);
+    expect(result.profit.current).toBe(500);
+  });
+
+  it('handles goal with zero winRate target', () => {
+    const trades = [
+      makeTrade({ id: '1', pnl: 100, exitDate: '2025-03-12T10:00:00' }),
+    ];
+    const targets = { profit: 1000, winRate: 0, maxDrawdown: 10, maxTrades: 20 };
+    const result = calculateGoalProgressForAccount(
+      trades,
+      'acct-1',
+      'weekly',
+      targets,
+      FIXED_RANGE,
+    );
+    expect(result.winRate.progress).toBe(0);
+  });
+
+  it('handles goal with negative current pnl value', () => {
+    const trades = [
+      makeTrade({ id: '1', pnl: -200, exitDate: '2025-03-12T10:00:00', outcome: 'SL' }),
+      makeTrade({ id: '2', pnl: -300, exitDate: '2025-03-13T10:00:00', outcome: 'SL' }),
+    ];
+    const result = calculateGoalProgressForAccount(
+      trades,
+      'acct-1',
+      'weekly',
+      DEFAULT_TARGETS,
+      FIXED_RANGE,
+    );
+    expect(result.profit.current).toBe(-500);
+    expect(result.profit.achieved).toBe(false);
+    // Math.min((-500/1000)*100, 100) = Math.min(-50, 100) = -50
+    expect(result.profit.progress).toBe(-50);
+  });
+
+  it('handles completed goal (100%+ progress is capped)', () => {
+    const trades = [
+      makeTrade({ id: '1', pnl: 2000, exitDate: '2025-03-12T10:00:00' }),
+    ];
+    const result = calculateGoalProgressForAccount(
+      trades,
+      'acct-1',
+      'weekly',
+      DEFAULT_TARGETS,
+      FIXED_RANGE,
+    );
+    expect(result.profit.current).toBe(2000);
+    expect(result.profit.progress).toBe(100); // capped
+    expect(result.profit.achieved).toBe(true);
+  });
+
+  it('handles goal with no trades in period (all outside range)', () => {
+    const trades = [
+      makeTrade({ id: '1', pnl: 500, exitDate: '2025-04-01T10:00:00' }), // outside
+      makeTrade({ id: '2', pnl: 300, exitDate: '2025-02-01T10:00:00' }), // outside
+    ];
+    const result = calculateGoalProgressForAccount(
+      trades,
+      'acct-1',
+      'weekly',
+      DEFAULT_TARGETS,
+      FIXED_RANGE,
+    );
+    expect(result.profit.current).toBe(0);
+    expect(result.winRate.current).toBe(0);
+    expect(result.tradeCount.current).toBe(0);
+    expect(result.maxDrawdown.current).toBe(0);
+  });
+
+  it('handles weekly vs monthly period parameter (uses custom range)', () => {
+    const monthRange = {
+      start: new Date('2025-03-01T00:00:00'),
+      end: new Date('2025-03-31T23:59:59'),
+    };
+    const trades = [
+      makeTrade({ id: '1', pnl: 100, exitDate: '2025-03-05T10:00:00' }),
+      makeTrade({ id: '2', pnl: 200, exitDate: '2025-03-15T10:00:00' }),
+      makeTrade({ id: '3', pnl: 300, exitDate: '2025-03-25T10:00:00' }),
+    ];
+    const resultWeekly = calculateGoalProgressForAccount(
+      trades,
+      'acct-1',
+      'weekly',
+      DEFAULT_TARGETS,
+      FIXED_RANGE, // Mar 10-16
+    );
+    const resultMonthly = calculateGoalProgressForAccount(
+      trades,
+      'acct-1',
+      'monthly',
+      DEFAULT_TARGETS,
+      monthRange,
+    );
+    // Weekly should only include trade 2 (Mar 15), monthly should include all three
+    expect(resultWeekly.profit.current).toBe(200);
+    expect(resultMonthly.profit.current).toBe(600);
+    expect(resultMonthly.tradeCount.current).toBe(3);
+  });
+
+  it('handles all-losing trades (0% win rate)', () => {
+    const trades = [
+      makeTrade({ id: '1', pnl: -100, exitDate: '2025-03-12T10:00:00', outcome: 'SL' }),
+      makeTrade({ id: '2', pnl: -200, exitDate: '2025-03-13T10:00:00', outcome: 'SL' }),
+    ];
+    const result = calculateGoalProgressForAccount(
+      trades,
+      'acct-1',
+      'weekly',
+      DEFAULT_TARGETS,
+      FIXED_RANGE,
+    );
+    expect(result.winRate.current).toBe(0);
+    expect(result.winRate.achieved).toBe(false);
+  });
+});

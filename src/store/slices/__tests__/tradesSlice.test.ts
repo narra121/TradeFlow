@@ -244,4 +244,203 @@ describe('tradesSlice', () => {
       expect(state.filters.datePreset).toBe('thisWeek');
     });
   });
+
+  describe('setDateRangeFilter with all preset types', () => {
+    it('sets datePreset to thisWeek', () => {
+      const state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2025-04-07',
+        endDate: '2025-04-13',
+        datePreset: 'thisWeek',
+      }));
+      expect(state.filters.datePreset).toBe('thisWeek');
+      expect(state.filters.startDate).toBe('2025-04-07');
+      expect(state.filters.endDate).toBe('2025-04-13');
+    });
+
+    it('sets datePreset to thisMonth', () => {
+      const state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2025-04-01',
+        endDate: '2025-04-30',
+        datePreset: 'thisMonth',
+      }));
+      expect(state.filters.datePreset).toBe('thisMonth');
+      expect(state.filters.startDate).toBe('2025-04-01');
+      expect(state.filters.endDate).toBe('2025-04-30');
+    });
+
+    it('sets datePreset to custom', () => {
+      const state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2025-02-15',
+        endDate: '2025-03-20',
+        datePreset: 'custom',
+      }));
+      expect(state.filters.datePreset).toBe('custom');
+    });
+
+    it('sets datePreset to all', () => {
+      const state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2020-01-01',
+        endDate: '2025-12-31',
+        datePreset: 'all',
+      }));
+      expect(state.filters.datePreset).toBe('all');
+    });
+
+    it('sets numeric datePreset 7 (last 7 days)', () => {
+      const state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2025-04-02',
+        endDate: '2025-04-09',
+        datePreset: 7,
+      }));
+      expect(state.filters.datePreset).toBe(7);
+    });
+
+    it('sets numeric datePreset 30 (last 30 days)', () => {
+      const state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2025-03-10',
+        endDate: '2025-04-09',
+        datePreset: 30,
+      }));
+      expect(state.filters.datePreset).toBe(30);
+    });
+
+    it('sets numeric datePreset 90 (last 90 days)', () => {
+      const state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2025-01-09',
+        endDate: '2025-04-09',
+        datePreset: 90,
+      }));
+      expect(state.filters.datePreset).toBe(90);
+    });
+
+    it('sets numeric datePreset 365 (last year)', () => {
+      const state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2024-04-10',
+        endDate: '2025-04-09',
+        datePreset: 365,
+      }));
+      expect(state.filters.datePreset).toBe(365);
+    });
+  });
+
+  describe('setAccountFilter with null (clear)', () => {
+    it('resets accountId to ALL when given null', () => {
+      let state = tradesReducer(getInitialState(), setAccountFilter('specific-account'));
+      expect(state.filters.accountId).toBe('specific-account');
+
+      state = tradesReducer(state, setAccountFilter(null));
+      expect(state.filters.accountId).toBe('ALL');
+    });
+
+    it('does not affect date filters when clearing account filter with null', () => {
+      let state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2025-01-01',
+        endDate: '2025-06-30',
+        datePreset: 'custom',
+      }));
+      state = tradesReducer(state, setAccountFilter('acc-1'));
+      state = tradesReducer(state, setAccountFilter(null));
+      expect(state.filters.accountId).toBe('ALL');
+      expect(state.filters.startDate).toBe('2025-01-01');
+      expect(state.filters.endDate).toBe('2025-06-30');
+      expect(state.filters.datePreset).toBe('custom');
+    });
+  });
+
+  describe('concurrent filter updates', () => {
+    it('handles sequential account and date range updates correctly', () => {
+      let state = getInitialState();
+      state = tradesReducer(state, setAccountFilter('acc-1'));
+      state = tradesReducer(state, setDateRangeFilter({
+        startDate: '2025-01-01',
+        endDate: '2025-01-31',
+        datePreset: 30,
+      }));
+      state = tradesReducer(state, setAccountFilter('acc-2'));
+      expect(state.filters.accountId).toBe('acc-2');
+      expect(state.filters.startDate).toBe('2025-01-01');
+      expect(state.filters.endDate).toBe('2025-01-31');
+      expect(state.filters.datePreset).toBe(30);
+    });
+
+    it('setFilters overrides individual setAccountFilter and setDateRangeFilter', () => {
+      let state = getInitialState();
+      state = tradesReducer(state, setAccountFilter('acc-1'));
+      state = tradesReducer(state, setDateRangeFilter({
+        startDate: '2025-03-01',
+        endDate: '2025-03-31',
+        datePreset: 'thisMonth',
+      }));
+      state = tradesReducer(state, setFilters({
+        accountId: 'acc-override',
+        startDate: '2025-06-01',
+        endDate: '2025-06-30',
+        datePreset: 'custom' as const,
+      }));
+      expect(state.filters.accountId).toBe('acc-override');
+      expect(state.filters.startDate).toBe('2025-06-01');
+      expect(state.filters.endDate).toBe('2025-06-30');
+      expect(state.filters.datePreset).toBe('custom');
+    });
+  });
+
+  describe('initial state correctness', () => {
+    it('initial state filters object has exactly four keys', () => {
+      const state = getInitialState();
+      expect(Object.keys(state.filters)).toHaveLength(4);
+      expect(Object.keys(state.filters).sort()).toEqual(
+        ['accountId', 'datePreset', 'endDate', 'startDate']
+      );
+    });
+
+    it('initial state is a fresh object on every call to reducer with undefined', () => {
+      const state1 = tradesReducer(undefined, { type: '@@INIT' });
+      const state2 = tradesReducer(undefined, { type: '@@INIT' });
+      expect(state1).toEqual(state2);
+    });
+  });
+
+  describe('filters persist across date changes', () => {
+    it('accountId persists when date range is updated', () => {
+      let state = tradesReducer(getInitialState(), setAccountFilter('persistent-acc'));
+      state = tradesReducer(state, setDateRangeFilter({
+        startDate: '2025-01-01',
+        endDate: '2025-01-31',
+        datePreset: 30,
+      }));
+      expect(state.filters.accountId).toBe('persistent-acc');
+
+      state = tradesReducer(state, setDateRangeFilter({
+        startDate: '2025-06-01',
+        endDate: '2025-06-30',
+        datePreset: 'thisMonth',
+      }));
+      expect(state.filters.accountId).toBe('persistent-acc');
+    });
+
+    it('datePreset persists when account filter is changed', () => {
+      let state = tradesReducer(getInitialState(), setDateRangeFilter({
+        startDate: '2025-03-01',
+        endDate: '2025-03-31',
+        datePreset: 'custom',
+      }));
+      state = tradesReducer(state, setAccountFilter('new-acc'));
+      expect(state.filters.datePreset).toBe('custom');
+      expect(state.filters.startDate).toBe('2025-03-01');
+      expect(state.filters.endDate).toBe('2025-03-31');
+    });
+
+    it('multiple date range changes preserve accountId throughout', () => {
+      let state = tradesReducer(getInitialState(), setAccountFilter('sticky-account'));
+      const dateRanges = [
+        { startDate: '2025-01-01', endDate: '2025-01-31', datePreset: 30 as const },
+        { startDate: '2025-02-01', endDate: '2025-02-28', datePreset: 'custom' as const },
+        { startDate: '2025-03-01', endDate: '2025-03-31', datePreset: 'thisMonth' as const },
+      ];
+      for (const range of dateRanges) {
+        state = tradesReducer(state, setDateRangeFilter(range));
+        expect(state.filters.accountId).toBe('sticky-account');
+      }
+    });
+  });
 });

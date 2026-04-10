@@ -6,6 +6,24 @@ import type {
 } from '@/lib/api';
 import type { Trade } from '@/types/trade';
 
+// --- Paginated trades types ---
+
+export interface PaginatedTradesQueryParams extends TradesQueryParams {
+  limit?: number;
+  cursor?: string;
+}
+
+export interface PaginationInfo {
+  nextCursor: string | null;
+  hasMore: boolean;
+  limit: number;
+}
+
+export interface PaginatedTradesResponse {
+  trades: Trade[];
+  pagination: PaginationInfo;
+}
+
 const mapBackendTradeToTrade = (trade: any): Trade => {
   const id = trade.tradeId ?? trade.id;
   const side = trade.side ?? trade.direction;
@@ -88,6 +106,46 @@ export const tradesApi = api.injectEndpoints({
           : [{ type: 'Trades', id: 'LIST' }],
     }),
 
+    getTradesPaginated: builder.query<PaginatedTradesResponse, PaginatedTradesQueryParams | void>({
+      query: (params) => ({
+        url: '/trades',
+        params: {
+          ...(params || {}),
+          limit: params?.limit ?? 50,
+          ...(params?.cursor ? { cursor: params.cursor } : {}),
+        },
+      }),
+      transformResponse: (response: any, _meta: unknown, arg: PaginatedTradesQueryParams | void) => {
+        // Handle both paginated { trades, pagination } and legacy array responses
+        const tradesArray = Array.isArray(response) ? response : (response?.trades || []);
+        const mappedTrades = tradesArray.map(mapBackendTradeToTrade);
+
+        const requestedLimit = (arg as PaginatedTradesQueryParams)?.limit ?? 50;
+
+        const pagination: PaginationInfo = response?.pagination
+          ? {
+              nextCursor: response.pagination.nextCursor ?? null,
+              hasMore: response.pagination.hasMore ?? false,
+              limit: response.pagination.limit ?? requestedLimit,
+            }
+          : {
+              // Fallback for legacy backend that returns all trades at once
+              nextCursor: null,
+              hasMore: false,
+              limit: requestedLimit,
+            };
+
+        return { trades: mappedTrades, pagination };
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.trades.map(({ id }) => ({ type: 'Trades' as const, id })),
+              { type: 'Trades', id: 'PAGINATED_LIST' },
+            ]
+          : [{ type: 'Trades', id: 'PAGINATED_LIST' }],
+    }),
+
     createTrade: builder.mutation<Trade, CreateTradePayload>({
       query: (payload) => {
         // Map UI fields to backend API fields
@@ -138,15 +196,13 @@ export const tradesApi = api.injectEndpoints({
         }
         return mappedTrade;
       },
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics'],
+      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats', 'Analytics'],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
           // Refetch accounts after a delay to allow the DynamoDB Stream
           // handler to recalculate the account balance
-          setTimeout(() => {
-            dispatch(api.util.invalidateTags(['Accounts']));
-          }, 2000);
+          dispatch(api.util.invalidateTags(['Accounts']));
         } catch { /* handled elsewhere */ }
       },
     }),
@@ -211,7 +267,7 @@ export const tradesApi = api.injectEndpoints({
         return result;
       },
       invalidatesTags: (result) => {
-        const tags: any[] = ['Stats', 'Analytics'];
+        const tags: any[] = ['Stats', 'Analytics', { type: 'Trades', id: 'PAGINATED_LIST' }];
         if (result?.createdTrades && result.createdTrades.length > 0) {
           tags.push({ type: 'Trades', id: 'LIST' });
         }
@@ -245,9 +301,7 @@ export const tradesApi = api.injectEndpoints({
           }
 
           // Delayed refetch for account balance (DynamoDB Stream needs time)
-          setTimeout(() => {
-            dispatch(api.util.invalidateTags(['Accounts']));
-          }, 2000);
+          dispatch(api.util.invalidateTags(['Accounts']));
         } catch {
           // No-op: if update/refetch fails, leave cache as-is.
         }
@@ -279,7 +333,7 @@ export const tradesApi = api.injectEndpoints({
       // Accounts invalidated after delay in onQueryStarted (DynamoDB Stream needs time)
       invalidatesTags: (result, error) => {
         if (error) return [];
-        return ['Stats', 'Analytics'];
+        return ['Stats', 'Analytics', { type: 'Trades', id: 'PAGINATED_LIST' }];
       },
       async onQueryStarted(id, { dispatch, getState, queryFulfilled }) {
         // Optimistic delete from all getTrades caches
@@ -304,9 +358,7 @@ export const tradesApi = api.injectEndpoints({
         try {
           await queryFulfilled;
           // Delayed refetch for account balance (DynamoDB Stream needs time)
-          setTimeout(() => {
-            dispatch(api.util.invalidateTags(['Accounts']));
-          }, 2000);
+          dispatch(api.util.invalidateTags(['Accounts']));
         } catch {
           // Revert optimistic updates on error
           patchResults.forEach(patchResult => patchResult.undo());
@@ -320,14 +372,45 @@ export const tradesApi = api.injectEndpoints({
         method: 'POST',
         body: payload,
       }),
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics'],
+      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats', 'Analytics'],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          setTimeout(() => {
-            dispatch(api.util.invalidateTags(['Accounts']));
-          }, 2000);
+          dispatch(api.util.invalidateTags(['Accounts']));
         } catch { /* handled elsewhere */ }
+      },
+    }),
+
+    bulkDeleteTrades: builder.mutation<any, { tradeIds: string[] }>({
+      query: (payload) => ({
+        url: '/trades/bulk-delete',
+        method: 'POST',
+        body: payload,
+      }),
+      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats', 'Analytics'],
+      async onQueryStarted({ tradeIds }, { dispatch, getState, queryFulfilled }) {
+        // Optimistic delete from all getTrades caches
+        const patchResults: any[] = [];
+        const state: any = getState();
+        const queries = state?.[api.reducerPath]?.queries || {};
+        const idsSet = new Set(tradeIds);
+
+        for (const entry of Object.values<any>(queries)) {
+          if (entry?.endpointName !== 'getTrades') continue;
+          const patchResult = dispatch(
+            tradesApi.util.updateQueryData('getTrades', entry.originalArgs, (draft: Trade[]) => {
+              return draft.filter((t) => !idsSet.has(t.id));
+            })
+          );
+          patchResults.push(patchResult);
+        }
+
+        try {
+          await queryFulfilled;
+          dispatch(api.util.invalidateTags(['Accounts']));
+        } catch {
+          patchResults.forEach(p => p.undo());
+        }
       },
     }),
   }),
@@ -336,8 +419,11 @@ export const tradesApi = api.injectEndpoints({
 export const {
   useGetTradesQuery,
   useLazyGetTradesQuery,
+  useGetTradesPaginatedQuery,
+  useLazyGetTradesPaginatedQuery,
   useCreateTradeMutation,
   useUpdateTradeMutation,
   useDeleteTradeMutation,
   useBulkImportTradesMutation,
+  useBulkDeleteTradesMutation,
 } = tradesApi;

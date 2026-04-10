@@ -4,9 +4,10 @@ import { cn } from "@/lib/utils";
 interface OTPInputProps {
   length?: number;
   onComplete: (otp: string) => void;
+  disabled?: boolean;
 }
 
-export const OTPInput = ({ length = 6, onComplete }: OTPInputProps) => {
+export const OTPInput = ({ length = 6, onComplete, disabled = false }: OTPInputProps) => {
   const [otp, setOtp] = useState<string[]>(new Array(length).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -50,7 +51,7 @@ export const OTPInput = ({ length = 6, onComplete }: OTPInputProps) => {
   };
 
   return (
-    <div className="flex justify-center gap-3">
+    <div className="flex justify-center gap-1.5 sm:gap-3">
       {otp.map((digit, index) => (
         <input
           key={index}
@@ -62,12 +63,14 @@ export const OTPInput = ({ length = 6, onComplete }: OTPInputProps) => {
           onChange={(e) => handleChange(index, e.target.value)}
           onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}
+          disabled={disabled}
           className={cn(
-            "w-12 h-14 text-center text-xl font-mono font-bold",
-            "bg-card border-2 border-border rounded-xl",
+            "w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-mono font-bold",
+            "bg-card border-2 border-border rounded-lg sm:rounded-xl",
             "focus:border-primary focus:ring-2 focus:ring-primary/20",
             "outline-none transition-all duration-200",
-            "text-foreground placeholder:text-muted-foreground"
+            "text-foreground placeholder:text-muted-foreground",
+            disabled && "opacity-50 cursor-not-allowed"
           )}
         />
       ))}

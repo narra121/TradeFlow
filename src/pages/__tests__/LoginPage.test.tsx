@@ -50,3 +50,44 @@ describe('LoginPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/app');
   });
 });
+
+describe('LoginPage - extended', () => {
+  beforeEach(() => {
+    mockNavigate.mockClear();
+  });
+
+  it('renders the AuthPage component inside the DOM', () => {
+    renderWithProviders(<LoginPage />);
+    expect(screen.getByTestId('auth-page')).toBeInTheDocument();
+  });
+
+  it('passes initialView="login" to AuthPage (not signup)', () => {
+    renderWithProviders(<LoginPage />);
+    const authPage = screen.getByTestId('auth-page');
+    expect(authPage).toHaveAttribute('data-view', 'login');
+    expect(authPage).not.toHaveAttribute('data-view', 'signup');
+  });
+
+  it('does not navigate before login is triggered', () => {
+    renderWithProviders(<LoginPage />);
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('navigates exactly once on login trigger', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LoginPage />);
+    const trigger = screen.getByTestId('trigger-login');
+    await user.click(trigger);
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+  });
+
+  it('navigates to /app (not any other route) on login', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LoginPage />);
+    const trigger = screen.getByTestId('trigger-login');
+    await user.click(trigger);
+    expect(mockNavigate).toHaveBeenCalledWith('/app');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/signup');
+  });
+});

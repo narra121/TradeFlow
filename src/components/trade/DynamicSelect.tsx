@@ -64,8 +64,8 @@ export function DynamicSelect({
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-popover border-border" align="start">
-        <div className="max-h-60 overflow-y-auto">
+      <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[180px] p-0 bg-popover border-border" align="start">
+        <div className="max-h-48 sm:max-h-60 overflow-y-auto">
           {options.map((option) => (
             <div
               key={option}
@@ -98,12 +98,12 @@ export function DynamicSelect({
         {onAddNew && (
           <div className="border-t border-border">
             {isAdding ? (
-              <div className="p-2 flex gap-2">
+              <div className="p-2 flex gap-1.5 sm:gap-2">
                 <Input
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
                   placeholder="Enter new value..."
-                  className="h-8 text-sm"
+                  className="h-8 text-sm min-w-0 flex-1"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {

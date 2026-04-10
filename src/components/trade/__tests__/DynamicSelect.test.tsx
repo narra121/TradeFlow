@@ -179,3 +179,97 @@ describe('DynamicSelect', () => {
     expect(onRemove).toHaveBeenCalledWith('Apple');
   });
 });
+
+describe('DynamicSelect – additional coverage', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('handles empty options array', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <DynamicSelect value="" onChange={onChange} options={[]} />
+    );
+
+    await user.click(screen.getByRole('combobox'));
+
+    // No option items should be rendered inside the popover
+    // The "Apple", "Banana", "Cherry" texts should not exist
+    expect(screen.queryByText('Apple')).not.toBeInTheDocument();
+    expect(screen.queryByText('Banana')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cherry')).not.toBeInTheDocument();
+  });
+
+  it('calls onAddNew when new option is typed and submitted', async () => {
+    const user = userEvent.setup();
+    const onAddNew = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <DynamicSelect
+        value=""
+        onChange={onChange}
+        options={['Existing']}
+        onAddNew={onAddNew}
+      />
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByText('Add New'));
+
+    const input = screen.getByPlaceholderText('Enter new value...');
+    await user.type(input, 'BrandNew');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+
+    expect(onAddNew).toHaveBeenCalledWith('BrandNew');
+    expect(onChange).toHaveBeenCalledWith('BrandNew');
+  });
+
+  it('calls onRemove when an option remove button is clicked', async () => {
+    const user = userEvent.setup();
+    const onRemove = vi.fn();
+    render(
+      <DynamicSelect
+        value=""
+        onChange={vi.fn()}
+        options={['Alpha', 'Beta', 'Gamma']}
+        onRemove={onRemove}
+      />
+    );
+
+    await user.click(screen.getByRole('combobox'));
+
+    const removeButtons = screen.getAllByRole('button').filter(
+      (btn) => btn.querySelector('svg.lucide-x')
+    );
+    // Remove the second option ("Beta")
+    await user.click(removeButtons[1]);
+
+    expect(onRemove).toHaveBeenCalledWith('Beta');
+  });
+
+  it('shows placeholder text when no value is selected', () => {
+    render(
+      <DynamicSelect
+        value=""
+        onChange={vi.fn()}
+        options={['One', 'Two']}
+        placeholder="Choose an item"
+      />
+    );
+
+    expect(screen.getByRole('combobox')).toHaveTextContent('Choose an item');
+  });
+
+  it('shows default placeholder when no value and no custom placeholder', () => {
+    render(
+      <DynamicSelect
+        value=""
+        onChange={vi.fn()}
+        options={['One']}
+      />
+    );
+
+    expect(screen.getByRole('combobox')).toHaveTextContent('Select...');
+  });
+});

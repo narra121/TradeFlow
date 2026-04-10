@@ -354,3 +354,159 @@ describe('AddTradeModal', () => {
     expect(screen.getByText('Core Details')).toBeInTheDocument();
   });
 });
+
+describe('AddTradeModal - Error Handling', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onAddTrade: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('keeps dialog open when onAddTrade rejects with a network error', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onOpenChange = vi.fn();
+    const onAddTrade = vi.fn().mockRejectedValue(new Error('Network error'));
+
+    render(<AddTradeModal {...defaultProps} onOpenChange={onOpenChange} onAddTrade={onAddTrade} />);
+
+    const submitButton = screen.getByRole('button', { name: /add trade/i });
+    await user.click(submitButton);
+
+    await vi.waitFor(() => {
+      expect(onAddTrade).toHaveBeenCalled();
+    });
+
+    // Dialog should NOT close on network error
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    // Modal content should still be visible
+    expect(screen.getByText('Add New Trade')).toBeInTheDocument();
+  });
+
+  it('resets isSubmitting to false after onAddTrade rejects (button re-enabled)', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onAddTrade = vi.fn().mockRejectedValue(new Error('Server error'));
+
+    render(<AddTradeModal {...defaultProps} onAddTrade={onAddTrade} />);
+
+    const submitButton = screen.getByRole('button', { name: /add trade/i });
+    await user.click(submitButton);
+
+    await vi.waitFor(() => {
+      expect(onAddTrade).toHaveBeenCalled();
+    });
+
+    // After rejection settles, the button should no longer be disabled
+    await vi.waitFor(() => {
+      const btn = screen.getByRole('button', { name: /add trade/i });
+      expect(btn).not.toBeDisabled();
+    });
+  });
+
+  it('closes dialog when onAddTrade resolves successfully', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onOpenChange = vi.fn();
+    const onAddTrade = vi.fn().mockResolvedValue(undefined);
+
+    render(<AddTradeModal {...defaultProps} onOpenChange={onOpenChange} onAddTrade={onAddTrade} />);
+
+    const submitButton = screen.getByRole('button', { name: /add trade/i });
+    await user.click(submitButton);
+
+    await vi.waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
+});
+
+describe('AddTradeModal - UX Enhancements', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onAddTrade: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('displays required field indicators on mandatory fields', () => {
+    render(<AddTradeModal {...defaultProps} />);
+
+    const requiredLabels = ['Symbol', 'Entry Price', 'Size (lots)', 'Entry Date & Time'];
+
+    for (const labelText of requiredLabels) {
+      const label = screen.getByText((_content, element) => {
+        return (
+          element?.tagName === 'LABEL' &&
+          element?.textContent?.includes(labelText) === true &&
+          element?.textContent?.includes('*') === true
+        );
+      });
+      expect(label).toBeInTheDocument();
+    }
+  });
+
+  it('shows section description for Core Details', () => {
+    render(<AddTradeModal {...defaultProps} />);
+
+    expect(
+      screen.getByText((_content, element) =>
+        element?.textContent?.includes('Required fields are marked with') === true &&
+        element?.tagName === 'P'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('shows optional section descriptions', () => {
+    render(<AddTradeModal {...defaultProps} />);
+
+    expect(screen.getByText(/helps with pattern analysis/)).toBeInTheDocument();
+    expect(screen.getByText(/track lessons and mistakes/)).toBeInTheDocument();
+    expect(screen.getByText(/add context for future review/)).toBeInTheDocument();
+    expect(screen.getByText(/attach chart screenshots/)).toBeInTheDocument();
+  });
+
+  it('shows PnL helper text for auto-calculation', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<AddTradeModal {...defaultProps} />);
+
+    // Find the entry price and exit price inputs by their placeholder and position
+    const numberInputs = screen.getAllByPlaceholderText('0.00');
+    // Order in DOM: Entry Price, Exit Price, Stop Loss, Take Profit, then PnL (placeholder may differ)
+    const entryPriceInput = numberInputs[0];
+    const exitPriceInput = numberInputs[1];
+
+    await user.clear(entryPriceInput);
+    await user.type(entryPriceInput, '1.1000');
+    await user.clear(exitPriceInput);
+    await user.type(exitPriceInput, '1.1050');
+
+    expect(screen.getByText(/Auto-calculated from entry\/exit prices/)).toBeInTheDocument();
+  });
+
+  it('shows PnL helper text for manual override', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<AddTradeModal {...defaultProps} />);
+
+    // The PnL input also has placeholder '0.00' (when calculatedPnl is empty)
+    // It's the 5th "0.00" placeholder input in the form
+    const numberInputs = screen.getAllByPlaceholderText('0.00');
+    // Entry Price(0), Exit Price(1), Stop Loss(2), Take Profit(3), PnL(4)
+    const pnlInput = numberInputs[4];
+
+    await user.clear(pnlInput);
+    await user.type(pnlInput, '150');
+
+    expect(screen.getByText(/Manual override active/)).toBeInTheDocument();
+  });
+
+  it('shows PnL helper text when no prices entered', () => {
+    render(<AddTradeModal {...defaultProps} />);
+
+    expect(screen.getByText(/Enter prices above for auto-calculation/)).toBeInTheDocument();
+  });
+});

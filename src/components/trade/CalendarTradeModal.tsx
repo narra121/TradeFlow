@@ -67,53 +67,55 @@ export function CalendarTradeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[90vw] w-[90vw] max-h-[90vh] p-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b border-border/50 flex flex-row items-center justify-between">
-          <div className="flex items-center gap-4">
-            <DialogTitle className="text-lg font-semibold">
+      <DialogContent className="w-[95vw] max-w-[95vw] md:w-[90vw] md:max-w-[90vw] max-h-[95vh] md:max-h-[90vh] p-0 overflow-hidden">
+        <DialogHeader className="px-3 py-3 sm:px-6 sm:py-4 border-b border-border/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <DialogTitle className="text-sm sm:text-lg font-semibold truncate">
               Trades on {format(selectedDate, 'MMMM do, yyyy')}
             </DialogTitle>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs sm:text-sm text-muted-foreground shrink-0">
               ({trades.length})
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={onPreviousDay}
               disabled={!hasPreviousDay}
+              className="h-7 px-2 sm:h-8 sm:px-3"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Prev
+              <ChevronLeft className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Prev</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={onNextDay}
               disabled={!hasNextDay}
+              className="h-7 px-2 sm:h-8 sm:px-3"
             >
-              Next
-              <ChevronRight className="w-4 h-4 ml-1" />
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="w-4 h-4 sm:ml-1" />
             </Button>
             {currentDayIndex !== undefined && totalDays !== undefined && (
-              <span className="text-sm text-muted-foreground ml-2">
+              <span className="text-xs sm:text-sm text-muted-foreground ml-1 sm:ml-2">
                 {currentDayIndex + 1}/{totalDays}
               </span>
             )}
           </div>
         </DialogHeader>
 
-        <div className="flex h-[calc(90vh-80px)]">
-          {/* Left Sidebar - Trade List */}
-          <div className="w-64 border-r border-border/50 flex flex-col">
-            <div className="p-3 border-b border-border/50">
+        <div className="flex flex-col md:flex-row h-[calc(95vh-80px)] md:h-[calc(90vh-80px)]">
+          {/* Trade List - Horizontal scroll on mobile, sidebar on desktop */}
+          <div className="md:w-64 border-b md:border-b-0 md:border-r border-border/50 flex flex-col shrink-0">
+            <div className="p-2 md:p-3 border-b border-border/50">
               <p className="text-xs font-medium text-muted-foreground uppercase">
                 Trades ({trades.length})
               </p>
             </div>
-            <ScrollArea className="flex-1">
-              <div className="p-2 space-y-1">
+            <ScrollArea className="md:flex-1">
+              <div className="flex md:flex-col gap-1 p-2 overflow-x-auto md:overflow-x-visible">
                 {trades.map((trade, index) => {
                   const tradeIsWin = (trade.pnl || 0) >= 0;
                   return (
@@ -121,7 +123,7 @@ export function CalendarTradeModal({
                       key={trade.id}
                       onClick={() => setSelectedTradeIndex(index)}
                       className={cn(
-                        "w-full p-3 rounded-lg text-left transition-all",
+                        "shrink-0 md:shrink md:w-full p-2 md:p-3 rounded-lg text-left transition-all min-w-[120px] md:min-w-0",
                         selectedTradeIndex === index
                           ? "bg-primary/10 border border-primary/30"
                           : "hover:bg-secondary/50 border border-transparent"
@@ -129,7 +131,7 @@ export function CalendarTradeModal({
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <div className={cn(
-                          "w-6 h-6 rounded flex items-center justify-center",
+                          "w-5 h-5 md:w-6 md:h-6 rounded flex items-center justify-center shrink-0",
                           trade.direction === 'LONG' ? "bg-success/10" : "bg-destructive/10"
                         )}>
                           {trade.direction === 'LONG' ? (
@@ -138,7 +140,7 @@ export function CalendarTradeModal({
                             <ArrowDownRight className="w-3 h-3 text-destructive" />
                           )}
                         </div>
-                        <span className="font-semibold text-sm text-foreground">{trade.symbol}</span>
+                        <span className="font-semibold text-xs md:text-sm text-foreground">{trade.symbol}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
@@ -158,14 +160,14 @@ export function CalendarTradeModal({
             </ScrollArea>
 
             {/* Trade Navigation */}
-            <div className="p-3 border-t border-border/50">
+            <div className="p-2 md:p-3 border-t border-border/50">
               <div className="flex items-center justify-between gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handlePreviousTrade}
                   disabled={selectedTradeIndex === 0}
-                  className="flex-1"
+                  className="flex-1 h-7 md:h-8"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
@@ -177,7 +179,7 @@ export function CalendarTradeModal({
                   size="sm"
                   onClick={handleNextTrade}
                   disabled={selectedTradeIndex === trades.length - 1}
-                  className="flex-1"
+                  className="flex-1 h-7 md:h-8"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -186,14 +188,14 @@ export function CalendarTradeModal({
           </div>
 
           {/* Right Content - Trade Details */}
-          <ScrollArea className="flex-1">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 p-3 sm:p-6">
               {/* Left Column - Trade Info */}
               <div className="space-y-4">
                 {/* Header Card */}
-                <div className="p-4 rounded-xl border border-border/50 bg-card/50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-xl font-bold text-foreground">{selectedTrade.symbol}</span>
+                <div className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 flex-wrap">
+                    <span className="text-lg sm:text-xl font-bold text-foreground">{selectedTrade.symbol}</span>
                     <Badge variant={selectedTrade.direction === 'LONG' ? 'default' : 'destructive'} className={cn(
                       selectedTrade.direction === 'LONG' ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'
                     )}>
@@ -205,16 +207,16 @@ export function CalendarTradeModal({
                   </div>
 
                   <div className={cn(
-                    "text-lg font-semibold mb-4",
+                    "text-base sm:text-lg font-semibold mb-3 sm:mb-4",
                     isWin ? "text-success" : "text-destructive"
                   )}>
                     PnL: {isWin ? '+' : ''}${selectedTrade.pnl?.toFixed(2) || '0.00'}
-                    <span className="text-sm text-muted-foreground ml-2">
+                    <span className="text-xs sm:text-sm text-muted-foreground ml-2">
                       (Net {selectedTrade.pnl?.toFixed(2) || '0.00'})
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4 text-sm">
                     <div>
                       <p className="text-primary text-xs uppercase font-medium mb-1">Quantity</p>
                       <p className="text-foreground font-mono">{selectedTrade.size}</p>
@@ -307,7 +309,7 @@ export function CalendarTradeModal({
               <div className="space-y-4">
                 {selectedTrade.images && selectedTrade.images.length > 0 ? (
                   selectedTrade.images.map((image, idx) => (
-                    <div key={image.id || idx} className="p-4 rounded-xl border border-border/50 bg-card/50">
+                    <div key={image.id || idx} className="p-3 sm:p-4 rounded-xl border border-border/50 bg-card/50">
                       <p className="text-sm font-semibold text-foreground mb-3">{image.timeframe}</p>
                       <div 
                         className="rounded-lg overflow-hidden bg-muted/30 mb-3 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"

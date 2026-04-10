@@ -28,7 +28,7 @@ export function BrokenRulesSelect({ rules, selectedRuleIds, onChange }: BrokenRu
             type="button"
             onClick={() => toggleRule(rule.ruleId)}
             className={cn(
-              "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all text-sm",
+              "w-full flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg text-left transition-all text-xs sm:text-sm",
               isSelected
                 ? "bg-destructive/10 border border-destructive/30"
                 : "bg-secondary/30 border border-transparent hover:bg-secondary/50"
@@ -43,6 +43,7 @@ export function BrokenRulesSelect({ rules, selectedRuleIds, onChange }: BrokenRu
               {isSelected && <AlertTriangle className="w-3 h-3" />}
             </div>
             <span className={cn(
+              "break-words min-w-0",
               isSelected ? "text-foreground" : "text-muted-foreground"
             )}>
               {rule.rule}

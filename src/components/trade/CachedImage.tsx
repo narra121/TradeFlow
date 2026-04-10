@@ -27,7 +27,7 @@ export const CachedImage = ({ src: imageId, alt, className, fallbackSrc = '/plac
     <img
       src={error ? fallbackSrc : cachedSrc}
       alt={alt}
-      className={className}
+      className={`max-w-full h-auto ${className || ''}`}
       onClick={onClick}
       onError={(e) => {
         (e.target as HTMLImageElement).src = fallbackSrc;

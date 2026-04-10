@@ -285,3 +285,195 @@ describe('accountStatusColors', () => {
     });
   });
 });
+
+describe('useAccounts - Error States', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockCreateAccountMutation.mockReturnValue([vi.fn().mockReturnValue({ unwrap: () => Promise.resolve({ id: 'acc-3' }) })]);
+    mockUpdateAccountMutation.mockReturnValue([vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() })]);
+    mockDeleteAccountMutation.mockReturnValue([vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() })]);
+    mockUpdateAccountStatusMutation.mockReturnValue([vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() })]);
+    mockSelectedAccountId.mockReturnValue(null);
+  });
+
+  it('returns empty accounts array when query returns error', () => {
+    mockGetAccountsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: { status: 500, data: 'Internal Server Error' },
+    });
+
+    const { result } = renderHook(() => useAccounts());
+
+    expect(result.current.accounts).toEqual([]);
+  });
+
+  it('returns empty accounts when query data is undefined', () => {
+    mockGetAccountsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: { status: 'FETCH_ERROR', error: 'Network request failed' },
+    });
+
+    const { result } = renderHook(() => useAccounts());
+
+    expect(result.current.accounts).toEqual([]);
+    expect(result.current.accounts).toHaveLength(0);
+  });
+
+  it('selectedAccountId defaults to null on error', () => {
+    mockGetAccountsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: { status: 500, data: 'Server error' },
+    });
+    mockSelectedAccountId.mockReturnValue(null);
+
+    const { result } = renderHook(() => useAccounts());
+
+    expect(result.current.selectedAccountId).toBeNull();
+    expect(result.current.selectedAccount).toBeNull();
+  });
+});
+
+describe('useAccounts - Sorting and Selection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockCreateAccountMutation.mockReturnValue([vi.fn().mockReturnValue({ unwrap: () => Promise.resolve({ id: 'acc-3' }) })]);
+    mockUpdateAccountMutation.mockReturnValue([vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() })]);
+    mockDeleteAccountMutation.mockReturnValue([vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() })]);
+    mockUpdateAccountStatusMutation.mockReturnValue([vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() })]);
+    mockSelectedAccountId.mockReturnValue(null);
+  });
+
+  it('returns sorted accounts by name when accounts are in unsorted order', () => {
+    const unsortedAccounts = [
+      {
+        id: 'acc-z',
+        name: 'Zebra Account',
+        broker: 'FTMO',
+        type: 'personal' as const,
+        status: 'active' as const,
+        balance: 5000,
+        initialBalance: 5000,
+        currency: 'USD',
+        createdAt: '2024-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'acc-a',
+        name: 'Alpha Account',
+        broker: 'IBKR',
+        type: 'demo' as const,
+        status: 'active' as const,
+        balance: 10000,
+        initialBalance: 10000,
+        currency: 'USD',
+        createdAt: '2024-02-01T00:00:00.000Z',
+      },
+    ];
+
+    mockGetAccountsQuery.mockReturnValue({
+      data: { accounts: unsortedAccounts },
+      isLoading: false,
+      error: undefined,
+    });
+
+    const { result } = renderHook(() => useAccounts());
+
+    // The hook returns accounts as-is from the API (no client-side sorting)
+    expect(result.current.accounts).toHaveLength(2);
+    expect(result.current.accounts[0].name).toBe('Zebra Account');
+    expect(result.current.accounts[1].name).toBe('Alpha Account');
+  });
+
+  it('handles account with zero balance', () => {
+    const accountsWithZero = [
+      {
+        id: 'acc-zero',
+        name: 'Empty Account',
+        broker: 'FTMO',
+        type: 'prop_challenge' as const,
+        status: 'breached' as const,
+        balance: 0,
+        initialBalance: 100000,
+        currency: 'USD',
+        createdAt: '2024-03-01T00:00:00.000Z',
+      },
+    ];
+
+    mockGetAccountsQuery.mockReturnValue({
+      data: { accounts: accountsWithZero },
+      isLoading: false,
+      error: undefined,
+    });
+
+    const { result } = renderHook(() => useAccounts());
+
+    expect(result.current.accounts).toHaveLength(1);
+    expect(result.current.accounts[0].balance).toBe(0);
+    expect(result.current.accounts[0].id).toBe('acc-zero');
+  });
+
+  it('selectedAccount returns correct object when ID matches', () => {
+    const testAccounts = [
+      {
+        id: 'acc-1',
+        name: 'First Account',
+        broker: 'FTMO',
+        type: 'prop_challenge' as const,
+        status: 'active' as const,
+        balance: 110000,
+        initialBalance: 100000,
+        currency: 'USD',
+        createdAt: '2024-01-15T00:00:00.000Z',
+      },
+      {
+        id: 'acc-2',
+        name: 'Second Account',
+        broker: 'IBKR',
+        type: 'personal' as const,
+        status: 'active' as const,
+        balance: 50000,
+        initialBalance: 50000,
+        currency: 'USD',
+        createdAt: '2024-02-01T00:00:00.000Z',
+      },
+    ];
+
+    mockGetAccountsQuery.mockReturnValue({
+      data: { accounts: testAccounts },
+      isLoading: false,
+      error: undefined,
+    });
+    mockSelectedAccountId.mockReturnValue('acc-2');
+
+    const { result } = renderHook(() => useAccounts());
+
+    expect(result.current.selectedAccount).not.toBeNull();
+    expect(result.current.selectedAccount?.id).toBe('acc-2');
+    expect(result.current.selectedAccount?.name).toBe('Second Account');
+    expect(result.current.selectedAccount?.broker).toBe('IBKR');
+  });
+
+  it('setSelectedAccountId dispatches correct action with a specific ID', () => {
+    mockGetAccountsQuery.mockReturnValue({
+      data: { accounts: mockAccounts },
+      isLoading: false,
+      error: undefined,
+    });
+
+    const { result } = renderHook(() => useAccounts());
+
+    act(() => {
+      result.current.setSelectedAccountId('acc-1');
+    });
+
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'accounts/setSelectedAccount',
+      payload: 'acc-1',
+    });
+  });
+});

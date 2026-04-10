@@ -1,0 +1,579 @@
+[90mstderr[2m | src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22m[2mAddTradeModal[2m > [22m[2mrenders "Add New Trade" title when open
+[22m[39mWarning: React does not recognize the `asChild` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `aschild` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:140:38
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:133:18)
+    at DynamicSelect (E:\Work\Trading\TradeFlow\src\components\trade\DynamicSelect.tsx:15:26)
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: React does not recognize the `sideOffset` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `sideoffset` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:152:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:149:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\popover.tsx:11:74
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:133:18)
+    at DynamicSelect (E:\Work\Trading\TradeFlow\src\components\trade\DynamicSelect.tsx:15:26)
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: Received `true` for a non-boolean attribute `decorative`.
+
+If you want to write it to the DOM, pass a string instead: decorative="true" or decorative={value.toString()}.
+    at hr
+    at E:\Work\Trading\TradeFlow\src\components\ui\separator.tsx:9:69
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+
+[90mstderr[2m | src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22m[2mAddTradeModal[2m > [22m[2mkeeps dialog open when onAddTrade rejects (API error)
+[22m[39mWarning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+
+[90mstderr[2m | src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22m[2mAddTradeModal[2m > [22m[2mkeeps dialog open when onAddTrade rejects (API error)
+[22m[39mWarning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+
+[90mstderr[2m | src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22m[2mAddTradeModal[2m > [22m[2mcloses dialog when onAddTrade resolves (success)
+[22m[39mWarning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+
+[90mstderr[2m | src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22m[2mAddTradeModal - Error Handling[2m > [22m[2mkeeps dialog open when onAddTrade rejects with a network error
+[22m[39mWarning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+
+[90mstderr[2m | src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22m[2mAddTradeModal - Error Handling[2m > [22m[2mkeeps dialog open when onAddTrade rejects with a network error
+[22m[39mWarning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+
+[90mstderr[2m | src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22m[2mAddTradeModal - Error Handling[2m > [22m[2mresets isSubmitting to false after onAddTrade rejects (button re-enabled)
+[22m[39mWarning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+
+[90mstderr[2m | src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22m[2mAddTradeModal - Error Handling[2m > [22m[2mresets isSubmitting to false after onAddTrade rejects (button re-enabled)
+[22m[39mWarning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+
+[90mstderr[2m | src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22m[2mAddTradeModal - Error Handling[2m > [22m[2mcloses dialog when onAddTrade resolves successfully
+[22m[39mWarning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to AddTradeModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+Warning: An update to SmartInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at SmartInput (E:\Work\Trading\TradeFlow\src\components\trade\SmartInput.tsx:11:23)
+    at div
+    at div
+    at div
+    at section
+    at div
+    at form
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:93:39
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:84:35
+    at E:\Work\Trading\TradeFlow\src\components\ui\scroll-area.tsx:9:70
+    at div
+    at E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:24:38
+    at Portal (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:14:20)
+    at E:\Work\Trading\TradeFlow\src\components\ui\dialog.tsx:25:73
+    at div
+    at Root (E:\Work\Trading\TradeFlow\src\components\dashboard\__tests__\AddTradeModal.test.tsx:6:18)
+    at AddTradeModal (E:\Work\Trading\TradeFlow\src\components\dashboard\AddTradeModal.tsx:45:26)
+

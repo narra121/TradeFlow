@@ -144,10 +144,10 @@ export function SettingsView() {
 
   if (loading && !profile) {
     return (
-      <div className="space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-3xl mx-auto">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground mt-1">Customize your trading journal</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Settings</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Configure trade options, preferences, and display settings</p>
         </div>
         <SettingsSectionSkeleton />
         <SettingsSectionSkeleton />
@@ -157,126 +157,26 @@ export function SettingsView() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground mt-1">Customize your trading journal</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Settings</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Configure trade options, preferences, and display settings</p>
         </div>
         <RefreshButton onRefresh={refetch} isFetching={isFetching} />
       </div>
 
-      {/* Preferences Section */}
-      <div className="glass-card p-6 animate-fade-in stagger-1">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Palette className="w-5 h-5 text-accent" />
-          </div>
-          <h2 className="text-lg font-semibold text-foreground">Preferences</h2>
-        </div>
-
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Moon className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium text-foreground">Dark Mode</p>
-                <p className="text-sm text-muted-foreground">Use dark theme</p>
-              </div>
-            </div>
-            <Switch checked={darkMode} onCheckedChange={handleDarkModeChange} />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <DollarSign className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium text-foreground">Currency</p>
-                <p className="text-sm text-muted-foreground">Display currency for P&L</p>
-              </div>
-            </div>
-            <Select value={currency} onValueChange={handleCurrencyChange}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USD">USD ($)</SelectItem>
-                <SelectItem value="EUR">EUR (€)</SelectItem>
-                <SelectItem value="GBP">GBP (£)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Globe className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium text-foreground">Timezone</p>
-                <p className="text-sm text-muted-foreground">Set your local timezone</p>
-              </div>
-            </div>
-            <Select defaultValue="UTC">
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="UTC">UTC</SelectItem>
-                <SelectItem value="EST">EST (UTC-5)</SelectItem>
-                <SelectItem value="PST">PST (UTC-8)</SelectItem>
-                <SelectItem value="CET">CET (UTC+1)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      {/* Notifications Section */}
-      <div className="glass-card p-6 animate-fade-in stagger-2">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-warning" />
-          </div>
-          <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Trade Reminders</p>
-              <p className="text-sm text-muted-foreground">Get notified for open positions</p>
-            </div>
-            <Switch checked={notifications} onCheckedChange={handleNotificationsChange} />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Weekly Report</p>
-              <p className="text-sm text-muted-foreground">Receive weekly performance summary</p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-foreground">Goal Alerts</p>
-              <p className="text-sm text-muted-foreground">Notify when reaching goals</p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-        </div>
-      </div>
-
       {/* Trade Options Section */}
-      <div className="glass-card p-6 animate-fade-in stagger-3">
-        <div className="flex items-center justify-between mb-6">
+      <div className="glass-card p-4 sm:p-6 animate-fade-in stagger-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <ListChecks className="w-5 h-5 text-primary" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <ListChecks className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-foreground">Trade Options</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-foreground">Trade Options</h2>
                 {tradeOptionsLoading && (
                   <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                 )}
@@ -367,12 +267,12 @@ export function SettingsView() {
         </div>
       </div>
 
-      <div className="glass-card p-6 animate-fade-in stagger-3">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-            <Shield className="w-5 h-5 text-foreground" />
+      <div className="glass-card p-4 sm:p-6 animate-fade-in stagger-3">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-foreground" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground">Data Management</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-foreground">Data Management</h2>
         </div>
 
         <p className="text-sm text-muted-foreground">Data export and management features coming soon.</p>

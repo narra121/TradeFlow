@@ -1,7 +1,13 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Sidebar } from '../Sidebar';
+
+// Mock the useIsMobile hook — default to desktop (false)
+const mockUseIsMobile = vi.fn(() => false);
+vi.mock('@/hooks/use-mobile', () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
 
 describe('Sidebar', () => {
   const defaultProps = {
@@ -9,11 +15,19 @@ describe('Sidebar', () => {
     onViewChange: vi.fn(),
     collapsed: false,
     onCollapsedChange: vi.fn(),
+    mobileOpen: false,
+    onMobileOpenChange: vi.fn(),
   };
+
+  beforeEach(() => {
+    mockUseIsMobile.mockReturnValue(false);
+  });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
+
+  // ─── Desktop (original) tests ──────────────────────────────────────
 
   it('renders without crashing', () => {
     render(<Sidebar {...defaultProps} />);
@@ -91,44 +105,27 @@ describe('Sidebar', () => {
     expect(defaultProps.onViewChange).toHaveBeenCalledWith('profile');
   });
 
-  it('calls onCollapsedChange(true) when collapse button is clicked', async () => {
+  it('calls onCollapsedChange(true) when toggle button is clicked in expanded state', async () => {
     const user = userEvent.setup();
     render(<Sidebar {...defaultProps} collapsed={false} />);
 
-    // The collapse button is the ChevronLeft button next to the app name
-    // It's a button element inside the header area; find the button that is not a nav item
-    const buttons = screen.getAllByRole('button');
-    // The collapse chevron is the second button in the header area (after logo area)
-    // Find the one that triggers onCollapsedChange(true) -- it's in the header, before nav
-    // It's the button with ChevronLeft icon, which is the only non-nav button when expanded
-    // Let's click it directly
-    const collapseButton = buttons.find((btn) => {
-      // The collapse button is in the header, not in the nav
-      const parent = btn.closest('.h-16');
-      return parent !== null;
-    });
-    expect(collapseButton).toBeDefined();
-    await user.click(collapseButton!);
+    const toggleButton = screen.getByRole('button', { name: 'Collapse sidebar' });
+    await user.click(toggleButton);
     expect(defaultProps.onCollapsedChange).toHaveBeenCalledWith(true);
   });
 
-  it('calls onCollapsedChange(false) when expand button is clicked in collapsed state', async () => {
+  it('calls onCollapsedChange(false) when toggle button is clicked in collapsed state', async () => {
     const user = userEvent.setup();
     render(<Sidebar {...defaultProps} collapsed={true} />);
 
-    // When collapsed, there's an expand button (ChevronRight) at the bottom
-    const buttons = screen.getAllByRole('button');
-    // The expand button is the last button rendered (after Profile)
-    const expandButton = buttons[buttons.length - 1];
-    expect(expandButton).toBeDefined();
-    await user.click(expandButton!);
+    const toggleButton = screen.getByRole('button', { name: 'Expand sidebar' });
+    await user.click(toggleButton);
     expect(defaultProps.onCollapsedChange).toHaveBeenCalledWith(false);
   });
 
   it('highlights the active nav item', () => {
     render(<Sidebar {...defaultProps} activeView="analytics" collapsed={false} />);
     const analyticsButton = screen.getByText('Analytics').closest('button');
-    // The active item gets the 'bg-sidebar-accent' and 'text-sidebar-primary' classes
     expect(analyticsButton).toHaveClass('bg-sidebar-accent');
     expect(analyticsButton).toHaveClass('text-sidebar-primary');
   });
@@ -142,7 +139,148 @@ describe('Sidebar', () => {
   it('renders SVG icons for all nav items', () => {
     const { container } = render(<Sidebar {...defaultProps} collapsed={true} />);
     const svgs = container.querySelectorAll('svg');
-    // 6 nav items + 1 Zap logo + 1 Profile + 1 ChevronRight expand = 9
+    // 6 nav items + 1 Zap logo + 1 Profile (User icon) + 1 ChevronRight toggle = 9
     expect(svgs.length).toBe(9);
+  });
+
+  // ─── Mobile-specific tests ─────────────────────────────────────────
+
+  it('mobile: shows expanded labels even when collapsed', () => {
+    mockUseIsMobile.mockReturnValue(true);
+    render(<Sidebar {...defaultProps} collapsed={true} mobileOpen={true} />);
+
+    // In mobile mode showExpanded is always true, so labels should be visible
+    expect(screen.getByText('TradeFlow')).toBeInTheDocument();
+    const navLabels = ['Dashboard', 'Accounts', 'Trade Log', 'Analytics', 'Goals', 'Settings', 'Profile'];
+    navLabels.forEach((label) => {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    });
+  });
+
+  it('mobile: shows close (X) button instead of chevron', () => {
+    mockUseIsMobile.mockReturnValue(true);
+    render(<Sidebar {...defaultProps} mobileOpen={true} />);
+
+    // Mobile renders a "Close sidebar" button, not collapse/expand
+    expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Collapse sidebar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Expand sidebar' })).not.toBeInTheDocument();
+  });
+
+  it('mobile: backdrop overlay is rendered when open', () => {
+    mockUseIsMobile.mockReturnValue(true);
+    const { container } = render(<Sidebar {...defaultProps} mobileOpen={true} />);
+
+    // The backdrop is a div with bg-black/50 class and aria-hidden
+    const backdrop = container.querySelector('[aria-hidden="true"]');
+    expect(backdrop).toBeInTheDocument();
+    expect(backdrop).toHaveClass('bg-black/50');
+  });
+
+  it('mobile: backdrop is not rendered when closed', () => {
+    mockUseIsMobile.mockReturnValue(true);
+    const { container } = render(<Sidebar {...defaultProps} mobileOpen={false} />);
+
+    const backdrop = container.querySelector('[aria-hidden="true"]');
+    expect(backdrop).not.toBeInTheDocument();
+  });
+
+  it('mobile: clicking backdrop calls onMobileOpenChange(false)', async () => {
+    mockUseIsMobile.mockReturnValue(true);
+    const user = userEvent.setup();
+    const { container } = render(<Sidebar {...defaultProps} mobileOpen={true} />);
+
+    const backdrop = container.querySelector('[aria-hidden="true"]');
+    expect(backdrop).toBeInTheDocument();
+    await user.click(backdrop!);
+    expect(defaultProps.onMobileOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('mobile: clicking close button calls onMobileOpenChange(false)', async () => {
+    mockUseIsMobile.mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<Sidebar {...defaultProps} mobileOpen={true} />);
+
+    await user.click(screen.getByRole('button', { name: 'Close sidebar' }));
+    expect(defaultProps.onMobileOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('mobile: clicking a nav item calls onMobileOpenChange(false) to auto-close', async () => {
+    mockUseIsMobile.mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<Sidebar {...defaultProps} mobileOpen={true} />);
+
+    await user.click(screen.getByText('Analytics'));
+    expect(defaultProps.onViewChange).toHaveBeenCalledWith('analytics');
+    expect(defaultProps.onMobileOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  // ─── Tooltip behavior ───────────────────────────────────────────────
+
+  describe('Sidebar - Tooltip behavior', () => {
+    it('renders TooltipProvider wrapping sidebar content', () => {
+      const { container } = render(<Sidebar {...defaultProps} collapsed={true} />);
+
+      // When collapsed on desktop, nav buttons are wrapped by TooltipTrigger
+      // which adds a data-state attribute from Radix UI
+      const triggers = container.querySelectorAll('[data-state]');
+      expect(triggers.length).toBeGreaterThan(0);
+    });
+
+    it('shows tooltip content for nav items when collapsed', async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Sidebar {...defaultProps} collapsed={true} />);
+
+      // When collapsed on desktop, each nav button is inside a TooltipTrigger
+      // Radix UI marks these triggers with data-state="closed" initially
+      const triggers = container.querySelectorAll('button[data-state]');
+      expect(triggers.length).toBeGreaterThan(0);
+
+      // Hover over the first nav button to attempt to open tooltip
+      await user.hover(triggers[0]);
+
+      // In jsdom, Radix tooltips may not fully render portaled content,
+      // but we can verify the trigger is recognized by checking its data-state
+      expect(triggers[0]).toHaveAttribute('data-state');
+    });
+  });
+
+  // ─── Mobile behavior ────────────────────────────────────────────────
+
+  describe('Sidebar - Mobile behavior', () => {
+    it('closes sidebar when Escape key is pressed on mobile', () => {
+      mockUseIsMobile.mockReturnValue(true);
+      render(<Sidebar {...defaultProps} mobileOpen={true} />);
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(defaultProps.onMobileOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('sets body overflow to hidden when mobile sidebar is open', () => {
+      mockUseIsMobile.mockReturnValue(true);
+      render(<Sidebar {...defaultProps} mobileOpen={true} />);
+
+      expect(document.body.style.overflow).toBe('hidden');
+    });
+
+    it('restores body overflow when mobile sidebar closes', () => {
+      mockUseIsMobile.mockReturnValue(true);
+      const { rerender } = render(<Sidebar {...defaultProps} mobileOpen={true} />);
+
+      expect(document.body.style.overflow).toBe('hidden');
+
+      rerender(<Sidebar {...defaultProps} mobileOpen={false} />);
+      expect(document.body.style.overflow).toBe('');
+    });
+
+    it('auto-closes when Profile button is clicked on mobile', async () => {
+      mockUseIsMobile.mockReturnValue(true);
+      const user = userEvent.setup();
+      render(<Sidebar {...defaultProps} mobileOpen={true} />);
+
+      await user.click(screen.getByText('Profile'));
+      expect(defaultProps.onViewChange).toHaveBeenCalledWith('profile');
+      expect(defaultProps.onMobileOpenChange).toHaveBeenCalledWith(false);
+    });
   });
 });

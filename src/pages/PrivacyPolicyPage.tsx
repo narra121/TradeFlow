@@ -7,7 +7,7 @@ export function PrivacyPolicyPage() {
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-5 h-5 text-primary-foreground" />
@@ -17,16 +17,17 @@ export function PrivacyPolicyPage() {
           <Button variant="ghost" asChild className="gap-2">
             <Link to="/">
               <ArrowLeft className="w-4 h-4" />
-              Back to Home
+              <span className="hidden sm:inline">Back to Home</span>
+              <span className="sm:hidden">Back</span>
             </Link>
           </Button>
         </div>
       </nav>
 
       {/* Content */}
-      <div className="pt-32 pb-20 px-6">
+      <div className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Privacy Policy</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">Privacy Policy</h1>
           <p className="text-muted-foreground mb-12">Last updated: April 9, 2026</p>
 
           <div className="space-y-10 text-foreground/90">
@@ -142,7 +143,7 @@ export function PrivacyPolicyPage() {
               </p>
             </section>
 
-            <section className="bg-card rounded-2xl border border-border/50 p-8">
+            <section className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
               <h2 className="text-2xl font-semibold text-foreground mb-4">10. Contact Us</h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
                 If you have any questions about this Privacy Policy, please contact us:
@@ -159,12 +160,12 @@ export function PrivacyPolicyPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/50 py-8 px-6">
+      <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} TradeFlow. All rights reserved.
           </p>
-          <div className="flex items-center gap-6 text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
             <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
             <Link to="/privacy" className="text-primary hover:text-primary/80 transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>

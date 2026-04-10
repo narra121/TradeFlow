@@ -354,6 +354,116 @@ describe('toastMiddleware', () => {
     });
   });
 
+  describe('error edge cases', () => {
+    it('handles rejected action with null payload gracefully', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'createTrade' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: null,
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith('An error occurred');
+    });
+
+    it('handles rejected action with undefined payload gracefully', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'deleteTrade' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: undefined,
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith('An error occurred');
+    });
+
+    it('handles nested error data with non-string message', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'updateTrade' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: { data: { notMessage: true } },
+        error: {},
+      });
+      // No message field found, falls through to default
+      expect(toastErrorMock).toHaveBeenCalledWith('An error occurred');
+    });
+
+    it('handles FETCH_ERROR type from network failures', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'createTrade' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: { status: 'FETCH_ERROR', data: 'Network error. Please try again.' },
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith('Network error. Please try again.');
+    });
+
+    it('handles TIMEOUT_ERROR type', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'bulkImportTrades' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: { status: 'TIMEOUT_ERROR', data: 'Request timed out. Please try again.' },
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith('Request timed out. Please try again.');
+    });
+
+    it('shows multiple validation errors joined with comma', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'createTrade' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: {
+          data: {
+            message: 'Validation failed',
+            errors: [
+              { code: 'VALIDATION_ERROR', field: '#/required', message: "must have required property 'symbol'" },
+              { code: 'VALIDATION_ERROR', field: '#/required', message: "must have required property 'quantity'" },
+              { code: 'VALIDATION_ERROR', field: '/exitPrice', message: 'must be >= 0' },
+            ],
+          },
+        },
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Validation failed: required: must have required property 'symbol', required: must have required property 'quantity', exitPrice: must be >= 0"
+      );
+    });
+
+    it('handles errors array with missing field property', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'updateAccount' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: {
+          data: {
+            message: 'Bad request',
+            errors: [
+              { message: 'Something went wrong' },
+            ],
+          },
+        },
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith('Bad request: Something went wrong');
+    });
+
+    it('does not show success toast for fulfilled query (only mutations)', () => {
+      invoke({
+        type: 'api/executeQuery/fulfilled',
+        meta: { arg: { endpointName: 'unknownQuery' }, requestId: 'test-id', requestStatus: 'fulfilled' },
+        payload: { data: [] },
+      });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+    });
+
+    it('handles completely empty error object', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'deleteAccount' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: {},
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith('An error occurred');
+    });
+  });
+
   describe('return value', () => {
     it('always returns the result from next()', () => {
       const expectedResult = { type: 'test', processed: true };
@@ -361,6 +471,153 @@ describe('toastMiddleware', () => {
 
       const result = invoke({ type: 'api/executeMutation/fulfilled', meta: { arg: { endpointName: 'createTrade' }, requestId: 'test-id', requestStatus: 'fulfilled' }, payload: {} });
       expect(result).toBe(expectedResult);
+    });
+  });
+
+  describe('concurrent fulfilled and rejected actions', () => {
+    it('handles a fulfilled action followed by a rejected action for different endpoints', () => {
+      invoke({
+        type: 'api/executeMutation/fulfilled',
+        meta: { arg: { endpointName: 'createTrade' }, requestId: 'req-1', requestStatus: 'fulfilled' },
+        payload: {},
+      });
+      expect(toastSuccessMock).toHaveBeenCalledWith('Trade created successfully');
+      expect(toastErrorMock).not.toHaveBeenCalled();
+
+      vi.clearAllMocks();
+
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'deleteTrade' }, requestId: 'req-2', requestStatus: 'rejected' },
+        payload: { data: 'Trade not found' },
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith('Trade not found');
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+    });
+
+    it('handles a rejected action followed by a fulfilled action for the same endpoint', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'createAccount' }, requestId: 'req-1', requestStatus: 'rejected' },
+        payload: { data: 'Duplicate account' },
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith('Duplicate account');
+
+      vi.clearAllMocks();
+
+      invoke({
+        type: 'api/executeMutation/fulfilled',
+        meta: { arg: { endpointName: 'createAccount' }, requestId: 'req-2', requestStatus: 'fulfilled' },
+        payload: {},
+      });
+      expect(toastSuccessMock).toHaveBeenCalledWith('Account created successfully');
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it('handles multiple fulfilled actions in sequence without interference', () => {
+      invoke({
+        type: 'api/executeMutation/fulfilled',
+        meta: { arg: { endpointName: 'createTrade' }, requestId: 'req-1', requestStatus: 'fulfilled' },
+        payload: {},
+      });
+      invoke({
+        type: 'api/executeMutation/fulfilled',
+        meta: { arg: { endpointName: 'updateProfile' }, requestId: 'req-2', requestStatus: 'fulfilled' },
+        payload: {},
+      });
+      expect(toastSuccessMock).toHaveBeenCalledTimes(2);
+      expect(toastSuccessMock).toHaveBeenNthCalledWith(1, 'Trade created successfully');
+      expect(toastSuccessMock).toHaveBeenNthCalledWith(2, 'Profile updated successfully');
+    });
+  });
+
+  describe('actions without type string', () => {
+    it('does not toast for action with undefined type', () => {
+      invoke({ type: undefined, payload: {} });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it('does not toast for action with null type', () => {
+      invoke({ type: null, payload: {} });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it('does not toast for action with numeric type', () => {
+      invoke({ type: 42, payload: {} });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it('still calls next for actions without string type', () => {
+      const action = { type: undefined, payload: 'test' };
+      invoke(action);
+      expect(next).toHaveBeenCalledWith(action);
+    });
+  });
+
+  describe('malformed meta.arg handling', () => {
+    it('does not toast when meta.arg is undefined', () => {
+      invoke({
+        type: 'api/executeMutation/fulfilled',
+        meta: { arg: undefined },
+        payload: {},
+      });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it('does not toast when meta.arg is null', () => {
+      invoke({
+        type: 'api/executeMutation/fulfilled',
+        meta: { arg: null },
+        payload: {},
+      });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it('does not toast when meta is undefined', () => {
+      invoke({
+        type: 'api/executeMutation/fulfilled',
+        meta: undefined,
+        payload: {},
+      });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it('still passes action through to next when meta.arg is malformed', () => {
+      const action = {
+        type: 'api/executeMutation/fulfilled',
+        meta: { arg: null },
+        payload: {},
+      };
+      invoke(action);
+      expect(next).toHaveBeenCalledWith(action);
+    });
+  });
+
+  describe('action with empty type string', () => {
+    it('does not toast for empty string type', () => {
+      invoke({ type: '', payload: {} });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it('still passes action through to next with empty type string', () => {
+      const action = { type: '', payload: 'test' };
+      invoke(action);
+      expect(next).toHaveBeenCalledWith(action);
+    });
+
+    it('does not toast for whitespace-only type string', () => {
+      invoke({ type: '   ', payload: {} });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
     });
   });
 });

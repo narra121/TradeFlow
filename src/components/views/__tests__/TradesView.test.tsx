@@ -80,9 +80,9 @@ describe('TradesView', () => {
     expect(screen.getByText('All your trading history')).toBeInTheDocument();
   });
 
-  it('renders the New Trade button', () => {
+  it('renders the Add Trade button', () => {
     render(<TradesView {...defaultProps} />);
-    expect(screen.getByText('New Trade')).toBeInTheDocument();
+    expect(screen.getByText('Add Trade')).toBeInTheDocument();
   });
 
   it('renders the Import button', () => {
@@ -132,5 +132,145 @@ describe('TradesView', () => {
 
     render(<TradesView {...defaultProps} />);
     expect(screen.getByText('No trades found')).toBeInTheDocument();
+  });
+});
+
+describe('TradesView - Trade Cards & Direction Indicators', () => {
+  const defaultProps = {
+    onAddTrade: vi.fn(),
+    onImportTrades: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders trade rows for each trade in the data', async () => {
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [
+        {
+          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP', pnl: 200, pnlPercent: 2.0, riskRewardRatio: 2.0, accountId: 'acc1',
+        },
+        {
+          id: '2', symbol: 'GBPUSD', direction: 'SHORT', entryPrice: 1.3,
+          exitPrice: 1.28, stopLoss: 1.31, takeProfit: 1.27, size: 0.5,
+          entryDate: '2025-01-16T09:00:00Z', exitDate: '2025-01-16T12:00:00Z',
+          outcome: 'SL', pnl: -100, pnlPercent: -1.0, riskRewardRatio: 1.5, accountId: 'acc1',
+        },
+        {
+          id: '3', symbol: 'USDJPY', direction: 'LONG', entryPrice: 150.5,
+          exitPrice: 151.0, stopLoss: 150.0, takeProfit: 151.5, size: 2,
+          entryDate: '2025-01-17T08:00:00Z', exitDate: '2025-01-17T11:00:00Z',
+          outcome: 'PARTIAL', pnl: 50, pnlPercent: 0.5, riskRewardRatio: 1.0, accountId: 'acc1',
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TradesView {...defaultProps} />);
+    expect(screen.getByText('EURUSD')).toBeInTheDocument();
+    expect(screen.getByText('GBPUSD')).toBeInTheDocument();
+    expect(screen.getByText('USDJPY')).toBeInTheDocument();
+  });
+
+  it('handles empty trades array gracefully', async () => {
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TradesView {...defaultProps} />);
+    expect(screen.getByText('No trades found')).toBeInTheDocument();
+    // The table header should still render
+    expect(screen.getByText('Symbol')).toBeInTheDocument();
+  });
+
+  it('shows correct direction indicators for LONG and SHORT trades', async () => {
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [
+        {
+          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP', pnl: 200, pnlPercent: 2.0, riskRewardRatio: 2.0, accountId: 'acc1',
+        },
+        {
+          id: '2', symbol: 'GBPUSD', direction: 'SHORT', entryPrice: 1.3,
+          exitPrice: 1.28, stopLoss: 1.31, takeProfit: 1.27, size: 0.5,
+          entryDate: '2025-01-16T09:00:00Z', exitDate: '2025-01-16T12:00:00Z',
+          outcome: 'SL', pnl: -100, pnlPercent: -1.0, riskRewardRatio: 1.5, accountId: 'acc1',
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TradesView {...defaultProps} />);
+
+    // Direction labels are rendered as badge-like spans
+    const longBadges = screen.getAllByText('LONG');
+    const shortBadges = screen.getAllByText('SHORT');
+    expect(longBadges.length).toBeGreaterThanOrEqual(1);
+    expect(shortBadges.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('displays P&L values with correct sign formatting', async () => {
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [
+        {
+          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP', pnl: 200, pnlPercent: 2.0, riskRewardRatio: 2.0, accountId: 'acc1',
+        },
+        {
+          id: '2', symbol: 'GBPUSD', direction: 'SHORT', entryPrice: 1.3,
+          exitPrice: 1.28, stopLoss: 1.31, takeProfit: 1.27, size: 0.5,
+          entryDate: '2025-01-16T09:00:00Z', exitDate: '2025-01-16T12:00:00Z',
+          outcome: 'SL', pnl: -100, pnlPercent: -1.0, riskRewardRatio: 1.5, accountId: 'acc1',
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TradesView {...defaultProps} />);
+
+    // Positive PnL shows +$200.00
+    expect(screen.getByText('+$200.00')).toBeInTheDocument();
+    // Negative PnL shows $-100.00 (no + prefix, the minus is part of the number)
+    expect(screen.getByText('$-100.00')).toBeInTheDocument();
+  });
+
+  it('renders view and action buttons for each trade row', async () => {
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [
+        {
+          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP', pnl: 200, pnlPercent: 2.0, riskRewardRatio: 2.0, accountId: 'acc1',
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TradesView {...defaultProps} />);
+
+    // Each trade row has an Eye (view) button and a MoreHorizontal (dropdown) button
+    const buttons = screen.getAllByRole('button');
+    // At minimum: Import, Add Trade, outcome filters (5), plus row buttons (2)
+    expect(buttons.length).toBeGreaterThanOrEqual(7);
   });
 });

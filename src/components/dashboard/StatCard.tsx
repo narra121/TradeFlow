@@ -51,27 +51,27 @@ export function StatCard({
       "stat-card group animate-fade-in",
       className
     )}>
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-2 sm:mb-4">
         <div className={cn(
-          "w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110",
+          "w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0",
           styles.iconBg
         )}>
-          <Icon className={cn("w-5 h-5", styles.iconColor)} />
+          <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5", styles.iconColor)} />
         </div>
         {trend && (
           <div className={cn(
-            "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-full",
-            trend.isPositive 
-              ? "bg-success/10 text-success" 
+            "flex items-center gap-1 text-[10px] sm:text-sm font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full",
+            trend.isPositive
+              ? "bg-success/10 text-success"
               : "bg-destructive/10 text-destructive"
           )}>
-            <span>{trend.isPositive ? '+' : ''}{trend.value}%</span>
+            <span>{trend.isPositive ? '+' : ''}{trend.value.toFixed(1)}%</span>
           </div>
         )}
       </div>
-      
-      <p className="text-muted-foreground text-sm mb-1">{title}</p>
-      <p className="text-2xl font-semibold text-foreground font-mono tracking-tight">
+
+      <p className="text-muted-foreground text-xs sm:text-sm mb-0.5 sm:mb-1 truncate">{title}</p>
+      <p className="text-lg sm:text-2xl font-semibold text-foreground font-mono tracking-tight truncate">
         {prefix}{typeof value === 'number' ? value.toLocaleString() : value}{suffix}
       </p>
     </div>

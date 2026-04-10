@@ -331,4 +331,255 @@ describe('AuthPage', () => {
       expect(screen.getByText('Calendar view with P&L visualization')).toBeInTheDocument();
     });
   });
+
+  describe('AuthPage - OTP Resend', () => {
+    it('calls signup mutation when Resend is clicked in OTP view', async () => {
+      const user = userEvent.setup({ delay: null });
+
+      // Make the first signup call transition to OTP view via the resent path
+      mockSignup.mockReturnValueOnce({
+        unwrap: () => Promise.resolve({ resent: true, message: 'Verification code resent to your email' }),
+      });
+
+      render(<AuthPage onLogin={mockOnLogin} initialView="signup" />, {
+        preloadedState: {
+          auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
+        },
+      });
+
+      // Fill in the signup form to populate name, email, password state
+      await user.type(screen.getByLabelText('Full Name'), 'John Doe');
+      await user.type(screen.getByLabelText('Email'), 'john@example.com');
+      await user.type(screen.getByLabelText('Password'), 'password123');
+      await user.type(screen.getByLabelText('Confirm Password'), 'password123');
+      await user.click(screen.getByRole('button', { name: 'Create Account' }));
+
+      // Wait for OTP view to appear
+      await waitFor(() => {
+        expect(screen.getByText('Check your email')).toBeInTheDocument();
+      });
+
+      // Set up fresh mock for the Resend click
+      mockSignup.mockReturnValueOnce({
+        unwrap: () => Promise.resolve({ message: 'ok' }),
+      });
+
+      // Click the Resend button
+      await user.click(screen.getByText('Resend'));
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenLastCalledWith({
+          name: 'John Doe',
+          email: 'john@example.com',
+          password: 'password123',
+        });
+      });
+    });
+
+    it('shows success toast when OTP resend succeeds', async () => {
+      const { toast } = await import('sonner');
+      const user = userEvent.setup({ delay: null });
+
+      // Make the first signup call transition to OTP view
+      mockSignup.mockReturnValueOnce({
+        unwrap: () => Promise.resolve({ resent: true, message: 'Verification code resent to your email' }),
+      });
+
+      render(<AuthPage onLogin={mockOnLogin} initialView="signup" />, {
+        preloadedState: {
+          auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
+        },
+      });
+
+      // Fill in signup form and submit to reach OTP view
+      await user.type(screen.getByLabelText('Full Name'), 'John Doe');
+      await user.type(screen.getByLabelText('Email'), 'john@example.com');
+      await user.type(screen.getByLabelText('Password'), 'password123');
+      await user.type(screen.getByLabelText('Confirm Password'), 'password123');
+      await user.click(screen.getByRole('button', { name: 'Create Account' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Check your email')).toBeInTheDocument();
+      });
+
+      // Clear previous toast calls from the signup flow
+      vi.mocked(toast.success).mockClear();
+
+      // Set up mock for Resend click
+      mockSignup.mockReturnValueOnce({
+        unwrap: () => Promise.resolve({ message: 'ok' }),
+      });
+
+      await user.click(screen.getByText('Resend'));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith('Verification code resent to your email');
+      });
+    });
+
+    it('shows error toast when OTP resend fails', async () => {
+      const { toast } = await import('sonner');
+      const user = userEvent.setup({ delay: null });
+
+      // Make the first signup call transition to OTP view
+      mockSignup.mockReturnValueOnce({
+        unwrap: () => Promise.resolve({ resent: true, message: 'Verification code resent to your email' }),
+      });
+
+      render(<AuthPage onLogin={mockOnLogin} initialView="signup" />, {
+        preloadedState: {
+          auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
+        },
+      });
+
+      // Fill in signup form and submit to reach OTP view
+      await user.type(screen.getByLabelText('Full Name'), 'John Doe');
+      await user.type(screen.getByLabelText('Email'), 'john@example.com');
+      await user.type(screen.getByLabelText('Password'), 'password123');
+      await user.type(screen.getByLabelText('Confirm Password'), 'password123');
+      await user.click(screen.getByRole('button', { name: 'Create Account' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Check your email')).toBeInTheDocument();
+      });
+
+      // Make Resend click fail
+      mockSignup.mockReturnValueOnce({
+        unwrap: () => Promise.reject(new Error('Network error')),
+      });
+
+      await user.click(screen.getByText('Resend'));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to resend code. Please try again.');
+      });
+    });
+  });
+
+  describe('AuthPage - Error Handling', () => {
+    it('shows error toast when login mutation rejects', async () => {
+      const { toast } = await import('sonner');
+      const user = userEvent.setup();
+
+      mockLogin.mockReturnValue({
+        unwrap: () => Promise.reject({ data: { message: 'Invalid credentials' } }),
+      });
+
+      render(<AuthPage onLogin={mockOnLogin} />, {
+        preloadedState: {
+          auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
+        },
+      });
+
+      await user.type(screen.getByLabelText('Email'), 'bad@example.com');
+      await user.type(screen.getByLabelText('Password'), 'wrongpassword');
+      await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+      await waitFor(() => {
+        expect(mockLogin).toHaveBeenCalledWith({ email: 'bad@example.com', password: 'wrongpassword' });
+      });
+    });
+
+    it('shows error toast when signup mutation rejects', async () => {
+      const { toast } = await import('sonner');
+      const user = userEvent.setup({ delay: null });
+
+      mockSignup.mockReturnValue({
+        unwrap: () => Promise.reject({ data: { message: 'Email already exists' } }),
+      });
+
+      render(<AuthPage onLogin={mockOnLogin} initialView="signup" />, {
+        preloadedState: {
+          auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
+        },
+      });
+
+      await user.type(screen.getByLabelText('Full Name'), 'John Doe');
+      await user.type(screen.getByLabelText('Email'), 'existing@example.com');
+      await user.type(screen.getByLabelText('Password'), 'password123');
+      await user.type(screen.getByLabelText('Confirm Password'), 'password123');
+      await user.click(screen.getByRole('button', { name: 'Create Account' }));
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenCalledWith({
+          name: 'John Doe',
+          email: 'existing@example.com',
+          password: 'password123',
+        });
+      });
+    });
+
+    it('does not call login mutation when email is empty', async () => {
+      const user = userEvent.setup();
+
+      render(<AuthPage onLogin={mockOnLogin} />, {
+        preloadedState: {
+          auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
+        },
+      });
+
+      // Only fill in password, leave email empty
+      await user.type(screen.getByLabelText('Password'), 'password123');
+      await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+      // The email input has the `required` attribute, so native form validation
+      // prevents submission before the JS handler runs.
+      expect(mockLogin).not.toHaveBeenCalled();
+    });
+
+    it('does not call login mutation when password is empty', async () => {
+      const user = userEvent.setup();
+
+      render(<AuthPage onLogin={mockOnLogin} />, {
+        preloadedState: {
+          auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
+        },
+      });
+
+      // Only fill in email, leave password empty
+      await user.type(screen.getByLabelText('Email'), 'test@example.com');
+      await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+      // The password input has the `required` attribute, so native form validation
+      // prevents submission before the JS handler runs.
+      expect(mockLogin).not.toHaveBeenCalled();
+    });
+
+    it('does not call signup mutation when required fields are empty', async () => {
+      const user = userEvent.setup();
+
+      render(<AuthPage onLogin={mockOnLogin} initialView="signup" />, {
+        preloadedState: {
+          auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
+        },
+      });
+
+      // Submit with all fields empty
+      await user.click(screen.getByRole('button', { name: 'Create Account' }));
+
+      // The signup form inputs have the `required` attribute, so native form
+      // validation prevents submission before the JS handler runs.
+      expect(mockSignup).not.toHaveBeenCalled();
+    });
+
+    it('shows password too short error on signup when password is under 8 characters', async () => {
+      const { toast } = await import('sonner');
+      const user = userEvent.setup({ delay: null });
+
+      render(<AuthPage onLogin={mockOnLogin} initialView="signup" />, {
+        preloadedState: {
+          auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
+        },
+      });
+
+      await user.type(screen.getByLabelText('Full Name'), 'John');
+      await user.type(screen.getByLabelText('Email'), 'john@example.com');
+      await user.type(screen.getByLabelText('Password'), 'short');
+      await user.type(screen.getByLabelText('Confirm Password'), 'short');
+      await user.click(screen.getByRole('button', { name: 'Create Account' }));
+
+      expect(mockSignup).not.toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith('Password must be at least 8 characters');
+    });
+  });
 });

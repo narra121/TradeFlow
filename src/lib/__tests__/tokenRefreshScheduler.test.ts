@@ -259,4 +259,89 @@ describe('tokenRefreshScheduler', () => {
       expect(axios.post).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('extended – expired / malformed tokens', () => {
+    it('schedules immediate refresh for an already-expired token', async () => {
+      const pastExp = Math.floor(Date.now() / 1000) - 300; // expired 5 min ago
+      localStorageMock._setDirect('idToken', createMockJWT(pastExp));
+      localStorageMock._setDirect('refreshToken', 'mock-refresh-token');
+
+      const newExp = Math.floor(Date.now() / 1000) + 3600;
+      axios.post.mockResolvedValue({ data: { data: { IdToken: createMockJWT(newExp) } } });
+
+      scheduler.start();
+      await vi.advanceTimersByTimeAsync(50);
+
+      expect(axios.post).toHaveBeenCalledTimes(1);
+      expect(scheduler.isRunning()).toBe(true);
+    });
+
+    it('handles token without exp claim by using default schedule', () => {
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({ sub: 'user-456' })); // no exp
+      const token = `${header}.${payload}.mock-signature`;
+
+      localStorageMock._setDirect('idToken', token);
+      localStorageMock._setDirect('refreshToken', 'mock-refresh-token');
+
+      scheduler.start();
+      expect(scheduler.isRunning()).toBe(true);
+    });
+
+    it('handles completely malformed JWT (single segment)', () => {
+      localStorageMock._setDirect('idToken', 'totally-broken');
+      localStorageMock._setDirect('refreshToken', 'mock-refresh-token');
+
+      scheduler.start();
+      // Should still schedule with the default refresh time
+      expect(scheduler.isRunning()).toBe(true);
+    });
+
+    it('handles malformed JWT with invalid base64 payload', () => {
+      localStorageMock._setDirect('idToken', 'header.!!!invalid!!!.sig');
+      localStorageMock._setDirect('refreshToken', 'mock-refresh-token');
+
+      scheduler.start();
+      expect(scheduler.isRunning()).toBe(true);
+    });
+  });
+
+  describe('extended – stop / logout behaviour', () => {
+    it('stops the scheduler and prevents further refreshes on logout', async () => {
+      const futureExp = Math.floor(Date.now() / 1000) + 3600;
+      localStorageMock._setDirect('idToken', createMockJWT(futureExp));
+      localStorageMock._setDirect('refreshToken', 'mock-refresh-token');
+
+      scheduler.start();
+      expect(scheduler.isRunning()).toBe(true);
+
+      scheduler.stop();
+      expect(scheduler.isRunning()).toBe(false);
+
+      // Advance past the original refresh time – should NOT call the API
+      const refreshTime = (3600 * 1000) - (2 * 60 * 1000);
+      await vi.advanceTimersByTimeAsync(refreshTime + 5000);
+      expect(axios.post).not.toHaveBeenCalled();
+    });
+
+    it('does not schedule when no token is present in localStorage', () => {
+      // Ensure localStorage is empty
+      localStorageMock.clear();
+
+      scheduler.start();
+      expect(scheduler.isRunning()).toBe(false);
+      expect(axios.post).not.toHaveBeenCalled();
+    });
+
+    it('calling stop multiple times is safe', () => {
+      const futureExp = Math.floor(Date.now() / 1000) + 3600;
+      localStorageMock._setDirect('idToken', createMockJWT(futureExp));
+      scheduler.start();
+
+      scheduler.stop();
+      scheduler.stop();
+      scheduler.stop();
+      expect(scheduler.isRunning()).toBe(false);
+    });
+  });
 });

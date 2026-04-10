@@ -206,4 +206,131 @@ describe('authSlice', () => {
       expect(state.signupSuccess).toBe(false);
     });
   });
+
+  describe('token refresh via setAuth', () => {
+    it('handles token refresh by updating token while preserving user', () => {
+      const authenticatedState: AuthState = {
+        user: { id: '123', name: 'John', email: 'john@example.com' },
+        token: 'old-token',
+        refreshToken: 'old-refresh',
+        isAuthenticated: true,
+        signupSuccess: false,
+      };
+      const state = authReducer(authenticatedState, setAuth({
+        user: { id: '123', name: 'John', email: 'john@example.com' },
+        token: 'new-refreshed-token',
+        refreshToken: 'new-refresh-token',
+      }));
+      expect(state.token).toBe('new-refreshed-token');
+      expect(state.refreshToken).toBe('new-refresh-token');
+      expect(state.user).toEqual({ id: '123', name: 'John', email: 'john@example.com' });
+      expect(state.isAuthenticated).toBe(true);
+    });
+
+    it('handles token refresh with different user data (partial auth state update)', () => {
+      const authenticatedState: AuthState = {
+        user: { id: '123', name: 'John', email: 'john@example.com' },
+        token: 'old-token',
+        refreshToken: 'old-refresh',
+        isAuthenticated: true,
+        signupSuccess: false,
+      };
+      const state = authReducer(authenticatedState, setAuth({
+        user: { id: '123', name: 'John Updated', email: 'john-new@example.com' },
+        token: 'refreshed-token',
+        refreshToken: 'refreshed-refresh',
+      }));
+      expect(state.user).toEqual({ id: '123', name: 'John Updated', email: 'john-new@example.com' });
+      expect(state.token).toBe('refreshed-token');
+      expect(state.refreshToken).toBe('refreshed-refresh');
+      expect(state.isAuthenticated).toBe(true);
+    });
+  });
+
+  describe('clearAuth resets all fields', () => {
+    it('resets user, token, refreshToken, and isAuthenticated from a fully populated state', () => {
+      const fullyPopulatedState: AuthState = {
+        user: { id: '999', name: 'Full User', email: 'full@test.com' },
+        token: 'active-token-abc',
+        refreshToken: 'active-refresh-xyz',
+        isAuthenticated: true,
+        signupSuccess: true,
+      };
+      const state = authReducer(fullyPopulatedState, clearAuth());
+      expect(state.user).toBeNull();
+      expect(state.token).toBeNull();
+      expect(state.refreshToken).toBeNull();
+      expect(state.isAuthenticated).toBe(false);
+      // signupSuccess is NOT reset by clearAuth
+      expect(state.signupSuccess).toBe(true);
+    });
+
+    it('produces a consistent state shape after clearing', () => {
+      const authenticatedState: AuthState = {
+        user: { id: '1', name: 'Test', email: 'test@test.com' },
+        token: 'some-token',
+        refreshToken: 'some-refresh',
+        isAuthenticated: true,
+        signupSuccess: false,
+      };
+      const state = authReducer(authenticatedState, clearAuth());
+      expect(state).toHaveProperty('user', null);
+      expect(state).toHaveProperty('token', null);
+      expect(state).toHaveProperty('refreshToken', null);
+      expect(state).toHaveProperty('isAuthenticated', false);
+      expect(state).toHaveProperty('signupSuccess', false);
+    });
+  });
+
+  describe('signup success flag via extraReducers', () => {
+    it('sets signupSuccess to true when signup fulfills', () => {
+      const state = authReducer(baseInitialState, {
+        type: 'authApi/signup/fulfilled',
+        payload: {},
+      });
+      expect(state.signupSuccess).toBe(true);
+    });
+
+    it('does not alter user or token on signup fulfilled', () => {
+      const state = authReducer(baseInitialState, {
+        type: 'authApi/signup/fulfilled',
+        payload: {},
+      });
+      expect(state.user).toBeNull();
+      expect(state.token).toBeNull();
+      expect(state.refreshToken).toBeNull();
+      expect(state.isAuthenticated).toBe(false);
+    });
+  });
+
+  describe('edge case: empty string token', () => {
+    it('setAuth accepts empty string token and still sets isAuthenticated to true', () => {
+      const state = authReducer(baseInitialState, setAuth({
+        user: { id: '1', name: 'Test', email: 'test@test.com' },
+        token: '',
+        refreshToken: '',
+      }));
+      expect(state.token).toBe('');
+      expect(state.refreshToken).toBe('');
+      expect(state.isAuthenticated).toBe(true);
+    });
+
+    it('setAuth with empty string token overwrites a valid token', () => {
+      const authenticatedState: AuthState = {
+        user: { id: '1', name: 'Test', email: 'test@test.com' },
+        token: 'valid-token',
+        refreshToken: 'valid-refresh',
+        isAuthenticated: true,
+        signupSuccess: false,
+      };
+      const state = authReducer(authenticatedState, setAuth({
+        user: { id: '1', name: 'Test', email: 'test@test.com' },
+        token: '',
+        refreshToken: '',
+      }));
+      expect(state.token).toBe('');
+      expect(state.refreshToken).toBe('');
+      expect(state.isAuthenticated).toBe(true);
+    });
+  });
 });

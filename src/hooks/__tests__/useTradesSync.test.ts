@@ -102,3 +102,61 @@ describe('useTradesSync', () => {
     expect(result.current).toBeUndefined();
   });
 });
+
+describe('useTradesSync - Additional Scenarios', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDispatch.mockReset();
+    mockSelectedAccountId.mockReturnValue(null);
+  });
+
+  it('calls dispatch on mount with the current account filter', () => {
+    mockSelectedAccountId.mockReturnValue('acc-5');
+
+    renderHook(() => useTradesSync());
+
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'trades/setAccountFilter',
+      payload: 'acc-5',
+    });
+  });
+
+  it('handles error during dispatch gracefully by throwing in effect', () => {
+    mockSelectedAccountId.mockReturnValue('acc-1');
+    mockDispatch.mockImplementation(() => {
+      throw new Error('Dispatch failed');
+    });
+
+    // The hook calls dispatch inside useEffect; the effect will throw
+    expect(() => {
+      renderHook(() => useTradesSync());
+    }).toThrow('Dispatch failed');
+
+    // Reset mockDispatch after the throwing test so it doesn't leak
+    mockDispatch.mockReset();
+  });
+
+  it('dispatches "ALL" when selectedAccountId is null (not authenticated scenario)', () => {
+    mockSelectedAccountId.mockReturnValue(null);
+
+    renderHook(() => useTradesSync());
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'trades/setAccountFilter',
+      payload: 'ALL',
+    });
+  });
+
+  it('handles empty string selectedAccountId by falling back to ALL', () => {
+    mockSelectedAccountId.mockReturnValue('');
+
+    renderHook(() => useTradesSync());
+
+    // '' is falsy so the hook will fallback to 'ALL'
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'trades/setAccountFilter',
+      payload: 'ALL',
+    });
+  });
+});

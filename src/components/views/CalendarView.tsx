@@ -125,15 +125,15 @@ export function CalendarView({ trades }: CalendarViewProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Calendar</h1>
-          <p className="text-muted-foreground mt-1">Visualize your trading days</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Calendar</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Visualize your trading days</p>
         </div>
       </div>
 
       {/* Calendar Card */}
-      <div className="glass-card p-6">
+      <div className="glass-card p-3 sm:p-6 overflow-x-auto">
         {/* Month Navigation */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <Button
             variant="ghost"
             size="icon"
@@ -154,13 +154,13 @@ export function CalendarView({ trades }: CalendarViewProps) {
         </div>
 
         {/* Day Headers */}
-        <div className="grid grid-cols-8 gap-2 mb-2">
+        <div className="grid grid-cols-8 gap-1 sm:gap-2 mb-2 min-w-[560px]">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
+            <div key={day} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
               {day}
             </div>
           ))}
-          <div className="text-center text-sm font-medium text-muted-foreground py-2">
+          <div className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
             Weekly
           </div>
         </div>
@@ -174,7 +174,7 @@ export function CalendarView({ trades }: CalendarViewProps) {
           const weekStats = getWeekStats(weekStart);
 
           return (
-            <div key={weekStart.toISOString()} className="grid grid-cols-8 gap-2 mb-2">
+            <div key={weekStart.toISOString()} className="grid grid-cols-8 gap-1 sm:gap-2 mb-1 sm:mb-2 min-w-[560px]">
               {/* Days of the week */}
               {weekDays.map((day, dayIndex) => {
                 const stats = getDayStats(day);
@@ -267,37 +267,37 @@ export function CalendarView({ trades }: CalendarViewProps) {
         })}
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-border/50">
+        <div className="flex items-center justify-center gap-3 sm:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border/50 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-success/20" />
-            <span className="text-sm text-muted-foreground">Profitable Day</span>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-success/20" />
+            <span className="text-xs sm:text-sm text-muted-foreground">Profitable Day</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-destructive/20" />
-            <span className="text-sm text-muted-foreground">Loss Day</span>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-destructive/20" />
+            <span className="text-xs sm:text-sm text-muted-foreground">Loss Day</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded ring-2 ring-primary" />
-            <span className="text-sm text-muted-foreground">Today</span>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded ring-2 ring-primary" />
+            <span className="text-xs sm:text-sm text-muted-foreground">Today</span>
           </div>
         </div>
       </div>
 
       {/* Monthly Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: 'Trading Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 1 }) })).filter(d => getDayStats(d)).length },
           { label: 'Profitable Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 1 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl > 0; }).length },
           { label: 'Loss Days', value: weeks.flatMap(w => eachDayOfInterval({ start: w, end: endOfWeek(w, { weekStartsOn: 1 }) })).filter(d => { const s = getDayStats(d); return s && s.pnl < 0; }).length },
           { label: 'Monthly P&L', value: `$${weeks.reduce((sum, w) => sum + getWeekStats(w).pnl, 0).toFixed(2)}` },
         ].map((stat, index) => (
-          <div 
+          <div
             key={stat.label}
-            className="glass-card p-4 animate-fade-in"
+            className="glass-card p-3 sm:p-4 animate-fade-in"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
-            <p className="text-sm text-muted-foreground">{stat.label}</p>
-            <p className="text-2xl font-semibold text-foreground font-mono mt-1">{stat.value}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
+            <p className="text-lg sm:text-2xl font-semibold text-foreground font-mono mt-1 truncate">{stat.value}</p>
           </div>
         ))}
       </div>

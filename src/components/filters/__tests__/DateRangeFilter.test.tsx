@@ -152,3 +152,144 @@ describe('getDateRangeFromPreset', () => {
     expect(result.from.toDateString()).toBe(expected.toDateString());
   });
 });
+
+describe('DateRangeFilter - additional preset and custom range coverage', () => {
+  const defaultProps = {
+    selectedPreset: 30 as const,
+    onPresetChange: vi.fn(),
+  };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders all preset buttons including period presets', () => {
+    render(<DateRangeFilter {...defaultProps} />);
+
+    // Day presets
+    expect(screen.getByText('7 days')).toBeInTheDocument();
+    expect(screen.getByText('30 days')).toBeInTheDocument();
+    expect(screen.getByText('60 days')).toBeInTheDocument();
+    expect(screen.getByText('90 days')).toBeInTheDocument();
+    expect(screen.getByText('1 year')).toBeInTheDocument();
+    expect(screen.getByText('All time')).toBeInTheDocument();
+
+    // Period presets
+    expect(screen.getByText('This week')).toBeInTheDocument();
+    expect(screen.getByText('This month')).toBeInTheDocument();
+  });
+
+  it('handles custom date range selection by showing from and to dates', () => {
+    const from = new Date('2024-03-01');
+    const to = new Date('2024-03-31');
+    render(
+      <DateRangeFilter
+        selectedPreset="custom"
+        onPresetChange={vi.fn()}
+        showCustomPicker
+        customRange={{ from, to }}
+        onCustomRangeChange={vi.fn()}
+      />
+    );
+
+    // Both date buttons should show the formatted dates
+    expect(screen.getByText('Mar 1, 2024')).toBeInTheDocument();
+    expect(screen.getByText('Mar 31, 2024')).toBeInTheDocument();
+    // The "to" separator should be visible
+    expect(screen.getByText('to')).toBeInTheDocument();
+  });
+
+  it('shows active preset highlighted with bg-background class', () => {
+    render(<DateRangeFilter {...defaultProps} selectedPreset={90} />);
+
+    const btn90 = screen.getByText('90 days');
+    expect(btn90).toHaveClass('bg-background');
+
+    // Other day presets should not be highlighted
+    const btn7 = screen.getByText('7 days');
+    expect(btn7).not.toHaveClass('bg-background');
+
+    const btn30 = screen.getByText('30 days');
+    expect(btn30).not.toHaveClass('bg-background');
+
+    const btn60 = screen.getByText('60 days');
+    expect(btn60).not.toHaveClass('bg-background');
+  });
+
+  it('highlights "This week" when selected', () => {
+    render(
+      <DateRangeFilter
+        selectedPreset="thisWeek"
+        onPresetChange={vi.fn()}
+      />
+    );
+
+    const thisWeekBtn = screen.getByText('This week');
+    expect(thisWeekBtn).toHaveClass('bg-background');
+
+    const thisMonthBtn = screen.getByText('This month');
+    expect(thisMonthBtn).not.toHaveClass('bg-background');
+  });
+
+  it('highlights "This month" when selected', () => {
+    render(
+      <DateRangeFilter
+        selectedPreset="thisMonth"
+        onPresetChange={vi.fn()}
+      />
+    );
+
+    const thisMonthBtn = screen.getByText('This month');
+    expect(thisMonthBtn).toHaveClass('bg-background');
+
+    const thisWeekBtn = screen.getByText('This week');
+    expect(thisWeekBtn).not.toHaveClass('bg-background');
+  });
+
+  it('highlights "Custom" button when custom preset is selected', () => {
+    render(
+      <DateRangeFilter
+        selectedPreset="custom"
+        onPresetChange={vi.fn()}
+        showCustomPicker
+      />
+    );
+
+    const customBtn = screen.getByText('Custom');
+    expect(customBtn).toHaveClass('bg-background');
+  });
+});
+
+describe('getDateRangeFromPreset - additional coverage', () => {
+  it('returns correct range for 7 days', () => {
+    const result = getDateRangeFromPreset(7);
+    const expected = subDays(new Date(), 7);
+    expect(result.from.toDateString()).toBe(expected.toDateString());
+    expect(result.to.toDateString()).toBe(new Date().toDateString());
+  });
+
+  it('returns correct range for 60 days', () => {
+    const result = getDateRangeFromPreset(60);
+    const expected = subDays(new Date(), 60);
+    expect(result.from.toDateString()).toBe(expected.toDateString());
+  });
+
+  it('returns correct range for 90 days', () => {
+    const result = getDateRangeFromPreset(90);
+    const expected = subDays(new Date(), 90);
+    expect(result.from.toDateString()).toBe(expected.toDateString());
+  });
+
+  it('returns correct range for 365 days (1 year)', () => {
+    const result = getDateRangeFromPreset(365);
+    const expected = subDays(new Date(), 365);
+    expect(result.from.toDateString()).toBe(expected.toDateString());
+  });
+
+  it('falls back to 30 days for unrecognized string preset without custom range', () => {
+    // When 'custom' is passed without a customRange, it falls through to the default
+    const result = getDateRangeFromPreset('custom');
+    const expected = subDays(new Date(), 30);
+    expect(result.from.toDateString()).toBe(expected.toDateString());
+  });
+});

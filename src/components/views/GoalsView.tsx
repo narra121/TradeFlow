@@ -1,20 +1,28 @@
 import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { useGetRulesAndGoalsQuery, useGetGoalPeriodTradesQuery, useUpdateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation } from '@/store/api';
-import { formatLocalDateTime } from '@/lib/dateUtils';
-import type { Goal as APIGoal, TradingRule as APITradingRule } from '@/lib/api/goalsRules';
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, addWeeks, addMonths, format, isSameWeek, isSameMonth, endOfDay } from 'date-fns';
+import { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery, useUpdateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation } from '@/store/api';
+import { formatLocalDateOnly } from '@/lib/dateUtils';
+import { startOfWeek } from 'date-fns/startOfWeek';
+import { endOfWeek } from 'date-fns/endOfWeek';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { subWeeks } from 'date-fns/subWeeks';
+import { subMonths } from 'date-fns/subMonths';
+import { addWeeks } from 'date-fns/addWeeks';
+import { addMonths } from 'date-fns/addMonths';
+import { format } from 'date-fns/format';
+import { isSameWeek } from 'date-fns/isSameWeek';
+import { isSameMonth } from 'date-fns/isSameMonth';
+import { endOfDay } from 'date-fns/endOfDay';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { useAccounts } from '@/hooks/useAccounts';
 import { GoalCardSkeleton, RulesListSkeleton } from '@/components/ui/loading-skeleton';
-import { calculateGoalProgressForAccount, calculateBrokenRulesCounts } from '@/lib/goalCalculations';
-import { Trade } from '@/types/trade';
 
 interface GoalType {
   id: string;
@@ -160,10 +168,11 @@ export function GoalsView() {
   
   const { selectedAccountId, accounts } = useAccounts();
   
-  const { data: periodTrades = [], isLoading: periodTradesLoading, isFetching: periodTradesFetching } = useGetGoalPeriodTradesQuery({
-    startDate: formatLocalDateTime(periodRange.start),
-    endDate: formatLocalDateTime(periodRange.end),
-    accountId: selectedAccountId
+  const { data: progressData, isLoading: progressLoading, isFetching: progressFetching } = useGetGoalsProgressQuery({
+    accountId: selectedAccountId || 'ALL',
+    startDate: formatLocalDateOnly(periodRange.start),
+    endDate: formatLocalDateOnly(periodRange.end),
+    period: periodFilter,
   });
   
   const [updateGoal] = useUpdateGoalMutation();
@@ -172,12 +181,11 @@ export function GoalsView() {
   const [deleteRule] = useDeleteRuleMutation();
   const [toggleRule] = useToggleRuleMutation();
 
-  const loading = rulesGoalsLoading || rulesGoalsFetching || periodTradesLoading || periodTradesFetching;
+  const loading = rulesGoalsLoading || rulesGoalsFetching || progressLoading || progressFetching;
   
-  const goals = rulesGoalsData?.goals || [];
   const reduxRules = rulesGoalsData?.rules || [];
   
-  const rules = reduxRules || [];
+  const rules = progressData?.rules ?? reduxRules ?? [];
   
   // Navigate to previous period
   const goToPreviousPeriod = () => {
@@ -202,75 +210,11 @@ export function GoalsView() {
     setSelectedDate(new Date());
   };
   
-  // Use period trades if available, otherwise use main trades
-  const tradesForCalculations = useMemo(() => {
-    return periodTrades ?? [];
-  }, [periodTrades]);
+  const brokenRuleCounts = progressData?.ruleCompliance?.brokenRulesCounts ?? {};
   
-  // Calculate broken rule counts for selected period
-  const brokenRuleCounts = useMemo(() => {
-    return calculateBrokenRulesCounts(tradesForCalculations, periodFilter, periodRange);
-  }, [tradesForCalculations, periodFilter, periodRange]);
+  const accountGoals = progressData?.goals ?? [];
   
-  // Get account-specific goals for current period
-  const accountGoals = useMemo(() => {
-    const accountId = selectedAccountId || 'ALL';
-    
-    // Filter goals by period
-    const periodGoals = goals.filter(g => g.period === periodFilter);
-    
-    if (accountId === 'ALL') {
-      // When "All Accounts" is selected, aggregate targets and values from all account-specific goals
-      // Group by goal type
-      const aggregatedGoals: Record<string, APIGoal> = {};
-      
-      periodGoals.forEach(goal => {
-        // Skip goals without accountId (should not happen) or with accountId === '-1'
-        if (!goal.accountId || goal.accountId === '-1') return;
-        
-        const key = goal.goalType;
-        if (!aggregatedGoals[key]) {
-          // Initialize with first goal found for this type
-          aggregatedGoals[key] = {
-            ...goal,
-            accountId: 'ALL', // Mark as aggregated
-          };
-        } else {
-          // Sum the targets for this goal type
-          aggregatedGoals[key].target += goal.target;
-        }
-      });
-      
-      return Object.values(aggregatedGoals);
-    }
-    
-    // For specific account, return only goals for that account
-    return periodGoals.filter(g => g.accountId === accountId);
-  }, [goals, selectedAccountId, periodFilter]);
-  
-  // Calculate goal progress from trades
-  const goalProgress = useMemo(() => {
-    if (accountGoals.length === 0) return null;
-    
-    const accountId = selectedAccountId || 'ALL';
-    const profitGoal = accountGoals.find(g => g.goalType === 'profit');
-    const winRateGoal = accountGoals.find(g => g.goalType === 'winRate');
-    const drawdownGoal = accountGoals.find(g => g.goalType === 'maxDrawdown');
-    const tradesGoal = accountGoals.find(g => g.goalType === 'maxTrades');
-    
-    return calculateGoalProgressForAccount(
-      tradesForCalculations,
-      accountId,
-      periodFilter,
-      {
-        profit: profitGoal?.target || 0,
-        winRate: winRateGoal?.target || 0,
-        maxDrawdown: drawdownGoal?.target || 0,
-        maxTrades: tradesGoal?.target || 0
-      },
-      periodRange
-    );
-  }, [accountGoals, tradesForCalculations, selectedAccountId, periodFilter, periodRange]);
+  const goalProgress = progressData?.goalProgress ?? null;
 
   // Get goal data for a specific goal type and period
   const getGoalForType = (goalType: string) => {
@@ -405,20 +349,20 @@ export function GoalsView() {
     return (
       <div 
         key={key}
-        className="glass-card p-5 animate-fade-in group"
+        className="glass-card p-4 sm:p-5 animate-fade-in group"
         style={{ animationDelay: `${index * 0.1}s` }}
       >
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className={cn(
-              "w-11 h-11 rounded-xl flex items-center justify-center",
+              "w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0",
               isExceeded ? "bg-destructive/10" : isCompleted ? "bg-success/10" : "bg-secondary"
             )}>
-              <Icon className={cn("w-5 h-5", isExceeded ? "text-destructive" : isCompleted ? "text-success" : goalType.color)} />
+              <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5", isExceeded ? "text-destructive" : isCompleted ? "text-success" : goalType.color)} />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-foreground">{goalType.title}</h3>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                <h3 className="font-semibold text-foreground text-sm sm:text-base">{goalType.title}</h3>
                 <span className={cn(
                   "text-[10px] px-1.5 py-0.5 rounded-full uppercase font-medium",
                   period === 'weekly' 
@@ -461,15 +405,15 @@ export function GoalsView() {
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-end justify-between">
-            <div className="flex items-baseline gap-1">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1">
+            <div className="flex items-baseline gap-1 flex-wrap min-w-0">
               <span className={cn(
-                "text-2xl font-bold font-mono",
+                "text-xl sm:text-2xl font-bold font-mono",
                 isExceeded ? "text-destructive" : isCompleted ? "text-success" : "text-foreground"
               )}>
                 {goalType.unit === '$' && goalType.unit}{current.toLocaleString()}{goalType.unit !== '$' && goalType.unit}
               </span>
-              <span className="text-muted-foreground text-lg font-mono">
+              <span className="text-muted-foreground text-base sm:text-lg font-mono">
                 {' / '}
               </span>
               {isEditing ? (
@@ -546,18 +490,18 @@ export function GoalsView() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Goals & Rules</h1>
-            <p className="text-muted-foreground mt-1">Track your trading objectives</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Goals & Rules</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Set targets, track rules, and stay disciplined</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <RefreshButton onRefresh={refetch} isFetching={rulesGoalsFetching} />
             <AccountFilter showLabel={false} />
             <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as 'weekly' | 'monthly')}>
               <TabsList className="bg-secondary/50">
-                <TabsTrigger value="weekly" className="text-sm">Weekly</TabsTrigger>
-                <TabsTrigger value="monthly" className="text-sm">Monthly</TabsTrigger>
+                <TabsTrigger value="weekly" className="text-xs sm:text-sm">Weekly</TabsTrigger>
+                <TabsTrigger value="monthly" className="text-xs sm:text-sm">Monthly</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -609,6 +553,16 @@ export function GoalsView() {
             <GoalCardSkeleton key={i} />
           ))}
         </div>
+      ) : accountGoals.length === 0 || !goalProgress ? (
+        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <Trophy className="w-8 h-8 text-primary/60" />
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">No goals data yet</h3>
+          <p className="text-muted-foreground max-w-md mb-8">
+            Goals will show your progress once you have an account with trades. Set up an account and start logging to track your weekly and monthly targets.
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {goalTypes.map((goalType, typeIndex) => (
@@ -621,12 +575,12 @@ export function GoalsView() {
       {loading ? (
         <RulesListSkeleton />
       ) : (
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-foreground">Trading Rules</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
-              {rules.length - Object.keys(brokenRuleCounts).filter(ruleId => brokenRuleCounts[ruleId] > 0).length}/{rules.length} followed {periodFilter === 'weekly' ? 'this week' : 'this month'}
+      <div className="glass-card p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">Trading Rules</h2>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-xs sm:text-sm text-muted-foreground">
+              {rules.length - Object.keys(brokenRuleCounts).filter(ruleId => brokenRuleCounts[ruleId] > 0).length}/{rules.length} followed
             </span>
             <Button
               variant="outline"
@@ -635,7 +589,8 @@ export function GoalsView() {
               onClick={() => setIsAddingRule(true)}
             >
               <Plus className="w-4 h-4" />
-              Add Rule
+              <span className="hidden sm:inline">Add Rule</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
         </div>
@@ -650,7 +605,7 @@ export function GoalsView() {
               <div 
                 key={ruleId}
                 className={cn(
-                  "flex items-center gap-3 p-4 rounded-xl transition-colors animate-fade-in group",
+                  "flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl transition-colors animate-fade-in group",
                   brokenCount > 0
                     ? "bg-destructive/5 border border-destructive/20"
                     : "bg-success/5 border border-success/20"
@@ -801,14 +756,14 @@ export function GoalsView() {
       )}
 
       {/* Motivational Quote */}
-      <div className="glass-card p-6 bg-gradient-card border-primary/20">
-        <div className="flex items-start gap-4">
-          <div className="text-4xl">"</div>
-          <div>
-            <p className="text-lg text-foreground italic">
+      <div className="glass-card p-4 sm:p-6 bg-gradient-card border-primary/20">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="text-3xl sm:text-4xl shrink-0">"</div>
+          <div className="min-w-0">
+            <p className="text-sm sm:text-lg text-foreground italic">
               The goal of a successful trader is to make the best trades. Money is secondary.
             </p>
-            <p className="text-sm text-muted-foreground mt-2">— Alexander Elder</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2">— Alexander Elder</p>
           </div>
         </div>
       </div>

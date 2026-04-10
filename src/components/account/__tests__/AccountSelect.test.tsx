@@ -189,3 +189,58 @@ describe('AccountSelect', () => {
     expect(screen.getByText(/MetaTrader \u2022 Demo/)).toBeInTheDocument();
   });
 });
+
+describe('AccountSelect - additional coverage', () => {
+  const defaultProps = {
+    accounts: mockAccounts,
+    selectedAccountIds: [] as string[],
+    onChange: vi.fn(),
+  };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders placeholder when no account is selected', () => {
+    render(<AccountSelect {...defaultProps} selectedAccountIds={[]} />);
+    expect(screen.getByText('Select accounts...')).toBeInTheDocument();
+  });
+
+  it('handles empty accounts array without crashing', async () => {
+    const user = userEvent.setup();
+    render(<AccountSelect {...defaultProps} accounts={[]} />);
+
+    // Should show placeholder
+    expect(screen.getByText('Select accounts...')).toBeInTheDocument();
+
+    // Open the popover
+    await user.click(screen.getByText('Select accounts...'));
+
+    // Should display the empty state message
+    expect(screen.getByText('No accounts available. Add an account first.')).toBeInTheDocument();
+  });
+
+  it('shows disabled-like state when no accounts available — Select All does nothing', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<AccountSelect {...defaultProps} accounts={[]} onChange={onChange} />);
+
+    await user.click(screen.getByText('Select accounts...'));
+    await user.click(screen.getByText('Select All'));
+
+    // With no accounts, Select All should call onChange with an empty array
+    expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it('renders account type label for each account in the dropdown', async () => {
+    const user = userEvent.setup();
+    render(<AccountSelect {...defaultProps} />);
+
+    await user.click(screen.getByText('Select accounts...'));
+
+    // Account type labels appear alongside broker in "Broker • Type" format
+    expect(screen.getByText(/FTMO \u2022 Prop Challenge/)).toBeInTheDocument();
+    expect(screen.getByText(/Interactive Brokers \u2022 Personal/)).toBeInTheDocument();
+    expect(screen.getByText(/MetaTrader \u2022 Demo/)).toBeInTheDocument();
+  });
+});

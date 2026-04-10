@@ -1,73 +1,89 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Trade, PortfolioStats } from '@/types/trade';
+import { useState, useMemo } from 'react';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { cn } from '@/lib/utils';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
-  ScatterChart,
-  Scatter,
-  ZAxis
 } from 'recharts';
-import { Clock, Timer } from 'lucide-react';
+import { Clock, Timer, PieChart as PieChartIcon } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { Button } from '@/components/ui/button';
 import { MetricsGridSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { AccountFilter } from '@/components/account/AccountFilter';
-import { subDays, isWithinInterval, startOfWeek, endOfWeek, format, addDays, isSameDay } from 'date-fns';
+import { startOfWeek } from 'date-fns/startOfWeek';
+import { endOfWeek } from 'date-fns/endOfWeek';
+import { format } from 'date-fns/format';
+import { addDays } from 'date-fns/addDays';
+import { isSameDay } from 'date-fns/isSameDay';
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { useGetTradesQuery } from '@/store/api';
+import { useGetStatsQuery } from '@/store/api';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
 import { useAccounts } from '@/hooks/useAccounts';
-import {
-  calculateTradeStats,
-  calculateSymbolDistribution,
-  calculateStrategyDistribution,
-  calculateHourlyStats,
-  calculateDailyWinRate,
-  calculateTradeDurations,
-  groupDurationsByRange,
-  formatDuration,
-  getEligibleTrades,
-} from '@/lib/tradeCalculations';
+import { formatDuration } from '@/lib/tradeCalculations';
 
 export function AnalyticsView() {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.trades.filters);
   const [customRange, setCustomRange] = useState<{ from: Date; to: Date }>(
     { from: startOfWeek(new Date()), to: endOfWeek(new Date()) }
   );
-  
+
   // Get saved options for sessions
   const { options } = useSavedOptions();
-  
+
   // Get accounts for balance calculations
   const { selectedAccountId, accounts } = useAccounts();
-  
-  // Prepare query params
-  const queryParams = useMemo(() => ({
+
+  // Calculate total capital based on selected accounts
+  const totalCapital = useMemo(() => {
+    const accountId = selectedAccountId || 'ALL';
+    if (accountId === 'ALL') {
+      return accounts
+        .filter(acc => acc.id && acc.id !== '-1')
+        .reduce((sum, acc) => sum + (acc.initialBalance || 0), 0);
+    } else {
+      const account = accounts.find(acc => acc.id === accountId);
+      return account?.initialBalance || 0;
+    }
+  }, [selectedAccountId, accounts]);
+
+  // Fetch aggregated stats from backend
+  const statsQueryParams = useMemo(() => ({
     accountId: filters.accountId,
     startDate: filters.startDate,
     endDate: filters.endDate,
-  }), [filters.accountId, filters.startDate, filters.endDate]);
-  
-  const { data: trades = [], isLoading: tradesLoading, isFetching: tradesFetching, refetch } = useGetTradesQuery(queryParams);
-  const showShimmer = tradesLoading || tradesFetching;
-  
+    totalCapital,
+  }), [filters.accountId, filters.startDate, filters.endDate, totalCapital]);
+
+  const { data: statsData, isLoading: statsLoading, isFetching: statsFetching, refetch } = useGetStatsQuery(statsQueryParams);
+  const showShimmer = statsLoading || statsFetching;
+
+  const stats = statsData || {
+    totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
+    avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
+    maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
+    grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
+    totalVolume: 0, minDuration: 0, maxDuration: 0,
+    durationBuckets: [], symbolDistribution: {}, strategyDistribution: {},
+    sessionDistribution: {}, outcomeDistribution: {}, hourlyStats: [],
+    dailyWinRate: [], dailyPnl: [],
+  };
+
   const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 'thisWeek');
-  
+
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
     dispatch(setDateRangeFilter({
@@ -81,106 +97,73 @@ export function AnalyticsView() {
     setDatePreset(preset);
   };
 
-  const eligibleTrades = useMemo(() => getEligibleTrades(trades), [trades]);
-  
-  // Calculate total capital based on selected accounts
-  const totalCapital = useMemo(() => {
-    const accountId = selectedAccountId || 'ALL';
-    if (accountId === 'ALL') {
-      // Sum up initial balances from all accounts (excluding id -1 or undefined)
-      return accounts
-        .filter(acc => acc.id && acc.id !== '-1')
-        .reduce((sum, acc) => sum + (acc.initialBalance || 0), 0);
-    } else {
-      // Get balance for specific account
-      const account = accounts.find(acc => acc.id === accountId);
-      return account?.initialBalance || 0;
-    }
-  }, [selectedAccountId, accounts]);
-  
-  // Calculate all analytics using centralized functions
-  const stats = useMemo(() => calculateTradeStats(eligibleTrades, totalCapital), [eligibleTrades, totalCapital]);
-  
-  // Symbol distribution (computed locally from filtered trades)
-  const localSymbolDistribution = useMemo(() => 
-    calculateSymbolDistribution(eligibleTrades), [eligibleTrades]
+  // Transform symbolDistribution Record into [{name, value}] for pie charts
+  const pieData = useMemo(() =>
+    Object.entries(stats.symbolDistribution || {}).map(([name, data]) => ({
+      name,
+      value: data.count,
+    })),
+    [stats.symbolDistribution]
   );
 
-  const pieData = Object.entries(localSymbolDistribution).map(([name, value]) => ({
-    name,
-    value,
-  }));
-
-  // Strategy distribution (computed locally from filtered trades)
-  const localStrategyDistribution = useMemo(() => 
-    calculateStrategyDistribution(eligibleTrades), [eligibleTrades]
+  // Transform strategyDistribution Record into [{name, value}] for pie charts
+  const strategyPieData = useMemo(() =>
+    Object.entries(stats.strategyDistribution || {}).map(([name, data]) => ({
+      name,
+      value: data.count,
+    })),
+    [stats.strategyDistribution]
   );
-
-  const strategyPieData = Object.entries(localStrategyDistribution).map(([name, value]) => ({
-    name,
-    value,
-  }));
 
   const COLORS = ['hsl(160, 84%, 39%)', 'hsl(265, 89%, 62%)', 'hsl(45, 93%, 47%)', 'hsl(200, 95%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(320, 70%, 50%)'];
 
-  // Hourly win rate calculation (all 24 hours) - computed locally from filtered trades
-  const localHourlyStats = useMemo(() => 
-    calculateHourlyStats(eligibleTrades), [eligibleTrades]
-  );
+  // Use stats.hourlyStats directly
+  const localHourlyStats = stats.hourlyStats || [];
 
-  // Daily win rate calculation (by day of week) - computed locally from filtered trades
-  const localDailyWinRate = useMemo(() => 
-    calculateDailyWinRate(eligibleTrades), [eligibleTrades]
-  );
+  // Use stats.dailyWinRate directly
+  const localDailyWinRate = stats.dailyWinRate || [];
 
-  // Trade duration calculation using centralized functions
-  const durationStats = useMemo(() => 
-    calculateTradeDurations(eligibleTrades), [eligibleTrades]
-  );
-  
-  const tradeDurations = durationStats.durations;
+  // Duration data from backend
+  const durationData = stats.durationBuckets || [];
+  const minDuration = stats.minDuration || 0;
+  const maxDuration = stats.maxDuration || 0;
+  const avgDuration = stats.avgHoldingTime || 0;
 
-  // Group durations for bar chart
-  const durationData = useMemo(() => 
-    groupDurationsByRange(eligibleTrades), [eligibleTrades]
-  );
-
-  // Max/Min/Avg duration stats
-  const { maxDuration, minDuration, avgDuration } = durationStats;
-
-  // Calculate performance by session
+  // Transform sessionDistribution using options.sessions for session performance cards
   const sessionPerformance = useMemo(() => {
+    const sessionDist = stats.sessionDistribution || {};
     return (options?.sessions || []).map(sessionName => {
-      const sessionTrades = eligibleTrades.filter(trade => trade.session === sessionName);
-      const wins = sessionTrades.filter(t => (t.pnl || 0) > 0).length;
-      const losses = sessionTrades.filter(t => (t.pnl || 0) < 0).length;
-      const totalPnl = sessionTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-      const winRate = sessionTrades.length > 0 ? (wins / sessionTrades.length) * 100 : 0;
-      
+      const data = sessionDist[sessionName];
+      const trades = data?.count || 0;
+      const wins = data?.wins || 0;
+      const pnl = data?.pnl || 0;
+      const winRate = trades > 0 ? (wins / trades) * 100 : 0;
+
       return {
         name: sessionName,
-        trades: sessionTrades.length,
-        winRate: winRate,
-        pnl: totalPnl,
+        trades,
+        winRate,
+        pnl,
       };
     });
-  }, [options.sessions, eligibleTrades]);
+  }, [options.sessions, stats.sessionDistribution]);
 
-  // Daily P&L for current week (Sunday to Saturday)
-  const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Sunday
-  const dailyPnL = Array.from({ length: 7 }, (_, i) => {
-    const dayDate = addDays(currentWeekStart, i);
-    const dayTrades = eligibleTrades.filter(trade => {
-      const tradeDate = new Date(trade.exitDate || trade.entryDate);
-      return isSameDay(tradeDate, dayDate);
+  // Daily P&L for current week - filter stats.dailyPnl to current week
+  const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const dailyPnL = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const dayDate = addDays(currentWeekStart, i);
+      // Find matching entry in stats.dailyPnl
+      const match = (stats.dailyPnl || []).find(entry => {
+        return isSameDay(new Date(entry.date), dayDate);
+      });
+      return {
+        day: format(dayDate, 'EEE'),
+        date: format(dayDate, 'MMM d'),
+        pnl: match?.pnl || 0,
+      };
     });
-    const pnl = dayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-    return {
-      day: format(dayDate, 'EEE'),
-      date: format(dayDate, 'MMM d'),
-      pnl,
-    };
-  });
+  }, [stats.dailyPnl, currentWeekStart]);
 
   // Performance metrics using calculated stats
   const metrics = [
@@ -204,10 +187,10 @@ export function AnalyticsView() {
         {/* Header */}
         <div className="space-y-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
-            <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Analytics</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Identify patterns and optimize your strategy</p>
           </div>
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <AccountFilter />
             <DateRangeFilter
               selectedPreset={datePreset}
@@ -235,14 +218,14 @@ export function AnalyticsView() {
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-4">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
-            <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Analytics</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Identify patterns and optimize your strategy</p>
           </div>
-          <RefreshButton onRefresh={refetch} isFetching={tradesFetching} />
+          <RefreshButton onRefresh={refetch} isFetching={statsFetching} />
         </div>
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
           <AccountFilter />
           <DateRangeFilter
             selectedPreset={datePreset}
@@ -254,17 +237,35 @@ export function AnalyticsView() {
         </div>
       </div>
 
+      {/* Empty State - shown when no trade data */}
+      {stats.totalTrades === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <PieChartIcon className="w-8 h-8 text-primary/60" />
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">No analytics data yet</h3>
+          <p className="text-muted-foreground max-w-md mb-8">
+            Analytics will populate once you have logged trades. Head to the Dashboard to add your first trade.
+          </p>
+          <div className="flex items-center gap-3">
+            <Button onClick={() => navigate('/app/dashboard')} size="default" className="gap-2">
+              Go to Dashboard
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
         {metrics.map((metric, index) => (
-          <div 
+          <div
             key={metric.label}
-            className="glass-card p-4 animate-fade-in"
+            className="glass-card p-3 sm:p-4 animate-fade-in"
             style={{ animationDelay: `${index * 0.03}s` }}
           >
-            <p className="text-sm text-muted-foreground">{metric.label}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">{metric.label}</p>
             <p className={cn(
-              "text-xl font-semibold font-mono mt-1",
+              "text-base sm:text-xl font-semibold font-mono mt-1 truncate",
               metric.isPositive ? "text-success" : "text-destructive"
             )}>
               {metric.value}
@@ -274,17 +275,17 @@ export function AnalyticsView() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Equity Curve */}
-        <PerformanceChart trades={eligibleTrades} />
+        <PerformanceChart dailyPnl={stats?.dailyPnl} />
 
         {/* Daily P&L Bar Chart - Current Week */}
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-semibold text-foreground">Daily P&L</h3>
-            <span className="text-xs text-muted-foreground">This Week (Sun - Sat)</span>
+        <div className="glass-card p-3 sm:p-5">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h3 className="font-semibold text-foreground text-sm sm:text-base">Daily P&L</h3>
+            <span className="text-xs text-muted-foreground hidden sm:inline">This Week (Sun - Sat)</span>
           </div>
-          <div className="h-[280px]">
+          <div className="h-[240px] sm:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailyPnL} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
@@ -317,7 +318,7 @@ export function AnalyticsView() {
                 >
                   {dailyPnL.map((entry, index) => (
                     <Cell 
-                      key={`cell-${index}`} 
+                      key={`cell-${entry.day}`}
                       fill={entry.pnl >= 0 ? 'hsl(160, 84%, 39%)' : 'hsl(0, 72%, 51%)'} 
                     />
                   ))}
@@ -329,14 +330,14 @@ export function AnalyticsView() {
       </div>
 
       {/* Hourly Win Rate & Trade Duration Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Hourly Win Rate */}
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-2 mb-6">
-            <Clock className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground">Hourly Win Rate</h3>
+        <div className="glass-card p-3 sm:p-5">
+          <div className="flex items-center gap-2 mb-4 sm:mb-6">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <h3 className="font-semibold text-foreground text-sm sm:text-base">Hourly Win Rate</h3>
           </div>
-          <div className="h-[280px]">
+          <div className="h-[240px] sm:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={localHourlyStats} margin={{ top: 10, right: 5, left: 0, bottom: 0 }} barCategoryGap="8%">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
@@ -381,12 +382,12 @@ export function AnalyticsView() {
         </div>
 
         {/* Daily Win Rate - Horizontal Bar */}
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-2 mb-6">
-            <Clock className="w-5 h-5 text-accent" />
-            <h3 className="font-semibold text-foreground">Daily Win Rate</h3>
+        <div className="glass-card p-3 sm:p-5">
+          <div className="flex items-center gap-2 mb-4 sm:mb-6">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+            <h3 className="font-semibold text-foreground text-sm sm:text-base">Daily Win Rate</h3>
           </div>
-          <div className="h-[280px]">
+          <div className="h-[240px] sm:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={localDailyWinRate} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" horizontal={false} />
@@ -429,25 +430,25 @@ export function AnalyticsView() {
         </div>
 
         {/* Trade Duration Chart */}
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-2 mb-6">
-            <Timer className="w-5 h-5 text-accent" />
-            <h3 className="font-semibold text-foreground">Trade Duration (Time to TP/SL)</h3>
+        <div className="glass-card p-3 sm:p-5">
+          <div className="flex items-center gap-2 mb-4 sm:mb-6">
+            <Timer className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+            <h3 className="font-semibold text-foreground text-sm sm:text-base">Trade Duration (Time to TP/SL)</h3>
           </div>
           
           {/* Duration Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="p-3 bg-secondary/30 rounded-lg text-center">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <div className="p-2 sm:p-3 bg-secondary/30 rounded-lg text-center">
               <p className="text-xs text-muted-foreground">Fastest</p>
-              <p className="font-mono font-semibold text-success">{formatDuration(minDuration)}</p>
+              <p className="font-mono font-semibold text-success text-xs sm:text-base truncate">{formatDuration(minDuration)}</p>
             </div>
-            <div className="p-3 bg-secondary/30 rounded-lg text-center">
+            <div className="p-2 sm:p-3 bg-secondary/30 rounded-lg text-center">
               <p className="text-xs text-muted-foreground">Average</p>
-              <p className="font-mono font-semibold text-foreground">{formatDuration(avgDuration)}</p>
+              <p className="font-mono font-semibold text-foreground text-xs sm:text-base truncate">{formatDuration(avgDuration)}</p>
             </div>
-            <div className="p-3 bg-secondary/30 rounded-lg text-center">
+            <div className="p-2 sm:p-3 bg-secondary/30 rounded-lg text-center">
               <p className="text-xs text-muted-foreground">Longest</p>
-              <p className="font-mono font-semibold text-warning">{formatDuration(maxDuration)}</p>
+              <p className="font-mono font-semibold text-warning text-xs sm:text-base truncate">{formatDuration(maxDuration)}</p>
             </div>
           </div>
 
@@ -494,11 +495,11 @@ export function AnalyticsView() {
       </div>
 
       {/* Distribution Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Symbol Distribution */}
-        <div className="glass-card p-5">
-          <h3 className="font-semibold text-foreground mb-6">Symbol Distribution</h3>
-          <div className="h-[250px]">
+        <div className="glass-card p-3 sm:p-5">
+          <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Symbol Distribution</h3>
+          <div className="h-[220px] sm:h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -510,8 +511,8 @@ export function AnalyticsView() {
                   paddingAngle={4}
                   dataKey="value"
                 >
-                  {pieData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip
@@ -539,9 +540,9 @@ export function AnalyticsView() {
         </div>
 
         {/* Strategy Distribution */}
-        <div className="glass-card p-5">
-          <h3 className="font-semibold text-foreground mb-6">Strategy Distribution</h3>
-          <div className="h-[250px]">
+        <div className="glass-card p-3 sm:p-5">
+          <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Strategy Distribution</h3>
+          <div className="h-[220px] sm:h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -554,7 +555,7 @@ export function AnalyticsView() {
                   dataKey="value"
                 >
                   {strategyPieData.map((_, index) => (
-                    <Cell key={`cell-strat-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                    <Cell key={`cell-strat-${strategyPieData[index]?.name || index}`} fill={COLORS[(index + 2) % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip
@@ -582,13 +583,13 @@ export function AnalyticsView() {
         </div>
 
         {/* Trade Distribution by Time */}
-        <div className="glass-card p-5">
-          <h3 className="font-semibold text-foreground mb-6">Performance by Session</h3>
-          <div className="grid grid-cols-1 gap-4">
+        <div className="glass-card p-3 sm:p-5">
+          <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Performance by Session</h3>
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
             {sessionPerformance.map((session, index) => (
-              <div 
+              <div
                 key={session.name}
-                className="p-4 bg-secondary/30 rounded-xl animate-fade-in"
+                className="p-3 sm:p-4 bg-secondary/30 rounded-xl animate-fade-in"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <h4 className="font-medium text-foreground mb-3">{session.name}</h4>
@@ -621,6 +622,8 @@ export function AnalyticsView() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

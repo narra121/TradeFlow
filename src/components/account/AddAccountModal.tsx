@@ -71,15 +71,15 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[60vw] max-w-[60vw] bg-card border-border">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-[90vw] md:w-[70vw] lg:w-[60vw] max-w-[calc(100vw-2rem)] sm:max-w-[90vw] md:max-w-[70vw] lg:max-w-[60vw] max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
+          <DialogTitle className="text-lg sm:text-xl font-semibold">
             {editAccount ? 'Edit Account' : 'Add New Account'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5 mt-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 mt-3 sm:mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Account Name</Label>
               <Input
@@ -87,6 +87,7 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., FTMO $100k Challenge"
                 required
+                className="min-h-[44px] sm:min-h-0"
               />
             </div>
             <div className="space-y-1.5">
@@ -96,15 +97,16 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
                 onChange={(e) => setBroker(e.target.value)}
                 placeholder="e.g., FTMO, MyForexFunds"
                 required
+                className="min-h-[44px] sm:min-h-0"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Account Type</Label>
               <Select value={type} onValueChange={(v) => setType(v as AccountType)}>
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px] sm:min-h-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -117,7 +119,7 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
             <div className="space-y-1.5">
               <Label className="text-xs">Status</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as AccountStatus)}>
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px] sm:min-h-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -129,7 +131,7 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Initial Balance</Label>
               <Input
@@ -139,6 +141,7 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
                 onChange={(e) => setInitialBalance(e.target.value)}
                 placeholder="100000"
                 required
+                className="min-h-[44px] sm:min-h-0"
               />
             </div>
             <div className="space-y-1.5">
@@ -149,12 +152,13 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
                 placeholder="Optional"
+                className="min-h-[44px] sm:min-h-0"
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Currency</Label>
               <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px] sm:min-h-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -173,15 +177,15 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any additional notes about this account..."
               rows={3}
-              className="resize-none"
+              className="resize-none min-h-[44px] sm:min-h-0"
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className="min-h-[44px] sm:min-h-0">
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="min-h-[44px] sm:min-h-0">
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

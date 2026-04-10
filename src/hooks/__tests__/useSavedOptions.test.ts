@@ -509,3 +509,94 @@ describe('useSavedOptions', () => {
     expect(updateCall.symbols).toEqual(['EURUSD', 'GBPUSD', 'XAUUSD']);
   });
 });
+
+describe('useSavedOptions - Error States', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns default empty options when query errors', () => {
+    mockUseGetSavedOptionsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      error: { status: 500, data: 'Internal Server Error' },
+    });
+
+    const { result } = renderHook(() => useSavedOptions());
+
+    expect(result.current.options).toEqual(defaultOptions);
+  });
+
+  it('isLoading is false when error occurs', () => {
+    mockUseGetSavedOptionsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      error: { status: 'FETCH_ERROR', error: 'Network request failed' },
+    });
+
+    const { result } = renderHook(() => useSavedOptions());
+
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('addSymbol still works when in error state', () => {
+    mockUseGetSavedOptionsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      error: { status: 500, data: 'Server error' },
+    });
+
+    const { result } = renderHook(() => useSavedOptions());
+
+    act(() => {
+      result.current.addSymbol('EURUSD');
+    });
+
+    expect(mockUpdateOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        symbols: ['EURUSD'],
+      })
+    );
+  });
+
+  it('addStrategy still works when in error state', () => {
+    mockUseGetSavedOptionsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      error: { status: 500, data: 'Server error' },
+    });
+
+    const { result } = renderHook(() => useSavedOptions());
+
+    act(() => {
+      result.current.addStrategy('New Strategy');
+    });
+
+    expect(mockUpdateOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        strategies: [...defaultOptions.strategies, 'New Strategy'],
+      })
+    );
+  });
+
+  it('resetToDefaults still works when in error state', () => {
+    mockUseGetSavedOptionsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      error: { status: 500, data: 'Server error' },
+    });
+
+    const { result } = renderHook(() => useSavedOptions());
+
+    act(() => {
+      result.current.resetToDefaults();
+    });
+
+    expect(mockUpdateOptions).toHaveBeenCalledWith(defaultOptions);
+  });
+});

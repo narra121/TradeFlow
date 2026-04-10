@@ -115,7 +115,7 @@
   }
 
   .stat-card {
-    @apply glass-card p-5 transition-all duration-300 hover:border-primary/30;
+    @apply glass-card p-3 sm:p-5 transition-all duration-300 hover:border-primary/30;
   }
 
   .profit-text {
@@ -167,10 +167,17 @@
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - thinner on mobile for more content space */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
+}
+
+@media (min-width: 640px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
 }
 
 ::-webkit-scrollbar-track {
@@ -179,6 +186,31 @@
 
 ::-webkit-scrollbar-thumb {
   @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 transition-colors;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Ensure minimum touch target sizing on mobile for interactive elements */
+@media (max-width: 639px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent horizontal overflow on mobile */
+@media (max-width: 639px) {
+  body {
+    overflow-x: hidden;
+  }
 }
 
 /* Animations */

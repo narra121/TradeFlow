@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { 
-  Zap, 
-  BarChart3, 
-  Calendar, 
-  Target, 
-  Shield, 
-  TrendingUp, 
-  BookOpen, 
+import {
+  Zap,
+  BarChart3,
+  Calendar,
+  Target,
+  Shield,
+  TrendingUp,
+  BookOpen,
   Camera,
   Users,
   CheckCircle2,
@@ -20,12 +20,15 @@ import {
   PieChart,
   Clock,
   Award,
-  Heart
+  Heart,
+  Menu,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function LandingPage() {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const features = [
     {
@@ -125,8 +128,8 @@ export function LandingPage() {
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <button 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-3 cursor-pointer"
           >
@@ -143,7 +146,7 @@ export function LandingPage() {
             <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <Button variant="ghost" asChild>
               <Link to="/login">Log In</Link>
             </Button>
@@ -154,30 +157,86 @@ export function LandingPage() {
               </Link>
             </Button>
           </div>
+
+          {/* Mobile hamburger button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-foreground hover:text-primary transition-colors"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl">
+            <div className="px-4 py-4 space-y-3">
+              <a
+                href="#features"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Features
+              </a>
+              <a
+                href="#how-it-works"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                How it Works
+              </a>
+              <a
+                href="#testimonials"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Testimonials
+              </a>
+              <a
+                href="#pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Pricing
+              </a>
+              <div className="pt-3 border-t border-border/50 flex flex-col gap-2">
+                <Button variant="ghost" asChild className="w-full justify-center">
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
+                </Button>
+                <Button asChild className="w-full justify-center gap-2">
+                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
+                    Get Started
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-6">
+      <section className="relative pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         {/* Background effects */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background" />
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
         <div className="absolute top-40 right-1/4 w-64 h-64 bg-accent/20 rounded-full blur-3xl" />
         
         <div className="relative max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
-            <Zap className="w-4 h-4 text-primary" />
-            <span className="text-sm text-primary font-medium">The #1 Trading Journal for Serious Traders</span>
+          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 max-w-full">
+            <Zap className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-xs sm:text-sm text-primary font-medium truncate">The #1 Trading Journal for Serious Traders</span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
             Master Your
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
               Trading Performance
             </span>
           </h1>
 
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
             Track, analyze, and improve your trades with the most powerful trading journal. 
             Built for prop traders, forex traders, and anyone serious about consistent profits.
           </p>
@@ -195,7 +254,7 @@ export function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-foreground mb-1">{stat.value}</div>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-1">{stat.value}</div>
                 <div className="text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
@@ -206,17 +265,17 @@ export function LandingPage() {
         <div className="relative max-w-6xl mx-auto mt-20">
           <div className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl shadow-primary/10">
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10" />
-            <div className="bg-card p-8">
-              <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="bg-card p-4 sm:p-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 {[
                   { label: 'Total P&L', value: '+₹12,637', color: 'text-success' },
                   { label: 'Win Rate', value: '67.4%', color: 'text-primary' },
                   { label: 'Total Trades', value: '156', color: 'text-foreground' },
                   { label: 'Best Trade', value: '+₹2,450', color: 'text-success' },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-secondary/50 rounded-xl p-4">
-                    <div className="text-sm text-muted-foreground mb-1">{stat.label}</div>
-                    <div className={cn("text-2xl font-bold font-mono", stat.color)}>{stat.value}</div>
+                  <div key={i} className="bg-secondary/50 rounded-xl p-3 sm:p-4">
+                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">{stat.label}</div>
+                    <div className={cn("text-lg sm:text-2xl font-bold font-mono", stat.color)}>{stat.value}</div>
                   </div>
                 ))}
               </div>
@@ -229,10 +288,10 @@ export function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 px-6 bg-secondary/20">
+      <section id="features" className="py-16 sm:py-24 px-4 sm:px-6 bg-secondary/20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               Everything You Need to
               <span className="text-primary"> Trade Better</span>
             </h2>
@@ -250,7 +309,7 @@ export function LandingPage() {
                   onMouseEnter={() => setHoveredFeature(index)}
                   onMouseLeave={() => setHoveredFeature(null)}
                   className={cn(
-                    "group p-8 rounded-2xl border transition-all duration-300 cursor-default",
+                    "group p-6 sm:p-8 rounded-2xl border transition-all duration-300 cursor-default",
                     hoveredFeature === index 
                       ? "bg-card border-primary/50 shadow-xl shadow-primary/10 scale-[1.02]" 
                       : "bg-card/50 border-border/50 hover:border-primary/30"
@@ -272,10 +331,10 @@ export function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 px-6">
+      <section id="how-it-works" className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               Start Improving in
               <span className="text-primary"> 3 Simple Steps</span>
             </h2>
@@ -318,10 +377,10 @@ export function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-24 px-6 bg-secondary/20">
+      <section id="testimonials" className="py-16 sm:py-24 px-4 sm:px-6 bg-secondary/20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               Loved by
               <span className="text-primary"> Thousands of Traders</span>
             </h2>
@@ -332,13 +391,13 @@ export function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-card rounded-2xl p-8 border border-border/50">
+              <div key={index} className="bg-card rounded-2xl p-6 sm:p-8 border border-border/50">
                 <div className="flex items-center gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="w-5 h-5 fill-warning text-warning" />
                   ))}
                 </div>
-                <p className="text-foreground mb-6 text-lg leading-relaxed">"{testimonial.content}"</p>
+                <p className="text-foreground mb-6 text-base sm:text-lg leading-relaxed">"{testimonial.content}"</p>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold">
                     {testimonial.avatar}
@@ -355,10 +414,10 @@ export function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 px-6">
+      <section id="pricing" className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               100%
               <span className="text-primary"> Free to Use</span>
             </h2>
@@ -393,7 +452,7 @@ export function LandingPage() {
 
               <div className="mt-10 pt-10 border-t border-border/50">
                 <div className="text-sm font-medium text-muted-foreground mb-4">Everything included for free:</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                   {[
                     'Unlimited trades',
                     'Full analytics',
@@ -415,7 +474,7 @@ export function LandingPage() {
           </div>
 
           {/* Support the Developer */}
-          <div className="bg-card/50 rounded-2xl border border-primary/20 p-8 text-center">
+          <div className="bg-card/50 rounded-2xl border border-primary/20 p-6 sm:p-8 text-center">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
               <Heart className="w-6 h-6 text-primary" />
             </div>
@@ -443,16 +502,16 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-6 relative overflow-hidden">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-accent/20 rounded-full blur-3xl" />
         
         <div className="relative max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-6">
             Ready to Transform Your Trading?
           </h2>
-          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+          <p className="text-base sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
             Join thousands of traders who are already using TradeFlow to track, analyze, and improve their performance.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -468,10 +527,10 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/50 py-16 px-6">
+      <footer className="border-t border-border/50 bg-card/50 py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-            <div className="md:col-span-1">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 sm:gap-12 mb-12">
+            <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
                   <Zap className="w-5 h-5 text-primary-foreground" />
@@ -534,10 +593,10 @@ export function LandingPage() {
           </div>
 
           <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground text-center md:text-left">
               © {new Date().getFullYear()} TradeFlow. All rights reserved.
             </p>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 sm:gap-6">
               <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
               </a>

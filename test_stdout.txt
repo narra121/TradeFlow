@@ -1,0 +1,38 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mE:/Work/Trading/TradeFlow[39m
+
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mrenders "Add New Trade" title when open[33m 896[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mrenders "Edit Trade" title when editMode=true[33m 445[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows direction toggle with Long and Short buttons[33m 381[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows core trade fields (Symbol, Entry Price, Exit Price, Size)[33m 375[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows date pickers (Entry Date, Exit Date)[32m 210[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows outcome selector[32m 206[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows trade context section (Strategy, Session, Market Condition)[33m 332[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows analysis section (News/Events, Key Lesson, Mistakes)[32m 237[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows trade notes section with textarea[32m 211[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows visual evidence section[32m 238[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mcancel button calls onOpenChange(false)[33m 1169[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows loading spinner when submitting[33m 1347[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mkeeps dialog open when onAddTrade rejects (API error)[33m 1517[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mcloses dialog when onAddTrade resolves (success)[33m 1514[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mdoes not render when open is false[32m 11[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows "Add Trade" button text when not in edit mode[33m 1114[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows "Save" button text in edit mode[33m 1038[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows Net PnL field[33m 314[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows Stop Loss and Take Profit fields[32m 264[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal[2m > [22mshows Core Details section header[32m 180[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal - Error Handling[2m > [22mkeeps dialog open when onAddTrade rejects with a network error[33m 1046[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal - Error Handling[2m > [22mresets isSubmitting to false after onAddTrade rejects (button re-enabled)[33m 1586[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal - Error Handling[2m > [22mcloses dialog when onAddTrade resolves successfully[33m 1138[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal - UX Enhancements[2m > [22mdisplays required field indicators on mandatory fields[33m 359[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal - UX Enhancements[2m > [22mshows section description for Core Details[32m 286[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal - UX Enhancements[2m > [22mshows optional section descriptions[32m 295[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal - UX Enhancements[2m > [22mshows PnL helper text for auto-calculation[33m 672[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal - UX Enhancements[2m > [22mshows PnL helper text for manual override[33m 497[2mms[22m[39m
+ [32m✓[39m src/components/dashboard/__tests__/AddTradeModal.test.tsx[2m > [22mAddTradeModal - UX Enhancements[2m > [22mshows PnL helper text when no prices entered[33m 300[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m29 passed[39m[22m[90m (29)[39m
+[2m   Start at [22m 18:26:51
+[2m   Duration [22m 29.71s[2m (transform 943ms, setup 308ms, collect 7.31s, tests 18.19s, environment 2.12s, prepare 270ms)[22m
+

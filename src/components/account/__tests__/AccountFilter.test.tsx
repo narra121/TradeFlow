@@ -97,3 +97,49 @@ describe('AccountFilter', () => {
     expect(truncatedSpan).toBeInTheDocument();
   });
 });
+
+describe('AccountFilter - rendering details', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders the Building2 icon inside the trigger', () => {
+    renderWithProviders(<AccountFilter />);
+    const trigger = screen.getByRole('combobox');
+    const svgIcon = trigger.querySelector('svg');
+    expect(svgIcon).toBeInTheDocument();
+  });
+
+  it('renders the filter icon with label when showLabel is true', () => {
+    renderWithProviders(<AccountFilter showLabel={true} />);
+    // The label section contains the Filter icon and the "Account:" text
+    expect(screen.getByText('Account:')).toBeInTheDocument();
+    // There should be at least two SVG icons: Filter icon and Building2 icon
+    const svgs = document.querySelectorAll('svg');
+    expect(svgs.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('handles account with long name via truncation in trigger', () => {
+    renderWithProviders(<AccountFilter />);
+    // The trigger should have a truncate span to handle overflow for long names
+    const trigger = screen.getByRole('combobox');
+    const truncatedSpan = trigger.querySelector('.truncate');
+    expect(truncatedSpan).toBeInTheDocument();
+    // The trigger container has min-w-0 for proper flex truncation
+    const innerDiv = trigger.querySelector('.min-w-0');
+    expect(innerDiv).toBeInTheDocument();
+  });
+
+  it('renders the trigger with a fixed width class', () => {
+    renderWithProviders(<AccountFilter />);
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveClass('w-[200px]');
+  });
+
+  it('renders both label and combobox as flex items', () => {
+    const { container } = renderWithProviders(<AccountFilter showLabel={true} />);
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper).toHaveClass('flex');
+    expect(wrapper).toHaveClass('items-center');
+  });
+});

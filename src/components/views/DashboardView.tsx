@@ -12,9 +12,9 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { calculateTradeStats, getEligibleTrades } from '@/lib/tradeCalculations';
+import { getEligibleTrades } from '@/lib/tradeCalculations';
 import { useAccounts } from '@/hooks/useAccounts';
-import { useGetTradesQuery } from '@/store/api';
+import { useGetTradesQuery, useGetStatsQuery } from '@/store/api';
 import { 
   DashboardStatsSkeleton, 
   ChartSkeleton, 
@@ -46,8 +46,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
   }), [filters.accountId, filters.startDate, filters.endDate]);
   
   const { data: trades = [], isLoading, isFetching, refetch } = useGetTradesQuery(queryParams);
-  const tradesLoading = isLoading || isFetching;
-  
+
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
     dispatch(setDateRangeFilter({
@@ -77,35 +76,56 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     }
   }, [selectedAccountId, accounts]);
 
-  // Calculate all stats using centralized function
-  const filteredStats = useMemo(() => {
-    return calculateTradeStats(filteredTrades, totalCapital);
-  }, [filteredTrades, totalCapital]);
+  // Fetch aggregated stats from backend
+  const statsQueryParams = useMemo(() => ({
+    accountId: filters.accountId,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    totalCapital,
+  }), [filters.accountId, filters.startDate, filters.endDate, totalCapital]);
+
+  const { data: statsData, isLoading: statsLoading, isFetching: statsFetching } = useGetStatsQuery(statsQueryParams);
+
+  const emptyStats = {
+    totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
+    avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
+    maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
+    grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
+    totalVolume: 0, dailyPnl: [] as Array<{ date: string; pnl: number; cumulativePnl: number }>,
+  };
+
+  const stats = statsData || emptyStats;
+
+  const totalPnlTrend = useMemo(() => ({
+    value: totalCapital > 0 ? Math.abs((stats.totalPnl / totalCapital) * 100) : 0,
+    isPositive: stats.totalPnl >= 0,
+  }), [stats.totalPnl, totalCapital]);
+  const tradesLoading = isLoading || isFetching || statsLoading || statsFetching;
 
   // All trades are closed - no open trades section needed
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="space-y-4">
-        <div className="flex items-start justify-between">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Track your trading performance</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Your trading performance at a glance</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <RefreshButton onRefresh={refetch} isFetching={isFetching} />
-            <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
-              <Upload className="w-5 h-5" />
-              Import
+            <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
+              <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Import</span>
             </Button>
-            <Button onClick={onAddTrade} size="lg" className="gap-2">
-              <Plus className="w-5 h-5" />
-              New Trade
+            <Button onClick={onAddTrade} size="default" className="gap-2">
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Add Trade</span>
             </Button>
           </div>
         </div>
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 sm:flex-wrap">
           <AccountFilter />
           <DateRangeFilter
             selectedPreset={filters.datePreset}
@@ -117,94 +137,116 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
         </div>
       </div>
 
-      {/* Stats Grid */}
-      {tradesLoading ? (
-        <DashboardStatsSkeleton />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Total P&L"
-            value={filteredStats.totalPnl.toFixed(2)}
-            prefix="$"
-            icon={DollarSign}
-            variant={filteredStats.totalPnl >= 0 ? 'success' : 'danger'}
-            trend={{ 
-              value: totalCapital > 0 ? Math.abs((filteredStats.totalPnl / totalCapital) * 100) : 0, 
-              isPositive: filteredStats.totalPnl >= 0 
-            }}
-            className="stagger-1"
-          />
-          <StatCard
-            title="Win Rate"
-            value={filteredStats.winRate.toFixed(1)}
-            suffix="%"
-            icon={TrendingUp}
-            variant="success"
-            className="stagger-2"
-          />
-          <StatCard
-            title="Total Trades"
-            value={filteredStats.totalTrades}
-            icon={Activity}
-            variant="default"
-            className="stagger-3"
-          />
-          <StatCard
-            title="Profit Factor"
-            value={filteredStats.profitFactor === Infinity ? '∞' : filteredStats.profitFactor.toFixed(2)}
-            icon={BarChart3}
-            variant="accent"
-            className="stagger-4"
-          />
-        </div>
-      )}
-
-      {/* Main Content Grid */}
-      {tradesLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <ChartSkeleton height="h-[280px]" />
+      {/* Empty State - shown when not loading and no trades */}
+      {!tradesLoading && filteredTrades.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <BarChart3 className="w-8 h-8 text-primary/60" />
           </div>
-          <WinRateRingSkeleton />
+          <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to TradeFlow!</h3>
+          <p className="text-muted-foreground max-w-md mb-8">
+            Start by adding your first trade to see your performance dashboard come to life.
+          </p>
+          <div className="flex items-center gap-3">
+            <Button onClick={onAddTrade} size="default" className="gap-2">
+              <Plus className="w-4 h-4" />
+              Add Your First Trade
+            </Button>
+            <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
+              <Upload className="w-4 h-4" />
+              Import Trades
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Chart - spans 2 columns */}
-          <div className="lg:col-span-2">
-            <PerformanceChart trades={filteredTrades} />
-          </div>
+        <>
+          {/* Stats Grid */}
+          {tradesLoading ? (
+            <DashboardStatsSkeleton />
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatCard
+                title="Total P&L"
+                value={stats.totalPnl.toFixed(2)}
+                prefix="$"
+                icon={DollarSign}
+                variant={stats.totalPnl >= 0 ? 'success' : 'danger'}
+                trend={totalPnlTrend}
+                className="stagger-1"
+              />
+              <StatCard
+                title="Win Rate"
+                value={stats.winRate.toFixed(1)}
+                suffix="%"
+                icon={TrendingUp}
+                variant="success"
+                className="stagger-2"
+              />
+              <StatCard
+                title="Total Trades"
+                value={stats.totalTrades}
+                icon={Activity}
+                variant="default"
+                className="stagger-3"
+              />
+              <StatCard
+                title="Profit Factor"
+                value={stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2)}
+                icon={BarChart3}
+                variant="accent"
+                className="stagger-4"
+              />
+            </div>
+          )}
 
-          {/* Win Rate Ring */}
-          <div>
-            <WinRateRing 
-              winRate={filteredStats.winRate}
-              wins={filteredStats.wins}
-              losses={filteredStats.losses}
-            />
-          </div>
-        </div>
-      )}
+          {/* Main Content Grid */}
+          {tradesLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="lg:col-span-2">
+                <ChartSkeleton height="h-[280px]" />
+              </div>
+              <WinRateRingSkeleton />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              {/* Chart - spans 2 columns */}
+              <div className="lg:col-span-2 min-w-0">
+                <PerformanceChart dailyPnl={stats?.dailyPnl} />
+              </div>
 
-      {/* Bottom Grid */}
-      {tradesLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <RecentTradesListSkeleton />
-          </div>
-          <QuickStatsSkeleton />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Trades - spans 2 columns */}
-          <div className="lg:col-span-2">
-            <TradeList trades={filteredTrades} limit={5} />
-          </div>
+              {/* Win Rate Ring */}
+              <div>
+                <WinRateRing
+                  winRate={stats.winRate}
+                  wins={stats.wins}
+                  losses={stats.losses}
+                />
+              </div>
+            </div>
+          )}
 
-          {/* Quick Stats */}
-          <div>
-            <QuickStats stats={filteredStats} />
-          </div>
-        </div>
+          {/* Bottom Grid */}
+          {tradesLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="lg:col-span-2">
+                <RecentTradesListSkeleton />
+              </div>
+              <QuickStatsSkeleton />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              {/* Recent Trades - spans 2 columns */}
+              <div className="lg:col-span-2 min-w-0">
+                <TradeList trades={filteredTrades} limit={5} />
+              </div>
+
+              {/* Quick Stats */}
+              <div>
+                <QuickStats stats={stats} />
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

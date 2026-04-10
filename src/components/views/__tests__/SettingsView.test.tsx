@@ -29,12 +29,30 @@ const mockSavedOptions = {
   timeframes: [],
 };
 
+// Mock Radix UI Tooltip for RefreshButton
+vi.mock('@radix-ui/react-tooltip', async () => {
+  const React = await import('react');
+  return {
+    Provider: ({ children }: any) => <>{children}</>,
+    Root: ({ children }: any) => <>{children}</>,
+    Trigger: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <div ref={ref} {...props}>{children}</div>
+    )),
+    Portal: ({ children }: any) => <>{children}</>,
+    Content: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <div ref={ref} {...props}>{children}</div>
+    )),
+    Arrow: React.forwardRef((props: any, ref: any) => <div ref={ref} {...props} />),
+  };
+});
+
 // --- Mocks ---
 vi.mock('@/store/api', () => ({
   useGetProfileQuery: vi.fn(() => ({
     data: mockProfile,
     isLoading: false,
     isFetching: false,
+    refetch: vi.fn(),
   })),
   useUpdateProfileMutation: vi.fn(() => [
     vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
@@ -77,6 +95,7 @@ describe('SettingsView', () => {
       data: mockProfile,
       isLoading: false,
       isFetching: false,
+      refetch: vi.fn(),
     } as any);
   });
 
@@ -85,35 +104,23 @@ describe('SettingsView', () => {
     expect(screen.getByRole('heading', { name: /settings/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('shows "Customize your trading journal" description', () => {
+  it('shows description text', () => {
     render(<SettingsView />);
-    expect(screen.getByText('Customize your trading journal')).toBeInTheDocument();
+    expect(screen.getByText('Configure trade options, preferences, and display settings')).toBeInTheDocument();
   });
 
-  it('shows Preferences section with Dark Mode toggle', () => {
+  it('does not show Preferences section (hidden for now)', () => {
     render(<SettingsView />);
-    expect(screen.getByRole('heading', { name: /preferences/i })).toBeInTheDocument();
-    expect(screen.getByText('Dark Mode')).toBeInTheDocument();
+    expect(screen.queryByText('Dark Mode')).not.toBeInTheDocument();
+    expect(screen.queryByText('Currency')).not.toBeInTheDocument();
+    expect(screen.queryByText('Timezone')).not.toBeInTheDocument();
   });
 
-  it('shows Currency select', () => {
+  it('does not show Notifications section (hidden for now)', () => {
     render(<SettingsView />);
-    expect(screen.getByText('Currency')).toBeInTheDocument();
-    expect(screen.getByText(/display currency for p&l/i)).toBeInTheDocument();
-  });
-
-  it('shows Timezone select', () => {
-    render(<SettingsView />);
-    expect(screen.getByText('Timezone')).toBeInTheDocument();
-    expect(screen.getByText(/set your local timezone/i)).toBeInTheDocument();
-  });
-
-  it('shows Notifications section with Trade Reminders, Weekly Report, Goal Alerts', () => {
-    render(<SettingsView />);
-    expect(screen.getByRole('heading', { name: /notifications/i })).toBeInTheDocument();
-    expect(screen.getByText('Trade Reminders')).toBeInTheDocument();
-    expect(screen.getByText('Weekly Report')).toBeInTheDocument();
-    expect(screen.getByText('Goal Alerts')).toBeInTheDocument();
+    expect(screen.queryByText('Trade Reminders')).not.toBeInTheDocument();
+    expect(screen.queryByText('Weekly Report')).not.toBeInTheDocument();
+    expect(screen.queryByText('Goal Alerts')).not.toBeInTheDocument();
   });
 
   it('shows Trade Options section', () => {
@@ -139,11 +146,10 @@ describe('SettingsView', () => {
 
     // Heading and description should still be present
     expect(screen.getByRole('heading', { name: /settings/i, level: 1 })).toBeInTheDocument();
-    expect(screen.getByText('Customize your trading journal')).toBeInTheDocument();
+    expect(screen.getByText('Configure trade options, preferences, and display settings')).toBeInTheDocument();
 
     // Skeleton elements should be rendered (the SettingsSectionSkeleton components)
-    // Preferences / Notifications / Trade Options sections should NOT be present
-    expect(screen.queryByText('Dark Mode')).not.toBeInTheDocument();
-    expect(screen.queryByText('Trade Reminders')).not.toBeInTheDocument();
+    // Trade Options section should NOT be present when loading
+    expect(screen.queryByRole('heading', { name: /trade options/i })).not.toBeInTheDocument();
   });
 });

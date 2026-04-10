@@ -120,7 +120,7 @@ export function ImageUploader({
           {images.map((image, index) => (
             <div
               key={image.id}
-              className="bg-secondary/50 rounded-xl p-4 space-y-4 border border-border"
+              className="bg-secondary/50 rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4 border border-border"
             >
               {/* Large Image Preview */}
               <div className="relative group">
@@ -141,7 +141,7 @@ export function ImageUploader({
                   variant="destructive"
                   size="icon"
                   onClick={() => removeImage(image.id)}
-                  className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-2 right-2 h-8 w-8 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -207,19 +207,19 @@ export function ImageUploader({
         type="button"
         variant="outline"
         onClick={() => fileInputRef.current?.click()}
-        className="w-full py-10 border-dashed border-2 hover:border-primary/50 hover:bg-primary/5 transition-all"
+        className="w-full py-6 sm:py-10 border-dashed border-2 hover:border-primary/50 hover:bg-primary/5 transition-all"
       >
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          <ImagePlus className="w-10 h-10" />
-          <span className="text-sm font-medium">Drop images here or click to upload</span>
+        <div className="flex flex-col items-center gap-1.5 sm:gap-2 text-muted-foreground">
+          <ImagePlus className="w-8 h-8 sm:w-10 sm:h-10" />
+          <span className="text-xs sm:text-sm font-medium">Drop images here or click to upload</span>
           <span className="text-xs">Support multiple screenshots</span>
         </div>
       </Button>
 
       {/* Expanded Image Modal */}
       {expandedImage && (
-        <div 
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-8"
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-2 sm:p-8"
           onClick={() => setExpandedImage(null)}
         >
           <Button

@@ -204,3 +204,84 @@ describe('ImageUploader', () => {
     expect(clickSpy).toHaveBeenCalled();
   });
 });
+
+describe('ImageUploader – additional coverage', () => {
+  const defaultProps = {
+    images: [] as TradeImage[],
+    onChange: vi.fn(),
+    timeframeOptions: ['1H', '4H', '1D'],
+    onAddTimeframe: vi.fn(),
+    onRemoveTimeframe: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('handles multiple file upload via file input', async () => {
+    const onChange = vi.fn();
+    render(<ImageUploader {...defaultProps} onChange={onChange} />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    // The input accepts multiple files
+    expect(fileInput).toHaveAttribute('multiple');
+    expect(fileInput).toHaveAttribute('accept', 'image/*');
+  });
+
+  it('shows image preview for data URL images', () => {
+    const images: TradeImage[] = [
+      {
+        id: 'img-preview-1',
+        url: 'data:image/png;base64,preview123',
+        timeframe: '4H',
+        description: 'Preview test',
+      },
+    ];
+
+    render(<ImageUploader {...defaultProps} images={images} />);
+
+    const imgs = screen.getAllByRole('img');
+    const dataImg = imgs.find((img) => img.getAttribute('src') === 'data:image/png;base64,preview123');
+    expect(dataImg).toBeInTheDocument();
+    expect(screen.getByText('Screenshot 1')).toBeInTheDocument();
+  });
+
+  it('removes image on delete click and calls onChange with remaining images', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const images: TradeImage[] = [
+      { id: 'img-a', url: 'data:image/png;base64,aaa', timeframe: '1H', description: 'First' },
+      { id: 'img-b', url: 'data:image/png;base64,bbb', timeframe: '4H', description: 'Second' },
+      { id: 'img-c', url: 'data:image/png;base64,ccc', timeframe: '1D', description: 'Third' },
+    ];
+
+    render(<ImageUploader {...defaultProps} images={images} onChange={onChange} />);
+
+    // Delete the second image
+    const deleteButtons = screen.getAllByTestId('icon-trash');
+    expect(deleteButtons).toHaveLength(3);
+    await user.click(deleteButtons[1].closest('button')!);
+
+    expect(onChange).toHaveBeenCalledWith([images[0], images[2]]);
+  });
+
+  it('handles empty images array without rendering image grid', () => {
+    render(<ImageUploader {...defaultProps} images={[]} />);
+
+    expect(screen.queryByText('Screenshot 1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon-trash')).not.toBeInTheDocument();
+    // Upload area should still be present
+    expect(screen.getByText(/Drop images here or click to upload/)).toBeInTheDocument();
+  });
+
+  it('renders CachedImage for non-data-URL images (image IDs)', () => {
+    const images: TradeImage[] = [
+      { id: 'img-s3-key', url: undefined as any, timeframe: '1H', description: 'S3 image' },
+    ];
+
+    render(<ImageUploader {...defaultProps} images={images} />);
+
+    expect(screen.getByTestId('cached-image')).toBeInTheDocument();
+  });
+});
