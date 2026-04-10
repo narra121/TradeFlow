@@ -83,14 +83,17 @@ test.describe('App Navigation', () => {
     // Dashboard -> Trade Log
     await page.getByRole('button', { name: /Trade Log/i }).click();
     await expect(page).toHaveURL(/\/app\/tradelog/);
+    await page.waitForLoadState('networkidle');
 
     // Trade Log -> Analytics
     await page.getByRole('button', { name: /Analytics/i }).click();
     await expect(page).toHaveURL(/\/app\/analytics/);
+    await page.waitForLoadState('networkidle');
 
     // Analytics -> Goals
     await page.getByRole('button', { name: /Goals/i }).click();
     await expect(page).toHaveURL(/\/app\/goals/);
+    await page.waitForLoadState('networkidle');
 
     // Goals -> Dashboard
     await page.getByRole('button', { name: /Dashboard/i }).click();
