@@ -71,8 +71,8 @@ export const imageApi = api.injectEndpoints({
           };
         }
       },
-      // Keep images in cache for 1 hour
-      keepUnusedDataFor: 3600,
+      // Keep images cached indefinitely — S3 images don't change
+      keepUnusedDataFor: Infinity,
     }),
   }),
 });
