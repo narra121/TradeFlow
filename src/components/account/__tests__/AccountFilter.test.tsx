@@ -88,4 +88,12 @@ describe('AccountFilter', () => {
     );
     expect(container.querySelector('.my-custom-class')).toBeInTheDocument();
   });
+
+  it('truncates long account names with CSS truncate class', () => {
+    renderWithProviders(<AccountFilter />);
+    // The trigger text container should have truncate class for overflow handling
+    const trigger = screen.getByRole('combobox');
+    const truncatedSpan = trigger.querySelector('.truncate');
+    expect(truncatedSpan).toBeInTheDocument();
+  });
 });

@@ -269,6 +269,60 @@ describe('toastMiddleware', () => {
       expect(toastErrorMock).toHaveBeenCalledWith('An error occurred');
     });
 
+    it('shows validation error details from errors array', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'createTrade' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: {
+          data: {
+            message: 'Invalid request body',
+            errors: [
+              { code: 'VALIDATION_ERROR', field: '#/required', message: "must have required property 'quantity'" },
+              { code: 'VALIDATION_ERROR', field: '/exitPrice', message: 'must be >= 0' },
+            ],
+          },
+        },
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Invalid request body: required: must have required property 'quantity', exitPrice: must be >= 0"
+      );
+    });
+
+    it('shows validation error details from details array', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'updateTrade' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: {
+          data: {
+            message: 'Validation failed',
+            details: [
+              { field: '/symbol', message: 'must be string' },
+            ],
+          },
+        },
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        'Validation failed: symbol: must be string'
+      );
+    });
+
+    it('shows message without details when errors array is empty', () => {
+      invoke({
+        type: 'api/executeMutation/rejected',
+        meta: { arg: { endpointName: 'createTrade' }, requestId: 'test-id', requestStatus: 'rejected' },
+        payload: {
+          data: {
+            message: 'Something went wrong',
+            errors: [],
+          },
+        },
+        error: {},
+      });
+      expect(toastErrorMock).toHaveBeenCalledWith('Something went wrong');
+    });
+
     it('skips error toast for login endpoint', () => {
       invoke({
         type: 'api/executeMutation/rejected',

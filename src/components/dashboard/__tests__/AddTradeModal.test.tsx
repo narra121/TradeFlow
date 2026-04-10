@@ -274,6 +274,42 @@ describe('AddTradeModal', () => {
     expect(savingButton).toBeDisabled();
   });
 
+  it('keeps dialog open when onAddTrade rejects (API error)', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onOpenChange = vi.fn();
+    const onAddTrade = vi.fn().mockRejectedValue(new Error('Validation failed'));
+
+    render(<AddTradeModal {...defaultProps} onOpenChange={onOpenChange} onAddTrade={onAddTrade} />);
+
+    const submitButton = screen.getByRole('button', { name: /add trade/i });
+    await user.click(submitButton);
+
+    // Wait for async rejection to settle
+    await vi.waitFor(() => {
+      expect(onAddTrade).toHaveBeenCalled();
+    });
+
+    // Dialog should NOT have been closed
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    // Modal content should still be visible
+    expect(screen.getByText('Add New Trade')).toBeInTheDocument();
+  });
+
+  it('closes dialog when onAddTrade resolves (success)', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onOpenChange = vi.fn();
+    const onAddTrade = vi.fn().mockResolvedValue(undefined);
+
+    render(<AddTradeModal {...defaultProps} onOpenChange={onOpenChange} onAddTrade={onAddTrade} />);
+
+    const submitButton = screen.getByRole('button', { name: /add trade/i });
+    await user.click(submitButton);
+
+    await vi.waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
+
   it('does not render when open is false', () => {
     render(<AddTradeModal {...defaultProps} open={false} />);
     expect(screen.queryByText('Add New Trade')).not.toBeInTheDocument();

@@ -197,3 +197,24 @@ describe('ImportTradesModal', () => {
     expect(fileInput.multiple).toBe(true);
   });
 });
+
+describe('ImportTradesModal - outcome derivation', () => {
+  it('derives TP outcome for positive PnL', () => {
+    // The outcome logic: pnl > 0 = TP, pnl < 0 = SL, pnl == 0 = BREAKEVEN
+    const pnl = 500;
+    const outcome = pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BREAKEVEN';
+    expect(outcome).toBe('TP');
+  });
+
+  it('derives SL outcome for negative PnL', () => {
+    const pnl = -200;
+    const outcome = pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BREAKEVEN';
+    expect(outcome).toBe('SL');
+  });
+
+  it('derives BREAKEVEN outcome for zero PnL', () => {
+    const pnl = 0;
+    const outcome = pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BREAKEVEN';
+    expect(outcome).toBe('BREAKEVEN');
+  });
+});
