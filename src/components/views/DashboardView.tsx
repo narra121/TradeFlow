@@ -94,7 +94,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     totalVolume: 0, dailyPnl: [] as Array<{ date: string; pnl: number; cumulativePnl: number }>,
   };
 
-  const stats = statsData || emptyStats;
+  const stats = { ...emptyStats, ...statsData };
 
   const totalPnlTrend = useMemo(() => ({
     value: totalCapital > 0 ? Math.abs((stats.totalPnl / totalCapital) * 100) : 0,

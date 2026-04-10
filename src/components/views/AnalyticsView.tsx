@@ -71,16 +71,17 @@ export function AnalyticsView() {
   const { data: statsData, isLoading: statsLoading, isFetching: statsFetching, refetch } = useGetStatsQuery(statsQueryParams);
   const showShimmer = statsLoading || statsFetching;
 
-  const stats = statsData || {
+  const defaultStats = {
     totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
     avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
     maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
     grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
     totalVolume: 0, minDuration: 0, maxDuration: 0,
-    durationBuckets: [], symbolDistribution: {}, strategyDistribution: {},
-    sessionDistribution: {}, outcomeDistribution: {}, hourlyStats: [],
-    dailyWinRate: [], dailyPnl: [],
+    durationBuckets: [] as any[], symbolDistribution: {} as Record<string, any>, strategyDistribution: {} as Record<string, any>,
+    sessionDistribution: {} as Record<string, any>, outcomeDistribution: {} as Record<string, any>, hourlyStats: [] as any[],
+    dailyWinRate: [] as any[], dailyPnl: [] as any[],
   };
+  const stats = { ...defaultStats, ...statsData };
 
   const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 'thisWeek');
 
