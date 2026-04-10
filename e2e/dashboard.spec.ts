@@ -12,14 +12,13 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Your trading performance at a glance')).toBeVisible();
   });
 
-  test('displays stat cards', async ({ authedPage }) => {
+  test('displays empty state when no trades exist', async ({ authedPage }) => {
     const page = authedPage;
 
-    // Wait for stat cards to render after API mock resolves
-    await expect(page.getByText('Total P&L').first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Win Rate').first()).toBeVisible();
-    await expect(page.getByText('Total Trades').first()).toBeVisible();
-    await expect(page.getByText('Profit Factor').first()).toBeVisible();
+    // With no trades, Dashboard shows welcome empty state instead of stat cards
+    await expect(page.getByText('Welcome to TradeFlow!')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Add Your First Trade')).toBeVisible();
+    await expect(page.getByText('Import Trades')).toBeVisible();
   });
 
   test('has action buttons (Add Trade / Import icons visible)', async ({ authedPage }) => {

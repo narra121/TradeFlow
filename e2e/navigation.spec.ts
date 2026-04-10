@@ -80,24 +80,18 @@ test.describe('App Navigation', () => {
   test('can navigate between multiple pages in sequence', async ({ authedPage }) => {
     const page = authedPage;
 
-    // Dashboard -> Trade Log
-    await page.getByRole('button', { name: /Trade Log/i }).click();
-    await expect(page).toHaveURL(/\/app\/tradelog/);
-    await page.waitForTimeout(500);
+    // Helper: wait for sidebar button to be attached and stable, then click
+    async function navTo(name: RegExp, urlPattern: RegExp) {
+      const btn = page.getByRole('button', { name });
+      await btn.waitFor({ state: 'attached', timeout: 10000 });
+      await btn.click({ timeout: 10000 });
+      await expect(page).toHaveURL(urlPattern, { timeout: 10000 });
+    }
 
-    // Trade Log -> Analytics
-    await page.getByRole('button', { name: /Analytics/i }).click();
-    await expect(page).toHaveURL(/\/app\/analytics/);
-    await page.waitForTimeout(500);
-
-    // Analytics -> Goals
-    await page.getByRole('button', { name: /Goals/i }).click();
-    await expect(page).toHaveURL(/\/app\/goals/);
-    await page.waitForTimeout(500);
-
-    // Goals -> Dashboard
-    await page.getByRole('button', { name: /Dashboard/i }).click();
-    await expect(page).toHaveURL(/\/app\/dashboard/);
+    await navTo(/Trade Log/i, /\/app\/tradelog/);
+    await navTo(/Analytics/i, /\/app\/analytics/);
+    await navTo(/Goals/i, /\/app\/goals/);
+    await navTo(/Dashboard/i, /\/app\/dashboard/);
   });
 
   test('sidebar collapse toggle exists', async ({ authedPage }) => {
