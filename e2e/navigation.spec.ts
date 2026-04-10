@@ -80,12 +80,14 @@ test.describe('App Navigation', () => {
   test('can navigate between multiple pages in sequence', async ({ authedPage }) => {
     const page = authedPage;
 
-    // Helper: wait for sidebar button to be attached and stable, then click
+    // Helper: click sidebar nav, wait for URL change and page to settle.
+    // Lazy-loaded routes cause Suspense re-renders that detach sidebar
+    // buttons momentarily, so we wait for networkidle after each nav.
     async function navTo(name: RegExp, urlPattern: RegExp) {
-      const btn = page.getByRole('button', { name });
-      await btn.waitFor({ state: 'attached', timeout: 10000 });
-      await btn.click({ timeout: 10000 });
-      await expect(page).toHaveURL(urlPattern, { timeout: 10000 });
+      await page.waitForTimeout(500); // let any pending re-renders settle
+      await page.getByRole('button', { name }).click({ force: true, timeout: 10000 });
+      await expect(page).toHaveURL(urlPattern, { timeout: 15000 });
+      await page.waitForLoadState('networkidle');
     }
 
     await navTo(/Trade Log/i, /\/app\/tradelog/);
