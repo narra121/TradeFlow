@@ -340,7 +340,7 @@ describe('DashboardView - Empty State', () => {
     vi.clearAllMocks();
   });
 
-  it('shows empty state when no trades exist', () => {
+  it('shows period empty state when no trades in current filter', () => {
     vi.mocked(useGetTradesQuery).mockReturnValue({
       data: [],
       isLoading: false,
@@ -359,15 +359,15 @@ describe('DashboardView - Empty State', () => {
       isFetching: false,
     } as any);
 
+    // Default filter is 'thisWeek', not 'all', so shows period empty state
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    expect(screen.getByText('Welcome to TradeFlow!')).toBeInTheDocument();
-    expect(screen.getByText(/Start by adding your first trade/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Add Your First Trade/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Import Trades/ })).toBeInTheDocument();
+    expect(screen.getByText('No trades in this period')).toBeInTheDocument();
+    expect(screen.getByText(/Try selecting a different date range/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /View All Time/ })).toBeInTheDocument();
   });
 
-  it('calls onAddTrade when empty state CTA is clicked', () => {
+  it('calls onAddTrade from period empty state Add Trade button', () => {
     vi.mocked(useGetTradesQuery).mockReturnValue({
       data: [],
       isLoading: false,
@@ -389,11 +389,13 @@ describe('DashboardView - Empty State', () => {
     const onAddTrade = vi.fn();
     render(<DashboardView onAddTrade={onAddTrade} onImportTrades={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Add Your First Trade/ }));
+    // Period empty state has "Add Trade" button (header also has one)
+    const addButtons = screen.getAllByRole('button', { name: /Add Trade/ });
+    fireEvent.click(addButtons[addButtons.length - 1]);
     expect(onAddTrade).toHaveBeenCalled();
   });
 
-  it('calls onImportTrades when empty state Import button is clicked', () => {
+  it('shows View All Time button in period empty state', () => {
     vi.mocked(useGetTradesQuery).mockReturnValue({
       data: [],
       isLoading: false,
@@ -412,11 +414,9 @@ describe('DashboardView - Empty State', () => {
       isFetching: false,
     } as any);
 
-    const onImportTrades = vi.fn();
-    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={onImportTrades} />);
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Import Trades/ }));
-    expect(onImportTrades).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /View All Time/ })).toBeInTheDocument();
   });
 
   it('does not show empty state when trades exist', () => {
