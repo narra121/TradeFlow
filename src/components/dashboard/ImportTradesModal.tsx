@@ -255,7 +255,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         size: t.size,
         entryDate: t.entryDate.toISOString(),
         exitDate: t.exitDate.toISOString(),
-        outcome: 'TP' as const,
+        outcome: t.pnl > 0 ? 'TP' as const : t.pnl < 0 ? 'SL' as const : 'BREAKEVEN' as const,
         pnl: t.pnl,
         riskRewardRatio: 0,
       }));
