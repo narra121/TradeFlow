@@ -5,7 +5,7 @@ import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolk
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (import.meta.env.MODE === 'production' 
     ? 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradeflow-prod/v1'
-    : 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradeflow-dev/v1'
+    : 'https://wastpecoi2.execute-api.us-east-1.amazonaws.com/tradeflow-dev/v1'
   );
 
 // Track if we're currently refreshing the token

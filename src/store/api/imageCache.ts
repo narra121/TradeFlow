@@ -166,7 +166,7 @@ async function fetchImage(imageId: string, queryApi: any): Promise<string> {
     import.meta.env.VITE_API_URL ||
     (import.meta.env.MODE === 'production'
       ? 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradeflow-prod/v1'
-      : 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradeflow-dev/v1');
+      : 'https://wastpecoi2.execute-api.us-east-1.amazonaws.com/tradeflow-dev/v1');
 
   const state = queryApi.getState() as any;
   const token = state.auth?.token || localStorage.getItem('idToken');
