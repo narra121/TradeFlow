@@ -80,6 +80,9 @@ export const authApi = api.injectEndpoints({
       queryFn: async () => {
         localStorage.removeItem('idToken');
         localStorage.removeItem('refreshToken');
+        // Clear persisted image cache so another user doesn't see stale images
+        const { clearImageCache } = await import('./imageCache');
+        await clearImageCache();
         return { data: undefined };
       },
     }),
