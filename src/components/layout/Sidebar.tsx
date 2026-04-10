@@ -60,14 +60,12 @@ export function Sidebar({ activeView, onViewChange, collapsed, onCollapsedChange
             </span>
           )}
         </div>
-        {!collapsed && (
-          <button
-            onClick={() => onCollapsedChange(true)}
-            className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-        )}
+        <button
+          onClick={() => onCollapsedChange(!collapsed)}
+          className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+        >
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
       </div>
 
       {/* Navigation */}
@@ -132,15 +130,6 @@ export function Sidebar({ activeView, onViewChange, collapsed, onCollapsedChange
           )}
         </button>
 
-        {/* Expand Button (only when collapsed) */}
-        {collapsed && (
-          <button
-            onClick={() => onCollapsedChange(false)}
-            className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        )}
       </div>
     </aside>
   );
