@@ -127,6 +127,65 @@ async function mockAPIRoutes(page: Page) {
     });
   });
 
+  // Mock stats endpoint (used by Dashboard + Analytics views)
+  await page.route('**/v1/stats**', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: {
+          totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
+          grossProfit: 0, grossLoss: 0, totalPnl: 0, totalVolume: 0,
+          winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0,
+          expectancy: 0, avgRiskReward: 0, bestTrade: 0, worstTrade: 0,
+          avgHoldingTime: 0, minDuration: 0, maxDuration: 0,
+          consecutiveWins: 0, consecutiveLosses: 0, maxDrawdown: 0, sharpeRatio: 0,
+          durationBuckets: [], symbolDistribution: {}, strategyDistribution: {},
+          sessionDistribution: {}, outcomeDistribution: {},
+          hourlyStats: [], dailyWinRate: [], dailyPnl: [],
+        },
+        message: 'OK',
+      }),
+    });
+  });
+
+  // Mock goals progress endpoint (used by Goals view)
+  await page.route('**/v1/goals/progress**', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: {
+          goalProgress: {
+            profit: { current: 0, target: 500, progress: 0, achieved: false },
+            winRate: { current: 0, target: 65, progress: 0, achieved: false },
+            maxDrawdown: { current: 0, target: 3, progress: 0, achieved: true },
+            tradeCount: { current: 0, target: 8, progress: 0, achieved: true },
+          },
+          ruleCompliance: { totalRules: 0, followedCount: 0, brokenRulesCounts: {} },
+          goals: [],
+          rules: [],
+        },
+        message: 'OK',
+      }),
+    });
+  });
+
+  // Mock rules-goals endpoint (used by Goals view for CRUD)
+  await page.route('**/v1/rules-goals**', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: { rules: [], goals: [] },
+        message: 'OK',
+      }),
+    });
+  });
+
   // Mock user profile endpoint
   await page.route('**/v1/user**', (route) => {
     route.fulfill({

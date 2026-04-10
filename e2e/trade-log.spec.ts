@@ -15,11 +15,8 @@ test.describe('Trade Log', () => {
   test('has New Trade and Import buttons', async ({ authedPage }) => {
     const page = authedPage;
 
-    // Buttons use responsive text — on mobile only icons show, on desktop text shows
-    // Check that the buttons exist (at least the icon buttons are present)
-    const buttons = page.locator('header ~ div button, .space-y-6 button');
-    const count = await buttons.count();
-    expect(count).toBeGreaterThan(0);
+    // Check for Import button by text/role
+    await expect(page.getByRole('button', { name: /Import/i })).toBeVisible();
   });
 
   test('displays tab controls for Trades and Calendar views', async ({ authedPage }) => {

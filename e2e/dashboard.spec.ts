@@ -15,8 +15,8 @@ test.describe('Dashboard', () => {
   test('displays stat cards', async ({ authedPage }) => {
     const page = authedPage;
 
-    // Stat cards render — use heading role since they're in card titles
-    await expect(page.getByText('Total P&L').first()).toBeVisible();
+    // Wait for stat cards to render after API mock resolves
+    await expect(page.getByText('Total P&L').first()).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('Win Rate').first()).toBeVisible();
     await expect(page.getByText('Total Trades').first()).toBeVisible();
     await expect(page.getByText('Profit Factor').first()).toBeVisible();
