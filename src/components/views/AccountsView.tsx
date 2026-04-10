@@ -4,6 +4,7 @@ import { AddAccountModal } from '@/components/account/AddAccountModal';
 import { Button } from '@/components/ui/button';
 import { TradingAccount, AccountStatus } from '@/types/trade';
 import { Plus, Building2, AlertTriangle, Loader2 } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +23,7 @@ import { AccountCardSkeleton, StatCardSkeleton } from '@/components/ui/loading-s
 export function AccountsView() {
   const dispatch = useAppDispatch();
   const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
-  const { data: accountsData, isLoading, isFetching } = useGetAccountsQuery();
+  const { data: accountsData, isLoading, isFetching, refetch } = useGetAccountsQuery();
   const loading = isLoading || isFetching;
   const [createAccount] = useCreateAccountMutation();
   const [updateAccount] = useUpdateAccountMutation();
@@ -92,10 +93,13 @@ export function AccountsView() {
           <h1 className="text-3xl font-bold text-foreground">Accounts</h1>
           <p className="text-muted-foreground mt-1">Manage your trading accounts</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
-          <Plus className="w-5 h-5" />
-          Add Account
-        </Button>
+        <div className="flex items-center gap-3">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
+            <Plus className="w-5 h-5" />
+            Add Account
+          </Button>
+        </div>
       </div>
 
       {/* Summary Stats */}

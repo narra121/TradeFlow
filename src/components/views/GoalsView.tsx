@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -86,7 +87,7 @@ const defaultGoalData: GoalData[] = [
 
 export function GoalsView() {
 
-  const { data: rulesGoalsData, isLoading: rulesGoalsLoading, isFetching: rulesGoalsFetching } = useGetRulesAndGoalsQuery();
+  const { data: rulesGoalsData, isLoading: rulesGoalsLoading, isFetching: rulesGoalsFetching, refetch } = useGetRulesAndGoalsQuery();
   
   // State declarations
   const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
@@ -551,6 +552,7 @@ export function GoalsView() {
             <p className="text-muted-foreground mt-1">Track your trading objectives</p>
           </div>
           <div className="flex items-center gap-4">
+            <RefreshButton onRefresh={refetch} isFetching={rulesGoalsFetching} />
             <AccountFilter showLabel={false} />
             <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as 'weekly' | 'monthly')}>
               <TabsList className="bg-secondary/50">

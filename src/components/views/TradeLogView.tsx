@@ -16,6 +16,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { TradeTableSkeleton, CalendarSkeleton } from '@/components/ui/loading-skeleton';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
@@ -71,7 +72,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     endDate: filters.endDate,
   }), [filters.accountId, filters.startDate, filters.endDate]);
   
-  const { data: trades = [], isLoading: tradesLoading, isFetching: tradesFetching } = useGetTradesQuery(queryParams);
+  const { data: trades = [], isLoading: tradesLoading, isFetching: tradesFetching, refetch } = useGetTradesQuery(queryParams);
   const { data: accountsData, isFetching: accountsFetching } = useGetAccountsQuery();
   const loading = tradesLoading || tradesFetching || accountsFetching;
   const accounts = accountsData?.accounts || [];
@@ -270,6 +271,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             <p className="text-muted-foreground mt-1">Track and analyze your trading history</p>
           </div>
           <div className="flex items-center gap-3">
+            <RefreshButton onRefresh={refetch} isFetching={tradesFetching} />
             <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
               <Upload className="w-5 h-5" />
               Import

@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Loader2
 } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,7 +26,7 @@ import { DropdownOptionsManager } from '@/components/settings/DropdownOptionsMan
 import { useSavedOptions } from '@/hooks/useSavedOptions';
 
 export function SettingsView() {
-  const { data: profile, isLoading, isFetching } = useGetProfileQuery();
+  const { data: profile, isLoading, isFetching, refetch } = useGetProfileQuery();
   const loading = isLoading || isFetching;
   const [updateProfile] = useUpdateProfileMutation();
   const [updatePreferences] = useUpdatePreferencesMutation();
@@ -158,9 +159,12 @@ export function SettingsView() {
   return (
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">Customize your trading journal</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+          <p className="text-muted-foreground mt-1">Customize your trading journal</p>
+        </div>
+        <RefreshButton onRefresh={refetch} isFetching={isFetching} />
       </div>
 
       {/* Preferences Section */}

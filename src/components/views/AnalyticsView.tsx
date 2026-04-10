@@ -20,6 +20,7 @@ import {
   ZAxis
 } from 'recharts';
 import { Clock, Timer } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { MetricsGridSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { AccountFilter } from '@/components/account/AccountFilter';
@@ -62,7 +63,7 @@ export function AnalyticsView() {
     endDate: filters.endDate,
   }), [filters.accountId, filters.startDate, filters.endDate]);
   
-  const { data: trades = [], isLoading: tradesLoading, isFetching: tradesFetching } = useGetTradesQuery(queryParams);
+  const { data: trades = [], isLoading: tradesLoading, isFetching: tradesFetching, refetch } = useGetTradesQuery(queryParams);
   const showShimmer = tradesLoading || tradesFetching;
   
   const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 'thisWeek');
@@ -234,9 +235,12 @@ export function AnalyticsView() {
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
-          <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
+            <p className="text-muted-foreground mt-1">Deep dive into your trading performance</p>
+          </div>
+          <RefreshButton onRefresh={refetch} isFetching={tradesFetching} />
         </div>
         <div className="flex items-center gap-4 flex-wrap">
           <AccountFilter />

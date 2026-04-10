@@ -30,6 +30,7 @@ import {
   Loader2,
   LogOut
 } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useCreateSubscriptionMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation, useUndoCancellationMutation } from '@/store/api';
 import { useRazorpay } from '@/hooks/useRazorpay';
@@ -328,9 +329,12 @@ export function ProfileView() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground tracking-tight">Profile</h1>
-        <p className="text-muted-foreground mt-1">Manage your account and subscription</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Profile</h1>
+          <p className="text-muted-foreground mt-1">Manage your account and subscription</p>
+        </div>
+        <RefreshButton onRefresh={refetchSubscription} isFetching={profileFetching || subscriptionFetching} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

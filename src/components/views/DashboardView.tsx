@@ -8,6 +8,7 @@ import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
@@ -44,7 +45,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     endDate: filters.endDate,
   }), [filters.accountId, filters.startDate, filters.endDate]);
   
-  const { data: trades = [], isLoading, isFetching } = useGetTradesQuery(queryParams);
+  const { data: trades = [], isLoading, isFetching, refetch } = useGetTradesQuery(queryParams);
   const tradesLoading = isLoading || isFetching;
   
   const handleDatePresetChange = (preset: DatePreset) => {
@@ -93,6 +94,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
             <p className="text-muted-foreground mt-1">Track your trading performance</p>
           </div>
           <div className="flex items-center gap-3">
+            <RefreshButton onRefresh={refetch} isFetching={isFetching} />
             <Button onClick={onImportTrades} variant="outline" size="lg" className="gap-2">
               <Upload className="w-5 h-5" />
               Import
