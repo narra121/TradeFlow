@@ -58,7 +58,7 @@ export function TradeDetailModal({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mr-8">
             <Button
               variant="outline"
               size="sm"
