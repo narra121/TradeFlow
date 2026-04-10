@@ -45,36 +45,8 @@ export function AppPage() {
   const activeView = location.pathname.split('/')[2] || 'dashboard';
 
   const handleAddTrade = async (newTrade: Omit<Trade, 'id'>) => {
-    // Map frontend Trade format to backend API format
-    const payload = {
-      symbol: newTrade.symbol,
-      side: newTrade.direction === 'LONG' ? 'BUY' as const : 'SELL' as const,
-      quantity: newTrade.size,
-      entryPrice: newTrade.entryPrice,
-      exitPrice: newTrade.exitPrice,
-      stopLoss: newTrade.stopLoss,
-      takeProfit: newTrade.takeProfit,
-      openDate: newTrade.entryDate,
-      closeDate: newTrade.exitDate,
-      outcome: newTrade.outcome,
-      accountIds: newTrade.accountIds,
-      brokenRuleIds: newTrade.brokenRuleIds,
-      setupType: newTrade.strategy,
-      tradingSession: newTrade.session,
-      marketCondition: newTrade.marketCondition,
-      newsEvents: newTrade.newsEvents,
-      mistakes: newTrade.mistakes,
-      lessons: newTrade.keyLesson ? [newTrade.keyLesson] : [],
-      tags: newTrade.tags,
-      images: newTrade.images?.map(img => ({
-        id: img.id,
-        url: img.url,
-        timeframe: img.timeframe,
-        description: img.description,
-      }))
-    };
-    // unwrap() throws on error — modal catches it and stays open
-    await createTrade(payload as any).unwrap();
+    // Pass directly as CreateTradePayload — tradesApi.createTrade handles the mapping
+    await createTrade(newTrade as any).unwrap();
   };
 
   const handleImportTrades = async (newTrades: Omit<Trade, 'id'>[]) => {
