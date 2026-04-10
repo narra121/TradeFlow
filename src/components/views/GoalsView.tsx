@@ -181,7 +181,7 @@ export function GoalsView() {
   const [deleteRule] = useDeleteRuleMutation();
   const [toggleRule] = useToggleRuleMutation();
 
-  const loading = rulesGoalsLoading || rulesGoalsFetching || progressLoading || progressFetching;
+  const loading = rulesGoalsLoading || rulesGoalsFetching;
   
   const reduxRules = rulesGoalsData?.rules || [];
   
@@ -211,10 +211,23 @@ export function GoalsView() {
   };
   
   const brokenRuleCounts = progressData?.ruleCompliance?.brokenRulesCounts ?? {};
-  
-  const accountGoals = progressData?.goals ?? [];
-  
-  const goalProgress = progressData?.goalProgress ?? null;
+
+  // Fall back to rulesGoalsData goals when progress API is unavailable
+  const allGoals = rulesGoalsData?.goals || [];
+  const accountGoals = progressData?.goals
+    ?? allGoals.filter((g: any) =>
+      g.period === periodFilter &&
+      (selectedAccountId ? g.accountId === selectedAccountId : true)
+    );
+
+  // Fall back to zero-progress when progress API is unavailable
+  const defaultProgress = {
+    profit: { current: 0, target: 0, progress: 0, achieved: false },
+    winRate: { current: 0, target: 0, progress: 0, achieved: false },
+    maxDrawdown: { current: 0, target: 0, progress: 0, achieved: false },
+    tradeCount: { current: 0, target: 0, progress: 0, achieved: false },
+  };
+  const goalProgress = progressData?.goalProgress ?? (accountGoals.length > 0 ? defaultProgress : null);
 
   // Get goal data for a specific goal type and period
   const getGoalForType = (goalType: string) => {
