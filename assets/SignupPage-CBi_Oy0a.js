@@ -1,0 +1,1 @@
+import{u as o,j as n}from"./index-DEaquaVe.js";import{A as p}from"./AuthPage-bVorPFzF.js";import"./button-B_HLG5rZ.js";import"./savedOptionsApi-D5ENnhbl.js";import"./circle-check-1YoNHK_Z.js";import"./mail-BysIbYvV.js";import"./arrow-left-Bm_e7x94.js";function c(){const t=o(),i=()=>{t("/app")};return n.jsx(p,{initialView:"signup",onLogin:i})}export{c as SignupPage};
