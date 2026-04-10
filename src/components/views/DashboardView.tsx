@@ -143,20 +143,45 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
             <BarChart3 className="w-8 h-8 text-primary/60" />
           </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to TradeFlow!</h3>
-          <p className="text-muted-foreground max-w-md mb-8">
-            Start by adding your first trade to see your performance dashboard come to life.
-          </p>
-          <div className="flex items-center gap-3">
-            <Button onClick={onAddTrade} size="default" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Your First Trade
-            </Button>
-            <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
-              <Upload className="w-4 h-4" />
-              Import Trades
-            </Button>
-          </div>
+          {filters.datePreset === 'all' ? (
+            <>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to TradeFlow!</h3>
+              <p className="text-muted-foreground max-w-md mb-8">
+                Start by adding your first trade to see your performance dashboard come to life.
+              </p>
+              <div className="flex items-center gap-3">
+                <Button onClick={onAddTrade} size="default" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Your First Trade
+                </Button>
+                <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
+                  <Upload className="w-4 h-4" />
+                  Import Trades
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="text-xl font-semibold text-foreground mb-2">No trades in this period</h3>
+              <p className="text-muted-foreground max-w-md mb-8">
+                Try selecting a different date range or account filter to see your trades.
+              </p>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="gap-2"
+                  onClick={() => handleDatePresetChange('all')}
+                >
+                  View All Time
+                </Button>
+                <Button onClick={onAddTrade} size="default" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Trade
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <>
