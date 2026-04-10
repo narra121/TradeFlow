@@ -138,7 +138,17 @@ export const tradesApi = api.injectEndpoints({
         }
         return mappedTrade;
       },
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics', 'Accounts'],
+      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics'],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Refetch accounts after a delay to allow the DynamoDB Stream
+          // handler to recalculate the account balance
+          setTimeout(() => {
+            dispatch(api.util.invalidateTags(['Accounts']));
+          }, 2000);
+        } catch { /* handled elsewhere */ }
+      },
     }),
 
     updateTrade: builder.mutation<{ updatedTrade: Trade; createdTrades: Trade[]; message?: string }, { id: string; payload: Partial<CreateTradePayload> }>({
@@ -200,9 +210,8 @@ export const tradesApi = api.injectEndpoints({
         }
         return result;
       },
-      // Invalidate stats/analytics/accounts, and trades list if new trades were created
       invalidatesTags: (result) => {
-        const tags: any[] = ['Stats', 'Analytics', 'Accounts'];
+        const tags: any[] = ['Stats', 'Analytics'];
         if (result?.createdTrades && result.createdTrades.length > 0) {
           tags.push({ type: 'Trades', id: 'LIST' });
         }
@@ -234,6 +243,11 @@ export const tradesApi = api.injectEndpoints({
               })
             );
           }
+
+          // Delayed refetch for account balance (DynamoDB Stream needs time)
+          setTimeout(() => {
+            dispatch(api.util.invalidateTags(['Accounts']));
+          }, 2000);
         } catch {
           // No-op: if update/refetch fails, leave cache as-is.
         }
@@ -261,10 +275,11 @@ export const tradesApi = api.injectEndpoints({
         }
         return result;
       },
-      // Only invalidate Stats, Analytics, Accounts - not Trades (we update cache manually)
+      // Only invalidate Stats, Analytics - not Trades (we update cache manually)
+      // Accounts invalidated after delay in onQueryStarted (DynamoDB Stream needs time)
       invalidatesTags: (result, error) => {
         if (error) return [];
-        return ['Stats', 'Analytics', 'Accounts'];
+        return ['Stats', 'Analytics'];
       },
       async onQueryStarted(id, { dispatch, getState, queryFulfilled }) {
         // Optimistic delete from all getTrades caches
@@ -288,21 +303,32 @@ export const tradesApi = api.injectEndpoints({
         
         try {
           await queryFulfilled;
-          // Success - optimistic update was correct, no need to refetch
+          // Delayed refetch for account balance (DynamoDB Stream needs time)
+          setTimeout(() => {
+            dispatch(api.util.invalidateTags(['Accounts']));
+          }, 2000);
         } catch {
           // Revert optimistic updates on error
           patchResults.forEach(patchResult => patchResult.undo());
         }
       },
     }),
-    
+
     bulkImportTrades: builder.mutation<any, BulkImportPayload>({
       query: (payload) => ({
         url: '/trades',
         method: 'POST',
         body: payload,
       }),
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics', 'Accounts'],
+      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, 'Stats', 'Analytics'],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          setTimeout(() => {
+            dispatch(api.util.invalidateTags(['Accounts']));
+          }, 2000);
+        } catch { /* handled elsewhere */ }
+      },
     }),
   }),
 });
