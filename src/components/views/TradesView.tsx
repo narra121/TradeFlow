@@ -243,7 +243,7 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
                     {trade.size}
                   </td>
                   <td className="px-5 py-4 font-mono text-foreground">
-                    {trade.riskRewardRatio.toFixed(2)}
+                    {(trade.riskRewardRatio ?? 0).toFixed(2)}
                   </td>
                   <td className="px-5 py-4">
                     <span className={cn(
@@ -263,14 +263,14 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
                           "font-semibold font-mono",
                           trade.pnl >= 0 ? "text-success" : "text-destructive"
                         )}>
-                          {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
+                          {trade.pnl >= 0 ? '+' : ''}${(trade.pnl ?? 0).toFixed(2)}
                         </p>
                         {trade.pnlPercent !== undefined && (
                           <p className={cn(
                             "text-xs font-mono",
                             trade.pnlPercent >= 0 ? "text-success/70" : "text-destructive/70"
                           )}>
-                            {trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(2)}%
+                            {trade.pnlPercent >= 0 ? '+' : ''}{(trade.pnlPercent ?? 0).toFixed(2)}%
                           </p>
                         )}
                       </div>

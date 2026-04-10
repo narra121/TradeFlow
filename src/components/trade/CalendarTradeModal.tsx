@@ -231,7 +231,7 @@ export function CalendarTradeModal({
                     </div>
                     <div>
                       <p className="text-primary text-xs uppercase font-medium mb-1">Risk/Reward</p>
-                      <p className="text-foreground font-mono">{selectedTrade.riskRewardRatio.toFixed(2)}</p>
+                      <p className="text-foreground font-mono">{(selectedTrade.riskRewardRatio ?? 0).toFixed(2)}</p>
                     </div>
                     <div>
                       <p className="text-primary text-xs uppercase font-medium mb-1">Session</p>

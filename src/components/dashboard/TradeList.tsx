@@ -108,7 +108,7 @@ export function TradeList({ trades, limit }: TradeListProps) {
                       "font-semibold font-mono text-sm sm:text-base",
                       trade.pnl >= 0 ? "text-success" : "text-destructive"
                     )}>
-                      {trade.pnl >= 0 ? '+' : ''}{trade.pnl.toFixed(2)}
+                      {trade.pnl >= 0 ? '+' : ''}{(trade.pnl ?? 0).toFixed(2)}
                     </span>
                   )}
                 </div>
