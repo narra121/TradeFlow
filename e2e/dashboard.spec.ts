@@ -12,13 +12,12 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Your trading performance at a glance')).toBeVisible();
   });
 
-  test('displays empty state when no trades exist', async ({ authedPage }) => {
+  test('displays empty state when no trades in current period', async ({ authedPage }) => {
     const page = authedPage;
 
-    // With no trades, Dashboard shows welcome empty state instead of stat cards
-    await expect(page.getByText('Welcome to TradeFlow!')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Add Your First Trade')).toBeVisible();
-    await expect(page.getByText('Import Trades')).toBeVisible();
+    // Default filter is "This week" — with no trades, shows period empty state
+    await expect(page.getByText('No trades in this period')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('View All Time')).toBeVisible();
   });
 
   test('has action buttons (Add Trade / Import icons visible)', async ({ authedPage }) => {
