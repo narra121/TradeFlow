@@ -57,7 +57,7 @@ export function AppPage() {
       openDate: newTrade.entryDate,
       closeDate: newTrade.exitDate,
       outcome: newTrade.outcome,
-      accountIds: newTrade.accountIds, // For create: array of accounts to create trades for
+      accountIds: newTrade.accountIds,
       brokenRuleIds: newTrade.brokenRuleIds,
       setupType: newTrade.strategy,
       tradingSession: newTrade.session,
@@ -67,13 +67,14 @@ export function AppPage() {
       lessons: newTrade.keyLesson ? [newTrade.keyLesson] : [],
       tags: newTrade.tags,
       images: newTrade.images?.map(img => ({
+        id: img.id,
         url: img.url,
         timeframe: img.timeframe,
-        description: img.description
+        description: img.description,
       }))
     };
+    // unwrap() throws on error — modal catches it and stays open
     await createTrade(payload as any).unwrap();
-    setIsAddTradeOpen(false);
   };
 
   const handleImportTrades = async (newTrades: Omit<Trade, 'id'>[]) => {

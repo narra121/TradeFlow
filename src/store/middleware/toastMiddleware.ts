@@ -99,17 +99,29 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
       // Handle errors (rejected)
       if (isRejectedWithValue(action) || action.type.includes('rejected')) {
         let errorMessage = 'An error occurred';
-        
+        let errorDetails: string[] = [];
+
         // RTK Query error structure: payload.data contains the error message
         if (action.payload) {
           const payload = action.payload as any;
-          
+
           // Priority: payload.data (RTK Query error) > payload.message > action.error.message
           if (payload.data) {
             if (typeof payload.data === 'string') {
               errorMessage = payload.data;
-            } else if (typeof payload.data === 'object' && payload.data.message) {
-              errorMessage = payload.data.message;
+            } else if (typeof payload.data === 'object') {
+              if (payload.data.message) {
+                errorMessage = payload.data.message;
+              }
+              // Extract specific validation errors from the errors array
+              const errors = payload.data.errors || payload.data.details;
+              if (Array.isArray(errors) && errors.length > 0) {
+                errorDetails = errors.map((e: any) => {
+                  const field = e.field?.replace(/^[#/]+/, '').replace(/\//g, ' ') || '';
+                  const msg = e.message || '';
+                  return field ? `${field}: ${msg}` : msg;
+                });
+              }
             }
           } else if (payload.error && typeof payload.error === 'string') {
             errorMessage = payload.error;
@@ -117,15 +129,19 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
             errorMessage = payload.message;
           }
         }
-        
+
         // Fallback to action.error.message
         if (errorMessage === 'An error occurred' && action.error?.message) {
           errorMessage = action.error.message;
         }
-        
+
         // Skip auth errors - handled in auth component
         if (endpointName !== 'login' && endpointName !== 'signup') {
-          toast.error(errorMessage);
+          if (errorDetails.length > 0) {
+            toast.error(`${errorMessage}: ${errorDetails.join(', ')}`);
+          } else {
+            toast.error(errorMessage);
+          }
         }
       }
     }

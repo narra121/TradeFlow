@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 interface AddTradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddTrade: (trade: Omit<Trade, 'id'>) => void;
+  onAddTrade: (trade: Omit<Trade, 'id'>) => Promise<void> | void;
   editMode?: boolean;
   initialTrade?: Trade;
 }
@@ -200,38 +200,43 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
       ? Array.from(new Set([newsValue, ...existingNewsEvents]))
       : existingNewsEvents;
 
-    onAddTrade({
-      symbol,
-      direction,
-      entryPrice: entry,
-      exitPrice: exit || undefined,
-      stopLoss: sl,
-      takeProfit: tp,
-      size: posSize,
-      entryDate: entryDateTime ? new Date(entryDateTime).toISOString() : new Date().toISOString(),
-      exitDate: exitDateTime ? new Date(exitDateTime).toISOString() : new Date().toISOString(),
-      outcome,
-      pnl: exit || manualPnl ? finalPnl : undefined,
-      riskRewardRatio: risk > 0 ? reward / risk : 0,
-      strategy,
-      session,
-      marketCondition,
-      notes: tradeNotes,
-      newsEvents: nextNewsEvents,
-      mistakes,
-      keyLesson,
-      images,
-      // No tags/emotions UI yet in this modal; preserve existing values on edit.
-      tags: editMode ? (editTrade?.tags || []) : [],
-      emotions: editMode ? editTrade?.emotions : undefined,
-      // Send accountIds array for both create and edit (backend handles multi-account logic)
-      accountIds: selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
-      brokenRuleIds: brokenRuleIds.length > 0 ? brokenRuleIds : undefined,
-    });
+    try {
+      await onAddTrade({
+        symbol,
+        direction,
+        entryPrice: entry,
+        exitPrice: exit || undefined,
+        stopLoss: sl,
+        takeProfit: tp,
+        size: posSize,
+        entryDate: entryDateTime ? new Date(entryDateTime).toISOString() : new Date().toISOString(),
+        exitDate: exitDateTime ? new Date(exitDateTime).toISOString() : new Date().toISOString(),
+        outcome,
+        pnl: exit || manualPnl ? finalPnl : undefined,
+        riskRewardRatio: risk > 0 ? reward / risk : 0,
+        strategy,
+        session,
+        marketCondition,
+        notes: tradeNotes,
+        newsEvents: nextNewsEvents,
+        mistakes,
+        keyLesson,
+        images,
+        // No tags/emotions UI yet in this modal; preserve existing values on edit.
+        tags: editMode ? (editTrade?.tags || []) : [],
+        emotions: editMode ? editTrade?.emotions : undefined,
+        // Send accountIds array for both create and edit (backend handles multi-account logic)
+        accountIds: selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
+        brokenRuleIds: brokenRuleIds.length > 0 ? brokenRuleIds : undefined,
+      });
 
-    setIsSubmitting(false);
-    resetForm();
-    onOpenChange(false);
+      resetForm();
+      onOpenChange(false);
+    } catch {
+      // Keep dialog open so user can fix errors — toast middleware handles the error message
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
