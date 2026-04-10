@@ -169,7 +169,7 @@ test.describe('Legal & Company Pages', () => {
 
     await expect(page.getByRole('heading', { name: 'Refund & Cancellation Policy' })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Refund Eligibility/ })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Cancellation Policy/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^3\. Cancellation Policy$/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Refund Processing/ })).toBeVisible();
     // PayU requires mode of refund and timeframe
     await expect(page.getByText(/original payment method/)).toBeVisible();
