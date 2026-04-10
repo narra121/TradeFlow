@@ -1,1 +1,0 @@
-import{u as o,j as n}from"./index-2wK0U8Zl.js";import{A as r}from"./AuthPage-CU2Im53-.js";import"./button-Bwm_okRw.js";import"./savedOptionsApi-DNm78v22.js";import"./circle-check-AxYRbpLD.js";import"./mail-CtprP0dT.js";import"./arrow-left-DrheHlI0.js";function c(){const t=o(),i=()=>{t("/app")};return n.jsx(r,{initialView:"login",onLogin:i})}export{c as LoginPage};
