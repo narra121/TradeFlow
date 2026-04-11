@@ -7,8 +7,9 @@ import { QuickStats } from '@/components/dashboard/QuickStats';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3, Info } from 'lucide-react';
+import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3, Info, AlertTriangle } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
@@ -30,6 +31,7 @@ interface DashboardViewProps {
 
 export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps) {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const filters = useAppSelector((state) => state.trades.filters);
   const [customRange, setCustomRange] = useState<{ from: Date; to: Date }>(
     { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() }
@@ -148,46 +150,76 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
       {/* Empty State - shown when not loading and no trades */}
       {!tradesLoading && filteredTrades.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-            <BarChart3 className="w-8 h-8 text-primary/60" />
-          </div>
-          {filters.datePreset === 'all' ? (
+          {unmappedCount > 0 ? (
             <>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to TradeQut!</h3>
+              <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mb-6">
+                <AlertTriangle className="w-8 h-8 text-warning/60" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                {unmappedCount === 1
+                  ? '1 unmapped trade'
+                  : `${unmappedCount} unmapped trades`}
+              </h3>
               <p className="text-muted-foreground max-w-md mb-8">
-                Start by adding your first trade to see your performance dashboard come to life.
+                {unmappedCount === 1
+                  ? 'You have a trade that isn\'t assigned to any account. Map it to an account so it shows up in your stats.'
+                  : `You have ${unmappedCount} trades that aren't assigned to any account. Map them to accounts so they show up in your stats.`}
               </p>
               <div className="flex items-center gap-3">
-                <Button onClick={onAddTrade} size="default" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Your First Trade
+                <Button onClick={() => navigate('/app/trade-log')} size="default" className="gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Go to Trade Log
                 </Button>
-                <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
-                  <Upload className="w-4 h-4" />
-                  Import Trades
+                <Button onClick={onAddTrade} variant="outline" size="default" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Trade
                 </Button>
               </div>
             </>
           ) : (
             <>
-              <h3 className="text-xl font-semibold text-foreground mb-2">No trades in this period</h3>
-              <p className="text-muted-foreground max-w-md mb-8">
-                Try selecting a different date range or account filter to see your trades.
-              </p>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="default"
-                  className="gap-2"
-                  onClick={() => handleDatePresetChange('all')}
-                >
-                  View All Time
-                </Button>
-                <Button onClick={onAddTrade} size="default" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Trade
-                </Button>
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                <BarChart3 className="w-8 h-8 text-primary/60" />
               </div>
+              {filters.datePreset === 'all' ? (
+                <>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to TradeQut!</h3>
+                  <p className="text-muted-foreground max-w-md mb-8">
+                    Start by adding your first trade to see your performance dashboard come to life.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Button onClick={onAddTrade} size="default" className="gap-2">
+                      <Plus className="w-4 h-4" />
+                      Add Your First Trade
+                    </Button>
+                    <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
+                      <Upload className="w-4 h-4" />
+                      Import Trades
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">No trades in this period</h3>
+                  <p className="text-muted-foreground max-w-md mb-8">
+                    Try selecting a different date range or account filter to see your trades.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="default"
+                      className="gap-2"
+                      onClick={() => handleDatePresetChange('all')}
+                    >
+                      View All Time
+                    </Button>
+                    <Button onClick={onAddTrade} size="default" className="gap-2">
+                      <Plus className="w-4 h-4" />
+                      Add Trade
+                    </Button>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

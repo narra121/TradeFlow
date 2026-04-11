@@ -12,6 +12,7 @@ const SettingsView = lazy(() => import('@/components/views/SettingsView').then(m
 const AccountsView = lazy(() => import('@/components/views/AccountsView').then(m => ({ default: m.AccountsView })));
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
 import { useCreateTradeMutation, useBulkImportTradesMutation, useGetSavedOptionsQuery, useGetSubscriptionQuery } from '@/store/api';
+import type { CreateTradePayload } from '@/lib/api';
 import { useTradesSync } from '@/hooks/useTradesSync';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -76,34 +77,9 @@ export function AppPage() {
 
   const handleImportTrades = async (newTrades: Omit<Trade, 'id'>[]) => {
     try {
-      // Map frontend Trade format to backend API format for bulk import
-      const items = newTrades.map(trade => ({
-        symbol: trade.symbol,
-        side: trade.direction === 'LONG' ? 'BUY' : 'SELL', // Map direction to side
-        quantity: trade.size, // Map size to quantity
-        entryPrice: trade.entryPrice,
-        exitPrice: trade.exitPrice,
-        stopLoss: trade.stopLoss,
-        takeProfit: trade.takeProfit,
-        openDate: trade.entryDate, // Map entryDate to openDate
-        closeDate: trade.exitDate, // Map exitDate to closeDate
-        outcome: trade.outcome,
-        accountIds: trade.accountId ? [trade.accountId] : undefined, // Backend expects accountIds array
-        brokenRuleIds: trade.brokenRuleIds,
-        setupType: trade.strategy,
-        tradingSession: trade.session,
-        marketCondition: trade.marketCondition,
-        newsEvents: trade.newsEvents,
-        mistakes: trade.mistakes,
-        lessons: trade.keyLesson ? [trade.keyLesson] : [],
-        tradeNotes: trade.notes, // Map notes to tradeNotes
-        tags: trade.tags,
-        pnl: trade.pnl,
-        riskRewardRatio: trade.riskRewardRatio
-      }));
-
-      // Use bulk import API
-      await bulkImportTrades({ items } as any).unwrap();
+      // Pass frontend Trade objects directly — bulkImportTrades mutation handles
+      // the frontend→backend field mapping (size→quantity, direction→side, etc.)
+      await bulkImportTrades({ items: newTrades as CreateTradePayload[] }).unwrap();
       
       // Close dialog only after successful save
       setIsImportTradesOpen(false);

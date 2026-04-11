@@ -168,7 +168,7 @@ export function GoalsView() {
   
   const { selectedAccountId, accounts } = useAccounts();
   
-  const { data: progressData, isLoading: progressLoading, isFetching: progressFetching } = useGetGoalsProgressQuery({
+  const { data: progressData, isLoading: progressLoading, isFetching: progressFetching, refetch: refetchProgress } = useGetGoalsProgressQuery({
     accountId: selectedAccountId || 'ALL',
     startDate: formatLocalDateOnly(periodRange.start),
     endDate: formatLocalDateOnly(periodRange.end),
@@ -181,6 +181,7 @@ export function GoalsView() {
   const [deleteRule] = useDeleteRuleMutation();
   const [toggleRule] = useToggleRuleMutation();
 
+  const handleRefresh = () => { refetch(); refetchProgress(); };
   const loading = rulesGoalsLoading || rulesGoalsFetching;
   
   const reduxRules = rulesGoalsData?.rules || [];
@@ -509,7 +510,7 @@ export function GoalsView() {
             <p className="text-sm sm:text-base text-muted-foreground mt-1">Set targets, track rules, and stay disciplined</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            <RefreshButton onRefresh={refetch} isFetching={rulesGoalsFetching} />
+            <RefreshButton onRefresh={handleRefresh} isFetching={rulesGoalsFetching || progressFetching} />
             <AccountFilter showLabel={false} />
             <Tabs value={periodFilter} onValueChange={(v) => setPeriodFilter(v as 'weekly' | 'monthly')}>
               <TabsList className="bg-secondary/50">

@@ -24,6 +24,19 @@ export interface PaginatedTradesResponse {
   pagination: PaginationInfo;
 }
 
+// DynamoDB Streams are async — after a trade mutation the stream handler
+// recalculates account balances and DailyStats (which goals/rules progress
+// depend on), but it hasn't finished by the time the mutation response
+// arrives.  A short delay before refetching gives the stream handler time
+// to write the updated data.
+const STREAM_PROPAGATION_DELAY_MS = 4000;
+
+const delayedInvalidateStreamDeps = (dispatch: any) => {
+  setTimeout(() => {
+    dispatch(api.util.invalidateTags(['Accounts', 'Goals', 'Rules']));
+  }, STREAM_PROPAGATION_DELAY_MS);
+};
+
 const mapBackendTradeToTrade = (trade: any): Trade => {
   const id = trade.tradeId ?? trade.id;
   const side = trade.side ?? trade.direction;
@@ -107,14 +120,17 @@ export const tradesApi = api.injectEndpoints({
     }),
 
     getTradesPaginated: builder.query<PaginatedTradesResponse, PaginatedTradesQueryParams | void>({
-      query: (params) => ({
-        url: '/trades',
-        params: {
-          ...(params || {}),
-          limit: params?.limit ?? 50,
-          ...(params?.cursor ? { cursor: params.cursor } : {}),
-        },
-      }),
+      query: (params) => {
+        const p = params || {};
+        return {
+          url: '/trades',
+          params: {
+            ...p,
+            limit: ('limit' in p && p.limit) ? p.limit : 50,
+            ...('cursor' in p && p.cursor ? { cursor: p.cursor } : {}),
+          },
+        };
+      },
       transformResponse: (response: any, _meta: unknown, arg: PaginatedTradesQueryParams | void) => {
         // Handle both paginated { trades, pagination } and legacy array responses
         const tradesArray = Array.isArray(response) ? response : (response?.trades || []);
@@ -202,7 +218,7 @@ export const tradesApi = api.injectEndpoints({
           await queryFulfilled;
           // Refetch accounts after a delay to allow the DynamoDB Stream
           // handler to recalculate the account balance
-          dispatch(api.util.invalidateTags(['Accounts']));
+          delayedInvalidateStreamDeps(dispatch);
         } catch { /* handled elsewhere */ }
       },
     }),
@@ -301,7 +317,7 @@ export const tradesApi = api.injectEndpoints({
           }
 
           // Delayed refetch for account balance (DynamoDB Stream needs time)
-          dispatch(api.util.invalidateTags(['Accounts']));
+          delayedInvalidateStreamDeps(dispatch);
         } catch {
           // No-op: if update/refetch fails, leave cache as-is.
         }
@@ -333,7 +349,7 @@ export const tradesApi = api.injectEndpoints({
       // Accounts invalidated after delay in onQueryStarted (DynamoDB Stream needs time)
       invalidatesTags: (result, error) => {
         if (error) return [];
-        return ['Stats', 'Analytics', { type: 'Trades', id: 'PAGINATED_LIST' }];
+        return ['Stats', 'Analytics', 'Goals', 'Rules', { type: 'Trades', id: 'PAGINATED_LIST' }];
       },
       async onQueryStarted(id, { dispatch, getState, queryFulfilled }) {
         // Optimistic delete from all getTrades caches
@@ -358,7 +374,7 @@ export const tradesApi = api.injectEndpoints({
         try {
           await queryFulfilled;
           // Delayed refetch for account balance (DynamoDB Stream needs time)
-          dispatch(api.util.invalidateTags(['Accounts']));
+          delayedInvalidateStreamDeps(dispatch);
         } catch {
           // Revert optimistic updates on error
           patchResults.forEach(patchResult => patchResult.undo());
@@ -367,16 +383,46 @@ export const tradesApi = api.injectEndpoints({
     }),
 
     bulkImportTrades: builder.mutation<any, BulkImportPayload>({
-      query: (payload) => ({
-        url: '/trades',
-        method: 'POST',
-        body: payload,
-      }),
+      query: (payload) => {
+        // Map each item from frontend (CreateTradePayload) to backend API fields
+        // Must match the same mapping used in createTrade mutation
+        const mappedItems = payload.items.map(item => ({
+          symbol: item.symbol,
+          side: item.direction === 'LONG' ? 'BUY' : 'SELL',
+          quantity: item.size,
+          entryPrice: item.entryPrice ?? 0,
+          exitPrice: item.exitPrice,
+          stopLoss: item.stopLoss || 0,
+          takeProfit: item.takeProfit || 0,
+          openDate: item.entryDate,
+          closeDate: item.exitDate,
+          outcome: item.outcome,
+          pnl: item.pnl || 0,
+          riskRewardRatio: item.riskRewardRatio || 0,
+          setupType: item.strategy,
+          tradingSession: item.session,
+          marketCondition: item.marketCondition,
+          newsEvents: item.newsEvents,
+          mistakes: item.mistakes,
+          lessons: item.keyLesson ? [item.keyLesson] : undefined,
+          tradeNotes: item.notes,
+          tags: item.tags,
+          accountIds: item.accountIds || (item.accountId ? [item.accountId] : undefined),
+          brokenRuleIds: item.brokenRuleIds,
+          images: item.images,
+        }));
+
+        return {
+          url: '/trades',
+          method: 'POST',
+          body: { items: mappedItems },
+        };
+      },
       invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats', 'Analytics'],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          dispatch(api.util.invalidateTags(['Accounts']));
+          delayedInvalidateStreamDeps(dispatch);
         } catch { /* handled elsewhere */ }
       },
     }),
@@ -407,7 +453,7 @@ export const tradesApi = api.injectEndpoints({
 
         try {
           await queryFulfilled;
-          dispatch(api.util.invalidateTags(['Accounts']));
+          delayedInvalidateStreamDeps(dispatch);
         } catch {
           patchResults.forEach(p => p.undo());
         }

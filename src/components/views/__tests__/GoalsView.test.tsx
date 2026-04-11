@@ -19,6 +19,7 @@ vi.mock('@/store/api', () => ({
     },
     isLoading: false,
     isFetching: false,
+    refetch: vi.fn(),
   }),
   useGetGoalsProgressQuery: vi.fn().mockReturnValue({
     data: {
@@ -46,6 +47,7 @@ vi.mock('@/store/api', () => ({
     },
     isLoading: false,
     isFetching: false,
+    refetch: vi.fn(),
   }),
   useUpdateGoalMutation: vi.fn().mockReturnValue([
     vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),

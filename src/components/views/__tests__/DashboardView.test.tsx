@@ -15,6 +15,13 @@ vi.mock('@radix-ui/react-tooltip', async () => {
   };
 });
 
+// Mock react-router-dom
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
 // --- Mock child components to isolate unit tests ---
 vi.mock('@/components/dashboard/StatCard', () => ({
   StatCard: ({ title, value }: any) => (
@@ -644,5 +651,133 @@ describe('DashboardView - Unmapped Trades Banner', () => {
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
     expect(screen.queryByText(/not mapped/)).not.toBeInTheDocument();
+  });
+});
+
+describe('DashboardView - Unmapped Trades Empty State', () => {
+  const baseTrade = {
+    id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+    exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+    entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+    outcome: 'TP', pnl: 200, riskRewardRatio: 2.0,
+  };
+
+  const emptyStats = {
+    totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
+    avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
+    maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
+    grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
+    totalVolume: 0, dailyPnl: [],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows unmapped empty state instead of welcome when all trades are unmapped', () => {
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [
+        { ...baseTrade, id: '1' }, // no accountId -> unmapped
+        { ...baseTrade, id: '2' }, // no accountId -> unmapped
+      ],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: emptyStats,
+      isLoading: false,
+      isFetching: false,
+    } as any);
+
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    expect(screen.getByText('2 unmapped trades')).toBeInTheDocument();
+    expect(screen.getByText(/aren't assigned to any account/)).toBeInTheDocument();
+    expect(screen.queryByText('Welcome to TradeQut!')).not.toBeInTheDocument();
+  });
+
+  it('shows singular text for one unmapped trade', () => {
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [
+        { ...baseTrade, id: '1' }, // unmapped
+      ],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: emptyStats,
+      isLoading: false,
+      isFetching: false,
+    } as any);
+
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    expect(screen.getByText('1 unmapped trade')).toBeInTheDocument();
+    expect(screen.getByText(/isn't assigned to any account/)).toBeInTheDocument();
+  });
+
+  it('shows Go to Trade Log button that navigates correctly', () => {
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [
+        { ...baseTrade, id: '1' }, // unmapped
+      ],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: emptyStats,
+      isLoading: false,
+      isFetching: false,
+    } as any);
+
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    const tradeLogBtn = screen.getByRole('button', { name: /Go to Trade Log/ });
+    fireEvent.click(tradeLogBtn);
+    expect(mockNavigate).toHaveBeenCalledWith('/app/trade-log');
+  });
+
+  it('still shows Add Trade button in unmapped empty state', () => {
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [
+        { ...baseTrade, id: '1' }, // unmapped
+      ],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: emptyStats,
+      isLoading: false,
+      isFetching: false,
+    } as any);
+
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    // Should have Add Trade in the empty state area (not just the header)
+    const addButtons = screen.getAllByRole('button', { name: /Add Trade/ });
+    expect(addButtons.length).toBeGreaterThanOrEqual(2); // header + empty state
+  });
+
+  it('shows welcome state when truly no trades exist', () => {
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: emptyStats,
+      isLoading: false,
+      isFetching: false,
+    } as any);
+
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    expect(screen.getByText('Welcome to TradeQut!')).toBeInTheDocument();
+    expect(screen.queryByText(/unmapped trade/)).not.toBeInTheDocument();
   });
 });
