@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useGetSavedOptionsQuery, useUpdateSavedOptionsMutation } from '@/store/api';
 import type { SavedOptions } from '@/store/api';
+import { toast } from 'sonner';
 
 // Default options - used as fallback
 const defaultOptions: SavedOptions = {
@@ -32,117 +33,52 @@ export function useSavedOptions() {
     [options, updateOptions]
   );
 
-  const addSymbol = useCallback((symbol: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      symbols: [...prev.symbols, symbol],
-    }));
-  }, [updateWithNewOptions]);
+  const addToCategory = useCallback(
+    (category: keyof SavedOptions, value: string, label: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        toast.warning(`${label} cannot be empty`);
+        return;
+      }
+      const existing = options[category] as string[];
+      if (existing.some(v => v.toLowerCase() === trimmed.toLowerCase())) {
+        toast.warning(`"${trimmed}" already exists in ${label.toLowerCase()}s`);
+        return;
+      }
+      updateWithNewOptions((prev) => ({
+        ...prev,
+        [category]: [...(prev[category] as string[]), trimmed],
+      }));
+    },
+    [options, updateWithNewOptions]
+  );
 
-  const removeSymbol = useCallback((symbol: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      symbols: prev.symbols.filter(s => s !== symbol),
-    }));
-  }, [updateWithNewOptions]);
+  const removeFromCategory = useCallback(
+    (category: keyof SavedOptions, value: string) => {
+      updateWithNewOptions((prev) => ({
+        ...prev,
+        [category]: (prev[category] as string[]).filter(v => v !== value),
+      }));
+    },
+    [updateWithNewOptions]
+  );
 
-  const addStrategy = useCallback((strategy: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      strategies: [...prev.strategies, strategy],
-    }));
-  }, [updateWithNewOptions]);
-
-  const removeStrategy = useCallback((strategy: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      strategies: prev.strategies.filter(s => s !== strategy),
-    }));
-  }, [updateWithNewOptions]);
-
-  const addSession = useCallback((session: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      sessions: [...prev.sessions, session],
-    }));
-  }, [updateWithNewOptions]);
-
-  const removeSession = useCallback((session: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      sessions: prev.sessions.filter(s => s !== session),
-    }));
-  }, [updateWithNewOptions]);
-
-  const addMarketCondition = useCallback((condition: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      marketConditions: [...prev.marketConditions, condition],
-    }));
-  }, [updateWithNewOptions]);
-
-  const removeMarketCondition = useCallback((condition: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      marketConditions: prev.marketConditions.filter(c => c !== condition),
-    }));
-  }, [updateWithNewOptions]);
-
-  const addNewsEvent = useCallback((event: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      newsEvents: [...prev.newsEvents, event],
-    }));
-  }, [updateWithNewOptions]);
-
-  const removeNewsEvent = useCallback((event: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      newsEvents: prev.newsEvents.filter(e => e !== event),
-    }));
-  }, [updateWithNewOptions]);
-
-  const addMistake = useCallback((mistake: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      mistakes: [...prev.mistakes, mistake],
-    }));
-  }, [updateWithNewOptions]);
-
-  const removeMistake = useCallback((mistake: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      mistakes: prev.mistakes.filter(m => m !== mistake),
-    }));
-  }, [updateWithNewOptions]);
-
-  const addLesson = useCallback((lesson: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      lessons: [...prev.lessons, lesson],
-    }));
-  }, [updateWithNewOptions]);
-
-  const removeLesson = useCallback((lesson: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      lessons: prev.lessons.filter(l => l !== lesson),
-    }));
-  }, [updateWithNewOptions]);
-
-  const addTimeframe = useCallback((timeframe: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      timeframes: [...prev.timeframes, timeframe],
-    }));
-  }, [updateWithNewOptions]);
-
-  const removeTimeframe = useCallback((timeframe: string) => {
-    updateWithNewOptions((prev) => ({
-      ...prev,
-      timeframes: prev.timeframes.filter(t => t !== timeframe),
-    }));
-  }, [updateWithNewOptions]);
+  const addSymbol = useCallback((s: string) => addToCategory('symbols', s, 'Symbol'), [addToCategory]);
+  const removeSymbol = useCallback((s: string) => removeFromCategory('symbols', s), [removeFromCategory]);
+  const addStrategy = useCallback((s: string) => addToCategory('strategies', s, 'Strategy'), [addToCategory]);
+  const removeStrategy = useCallback((s: string) => removeFromCategory('strategies', s), [removeFromCategory]);
+  const addSession = useCallback((s: string) => addToCategory('sessions', s, 'Session'), [addToCategory]);
+  const removeSession = useCallback((s: string) => removeFromCategory('sessions', s), [removeFromCategory]);
+  const addMarketCondition = useCallback((s: string) => addToCategory('marketConditions', s, 'Market condition'), [addToCategory]);
+  const removeMarketCondition = useCallback((s: string) => removeFromCategory('marketConditions', s), [removeFromCategory]);
+  const addNewsEvent = useCallback((s: string) => addToCategory('newsEvents', s, 'News event'), [addToCategory]);
+  const removeNewsEvent = useCallback((s: string) => removeFromCategory('newsEvents', s), [removeFromCategory]);
+  const addMistake = useCallback((s: string) => addToCategory('mistakes', s, 'Mistake'), [addToCategory]);
+  const removeMistake = useCallback((s: string) => removeFromCategory('mistakes', s), [removeFromCategory]);
+  const addLesson = useCallback((s: string) => addToCategory('lessons', s, 'Lesson'), [addToCategory]);
+  const removeLesson = useCallback((s: string) => removeFromCategory('lessons', s), [removeFromCategory]);
+  const addTimeframe = useCallback((s: string) => addToCategory('timeframes', s, 'Timeframe'), [addToCategory]);
+  const removeTimeframe = useCallback((s: string) => removeFromCategory('timeframes', s), [removeFromCategory]);
 
   const resetToDefaults = useCallback(() => {
     updateOptions(defaultOptions);

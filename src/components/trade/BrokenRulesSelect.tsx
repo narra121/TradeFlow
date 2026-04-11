@@ -1,6 +1,7 @@
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { TradingRule } from '@/lib/api/goalsRules';
-import { AlertTriangle, Shield, ExternalLink } from 'lucide-react';
+import { AlertTriangle, Shield, ExternalLink, Pencil } from 'lucide-react';
 
 interface BrokenRulesSelectProps {
   rules: TradingRule[];
@@ -27,13 +28,13 @@ export function BrokenRulesSelect({ rules, selectedRuleIds, onChange }: BrokenRu
         <p className="text-xs text-muted-foreground/70 mb-3">
           Create rules to track which ones you break per trade
         </p>
-        <a
-          href="/app/goals"
+        <Link
+          to="/app/goals"
           className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
         >
           Go to Goals & Rules
           <ExternalLink className="w-3 h-3" />
-        </a>
+        </Link>
       </div>
     );
   }
@@ -72,6 +73,13 @@ export function BrokenRulesSelect({ rules, selectedRuleIds, onChange }: BrokenRu
           </button>
         );
       })}
+      <Link
+        to="/app/goals"
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors pt-1"
+      >
+        <Pencil className="w-3 h-3" />
+        Edit rules in Goals & Rules
+      </Link>
     </div>
   );
 }

@@ -113,11 +113,11 @@ export function GoalsView() {
   const [isAddingRuleLoading, setIsAddingRuleLoading] = useState(false);
   const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null);
   
-  // Debounce date changes - wait 2 seconds after last click before making API call
+  // Debounce date changes - short delay to batch rapid clicks without feeling sluggish
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedDate(selectedDate);
-    }, 2000);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [selectedDate, periodFilter]);
@@ -221,18 +221,32 @@ export function GoalsView() {
       (selectedAccountId ? g.accountId === selectedAccountId : true)
     );
 
-  // Fall back to zero-progress when progress API is unavailable
-  const defaultProgress = {
-    profit: { current: 0, target: 0, progress: 0, achieved: false },
-    winRate: { current: 0, target: 0, progress: 0, achieved: false },
-    maxDrawdown: { current: 0, target: 0, progress: 0, achieved: false },
-    tradeCount: { current: 0, target: 0, progress: 0, achieved: false },
+  // Default targets per goal type and period
+  const defaultTargets: Record<string, Record<string, number>> = {
+    weekly:  { profit: 500, winRate: 65, maxDrawdown: 3, maxTrades: 8 },
+    monthly: { profit: 2000, winRate: 70, maxDrawdown: 10, maxTrades: 30 },
   };
-  const goalProgress = progressData?.goalProgress ?? (accountGoals.length > 0 ? defaultProgress : null);
 
-  // Get goal data for a specific goal type and period
+  // Always provide progress — default to zeros so cards always render
+  const zeroProgress = {
+    profit: { current: 0, target: defaultTargets[periodFilter].profit, progress: 0, achieved: false },
+    winRate: { current: 0, target: defaultTargets[periodFilter].winRate, progress: 0, achieved: false },
+    maxDrawdown: { current: 0, target: defaultTargets[periodFilter].maxDrawdown, progress: 0, achieved: false },
+    tradeCount: { current: 0, target: defaultTargets[periodFilter].maxTrades, progress: 0, achieved: false },
+  };
+  const goalProgress = progressData?.goalProgress ?? zeroProgress;
+
+  // Get goal data for a specific goal type — fall back to a synthetic goal with defaults
   const getGoalForType = (goalType: string) => {
-    return accountGoals.find(g => g.goalType === goalType);
+    const real = accountGoals.find(g => g.goalType === goalType);
+    if (real) return real;
+    // Synthetic goal so the card always renders with default target
+    return {
+      goalId: '',
+      goalType,
+      period: periodFilter,
+      target: defaultTargets[periodFilter][goalType] ?? 0,
+    };
   };
 
   const handleEditStart = (goalId: string, currentTarget: number) => {
@@ -323,24 +337,35 @@ export function GoalsView() {
   // Render a single goal card
   const renderGoalCard = (goalType: GoalType, period: 'weekly' | 'monthly', index: number) => {
     const goal = getGoalForType(goalType.id);
-    if (!goal || !goalProgress) return null;
+    if (!goal) return null;
+    const hasBackendGoal = !!goal.goalId;
     
     // Get current value from goalProgress based on goal type
     const getCurrentValue = () => {
       switch (goalType.id) {
-        case 'profit': return goalProgress.profit.current;
-        case 'winRate': return goalProgress.winRate.current;
-        case 'maxDrawdown': return goalProgress.maxDrawdown.current;
-        case 'maxTrades': return goalProgress.tradeCount.current;
+        case 'profit': return goalProgress.profit?.current ?? 0;
+        case 'winRate': return goalProgress.winRate?.current ?? 0;
+        case 'maxDrawdown': return goalProgress.maxDrawdown?.current ?? 0;
+        case 'maxTrades': return goalProgress.tradeCount?.current ?? 0;
         default: return 0;
       }
     };
     
     const current = getCurrentValue();
-    const target = goal.target;
+    // Use target from goalProgress (backend-computed) if available, otherwise from goal
+    const getTarget = () => {
+      switch (goalType.id) {
+        case 'profit': return goalProgress.profit?.target || goal.target;
+        case 'winRate': return goalProgress.winRate?.target || goal.target;
+        case 'maxDrawdown': return goalProgress.maxDrawdown?.target || goal.target;
+        case 'maxTrades': return goalProgress.tradeCount?.target || goal.target;
+        default: return goal.target;
+      }
+    };
+    const target = getTarget();
 
     const Icon = goalType.icon;
-    const key = goal.goalId;
+    const key = goal.goalId || `${goalType.id}-${period}`;
     const isInverse = goalType.isInverse;
     
     // For inverse goals: lower is better, show how much "room" is left
@@ -405,7 +430,7 @@ export function GoalsView() {
                 <CheckCircle2 className="w-5 h-5 text-success" />
               </div>
             )}
-            {!isEditing && (
+            {!isEditing && hasBackendGoal && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -567,18 +592,8 @@ export function GoalsView() {
             <GoalCardSkeleton key={i} />
           ))}
         </div>
-      ) : accountGoals.length === 0 || !goalProgress ? (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-            <Trophy className="w-8 h-8 text-primary/60" />
-          </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">No goals data yet</h3>
-          <p className="text-muted-foreground max-w-md mb-8">
-            Goals will show your progress once you have an account with trades. Set up an account and start logging to track your weekly and monthly targets.
-          </p>
-        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity duration-200", progressFetching && "opacity-50")}>
           {goalTypes.map((goalType, typeIndex) => (
             renderGoalCard(goalType, periodFilter, typeIndex)
           ))}

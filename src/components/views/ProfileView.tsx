@@ -141,6 +141,15 @@ export function ProfileView() {
   ];
 
   const handleSaveProfile = async () => {
+    if (!user.name.trim()) {
+      toast.warning('Name is required');
+      return;
+    }
+    if (!user.email.trim()) {
+      toast.warning('Email is required');
+      return;
+    }
+
     setIsSavingProfile(true);
     try {
       await updateProfile({ name: user.name, email: user.email }).unwrap();

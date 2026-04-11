@@ -20,6 +20,7 @@ import { useTradingRules } from '@/hooks/useTradingRules';
 import { useAccounts } from '@/hooks/useAccounts';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 
 interface AddTradeModalProps {
@@ -189,16 +190,18 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     e.preventDefault();
 
     // Validate mandatory fields
-    if (!exitPrice || parseFloat(exitPrice) === 0) {
-      return;
-    }
-    if (!exitDateTime) {
-      return;
-    }
-    if (!displayPnl && displayPnl !== '0' && !calculatedPnl) {
-      return;
-    }
-    if (!outcome) {
+    const errors: string[] = [];
+    if (!symbol.trim()) errors.push('Symbol is required');
+    if (!entryPrice || parseFloat(entryPrice) <= 0) errors.push('Entry price is required');
+    if (!exitPrice || parseFloat(exitPrice) === 0) errors.push('Exit price is required');
+    if (!size || parseFloat(size) <= 0) errors.push('Size is required');
+    if (!entryDateTime) errors.push('Entry date & time is required');
+    if (!exitDateTime) errors.push('Exit date & time is required');
+    if (!displayPnl && displayPnl !== '0' && !calculatedPnl) errors.push('P&L is required');
+    if (!outcome) errors.push('Outcome is required');
+
+    if (errors.length > 0) {
+      toast.warning('Missing required fields', { description: errors.join('\n') });
       return;
     }
 

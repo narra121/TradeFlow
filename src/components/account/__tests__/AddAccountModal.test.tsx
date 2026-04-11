@@ -69,6 +69,17 @@ vi.mock('@/components/ui/text-enhancer-button', () => ({
   TextEnhancerButton: () => null,
 }));
 
+// Mock sonner toast
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+  },
+}));
+
+import { toast } from 'sonner';
+
 const mockEditAccount: TradingAccount = {
   id: 'acc-1',
   name: 'FTMO 100k',
@@ -342,5 +353,79 @@ describe('AddAccountModal - validation and form behavior', () => {
         currency: 'USD',
       })
     );
+  });
+});
+
+describe('AddAccountModal - toast validation', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onAddAccount: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows toast warning and blocks submit when name is empty', async () => {
+    const user = userEvent.setup();
+    render(<AddAccountModal {...defaultProps} />);
+
+    // Fill broker and initial balance but NOT name
+    await user.type(screen.getByPlaceholderText('e.g., FTMO, MyForexFunds'), 'FTMO');
+    await user.type(screen.getByPlaceholderText('100000'), '50000');
+
+    await user.click(screen.getByRole('button', { name: /add account/i }));
+
+    expect(toast.warning).toHaveBeenCalledWith('Missing required fields', expect.objectContaining({
+      description: expect.stringContaining('Account name is required'),
+    }));
+    expect(defaultProps.onAddAccount).not.toHaveBeenCalled();
+  });
+
+  it('shows toast warning and blocks submit when broker is empty', async () => {
+    const user = userEvent.setup();
+    render(<AddAccountModal {...defaultProps} />);
+
+    // Fill name and initial balance but NOT broker
+    await user.type(screen.getByPlaceholderText('e.g., FTMO $100k Challenge'), 'Test Account');
+    await user.type(screen.getByPlaceholderText('100000'), '50000');
+
+    await user.click(screen.getByRole('button', { name: /add account/i }));
+
+    expect(toast.warning).toHaveBeenCalledWith('Missing required fields', expect.objectContaining({
+      description: expect.stringContaining('Broker / Firm is required'),
+    }));
+    expect(defaultProps.onAddAccount).not.toHaveBeenCalled();
+  });
+
+  it('shows toast warning and blocks submit when initial balance is zero', async () => {
+    const user = userEvent.setup();
+    render(<AddAccountModal {...defaultProps} />);
+
+    await user.type(screen.getByPlaceholderText('e.g., FTMO $100k Challenge'), 'Test Account');
+    await user.type(screen.getByPlaceholderText('e.g., FTMO, MyForexFunds'), 'FTMO');
+    // Leave initial balance empty
+
+    await user.click(screen.getByRole('button', { name: /add account/i }));
+
+    expect(toast.warning).toHaveBeenCalledWith('Missing required fields', expect.objectContaining({
+      description: expect.stringContaining('Initial balance must be greater than 0'),
+    }));
+    expect(defaultProps.onAddAccount).not.toHaveBeenCalled();
+  });
+
+  it('does not show toast when all required fields are filled', async () => {
+    const user = userEvent.setup();
+    render(<AddAccountModal {...defaultProps} />);
+
+    await user.type(screen.getByPlaceholderText('e.g., FTMO $100k Challenge'), 'Test Account');
+    await user.type(screen.getByPlaceholderText('e.g., FTMO, MyForexFunds'), 'FTMO');
+    await user.type(screen.getByPlaceholderText('100000'), '50000');
+
+    await user.click(screen.getByRole('button', { name: /add account/i }));
+
+    expect(toast.warning).not.toHaveBeenCalled();
+    expect(defaultProps.onAddAccount).toHaveBeenCalled();
   });
 });

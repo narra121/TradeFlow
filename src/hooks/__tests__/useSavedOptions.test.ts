@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useSavedOptions } from '../useSavedOptions';
 
+// Mock sonner toast
+const mockToastWarning = vi.fn();
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: (...args: any[]) => mockToastWarning(...args),
+  },
+}));
+
 // Mock RTK Query hooks
 const mockUseGetSavedOptionsQuery = vi.fn();
 const mockUpdateOptions = vi.fn();
@@ -562,7 +572,7 @@ describe('useSavedOptions - Error States', () => {
     );
   });
 
-  it('addStrategy still works when in error state', () => {
+  it('addStrategy still works when in error state (non-duplicate value)', () => {
     mockUseGetSavedOptionsQuery.mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -598,5 +608,89 @@ describe('useSavedOptions - Error States', () => {
     });
 
     expect(mockUpdateOptions).toHaveBeenCalledWith(defaultOptions);
+  });
+});
+
+describe('useSavedOptions - Validation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseGetSavedOptionsQuery.mockReturnValue({
+      data: customOptions,
+      isLoading: false,
+      isFetching: false,
+    });
+  });
+
+  it('shows toast warning and blocks update when adding empty symbol', () => {
+    const { result } = renderHook(() => useSavedOptions());
+
+    act(() => {
+      result.current.addSymbol('');
+    });
+
+    expect(mockToastWarning).toHaveBeenCalledWith('Symbol cannot be empty');
+    expect(mockUpdateOptions).not.toHaveBeenCalled();
+  });
+
+  it('shows toast warning and blocks update when adding whitespace-only value', () => {
+    const { result } = renderHook(() => useSavedOptions());
+
+    act(() => {
+      result.current.addStrategy('   ');
+    });
+
+    expect(mockToastWarning).toHaveBeenCalledWith('Strategy cannot be empty');
+    expect(mockUpdateOptions).not.toHaveBeenCalled();
+  });
+
+  it('shows toast warning when adding duplicate symbol (case-insensitive)', () => {
+    const { result } = renderHook(() => useSavedOptions());
+
+    act(() => {
+      result.current.addSymbol('eurusd'); // customOptions has 'EURUSD'
+    });
+
+    expect(mockToastWarning).toHaveBeenCalledWith('"eurusd" already exists in symbols');
+    expect(mockUpdateOptions).not.toHaveBeenCalled();
+  });
+
+  it('shows toast warning when adding duplicate strategy (exact match)', () => {
+    const { result } = renderHook(() => useSavedOptions());
+
+    act(() => {
+      result.current.addStrategy('Breakout'); // already in customOptions
+    });
+
+    expect(mockToastWarning).toHaveBeenCalledWith('"Breakout" already exists in strategys');
+    expect(mockUpdateOptions).not.toHaveBeenCalled();
+  });
+
+  it('allows adding non-duplicate value', () => {
+    const { result } = renderHook(() => useSavedOptions());
+
+    act(() => {
+      result.current.addSymbol('XAUUSD');
+    });
+
+    expect(mockToastWarning).not.toHaveBeenCalled();
+    expect(mockUpdateOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        symbols: ['EURUSD', 'GBPUSD', 'XAUUSD'],
+      })
+    );
+  });
+
+  it('trims whitespace before adding', () => {
+    const { result } = renderHook(() => useSavedOptions());
+
+    act(() => {
+      result.current.addSymbol('  XAUUSD  ');
+    });
+
+    expect(mockUpdateOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        symbols: ['EURUSD', 'GBPUSD', 'XAUUSD'],
+      })
+    );
   });
 });

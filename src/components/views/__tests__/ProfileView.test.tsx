@@ -70,8 +70,11 @@ vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
+    warning: vi.fn(),
   },
 }));
+
+import { toast } from 'sonner';
 
 vi.mock('@/lib/tokenRefreshScheduler', () => ({
   tokenRefreshScheduler: {
@@ -340,5 +343,66 @@ describe('ProfileView - Logout Button', () => {
   it('shows account details card title', () => {
     render(<ProfileView />);
     expect(screen.getByText('Your account details')).toBeInTheDocument();
+  });
+});
+
+describe('ProfileView - Profile Validation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useGetProfileQuery).mockReturnValue({
+      data: { name: 'Jane Doe', email: 'jane@example.com' },
+      isLoading: false,
+      isFetching: false,
+    } as any);
+    vi.mocked(useGetSubscriptionQuery).mockReturnValue({
+      data: null,
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn().mockResolvedValue({ data: null }),
+    } as any);
+    vi.mocked(useGetPlansQuery).mockReturnValue({
+      data: mockPlans,
+      isLoading: false,
+    } as any);
+  });
+
+  it('shows toast warning when saving profile with empty name', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    render(<ProfileView />);
+
+    // Click Edit to enable editing
+    const editButton = screen.getByRole('button', { name: /edit/i });
+    await user.click(editButton);
+
+    // Clear the name field
+    const nameInput = screen.getByLabelText('Full Name');
+    await user.clear(nameInput);
+
+    // Click Save
+    const saveButton = screen.getByRole('button', { name: /save/i });
+    await user.click(saveButton);
+
+    expect(toast.warning).toHaveBeenCalledWith('Name is required');
+  });
+
+  it('shows toast warning when saving profile with empty email', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    render(<ProfileView />);
+
+    // Click Edit to enable editing
+    const editButton = screen.getByRole('button', { name: /edit/i });
+    await user.click(editButton);
+
+    // Clear the email field
+    const emailInput = screen.getByLabelText('Email Address');
+    await user.clear(emailInput);
+
+    // Click Save
+    const saveButton = screen.getByRole('button', { name: /save/i });
+    await user.click(saveButton);
+
+    expect(toast.warning).toHaveBeenCalledWith('Email is required');
   });
 });

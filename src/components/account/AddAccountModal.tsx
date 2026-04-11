@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { TradingAccount, AccountType, AccountStatus } from '@/types/trade';
 import { accountTypeLabels, accountStatusLabels } from '@/hooks/useAccounts';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AddAccountModalProps {
   open: boolean;
@@ -45,7 +46,17 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    const errors: string[] = [];
+    if (!name.trim()) errors.push('Account name is required');
+    if (!broker.trim()) errors.push('Broker / Firm is required');
+    if (!initialBalance || parseFloat(initialBalance) <= 0) errors.push('Initial balance must be greater than 0');
+
+    if (errors.length > 0) {
+      toast.warning('Missing required fields', { description: errors.join('\n') });
+      return;
+    }
+
     onAddAccount({
       name: name.trim(),
       broker: broker.trim(),
@@ -78,7 +89,7 @@ export function AddAccountModal({ open, onOpenChange, onAddAccount, editAccount,
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 mt-3 sm:mt-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4 sm:space-y-5 mt-3 sm:mt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Account Name</Label>

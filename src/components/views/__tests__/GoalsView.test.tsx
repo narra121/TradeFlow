@@ -534,7 +534,7 @@ describe('GoalsView - Empty State', () => {
     vi.clearAllMocks();
   });
 
-  it('shows empty state when no goals data exists', async () => {
+  it('shows default goal cards with zero progress when no goals data exists', async () => {
     const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
     (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
@@ -552,8 +552,12 @@ describe('GoalsView - Empty State', () => {
 
     render(<GoalsView />);
 
-    expect(screen.getByText('No goals data yet')).toBeInTheDocument();
-    expect(screen.getByText(/account.*with trades/i)).toBeInTheDocument();
+    // Should show all 4 default goal cards instead of empty state
+    expect(screen.queryByText('No goals data yet')).not.toBeInTheDocument();
+    expect(screen.getByText('Profit Target')).toBeInTheDocument();
+    expect(screen.getByText('Win Rate')).toBeInTheDocument();
+    expect(screen.getByText('Max Drawdown')).toBeInTheDocument();
+    expect(screen.getByText('Max Trades')).toBeInTheDocument();
   });
 
   it('does not show empty state when goals data exists', async () => {

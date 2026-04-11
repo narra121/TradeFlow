@@ -3,6 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { AddTradeModal } from '../AddTradeModal';
 import { Trade } from '@/types/trade';
 
+// Mock react-router-dom Link for BrokenRulesSelect's "Go to Goals & Rules" link
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  const React = await import('react');
+  return {
+    ...actual,
+    Link: React.forwardRef(({ children, to, ...props }: any, ref: any) => (
+      <a ref={ref} href={to} {...props}>{children}</a>
+    )),
+  };
+});
+
 // Mock Radix UI Dialog to render inline
 vi.mock('@radix-ui/react-dialog', async () => {
   const React = await import('react');
@@ -162,8 +174,27 @@ vi.mock('@/store/api/textApi', () => ({
   useEnhanceTextMutation: () => [vi.fn(), { isLoading: false }],
 }));
 
+// Mock sonner toast
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+  },
+}));
+
+import { toast } from 'sonner';
+
 // Helper to fill required form fields before submission
 async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
+  // Fill symbol via DynamicSelect — click "Add New" to show input, type, click "Add"
+  const addNewButtons = screen.getAllByText('Add New');
+  await user.click(addNewButtons[0]); // First "Add New" is for Symbol
+  const newValueInputs = screen.getAllByPlaceholderText('Enter new value...');
+  await user.type(newValueInputs[0], 'EURUSD');
+  const addButtons = screen.getAllByRole('button', { name: 'Add' });
+  await user.click(addButtons[0]);
+
   // Fill entry price (1st "0.00" placeholder input)
   const numberInputs = screen.getAllByPlaceholderText('0.00');
   await user.clear(numberInputs[0]);
@@ -171,6 +202,10 @@ async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
   // Fill exit price (2nd "0.00" placeholder input)
   await user.clear(numberInputs[1]);
   await user.type(numberInputs[1], '1.12');
+  // Fill entry date via mocked DateTimePicker input
+  const entryDateInput = screen.getByPlaceholderText('Select entry time');
+  await user.clear(entryDateInput);
+  await user.type(entryDateInput, '2025-01-15T10:00');
   // Fill exit date via mocked DateTimePicker input
   const exitDateInput = screen.getByPlaceholderText('Select exit time');
   await user.clear(exitDateInput);
@@ -628,5 +663,43 @@ describe('AddTradeModal - Broken Rules Section', () => {
 
     render(<AddTradeModal {...defaultProps} />);
     expect(screen.queryByText('No trading rules defined yet')).not.toBeInTheDocument();
+  });
+});
+
+describe('AddTradeModal - Toast Validation', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onAddTrade: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows toast warning when submitting with no fields filled', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<AddTradeModal {...defaultProps} />);
+
+    const submitButton = screen.getByRole('button', { name: /add trade/i });
+    await user.click(submitButton);
+
+    expect(toast.warning).toHaveBeenCalledWith('Missing required fields', expect.objectContaining({
+      description: expect.stringContaining('Symbol is required'),
+    }));
+    expect(defaultProps.onAddTrade).not.toHaveBeenCalled();
+  });
+
+  it('does not show toast when all required fields are filled', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onAddTrade = vi.fn().mockResolvedValue(undefined);
+    render(<AddTradeModal {...defaultProps} onAddTrade={onAddTrade} />);
+
+    await fillRequiredFields(user);
+
+    const submitButton = screen.getByRole('button', { name: /add trade/i });
+    await user.click(submitButton);
+
+    expect(toast.warning).not.toHaveBeenCalled();
   });
 });

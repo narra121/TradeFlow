@@ -1,7 +1,11 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { BrokenRulesSelect } from '../BrokenRulesSelect';
 import type { TradingRule } from '@/lib/api/goalsRules';
+
+const renderWithRouter = (ui: React.ReactElement) =>
+  render(<MemoryRouter>{ui}</MemoryRouter>);
 
 const mockRules: TradingRule[] = [
   {
@@ -45,7 +49,7 @@ describe('BrokenRulesSelect', () => {
   });
 
   it('renders all rules', () => {
-    render(<BrokenRulesSelect {...defaultProps} />);
+    renderWithRouter(<BrokenRulesSelect {...defaultProps} />);
 
     expect(screen.getByText('Always use a stop loss')).toBeInTheDocument();
     expect(screen.getByText('Max 3 trades per day')).toBeInTheDocument();
@@ -53,7 +57,7 @@ describe('BrokenRulesSelect', () => {
   });
 
   it('renders empty state when no rules exist', () => {
-    render(<BrokenRulesSelect {...defaultProps} rules={[]} />);
+    renderWithRouter(<BrokenRulesSelect {...defaultProps} rules={[]} />);
 
     expect(
       screen.getByText('No trading rules defined yet')
@@ -63,7 +67,7 @@ describe('BrokenRulesSelect', () => {
   it('selects a rule when clicked', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(<BrokenRulesSelect {...defaultProps} onChange={onChange} />);
+    renderWithRouter(<BrokenRulesSelect {...defaultProps} onChange={onChange} />);
 
     await user.click(screen.getByText('Always use a stop loss'));
 
@@ -73,7 +77,7 @@ describe('BrokenRulesSelect', () => {
   it('deselects a rule when a selected rule is clicked', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(
+    renderWithRouter(
       <BrokenRulesSelect
         {...defaultProps}
         selectedRuleIds={['rule-1', 'rule-2']}
@@ -89,7 +93,7 @@ describe('BrokenRulesSelect', () => {
   it('adds to existing selection when clicking an unselected rule', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(
+    renderWithRouter(
       <BrokenRulesSelect
         {...defaultProps}
         selectedRuleIds={['rule-1']}
@@ -103,7 +107,7 @@ describe('BrokenRulesSelect', () => {
   });
 
   it('renders selected rules with different styling', () => {
-    const { container } = render(
+    const { container } = renderWithRouter(
       <BrokenRulesSelect
         {...defaultProps}
         selectedRuleIds={['rule-1']}
@@ -137,7 +141,7 @@ describe('BrokenRulesSelect – additional coverage', () => {
   });
 
   it('renders with empty rules list showing empty state message', () => {
-    render(<BrokenRulesSelect rules={[]} selectedRuleIds={[]} onChange={vi.fn()} />);
+    renderWithRouter(<BrokenRulesSelect rules={[]} selectedRuleIds={[]} onChange={vi.fn()} />);
 
     expect(
       screen.getByText('No trading rules defined yet')
@@ -149,7 +153,7 @@ describe('BrokenRulesSelect – additional coverage', () => {
     const onChange = vi.fn();
 
     // Render with rule-1 already selected, then click rule-2
-    render(
+    renderWithRouter(
       <BrokenRulesSelect
         {...defaultProps}
         selectedRuleIds={['rule-1']}
@@ -164,7 +168,7 @@ describe('BrokenRulesSelect – additional coverage', () => {
   it('deselects a rule when a selected rule is clicked', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(
+    renderWithRouter(
       <BrokenRulesSelect
         {...defaultProps}
         selectedRuleIds={['rule-1', 'rule-2', 'rule-3']}
@@ -178,7 +182,7 @@ describe('BrokenRulesSelect – additional coverage', () => {
   });
 
   it('shows all rules as options', () => {
-    render(<BrokenRulesSelect {...defaultProps} />);
+    renderWithRouter(<BrokenRulesSelect {...defaultProps} />);
 
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(3);
@@ -188,7 +192,7 @@ describe('BrokenRulesSelect – additional coverage', () => {
   });
 
   it('handles undefined/empty selectedRuleIds gracefully', () => {
-    render(
+    renderWithRouter(
       <BrokenRulesSelect
         rules={mockRules}
         selectedRuleIds={[]}
@@ -204,7 +208,7 @@ describe('BrokenRulesSelect – additional coverage', () => {
   });
 
   it('renders each rule as a button element for accessibility', () => {
-    render(<BrokenRulesSelect {...defaultProps} />);
+    renderWithRouter(<BrokenRulesSelect {...defaultProps} />);
 
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(3);
@@ -218,7 +222,7 @@ describe('BrokenRulesSelect – additional coverage', () => {
 
 describe('BrokenRulesSelect – empty state details', () => {
   it('shows description text in empty state', () => {
-    render(
+    renderWithRouter(
       <BrokenRulesSelect rules={[]} selectedRuleIds={[]} onChange={vi.fn()} />
     );
 
@@ -228,7 +232,7 @@ describe('BrokenRulesSelect – empty state details', () => {
   });
 
   it('shows link to Goals & Rules page', () => {
-    render(
+    renderWithRouter(
       <BrokenRulesSelect rules={[]} selectedRuleIds={[]} onChange={vi.fn()} />
     );
 
@@ -237,7 +241,7 @@ describe('BrokenRulesSelect – empty state details', () => {
   });
 
   it('empty state does not show when rules exist', () => {
-    render(
+    renderWithRouter(
       <BrokenRulesSelect
         rules={mockRules}
         selectedRuleIds={[]}
@@ -248,5 +252,18 @@ describe('BrokenRulesSelect – empty state details', () => {
     expect(
       screen.queryByText('No trading rules defined yet')
     ).not.toBeInTheDocument();
+  });
+
+  it('shows "Edit rules" link when rules exist', () => {
+    renderWithRouter(
+      <BrokenRulesSelect
+        rules={mockRules}
+        selectedRuleIds={[]}
+        onChange={vi.fn()}
+      />
+    );
+
+    const link = screen.getByRole('link', { name: /Edit rules in Goals & Rules/ });
+    expect(link).toHaveAttribute('href', '/app/goals');
   });
 });

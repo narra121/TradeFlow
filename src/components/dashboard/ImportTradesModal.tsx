@@ -259,8 +259,28 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
   };
 
   const handleSaveAll = async () => {
+    // Validate all trades have required fields
+    const errors: string[] = [];
+    for (let i = 0; i < extractedTrades.length; i++) {
+      const t = extractedTrades[i];
+      const row = i + 1;
+      if (!t.symbol || !t.symbol.trim()) errors.push(`Row ${row}: Symbol is required`);
+      if (!t.entryPrice || t.entryPrice <= 0) errors.push(`Row ${row}: Entry price is required`);
+      if (!t.exitPrice || t.exitPrice <= 0) errors.push(`Row ${row}: Exit price is required`);
+      if (!t.size || t.size <= 0) errors.push(`Row ${row}: Size is required`);
+    }
+
+    if (errors.length > 0) {
+      toast.warning('Missing required fields', {
+        description: errors.length <= 3
+          ? errors.join('\n')
+          : `${errors.slice(0, 3).join('\n')}\n...and ${errors.length - 3} more`,
+      });
+      return;
+    }
+
     setIsSaving(true);
-    
+
     try {
       const tradesToSave: Omit<Trade, 'id'>[] = extractedTrades.map(t => ({
         symbol: t.symbol,
