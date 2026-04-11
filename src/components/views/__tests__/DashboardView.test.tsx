@@ -540,3 +540,109 @@ describe('DashboardView - Debounced Filters', () => {
     expect(screen.getByTestId('performance-chart')).toBeInTheDocument();
   });
 });
+
+describe('DashboardView - Unmapped Trades Banner', () => {
+  const baseTrade = {
+    id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+    exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+    entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+    outcome: 'TP', pnl: 200, riskRewardRatio: 2.0,
+  };
+
+  const baseStats = {
+    totalPnl: 600, winRate: 100, totalTrades: 3, wins: 3, losses: 0, breakeven: 0,
+    avgWin: 200, avgLoss: 0, profitFactor: Infinity, bestTrade: 200, worstTrade: 0,
+    maxDrawdown: 0, avgRiskReward: 2.0, consecutiveWins: 3, consecutiveLosses: 0,
+    grossProfit: 600, grossLoss: 0, expectancy: 200, sharpeRatio: 0, avgHoldingTime: 0,
+    totalVolume: 3, dailyPnl: [],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows unmapped banner when some trades lack accountId', () => {
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [
+        { ...baseTrade, id: '1', accountId: 'acc1' },
+        { ...baseTrade, id: '2', accountId: 'acc1' },
+        { ...baseTrade, id: '3' }, // no accountId -> unmapped
+      ],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: baseStats,
+      isLoading: false,
+      isFetching: false,
+    } as any);
+
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    expect(screen.getByText('1 trade is not mapped to any account and is excluded from stats.')).toBeInTheDocument();
+  });
+
+  it('shows plural text for multiple unmapped trades', () => {
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [
+        { ...baseTrade, id: '1', accountId: 'acc1' },
+        { ...baseTrade, id: '2' }, // unmapped
+        { ...baseTrade, id: '3' }, // unmapped
+      ],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: baseStats,
+      isLoading: false,
+      isFetching: false,
+    } as any);
+
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    expect(screen.getByText('2 trades are not mapped to any account and are excluded from stats.')).toBeInTheDocument();
+  });
+
+  it('does not show banner when all trades are mapped', () => {
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [
+        { ...baseTrade, id: '1', accountId: 'acc1' },
+        { ...baseTrade, id: '2', accountId: 'acc1' },
+      ],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: { ...baseStats, totalTrades: 2, totalPnl: 400 },
+      isLoading: false,
+      isFetching: false,
+    } as any);
+
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    expect(screen.queryByText(/not mapped/)).not.toBeInTheDocument();
+  });
+
+  it('does not show banner during loading', () => {
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [
+        { ...baseTrade, id: '1' }, // unmapped
+      ],
+      isLoading: true,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isFetching: false,
+    } as any);
+
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    expect(screen.queryByText(/not mapped/)).not.toBeInTheDocument();
+  });
+});

@@ -4,6 +4,19 @@ import { render, screen } from '@testing-library/react';
 import { TradeList } from '../TradeList';
 import type { Trade } from '@/types/trade';
 
+// Mock Radix UI Tooltip so content renders inline (no portal)
+vi.mock('@radix-ui/react-tooltip', async () => {
+  const ReactImport = await import('react');
+  return {
+    Provider: ({ children }: any) => <>{children}</>,
+    Root: ({ children }: any) => <>{children}</>,
+    Trigger: ReactImport.forwardRef(({ children, ...props }: any, ref: any) => <div ref={ref} {...props}>{children}</div>),
+    Portal: ({ children }: any) => <>{children}</>,
+    Content: ReactImport.forwardRef(({ children, ...props }: any, ref: any) => <div ref={ref} {...props}>{children}</div>),
+    Arrow: ReactImport.forwardRef((props: any, ref: any) => <div ref={ref} {...props} />),
+  };
+});
+
 describe('TradeList', () => {
   const mockTrades: Trade[] = [
     {
@@ -288,5 +301,57 @@ describe('TradeList – React.memo', () => {
     expect(screen.getByText('EURUSD')).toBeInTheDocument();
     expect(screen.getByText('+200.00')).toBeInTheDocument();
     expect(screen.getByText('Recent Trades')).toBeInTheDocument();
+  });
+});
+
+describe('TradeList – unmapped trade warnings', () => {
+  const baseTrade: Trade = {
+    id: '100',
+    symbol: 'XAUUSD',
+    direction: 'LONG',
+    entryPrice: 2000,
+    exitPrice: 2050,
+    stopLoss: 1980,
+    takeProfit: 2060,
+    size: 1,
+    entryDate: '2025-02-01T10:00:00Z',
+    exitDate: '2025-02-01T14:00:00Z',
+    outcome: 'TP',
+    pnl: 500,
+    riskRewardRatio: 2.5,
+  };
+
+  it('isTradeUnmapped detects missing accountId', () => {
+    const tradeNoAccount: Trade = { ...baseTrade, id: '101' };
+    // accountId is undefined (not set)
+    const { container } = render(<TradeList trades={[tradeNoAccount]} />);
+    const pulsingDot = container.querySelector('.animate-pulse');
+    expect(pulsingDot).toBeInTheDocument();
+    expect(pulsingDot).toHaveClass('bg-warning');
+  });
+
+  it('isTradeUnmapped detects -1 accountId', () => {
+    const tradeMinus1: Trade = { ...baseTrade, id: '102', accountId: '-1' };
+    const { container } = render(<TradeList trades={[tradeMinus1]} />);
+    const pulsingDot = container.querySelector('.animate-pulse');
+    expect(pulsingDot).toBeInTheDocument();
+    expect(pulsingDot).toHaveClass('bg-warning');
+  });
+
+  it('mapped trades do not show warning', () => {
+    const mappedTrade: Trade = { ...baseTrade, id: '103', accountId: 'acc1' };
+    const { container } = render(<TradeList trades={[mappedTrade]} />);
+    const pulsingDot = container.querySelector('.animate-pulse');
+    expect(pulsingDot).not.toBeInTheDocument();
+  });
+
+  it('unmapped tooltip text is correct', () => {
+    const unmappedTrade: Trade = { ...baseTrade, id: '104' };
+    render(<TradeList trades={[unmappedTrade]} />);
+    expect(
+      screen.getByText(
+        'Not mapped to any account — won\'t appear in stats. Edit this trade to assign an account.'
+      )
+    ).toBeInTheDocument();
   });
 });

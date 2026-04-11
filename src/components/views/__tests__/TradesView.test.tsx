@@ -50,6 +50,25 @@ vi.mock('@/store/api', () => ({
   useDeleteTradeMutation: vi.fn().mockReturnValue([
     vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
   ]),
+  useBulkDeleteTradesMutation: vi.fn().mockReturnValue([
+    vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
+  ]),
+}));
+
+// Mock useAccounts hook
+vi.mock('@/hooks/useAccounts', () => ({
+  useAccounts: vi.fn().mockReturnValue({
+    accounts: [
+      { id: 'acc1', name: 'FTMO 100k', broker: 'FTMO', type: 'prop_funded', status: 'active', balance: 100000, initialBalance: 100000, currency: 'USD', createdAt: '2025-01-01' },
+    ],
+    selectedAccountId: null,
+    selectedAccount: null,
+    setSelectedAccountId: vi.fn(),
+    addAccount: vi.fn(),
+    updateAccount: vi.fn(),
+    updateAccountStatus: vi.fn(),
+    deleteAccount: vi.fn(),
+  }),
 }));
 
 // Mock child components
@@ -342,5 +361,126 @@ describe('TradesView - Filtering with useMemo', () => {
     // Only TP trades should remain (EURUSD with TP outcome)
     // GBPUSD (SL) should be hidden
     expect(screen.queryByText('GBPUSD')).not.toBeInTheDocument();
+  });
+});
+
+describe('TradesView - Account Column & Linked Trades', () => {
+  const defaultProps = {
+    onAddTrade: vi.fn(),
+    onImportTrades: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    // Reset to default mock data (two trades with accountId: 'acc1')
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [
+        {
+          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP', pnl: 200, pnlPercent: 2.0, riskRewardRatio: 2.0, accountId: 'acc1',
+        },
+        {
+          id: '2', symbol: 'GBPUSD', direction: 'SHORT', entryPrice: 1.3,
+          exitPrice: 1.28, stopLoss: 1.31, takeProfit: 1.27, size: 0.5,
+          entryDate: '2025-01-16T09:00:00Z', exitDate: '2025-01-16T12:00:00Z',
+          outcome: 'SL', pnl: -100, pnlPercent: -1.0, riskRewardRatio: 1.5, accountId: 'acc1',
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+    });
+    // Reset useAccounts to default
+    const { useAccounts } = await import('@/hooks/useAccounts');
+    (useAccounts as ReturnType<typeof vi.fn>).mockReturnValue({
+      accounts: [
+        { id: 'acc1', name: 'FTMO 100k', broker: 'FTMO', type: 'prop_funded', status: 'active', balance: 100000, initialBalance: 100000, currency: 'USD', createdAt: '2025-01-01' },
+      ],
+      selectedAccountId: null,
+      selectedAccount: null,
+      setSelectedAccountId: vi.fn(),
+      addAccount: vi.fn(),
+      updateAccount: vi.fn(),
+      updateAccountStatus: vi.fn(),
+      deleteAccount: vi.fn(),
+    });
+  });
+
+  it('shows Account column header', () => {
+    render(<TradesView {...defaultProps} />);
+    expect(screen.getByText('Account')).toBeInTheDocument();
+  });
+
+  it('displays account name for mapped trades', () => {
+    render(<TradesView {...defaultProps} />);
+    // Both trades have accountId: 'acc1' which maps to 'FTMO 100k'
+    const accountNames = screen.getAllByText('FTMO 100k');
+    expect(accountNames.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows Unmapped label for trades without accountId', async () => {
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [
+        {
+          id: '10', symbol: 'AUDUSD', direction: 'LONG', entryPrice: 0.65,
+          exitPrice: 0.66, stopLoss: 0.64, takeProfit: 0.67, size: 1,
+          entryDate: '2025-02-01T10:00:00Z', exitDate: '2025-02-01T14:00:00Z',
+          outcome: 'TP', pnl: 100, pnlPercent: 1.0, riskRewardRatio: 1.5,
+          // No accountId
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TradesView {...defaultProps} />);
+    expect(screen.getByText('Unmapped')).toBeInTheDocument();
+  });
+
+  it('detects linked trades across accounts', async () => {
+    // Two trades with the SAME fingerprint (symbol, direction, entryPrice, exitPrice, entryDate, size)
+    // but different IDs and different accountIds
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [
+        {
+          id: 'linked-1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP', pnl: 200, pnlPercent: 2.0, riskRewardRatio: 2.0, accountId: 'acc1',
+        },
+        {
+          id: 'linked-2', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP', pnl: 200, pnlPercent: 2.0, riskRewardRatio: 2.0, accountId: 'acc2',
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+    });
+
+    const { useAccounts } = await import('@/hooks/useAccounts');
+    (useAccounts as ReturnType<typeof vi.fn>).mockReturnValue({
+      accounts: [
+        { id: 'acc1', name: 'FTMO 100k', broker: 'FTMO', type: 'prop_funded', status: 'active', balance: 100000, initialBalance: 100000, currency: 'USD', createdAt: '2025-01-01' },
+        { id: 'acc2', name: 'Personal', broker: 'IC Markets', type: 'personal', status: 'active', balance: 5000, initialBalance: 5000, currency: 'USD', createdAt: '2025-01-01' },
+      ],
+      selectedAccountId: null,
+      selectedAccount: null,
+      setSelectedAccountId: vi.fn(),
+      addAccount: vi.fn(),
+      updateAccount: vi.fn(),
+      updateAccountStatus: vi.fn(),
+      deleteAccount: vi.fn(),
+    });
+
+    render(<TradesView {...defaultProps} />);
+    // Each linked trade shows "+1" indicator (one other linked trade)
+    const linkedIndicators = screen.getAllByText('+1');
+    expect(linkedIndicators.length).toBeGreaterThanOrEqual(1);
   });
 });

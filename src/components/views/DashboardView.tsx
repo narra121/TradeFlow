@@ -7,7 +7,7 @@ import { QuickStats } from '@/components/dashboard/QuickStats';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3 } from 'lucide-react';
+import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3, Info } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
@@ -67,6 +67,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
   };
 
   const filteredTrades = useMemo(() => getEligibleTrades(trades), [trades]);
+  const unmappedCount = trades.length - filteredTrades.length;
 
   // Calculate total capital based on selected accounts
   const totalCapital = useMemo(() => {
@@ -228,6 +229,20 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
                 variant="accent"
                 className="stagger-4"
               />
+            </div>
+          )}
+
+          {/* Unmapped Trades Banner */}
+          {!tradesLoading && unmappedCount > 0 && (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-warning/8 border-l-2 border-warning animate-fade-in">
+              <Info className="w-4 h-4 text-warning mt-0.5 shrink-0" />
+              <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <p className="text-sm text-muted-foreground">
+                  {unmappedCount === 1
+                    ? '1 trade is not mapped to any account and is excluded from stats.'
+                    : `${unmappedCount} trades are not mapped to any account and are excluded from stats.`}
+                </p>
+              </div>
             </div>
           )}
 

@@ -603,3 +603,207 @@ describe('GoalsView - Empty State', () => {
     expect(screen.queryByText('No goals data yet')).not.toBeInTheDocument();
   });
 });
+
+describe('GoalsView - Rules Empty State', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows rules empty state when no rules exist', async () => {
+    const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
+    (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+          { goalId: 'g2', goalType: 'winRate', period: 'weekly', target: 65, accountId: 'acc1' },
+        ],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goalProgress: {
+          profit: { current: 200, target: 500, progress: 40, achieved: false },
+          winRate: { current: 100, target: 65, progress: 153.8, achieved: true },
+        },
+        ruleCompliance: {
+          totalRules: 0,
+          followedCount: 0,
+          brokenRulesCounts: {},
+        },
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+          { goalId: 'g2', goalType: 'winRate', period: 'weekly', target: 65, accountId: 'acc1' },
+        ],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<GoalsView />);
+
+    expect(screen.getByText('No trading rules yet')).toBeInTheDocument();
+  });
+
+  it('shows Create Your First Rule button', async () => {
+    const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
+    (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+        ],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goalProgress: {
+          profit: { current: 200, target: 500, progress: 40, achieved: false },
+        },
+        ruleCompliance: {
+          totalRules: 0,
+          followedCount: 0,
+          brokenRulesCounts: {},
+        },
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+        ],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<GoalsView />);
+
+    expect(screen.getByRole('button', { name: /Create Your First Rule/ })).toBeInTheDocument();
+  });
+
+  it('hides followed counter when no rules', async () => {
+    const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
+    (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+        ],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goalProgress: {
+          profit: { current: 200, target: 500, progress: 40, achieved: false },
+        },
+        ruleCompliance: {
+          totalRules: 0,
+          followedCount: 0,
+          brokenRulesCounts: {},
+        },
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+        ],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<GoalsView />);
+
+    expect(screen.queryByText(/\d+\/\d+ followed/)).not.toBeInTheDocument();
+  });
+
+  it('hides Add Rule button when no rules exist', async () => {
+    const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
+    (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+        ],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goalProgress: {
+          profit: { current: 200, target: 500, progress: 40, achieved: false },
+        },
+        ruleCompliance: {
+          totalRules: 0,
+          followedCount: 0,
+          brokenRulesCounts: {},
+        },
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+        ],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<GoalsView />);
+
+    expect(screen.queryByText('Add Rule')).not.toBeInTheDocument();
+  });
+
+  it('does not show rules empty state when rules exist', async () => {
+    const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
+    (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+          { goalId: 'g2', goalType: 'winRate', period: 'weekly', target: 65, accountId: 'acc1' },
+          { goalId: 'g3', goalType: 'maxDrawdown', period: 'weekly', target: 3, accountId: 'acc1' },
+          { goalId: 'g4', goalType: 'maxTrades', period: 'weekly', target: 8, accountId: 'acc1' },
+        ],
+        rules: [
+          { id: 'r1', ruleId: 'r1', rule: 'Always set stop loss', completed: true },
+          { id: 'r2', ruleId: 'r2', rule: 'Never move stop loss', completed: false },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goalProgress: {
+          profit: { current: 200, target: 500, progress: 40, achieved: false },
+          winRate: { current: 100, target: 65, progress: 153.8, achieved: true },
+          maxDrawdown: { current: 1.5, target: 3, progress: 50, achieved: true },
+          tradeCount: { current: 1, target: 8, progress: 12.5, achieved: true },
+        },
+        ruleCompliance: {
+          totalRules: 2,
+          followedCount: 2,
+          brokenRulesCounts: {},
+        },
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+          { goalId: 'g2', goalType: 'winRate', period: 'weekly', target: 65, accountId: 'acc1' },
+          { goalId: 'g3', goalType: 'maxDrawdown', period: 'weekly', target: 3, accountId: 'acc1' },
+          { goalId: 'g4', goalType: 'maxTrades', period: 'weekly', target: 8, accountId: 'acc1' },
+        ],
+        rules: [
+          { id: 'r1', ruleId: 'r1', rule: 'Always set stop loss', completed: true },
+          { id: 'r2', ruleId: 'r2', rule: 'Never move stop loss', completed: false },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<GoalsView />);
+
+    expect(screen.queryByText('No trading rules yet')).not.toBeInTheDocument();
+  });
+});

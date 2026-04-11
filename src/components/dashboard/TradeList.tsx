@@ -70,7 +70,7 @@ export const TradeList = memo(function TradeList({ trades, limit }: TradeListPro
                           </TooltipTrigger>
                           <TooltipContent side="top" align="start" sideOffset={6}>
                             <p>
-                              This trade is not mapped to any account id and will not be considered in any stats calculation.
+                              Not mapped to any account — won't appear in stats. Edit this trade to assign an account.
                             </p>
                           </TooltipContent>
                         </Tooltip>

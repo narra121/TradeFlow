@@ -135,12 +135,15 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Check if trade has unmapped account (allow account selection)
-  const canSelectAccount = useMemo(() => {
-    if (!editMode || !editTrade) return true; // New trade - allow selection
+  // Check if trade is unmapped (no accountId or -1)
+  const isUnmapped = useMemo(() => {
+    if (!editMode || !editTrade) return true; // New trade
     const accId = editTrade.accountId;
-    return !accId || accId === '-1'; // Allow selection if unmapped
+    return !accId || accId === '-1';
   }, [editMode, editTrade]);
+
+  // In edit mode with mapped trade, allow adding to more accounts
+  const [showAddAccount, setShowAddAccount] = useState(false);
 
   // Populate form when editing.
   // NOTE: include `open` so reopening the modal repopulates even if `initialTrade` reference is unchanged.
@@ -276,6 +279,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     setImages([]);
     setBrokenRuleIds([]);
     setSelectedAccountIds([]);
+    setShowAddAccount(false);
   };
 
   return (
@@ -288,8 +292,8 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
         <ScrollArea className="flex-1 min-h-0">
           <form onSubmit={handleSubmit} className="px-4 sm:px-6 pb-4 sm:pb-6">
             <div className="space-y-6">
-              {/* Account Selection - Only show if creating new trade or editing unmapped trade */}
-              {accounts.length > 0 && canSelectAccount && (
+              {/* Account Selection - New trade or unmapped trade */}
+              {accounts.length > 0 && isUnmapped && (
                 <section className="space-y-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Building2 className="w-4 h-4" />
@@ -303,23 +307,56 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                     selectedAccountIds={selectedAccountIds}
                     onChange={setSelectedAccountIds}
                   />
+                  {selectedAccountIds.length > 1 && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-primary inline-block" />
+                      A copy of this trade will be created for each selected account.
+                    </p>
+                  )}
                 </section>
               )}
 
-              {/* Show current account info when editing mapped trade */}
-              {accounts.length > 0 && editMode && !canSelectAccount && (
+              {/* Current account info when editing mapped trade */}
+              {accounts.length > 0 && editMode && !isUnmapped && (
                 <section className="space-y-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Building2 className="w-4 h-4" />
-                    Current Account
+                    Accounts
                   </div>
-                  <div className="p-3 bg-secondary/50 rounded-lg border border-border space-y-2">
-                    <div className="text-sm font-medium text-foreground">
-                      {accounts.find(a => a.id === editTrade?.accountId)?.name || 'Unknown Account'}
+                  <div className="space-y-2">
+                    {/* Show current account */}
+                    <div className="flex items-center gap-2 p-2.5 bg-secondary/50 rounded-lg border border-border">
+                      <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm font-medium text-foreground flex-1">
+                        {accounts.find(a => a.id === editTrade?.accountId)?.name || 'Unknown Account'}
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                        Current
+                      </span>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Once a trade is mapped to an account, the account assignment cannot be changed.
-                    </div>
+
+                    {/* Add to another account */}
+                    {!showAddAccount ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowAddAccount(true)}
+                        className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                      >
+                        + Add to another account
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <AccountSelect
+                          accounts={accounts.filter(a => a.id !== editTrade?.accountId)}
+                          selectedAccountIds={selectedAccountIds.filter(id => id !== editTrade?.accountId)}
+                          onChange={(ids) => setSelectedAccountIds([...(editTrade?.accountId ? [editTrade.accountId] : []), ...ids])}
+                        />
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-primary inline-block" />
+                          Adding an account creates a separate copy of this trade for that account's tracking.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </section>
               )}
@@ -594,23 +631,26 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                   />
                 </div>
 
-                {/* Broken Rules */}
-                {rules.length > 0 && (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <Shield className="w-3.5 h-3.5 text-destructive" />
-                      <Label className="text-xs">Broken Rules</Label>
-                      {brokenRuleIds.length > 0 && (
-                        <span className="text-xs text-destructive">({brokenRuleIds.length} broken)</span>
-                      )}
-                    </div>
-                    <BrokenRulesSelect
-                      rules={rules}
-                      selectedRuleIds={brokenRuleIds}
-                      onChange={setBrokenRuleIds}
-                    />
+                {/* Broken Rules — always visible so users discover the feature */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-destructive" />
+                    <Label className="text-xs">Broken Rules</Label>
+                    {brokenRuleIds.length > 0 && (
+                      <span className="text-xs text-destructive">({brokenRuleIds.length} broken)</span>
+                    )}
+                    {rules.length > 0 && (
+                      <span className="text-xs text-muted-foreground/60 ml-auto">
+                        from Goals & Rules
+                      </span>
+                    )}
                   </div>
-                )}
+                  <BrokenRulesSelect
+                    rules={rules}
+                    selectedRuleIds={brokenRuleIds}
+                    onChange={setBrokenRuleIds}
+                  />
+                </div>
               </section>
 
               <Separator className="bg-border" />

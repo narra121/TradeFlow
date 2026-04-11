@@ -22,18 +22,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Trade, TradeDirection } from '@/types/trade';
-import { 
-  Upload, 
-  Image as ImageIcon, 
-  Trash2, 
-  Pencil, 
-  Merge, 
+import { useAccounts } from '@/hooks/useAccounts';
+import {
+  Upload,
+  Image as ImageIcon,
+  Trash2,
+  Pencil,
+  Merge,
   Save,
   X,
   Check,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Info,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -71,8 +75,10 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [importAccountId, setImportAccountId] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const { accounts } = useAccounts();
 
   // Handle paste event
   useEffect(() => {
@@ -217,9 +223,19 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
     );
   };
 
+  // Merge eligibility: 2+ selected AND all same direction
+  const selectedTrades = extractedTrades.filter(t => t.isSelected);
+  const selectedCount = selectedTrades.length;
+  const selectedDirections = new Set(selectedTrades.map(t => t.direction));
+  const canMerge = selectedCount >= 2 && selectedDirections.size === 1;
+  const mergeDisabledReason = selectedCount < 2
+    ? 'Select 2 or more trades to merge'
+    : selectedDirections.size > 1
+      ? 'Can only merge trades with the same direction (all Long or all Short)'
+      : '';
+
   const mergeSelectedTrades = () => {
-    const selectedTrades = extractedTrades.filter(t => t.isSelected);
-    if (selectedTrades.length < 2) return;
+    if (!canMerge) return;
 
     // Merge logic: combine into first trade, sum size and pnl
     const merged: ImportedTrade = {
@@ -235,6 +251,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
 
     const unselectedTrades = extractedTrades.filter(t => !t.isSelected);
     setExtractedTrades([...unselectedTrades, merged]);
+    toast.success(`Merged ${selectedTrades.length} trades — size and P&L combined`);
   };
 
   const deleteSelectedTrades = () => {
@@ -258,6 +275,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         outcome: t.pnl > 0 ? 'TP' as const : t.pnl < 0 ? 'SL' as const : 'BREAKEVEN' as const,
         pnl: t.pnl,
         riskRewardRatio: 0,
+        ...(importAccountId && importAccountId !== 'none' ? { accountId: importAccountId } : {}),
       }));
 
       const result = await onImportTrades(tradesToSave);
@@ -279,9 +297,8 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
     setUploadedImages([]);
     setExtractedTrades([]);
     setIsProcessing(false);
+    setImportAccountId('');
   };
-
-  const selectedCount = extractedTrades.filter(t => t.isSelected).length;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
@@ -414,33 +431,55 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                     Extracted Trades ({extractedTrades.length})
                   </h3>
 
-                  {selectedCount > 0 && (
-                    <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedCount > 0 ? (
                       <span className="text-xs sm:text-sm text-muted-foreground">
                         {selectedCount} selected
                       </span>
-                      {selectedCount >= 2 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={mergeSelectedTrades}
-                          className="gap-1"
-                        >
-                          <Merge className="w-3.5 h-3.5" />
-                          Merge
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={deleteSelectedTrades}
-                        className="gap-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Delete
-                      </Button>
-                    </div>
-                  )}
+                    ) : (
+                      <span className="text-xs text-muted-foreground/60">
+                        Select rows to merge or delete
+                      </span>
+                    )}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={mergeSelectedTrades}
+                              className="gap-1"
+                              disabled={!canMerge}
+                            >
+                              <Merge className="w-3.5 h-3.5" />
+                              Merge
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {!canMerge && mergeDisabledReason && (
+                          <TooltipContent>
+                            <p>{mergeDisabledReason}</p>
+                          </TooltipContent>
+                        )}
+                        {canMerge && (
+                          <TooltipContent>
+                            <p>Combine selected trades: sizes and P&L summed</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={deleteSelectedTrades}
+                      className="gap-1"
+                      disabled={selectedCount === 0}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="border border-border rounded-lg overflow-hidden grid">
@@ -677,34 +716,67 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         </ScrollArea>
 
         {/* Footer */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border bg-secondary/30 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 shrink-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              resetModal();
-              onOpenChange(false);
-            }}
-            className="w-full sm:w-28"
-            disabled={isSaving}
-          >
-            Cancel
-          </Button>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border bg-secondary/30 shrink-0 space-y-3">
+          {/* Account selector row — only show when trades are extracted and accounts exist */}
+          {extractedTrades.length > 0 && accounts.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
+                <Building2 className="w-4 h-4" />
+                <span>Save to account:</span>
+              </div>
+              <Select value={importAccountId} onValueChange={setImportAccountId}>
+                <SelectTrigger className="w-full sm:w-56 h-9 text-sm">
+                  <SelectValue placeholder="None (map later)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (map later)</SelectItem>
+                  {accounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!importAccountId && (
+                <span className="text-xs text-muted-foreground/60 hidden sm:inline">
+                  You can map to accounts later
+                </span>
+              )}
+            </div>
+          )}
 
-          <Button
-            onClick={handleSaveAll}
-            disabled={extractedTrades.length === 0 || isSaving}
-            className="w-full sm:w-28"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save All'
-            )}
-          </Button>
+          {/* Action buttons */}
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                resetModal();
+                onOpenChange(false);
+              }}
+              className="w-full sm:w-28"
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              onClick={handleSaveAll}
+              disabled={extractedTrades.length === 0 || isSaving}
+              className="w-full sm:w-auto"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                importAccountId && importAccountId !== 'none'
+                  ? `Save to ${accounts.find(a => a.id === importAccountId)?.name || 'Account'}`
+                  : 'Save All'
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -56,7 +56,7 @@ describe('BrokenRulesSelect', () => {
     render(<BrokenRulesSelect {...defaultProps} rules={[]} />);
 
     expect(
-      screen.getByText('No trading rules defined. Add rules in Goals & Rules page.')
+      screen.getByText('No trading rules defined yet')
     ).toBeInTheDocument();
   });
 
@@ -140,7 +140,7 @@ describe('BrokenRulesSelect – additional coverage', () => {
     render(<BrokenRulesSelect rules={[]} selectedRuleIds={[]} onChange={vi.fn()} />);
 
     expect(
-      screen.getByText('No trading rules defined. Add rules in Goals & Rules page.')
+      screen.getByText('No trading rules defined yet')
     ).toBeInTheDocument();
   });
 
@@ -213,5 +213,40 @@ describe('BrokenRulesSelect – additional coverage', () => {
     buttons.forEach((btn) => {
       expect(btn).toHaveAttribute('type', 'button');
     });
+  });
+});
+
+describe('BrokenRulesSelect – empty state details', () => {
+  it('shows description text in empty state', () => {
+    render(
+      <BrokenRulesSelect rules={[]} selectedRuleIds={[]} onChange={vi.fn()} />
+    );
+
+    expect(
+      screen.getByText('Create rules to track which ones you break per trade')
+    ).toBeInTheDocument();
+  });
+
+  it('shows link to Goals & Rules page', () => {
+    render(
+      <BrokenRulesSelect rules={[]} selectedRuleIds={[]} onChange={vi.fn()} />
+    );
+
+    const link = screen.getByRole('link', { name: /Go to Goals & Rules/ });
+    expect(link).toHaveAttribute('href', '/app/goals');
+  });
+
+  it('empty state does not show when rules exist', () => {
+    render(
+      <BrokenRulesSelect
+        rules={mockRules}
+        selectedRuleIds={[]}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.queryByText('No trading rules defined yet')
+    ).not.toBeInTheDocument();
   });
 });

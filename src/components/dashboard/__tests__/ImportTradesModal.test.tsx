@@ -12,6 +12,20 @@ vi.mock('@/lib/api/trades', () => ({
   tradesApi: { extractTrades: vi.fn() },
 }));
 
+// Mock useAccounts hook
+vi.mock('@/hooks/useAccounts', () => ({
+  useAccounts: vi.fn().mockReturnValue({
+    accounts: [],
+    selectedAccountId: null,
+    selectedAccount: null,
+    setSelectedAccountId: vi.fn(),
+    addAccount: vi.fn(),
+    updateAccount: vi.fn(),
+    updateAccountStatus: vi.fn(),
+    deleteAccount: vi.fn(),
+  }),
+}));
+
 // Mock Radix UI Dialog to render inline
 vi.mock('@radix-ui/react-dialog', async () => {
   const React = await import('react');
@@ -56,6 +70,23 @@ vi.mock('@radix-ui/react-scroll-area', async () => {
     ScrollAreaThumb: React.forwardRef((props: any, ref: any) => <div ref={ref} {...props} />),
     Thumb: React.forwardRef((props: any, ref: any) => <div ref={ref} {...props} />),
     Corner: React.forwardRef((props: any, ref: any) => <div ref={ref} {...props} />),
+  };
+});
+
+// Mock Radix UI Tooltip
+vi.mock('@radix-ui/react-tooltip', async () => {
+  const React = await import('react');
+  return {
+    Provider: ({ children }: any) => <>{children}</>,
+    Root: ({ children }: any) => <div>{children}</div>,
+    Trigger: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <div ref={ref} {...props}>{children}</div>
+    )),
+    Portal: ({ children }: any) => <>{children}</>,
+    Content: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <div ref={ref} {...props}>{children}</div>
+    )),
+    Arrow: React.forwardRef((props: any, ref: any) => <div ref={ref} {...props} />),
   };
 });
 
@@ -331,5 +362,72 @@ describe('ImportTradesModal - outcome derivation', () => {
     const pnl = 0;
     const outcome = pnl > 0 ? 'TP' : pnl < 0 ? 'SL' : 'BREAKEVEN';
     expect(outcome).toBe('BREAKEVEN');
+  });
+});
+
+describe('ImportTradesModal - Toolbar & Account Selector', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onImportTrades: vi.fn().mockResolvedValue({ success: true }),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('Save All button is disabled when no trades are extracted', () => {
+    render(<ImportTradesModal {...defaultProps} />);
+    const saveAllButton = screen.getByRole('button', { name: /save all/i });
+    expect(saveAllButton).toBeDisabled();
+  });
+
+  it('does not show account selector when no trades extracted', () => {
+    render(<ImportTradesModal {...defaultProps} />);
+    // Account selector only renders when extractedTrades.length > 0 && accounts.length > 0
+    // Default mock has both empty, so "Save to account:" should not appear
+    expect(screen.queryByText('Save to account:')).not.toBeInTheDocument();
+  });
+
+  it('merge direction validation: rejects when fewer than 2 selected', () => {
+    const selectedCount = 1;
+    const selectedDirections = new Set(['LONG']);
+    const canMerge = selectedCount >= 2 && selectedDirections.size === 1;
+    const mergeDisabledReason = selectedCount < 2
+      ? 'Select 2 or more trades to merge'
+      : selectedDirections.size > 1
+        ? 'Can only merge trades with the same direction (all Long or all Short)'
+        : '';
+
+    expect(canMerge).toBe(false);
+    expect(mergeDisabledReason).toBe('Select 2 or more trades to merge');
+  });
+
+  it('merge direction validation: rejects mixed directions', () => {
+    const selectedCount = 3;
+    const selectedDirections = new Set(['LONG', 'SHORT']);
+    const canMerge = selectedCount >= 2 && selectedDirections.size === 1;
+    const mergeDisabledReason = selectedCount < 2
+      ? 'Select 2 or more trades to merge'
+      : selectedDirections.size > 1
+        ? 'Can only merge trades with the same direction (all Long or all Short)'
+        : '';
+
+    expect(canMerge).toBe(false);
+    expect(mergeDisabledReason).toBe('Can only merge trades with the same direction (all Long or all Short)');
+  });
+
+  it('merge direction validation: allows same direction', () => {
+    const selectedCount = 2;
+    const selectedDirections = new Set(['LONG']);
+    const canMerge = selectedCount >= 2 && selectedDirections.size === 1;
+    const mergeDisabledReason = selectedCount < 2
+      ? 'Select 2 or more trades to merge'
+      : selectedDirections.size > 1
+        ? 'Can only merge trades with the same direction (all Long or all Short)'
+        : '';
+
+    expect(canMerge).toBe(true);
+    expect(mergeDisabledReason).toBe('');
   });
 });

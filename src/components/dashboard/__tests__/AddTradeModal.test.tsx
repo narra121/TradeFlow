@@ -140,7 +140,7 @@ vi.mock('@/hooks/useSavedOptions', () => ({
 }));
 
 vi.mock('@/hooks/useTradingRules', () => ({
-  useTradingRules: () => ({ rules: [] }),
+  useTradingRules: vi.fn().mockReturnValue({ rules: [], loading: false }),
 }));
 
 vi.mock('@/hooks/useAccounts', () => ({
@@ -557,5 +557,76 @@ describe('AddTradeModal - UX Enhancements', () => {
     render(<AddTradeModal {...defaultProps} />);
 
     expect(screen.getByText(/Enter prices above for auto-calculation/)).toBeInTheDocument();
+  });
+});
+
+describe('AddTradeModal - Broken Rules Section', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onAddTrade: vi.fn().mockResolvedValue(undefined),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('always shows Broken Rules label even when no rules exist', () => {
+    // Default mock has rules: []
+    render(<AddTradeModal {...defaultProps} />);
+    expect(screen.getByText('Broken Rules')).toBeInTheDocument();
+  });
+
+  it('shows empty state guidance when no rules exist', () => {
+    render(<AddTradeModal {...defaultProps} />);
+    expect(screen.getByText('No trading rules defined yet')).toBeInTheDocument();
+  });
+
+  it('shows link to Goals & Rules page in empty state', () => {
+    render(<AddTradeModal {...defaultProps} />);
+    const link = screen.getByText('Go to Goals & Rules');
+    expect(link).toBeInTheDocument();
+    expect(link.closest('a')).toHaveAttribute('href', '/app/goals');
+  });
+
+  it('shows "from Goals & Rules" attribution when rules exist', async () => {
+    const { useTradingRules } = await import('@/hooks/useTradingRules');
+    (useTradingRules as ReturnType<typeof vi.fn>).mockReturnValue({
+      rules: [
+        { userId: 'u1', ruleId: 'r1', rule: 'Always use stop loss', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+      ],
+      loading: false,
+    });
+
+    render(<AddTradeModal {...defaultProps} />);
+    expect(screen.getByText('from Goals & Rules')).toBeInTheDocument();
+  });
+
+  it('renders rule buttons when rules exist', async () => {
+    const { useTradingRules } = await import('@/hooks/useTradingRules');
+    (useTradingRules as ReturnType<typeof vi.fn>).mockReturnValue({
+      rules: [
+        { userId: 'u1', ruleId: 'r1', rule: 'Always use stop loss', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+        { userId: 'u1', ruleId: 'r2', rule: 'Max 2% risk per trade', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+      ],
+      loading: false,
+    });
+
+    render(<AddTradeModal {...defaultProps} />);
+    expect(screen.getByText('Always use stop loss')).toBeInTheDocument();
+    expect(screen.getByText('Max 2% risk per trade')).toBeInTheDocument();
+  });
+
+  it('does not show empty state when rules exist', async () => {
+    const { useTradingRules } = await import('@/hooks/useTradingRules');
+    (useTradingRules as ReturnType<typeof vi.fn>).mockReturnValue({
+      rules: [
+        { userId: 'u1', ruleId: 'r1', rule: 'Always use stop loss', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+      ],
+      loading: false,
+    });
+
+    render(<AddTradeModal {...defaultProps} />);
+    expect(screen.queryByText('No trading rules defined yet')).not.toBeInTheDocument();
   });
 });

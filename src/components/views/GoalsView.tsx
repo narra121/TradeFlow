@@ -592,23 +592,46 @@ export function GoalsView() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">Trading Rules</h2>
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-xs sm:text-sm text-muted-foreground">
-              {rules.length - Object.keys(brokenRuleCounts).filter(ruleId => brokenRuleCounts[ruleId] > 0).length}/{rules.length} followed
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setIsAddingRule(true)}
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Rule</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
+            {rules.length > 0 && (
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                {rules.length - Object.keys(brokenRuleCounts).filter(ruleId => brokenRuleCounts[ruleId] > 0).length}/{rules.length} followed
+              </span>
+            )}
+            {rules.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setIsAddingRule(true)}
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Add Rule</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {rules.length === 0 && !isAddingRule && (
+            <div className="col-span-full flex flex-col items-center text-center py-8 px-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-primary/60" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1">No trading rules yet</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mb-4">
+                Define rules like "Never risk more than 2%" or "Don't trade during news." When you journal a trade, you can mark which rules you broke.
+              </p>
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setIsAddingRule(true)}
+              >
+                <Plus className="w-4 h-4" />
+                Create Your First Rule
+              </Button>
+            </div>
+          )}
           {rules.map((item, index) => {
             const ruleId = (item as any).id || (item as any).ruleId;
             const isEditingThis = editingRuleId === ruleId;
