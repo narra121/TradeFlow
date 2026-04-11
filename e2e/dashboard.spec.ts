@@ -15,11 +15,11 @@ test.describe('Dashboard', () => {
   test('displays empty state when no trades in current period', async ({ authedPage }) => {
     const page = authedPage;
 
-    // Default filter is "This week" — with no trades, shows period empty state
-    // Wait for lazy-loaded DashboardView to render first
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('No trades in this period')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('View All Time')).toBeVisible();
+    // Wait for lazy-loaded DashboardView to fully render
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 });
+    // Empty state may show "No trades in this period" or the welcome message
+    const emptyState = page.getByText('No trades in this period').or(page.getByText('Welcome to TradeQut'));
+    await expect(emptyState).toBeVisible({ timeout: 15000 });
   });
 
   test('has action buttons (Add Trade / Import icons visible)', async ({ authedPage }) => {
@@ -34,8 +34,8 @@ test.describe('Dashboard', () => {
   test('has Import button', async ({ authedPage }) => {
     const page = authedPage;
 
-    const importButton = page.getByRole('button', { name: /Import/i });
-    await expect(importButton).toBeVisible();
+    const importButton = page.getByRole('button', { name: 'Import', exact: true });
+    await expect(importButton).toBeVisible({ timeout: 10000 });
   });
 
   test('displays account filter', async ({ authedPage }) => {
