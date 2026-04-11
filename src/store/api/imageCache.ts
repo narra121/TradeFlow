@@ -168,17 +168,30 @@ async function fetchImage(imageId: string, queryApi: any): Promise<string> {
       ? 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradequt-prod/v1'
       : 'https://wastpecoi2.execute-api.us-east-1.amazonaws.com/tradequt-dev/v1');
 
-  const state = queryApi.getState() as any;
-  const token = state.auth?.token || localStorage.getItem('idToken');
-  if (!token) throw new Error('No authentication token available');
-
   const cleanImageId = imageId.startsWith('images/')
     ? imageId.substring('images/'.length)
     : imageId;
 
-  const response = await fetch(`${baseUrl}/images/${cleanImageId}`, {
+  const url = `${baseUrl}/images/${cleanImageId}`;
+
+  // Try fetching with current token, refresh and retry once on 401
+  let token = localStorage.getItem('idToken');
+  if (!token) throw new Error('No authentication token available');
+
+  let response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
+
+  if (response.status === 401) {
+    // Token expired — attempt refresh and retry
+    const newToken = await refreshTokenAndGet();
+    if (newToken) {
+      token = newToken;
+      response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+  }
 
   if (!response.ok) {
     if (response.status === 404) throw new Error('Image not found');
@@ -194,6 +207,39 @@ async function fetchImage(imageId: string, queryApi: any): Promise<string> {
   await writeToCacheApi(imageId, blob);
 
   return objectUrl;
+}
+
+/**
+ * Refresh the auth token and return the new token, or null on failure.
+ * Reuses the same /auth/refresh endpoint that baseQueryWithReauth uses.
+ */
+async function refreshTokenAndGet(): Promise<string | null> {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) return null;
+
+  const baseUrl =
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.MODE === 'production'
+      ? 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradequt-prod/v1'
+      : 'https://wastpecoi2.execute-api.us-east-1.amazonaws.com/tradequt-dev/v1');
+
+  try {
+    const res = await fetch(`${baseUrl}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+
+    const json = await res.json();
+    const newToken: string | undefined = json?.data?.IdToken ?? json?.data?.token ?? json?.IdToken;
+    if (!newToken) return null;
+
+    localStorage.setItem('idToken', newToken);
+    return newToken;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
