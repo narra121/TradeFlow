@@ -15,9 +15,11 @@ test.describe('Dashboard', () => {
   test('displays empty state when no trades in current period', async ({ authedPage }) => {
     const page = authedPage;
 
-    // Wait for lazy-loaded DashboardView to fully render
+    // Wait for lazy-loaded DashboardView to fully render and loading to finish
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 });
-    // Empty state may show "No trades in this period" or the welcome message
+    // Wait for loading skeleton to disappear (tradesLoading must become false)
+    await page.waitForTimeout(2000);
+    // Empty state shows either "No trades in this period" or "Welcome to TradeQut!"
     const emptyState = page.getByText('No trades in this period').or(page.getByText('Welcome to TradeQut'));
     await expect(emptyState).toBeVisible({ timeout: 15000 });
   });
