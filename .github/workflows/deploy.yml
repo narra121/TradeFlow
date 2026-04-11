@@ -60,6 +60,7 @@ jobs:
             --cache-control "public, max-age=31536000, immutable"
 
       - name: Invalidate CloudFront
+        continue-on-error: true
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CF_DISTRIBUTION_ID_DEV }} \
