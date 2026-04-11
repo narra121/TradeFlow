@@ -6,7 +6,7 @@ on:
     types:
       - completed
     branches:
-      - develop
+      - main
   workflow_dispatch:
 
 permissions:
@@ -24,7 +24,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: main
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
