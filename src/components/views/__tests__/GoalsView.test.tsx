@@ -52,6 +52,9 @@ vi.mock('@/store/api', () => ({
   useUpdateGoalMutation: vi.fn().mockReturnValue([
     vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
   ]),
+  useCreateGoalMutation: vi.fn().mockReturnValue([
+    vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
+  ]),
   useCreateRuleMutation: vi.fn().mockReturnValue([
     vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
   ]),

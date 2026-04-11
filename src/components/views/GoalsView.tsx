@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery, useUpdateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation } from '@/store/api';
+import { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery, useUpdateGoalMutation, useCreateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation } from '@/store/api';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { startOfWeek } from 'date-fns/startOfWeek';
 import { endOfWeek } from 'date-fns/endOfWeek';
@@ -22,6 +22,7 @@ import { isSameMonth } from 'date-fns/isSameMonth';
 import { endOfDay } from 'date-fns/endOfDay';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { useAccounts } from '@/hooks/useAccounts';
+
 import { GoalCardSkeleton, RulesListSkeleton } from '@/components/ui/loading-skeleton';
 
 interface GoalType {
@@ -176,6 +177,7 @@ export function GoalsView() {
   });
   
   const [updateGoal] = useUpdateGoalMutation();
+  const [createGoal] = useCreateGoalMutation();
   const [createRule] = useCreateRuleMutation();
   const [updateRule] = useUpdateRuleMutation();
   const [deleteRule] = useDeleteRuleMutation();
@@ -254,16 +256,34 @@ export function GoalsView() {
     setEditValue(currentTarget.toString());
   };
 
-  const handleEditSave = async (goalId: string, period: 'weekly' | 'monthly') => {
+  const handleEditSave = async (goalKey: string, period: 'weekly' | 'monthly', goalType: string) => {
     const newTarget = parseFloat(editValue);
     if (!isNaN(newTarget) && newTarget > 0) {
-      setSavingGoalKey(goalId);
-      try {
-        await updateGoal({ id: goalId, payload: { target: newTarget } }).unwrap();
-      } catch (error) {
-        // Toast middleware handles error display
+      // Find the real goal — if goalKey matches a goalId, it's a backend goal
+      const realGoal = accountGoals.find((g: any) => g.goalId === goalKey);
+      if (realGoal?.goalId) {
+        setSavingGoalKey(goalKey);
+        try {
+          await updateGoal({ id: realGoal.goalId, payload: { target: newTarget } }).unwrap();
+        } catch (error) {
+          // Toast middleware handles error display
+        }
+        setSavingGoalKey(null);
+      } else {
+        // Synthetic goal — create it on the backend
+        setSavingGoalKey(goalKey);
+        try {
+          await createGoal({
+            accountId: selectedAccountId || undefined,
+            goalType,
+            period,
+            target: newTarget,
+          }).unwrap();
+        } catch (error) {
+          // Toast middleware handles error display
+        }
+        setSavingGoalKey(null);
       }
-      setSavingGoalKey(null);
     }
     setEditingGoalKey(null);
     setEditValue('');
@@ -430,12 +450,12 @@ export function GoalsView() {
                 <CheckCircle2 className="w-5 h-5 text-success" />
               </div>
             )}
-            {!isEditing && hasBackendGoal && (
+            {!isEditing && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => handleEditStart(goal.goalId, target)}
+                onClick={() => handleEditStart(key, target)}
               >
                 <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
               </Button>
@@ -465,7 +485,7 @@ export function GoalsView() {
                     className="w-20 h-7 text-lg font-mono py-0 px-2"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleEditSave(goal.goalId, period);
+                      if (e.key === 'Enter') handleEditSave(key, period, goalType.id);
                       if (e.key === 'Escape') handleEditCancel();
                     }}
                   />
@@ -474,7 +494,7 @@ export function GoalsView() {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => handleEditSave(goal.goalId, period)}
+                    onClick={() => handleEditSave(key, period, goalType.id)}
                     disabled={savingGoalKey === key}
                   >
                     {savingGoalKey === key ? (

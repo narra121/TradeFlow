@@ -3,6 +3,7 @@ import type {
   Goal,
   TradingRule,
   UpdateGoalPayload,
+  CreateGoalPayload,
   CreateRulePayload,
   UpdateRulePayload
 } from '@/lib/api';
@@ -81,6 +82,27 @@ export const goalsRulesApi = api.injectEndpoints({
           // Error handled by component
         }
       },
+    }),
+
+    createGoal: builder.mutation<Goal, CreateGoalPayload>({
+      query: (payload) => ({
+        url: '/goals',
+        method: 'POST',
+        body: payload,
+      }),
+      transformResponse: (response: any) => {
+        const goal = response.goal;
+        if (response?._apiMessage) {
+             Object.defineProperty(goal, '_apiMessage', {
+                value: response._apiMessage,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            });
+        }
+        return goal;
+      },
+      invalidatesTags: [{ type: 'Goals', id: 'LIST' }],
     }),
 
     getRules: builder.query<TradingRule[], void>({
@@ -294,6 +316,7 @@ export const goalsRulesApi = api.injectEndpoints({
 export const {
   useGetRulesAndGoalsQuery,
   useUpdateGoalMutation,
+  useCreateGoalMutation,
   useGetRulesQuery,
   useCreateRuleMutation,
   useUpdateRuleMutation,

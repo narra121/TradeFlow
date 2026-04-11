@@ -40,3 +40,10 @@ export interface CreateRulePayload {
 export interface UpdateRulePayload {
   rule: string;
 }
+
+export interface CreateGoalPayload {
+  accountId?: string;
+  goalType: string;
+  period: 'weekly' | 'monthly';
+  target: number;
+}
