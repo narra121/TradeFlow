@@ -119,7 +119,7 @@ export function Sidebar({ activeView, onViewChange, collapsed, onCollapsedChange
             </div>
             {showExpanded && (
               <span className="text-lg font-semibold text-foreground tracking-tight">
-                TradeFlow
+                TradeQut
               </span>
             )}
           </div>

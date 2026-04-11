@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { TradeList } from '@/components/dashboard/TradeList';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
@@ -37,14 +37,21 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
   
   // Get accounts for balance calculations
   const { selectedAccountId, accounts } = useAccounts();
-  
-  // Prepare query params
+
+  // Debounce filter changes to avoid firing multiple API calls during rapid changes
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedFilters(filters), 300);
+    return () => clearTimeout(timer);
+  }, [filters]);
+
+  // Prepare query params using debounced filters
   const queryParams = useMemo(() => ({
-    accountId: filters.accountId,
-    startDate: filters.startDate,
-    endDate: filters.endDate,
-  }), [filters.accountId, filters.startDate, filters.endDate]);
-  
+    accountId: debouncedFilters.accountId,
+    startDate: debouncedFilters.startDate,
+    endDate: debouncedFilters.endDate,
+  }), [debouncedFilters.accountId, debouncedFilters.startDate, debouncedFilters.endDate]);
+
   const { data: trades = [], isLoading, isFetching, refetch } = useGetTradesQuery(queryParams);
 
   const handleDatePresetChange = (preset: DatePreset) => {
@@ -76,13 +83,13 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     }
   }, [selectedAccountId, accounts]);
 
-  // Fetch aggregated stats from backend
+  // Fetch aggregated stats from backend using debounced filters
   const statsQueryParams = useMemo(() => ({
-    accountId: filters.accountId,
-    startDate: filters.startDate,
-    endDate: filters.endDate,
+    accountId: debouncedFilters.accountId,
+    startDate: debouncedFilters.startDate,
+    endDate: debouncedFilters.endDate,
     totalCapital,
-  }), [filters.accountId, filters.startDate, filters.endDate, totalCapital]);
+  }), [debouncedFilters.accountId, debouncedFilters.startDate, debouncedFilters.endDate, totalCapital]);
 
   const { data: statsData, isLoading: statsLoading, isFetching: statsFetching } = useGetStatsQuery(statsQueryParams);
 
@@ -145,7 +152,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           </div>
           {filters.datePreset === 'all' ? (
             <>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to TradeFlow!</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to TradeQut!</h3>
               <p className="text-muted-foreground max-w-md mb-8">
                 Start by adding your first trade to see your performance dashboard come to life.
               </p>

@@ -65,11 +65,11 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
   const [deletingTradeId, setDeletingTradeId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const filteredTrades = trades.filter(trade => {
+  const filteredTrades = useMemo(() => trades.filter(trade => {
     const matchesSearch = trade.symbol.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesOutcome = outcomeFilter === 'ALL' || trade.outcome === outcomeFilter;
     return matchesSearch && matchesOutcome;
-  });
+  }), [trades, searchQuery, outcomeFilter]);
 
   const handleViewTrade = (index: number) => {
     setSelectedTradeIndex(index);

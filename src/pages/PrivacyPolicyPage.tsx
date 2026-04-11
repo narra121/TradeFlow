@@ -12,7 +12,7 @@ export function PrivacyPolicyPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">TradeFlow</span>
+            <span className="text-xl font-bold text-foreground">TradeQut</span>
           </Link>
           <Button variant="ghost" asChild className="gap-2">
             <Link to="/">
@@ -34,9 +34,9 @@ export function PrivacyPolicyPage() {
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">1. Introduction</h2>
               <p className="text-muted-foreground leading-relaxed">
-                TradeFlowJournal ("we", "our", or "us") operates the TradeFlow application (the "Service").
+                TradeQutJournal ("we", "our", or "us") operates the TradeQut application (the "Service").
                 This Privacy Policy explains how we collect, use, disclose, and safeguard your information when
-                you use our Service. By accessing or using TradeFlow, you agree to the terms of this Privacy Policy.
+                you use our Service. By accessing or using TradeQut, you agree to the terms of this Privacy Policy.
               </p>
             </section>
 
@@ -149,7 +149,7 @@ export function PrivacyPolicyPage() {
                 If you have any questions about this Privacy Policy, please contact us:
               </p>
               <div className="space-y-2 text-muted-foreground">
-                <p><span className="text-foreground font-medium">Business:</span> TradeFlowJournal</p>
+                <p><span className="text-foreground font-medium">Business:</span> TradeQutJournal</p>
                 <p><span className="text-foreground font-medium">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348</p>
                 <p><span className="text-foreground font-medium">Email:</span> Narra77888@gmail.com</p>
                 <p><span className="text-foreground font-medium">Phone:</span> +91 8501018125</p>
@@ -163,7 +163,7 @@ export function PrivacyPolicyPage() {
       <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} TradeFlow. All rights reserved.
+            &copy; {new Date().getFullYear()} TradeQut. All rights reserved.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
             <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>

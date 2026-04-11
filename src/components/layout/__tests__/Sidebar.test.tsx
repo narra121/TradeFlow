@@ -31,17 +31,17 @@ describe('Sidebar', () => {
 
   it('renders without crashing', () => {
     render(<Sidebar {...defaultProps} />);
-    expect(screen.getByText('TradeFlow')).toBeInTheDocument();
+    expect(screen.getByText('TradeQut')).toBeInTheDocument();
   });
 
   it('displays the app name when expanded', () => {
     render(<Sidebar {...defaultProps} collapsed={false} />);
-    expect(screen.getByText('TradeFlow')).toBeInTheDocument();
+    expect(screen.getByText('TradeQut')).toBeInTheDocument();
   });
 
   it('hides the app name when collapsed', () => {
     render(<Sidebar {...defaultProps} collapsed={true} />);
-    expect(screen.queryByText('TradeFlow')).not.toBeInTheDocument();
+    expect(screen.queryByText('TradeQut')).not.toBeInTheDocument();
   });
 
   it('renders all navigation items when expanded', () => {
@@ -150,7 +150,7 @@ describe('Sidebar', () => {
     render(<Sidebar {...defaultProps} collapsed={true} mobileOpen={true} />);
 
     // In mobile mode showExpanded is always true, so labels should be visible
-    expect(screen.getByText('TradeFlow')).toBeInTheDocument();
+    expect(screen.getByText('TradeQut')).toBeInTheDocument();
     const navLabels = ['Dashboard', 'Accounts', 'Trade Log', 'Analytics', 'Goals', 'Settings', 'Profile'];
     navLabels.forEach((label) => {
       expect(screen.getByText(label)).toBeInTheDocument();

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Trade } from '@/types/trade';
 import { cn } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownRight, Clock, CheckCircle2, BookOpen } from 'lucide-react';
@@ -9,7 +10,7 @@ interface TradeListProps {
   limit?: number;
 }
 
-export function TradeList({ trades, limit }: TradeListProps) {
+export const TradeList = memo(function TradeList({ trades, limit }: TradeListProps) {
   const displayTrades = limit ? trades.slice(0, limit) : trades;
 
   const isTradeUnmapped = (trade: Trade) => {
@@ -142,4 +143,4 @@ export function TradeList({ trades, limit }: TradeListProps) {
       </div>
     </div>
   );
-}
+});

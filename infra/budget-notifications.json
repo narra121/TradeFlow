@@ -1,0 +1,78 @@
+[
+  {
+    "Notification": {
+      "NotificationType": "ACTUAL",
+      "ComparisonOperator": "GREATER_THAN",
+      "Threshold": 50,
+      "ThresholdType": "ABSOLUTE_VALUE",
+      "NotificationState": "ALARM"
+    },
+    "Subscribers": [
+      {
+        "SubscriptionType": "EMAIL",
+        "Address": "nkalyan77888@gmail.com"
+      },
+      {
+        "SubscriptionType": "EMAIL",
+        "Address": "narra77888@gmail.com"
+      }
+    ]
+  },
+  {
+    "Notification": {
+      "NotificationType": "ACTUAL",
+      "ComparisonOperator": "GREATER_THAN",
+      "Threshold": 80,
+      "ThresholdType": "ABSOLUTE_VALUE",
+      "NotificationState": "ALARM"
+    },
+    "Subscribers": [
+      {
+        "SubscriptionType": "EMAIL",
+        "Address": "nkalyan77888@gmail.com"
+      },
+      {
+        "SubscriptionType": "EMAIL",
+        "Address": "narra77888@gmail.com"
+      }
+    ]
+  },
+  {
+    "Notification": {
+      "NotificationType": "ACTUAL",
+      "ComparisonOperator": "GREATER_THAN",
+      "Threshold": 100,
+      "ThresholdType": "ABSOLUTE_VALUE",
+      "NotificationState": "ALARM"
+    },
+    "Subscribers": [
+      {
+        "SubscriptionType": "EMAIL",
+        "Address": "nkalyan77888@gmail.com"
+      },
+      {
+        "SubscriptionType": "EMAIL",
+        "Address": "narra77888@gmail.com"
+      }
+    ]
+  },
+  {
+    "Notification": {
+      "NotificationType": "FORECASTED",
+      "ComparisonOperator": "GREATER_THAN",
+      "Threshold": 80,
+      "ThresholdType": "ABSOLUTE_VALUE",
+      "NotificationState": "ALARM"
+    },
+    "Subscribers": [
+      {
+        "SubscriptionType": "EMAIL",
+        "Address": "nkalyan77888@gmail.com"
+      },
+      {
+        "SubscriptionType": "EMAIL",
+        "Address": "narra77888@gmail.com"
+      }
+    ]
+  }
+]

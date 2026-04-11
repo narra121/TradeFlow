@@ -232,7 +232,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
             <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-7 h-7 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-bold text-foreground">TradeFlow</span>
+            <span className="text-2xl font-bold text-foreground">TradeQut</span>
           </div>
           
           <h1 className="text-4xl xl:text-5xl font-bold text-foreground mb-6 leading-tight">
@@ -275,7 +275,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">TradeFlow</span>
+            <span className="text-xl font-bold text-foreground">TradeQut</span>
           </div>
 
           {/* Login View */}

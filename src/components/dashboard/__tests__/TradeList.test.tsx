@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { TradeList } from '../TradeList';
@@ -254,5 +255,38 @@ describe('TradeList – extended coverage', () => {
     expect(screen.getByText('NZDUSD')).toBeInTheDocument();
     expect(screen.getByText('+300.00')).toBeInTheDocument();
     expect(screen.getByText('LONG')).toBeInTheDocument();
+  });
+});
+
+describe('TradeList – React.memo', () => {
+  it('is wrapped with React.memo', () => {
+    // React.memo components have a $$typeof of Symbol.for('react.memo')
+    expect((TradeList as any).$$typeof).toBe(Symbol.for('react.memo'));
+  });
+
+  it('still renders correctly after being wrapped with memo', () => {
+    const trades: Trade[] = [
+      {
+        id: '1',
+        symbol: 'EURUSD',
+        direction: 'LONG',
+        entryPrice: 1.1,
+        exitPrice: 1.12,
+        stopLoss: 1.09,
+        takeProfit: 1.13,
+        size: 1,
+        entryDate: '2025-01-15T10:00:00Z',
+        exitDate: '2025-01-15T14:00:00Z',
+        outcome: 'TP',
+        pnl: 200,
+        riskRewardRatio: 2.0,
+        accountId: 'acc1',
+      },
+    ];
+
+    render(<TradeList trades={trades} limit={5} />);
+    expect(screen.getByText('EURUSD')).toBeInTheDocument();
+    expect(screen.getByText('+200.00')).toBeInTheDocument();
+    expect(screen.getByText('Recent Trades')).toBeInTheDocument();
   });
 });

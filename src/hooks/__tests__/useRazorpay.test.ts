@@ -92,7 +92,7 @@ describe('useRazorpay', () => {
       await act(async () => {
         await result.current.initiatePayment({
           amount: 1000,
-          name: 'TradeFlow',
+          name: 'TradeQut',
           description: 'Subscription',
         });
       });
@@ -437,7 +437,7 @@ describe('useRazorpay - Payment Callbacks and Edge Cases', () => {
     await act(async () => {
       await result.current.initiatePayment({
         amount: 1000,
-        name: 'TradeFlow Pro',
+        name: 'TradeQut Pro',
         description: 'Success test',
         onSuccess,
         onFailure,

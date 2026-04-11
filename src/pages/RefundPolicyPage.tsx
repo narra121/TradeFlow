@@ -12,7 +12,7 @@ export function RefundPolicyPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">TradeFlow</span>
+            <span className="text-xl font-bold text-foreground">TradeQut</span>
           </Link>
           <Button variant="ghost" asChild className="gap-2">
             <Link to="/">
@@ -32,18 +32,18 @@ export function RefundPolicyPage() {
 
           <div className="space-y-10 text-foreground/90">
             <section className="bg-card rounded-2xl border border-success/20 p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-success mb-4">TradeFlow is Free</h2>
+              <h2 className="text-2xl font-semibold text-success mb-4">TradeQut is Free</h2>
               <p className="text-muted-foreground leading-relaxed">
-                TradeFlow is a <span className="text-foreground font-medium">100% free trading journal</span> with
+                TradeQut is a <span className="text-foreground font-medium">100% free trading journal</span> with
                 all features included at no cost. There are no premium tiers, paywalls, or feature restrictions.
-                You can use TradeFlow indefinitely without any payment.
+                You can use TradeQut indefinitely without any payment.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">1. Optional Support Contributions</h2>
               <p className="text-muted-foreground leading-relaxed">
-                TradeFlow offers optional support contributions (&#8377;99/month or &#8377;299/month) for users
+                TradeQut offers optional support contributions (&#8377;99/month or &#8377;299/month) for users
                 who wish to support the independent developer behind the platform. These contributions are entirely
                 voluntary and do not unlock any additional features or benefits. The app remains fully functional
                 without any payment.
@@ -72,7 +72,7 @@ export function RefundPolicyPage() {
               <ul className="list-disc list-inside space-y-2 text-muted-foreground mt-3">
                 <li>Your contribution will stop at the end of the current billing cycle</li>
                 <li>You will not be charged for subsequent periods</li>
-                <li>All features of TradeFlow will continue to work as before — nothing changes</li>
+                <li>All features of TradeQut will continue to work as before — nothing changes</li>
                 <li>No partial refunds are provided for the remaining period of the current billing cycle</li>
               </ul>
             </section>
@@ -138,7 +138,7 @@ export function RefundPolicyPage() {
                 For refund requests or any payment-related queries, please reach out to us:
               </p>
               <div className="space-y-2 text-muted-foreground">
-                <p><span className="text-foreground font-medium">Business:</span> TradeFlowJournal</p>
+                <p><span className="text-foreground font-medium">Business:</span> TradeQutJournal</p>
                 <p><span className="text-foreground font-medium">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348</p>
                 <p><span className="text-foreground font-medium">Email:</span> Narra77888@gmail.com</p>
                 <p><span className="text-foreground font-medium">Phone:</span> +91 8501018125</p>
@@ -152,7 +152,7 @@ export function RefundPolicyPage() {
       <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} TradeFlow. All rights reserved.
+            &copy; {new Date().getFullYear()} TradeQut. All rights reserved.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
             <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>

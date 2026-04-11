@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { render } from '@testing-library/react';
 import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
@@ -97,9 +97,11 @@ function renderAppPage(route: string) {
 }
 
 describe('AppPage', () => {
-  it('renders without crashing', () => {
+  it('renders without crashing', async () => {
     renderAppPage('/app/dashboard');
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
+    // Wait for lazy-loaded view
+    await screen.findByTestId('dashboard-view');
   });
 
   it('shows the sidebar component', () => {
@@ -107,39 +109,39 @@ describe('AppPage', () => {
     expect(screen.getByText('Sidebar')).toBeInTheDocument();
   });
 
-  it('renders DashboardView at /app/dashboard', () => {
+  it('renders DashboardView at /app/dashboard', async () => {
     renderAppPage('/app/dashboard');
-    expect(screen.getByTestId('dashboard-view')).toBeInTheDocument();
+    expect(await screen.findByTestId('dashboard-view')).toBeInTheDocument();
   });
 
-  it('renders TradeLogView at /app/tradelog', () => {
+  it('renders TradeLogView at /app/tradelog', async () => {
     renderAppPage('/app/tradelog');
-    expect(screen.getByTestId('tradelog-view')).toBeInTheDocument();
+    expect(await screen.findByTestId('tradelog-view')).toBeInTheDocument();
   });
 
-  it('renders AnalyticsView at /app/analytics', () => {
+  it('renders AnalyticsView at /app/analytics', async () => {
     renderAppPage('/app/analytics');
-    expect(screen.getByTestId('analytics-view')).toBeInTheDocument();
+    expect(await screen.findByTestId('analytics-view')).toBeInTheDocument();
   });
 
-  it('renders GoalsView at /app/goals', () => {
+  it('renders GoalsView at /app/goals', async () => {
     renderAppPage('/app/goals');
-    expect(screen.getByTestId('goals-view')).toBeInTheDocument();
+    expect(await screen.findByTestId('goals-view')).toBeInTheDocument();
   });
 
-  it('renders ProfileView at /app/profile', () => {
+  it('renders ProfileView at /app/profile', async () => {
     renderAppPage('/app/profile');
-    expect(screen.getByTestId('profile-view')).toBeInTheDocument();
+    expect(await screen.findByTestId('profile-view')).toBeInTheDocument();
   });
 
-  it('renders SettingsView at /app/settings', () => {
+  it('renders SettingsView at /app/settings', async () => {
     renderAppPage('/app/settings');
-    expect(screen.getByTestId('settings-view')).toBeInTheDocument();
+    expect(await screen.findByTestId('settings-view')).toBeInTheDocument();
   });
 
-  it('renders AccountsView at /app/accounts', () => {
+  it('renders AccountsView at /app/accounts', async () => {
     renderAppPage('/app/accounts');
-    expect(screen.getByTestId('accounts-view')).toBeInTheDocument();
+    expect(await screen.findByTestId('accounts-view')).toBeInTheDocument();
   });
 
   it('passes activeView derived from URL to the Sidebar', () => {
@@ -150,9 +152,9 @@ describe('AppPage', () => {
 });
 
 describe('AppPage - default route redirect', () => {
-  it('redirects /app to /app/dashboard (index route)', () => {
+  it('redirects /app to /app/dashboard (index route)', async () => {
     renderAppPage('/app');
-    expect(screen.getByTestId('dashboard-view')).toBeInTheDocument();
+    expect(await screen.findByTestId('dashboard-view')).toBeInTheDocument();
   });
 
   it('shows dashboard as the active view when redirected from /app', () => {
@@ -163,15 +165,19 @@ describe('AppPage - default route redirect', () => {
 });
 
 describe('AppPage - unknown nested routes', () => {
-  it('does not render any known view for an unrecognized nested route', () => {
+  it('does not render any known view for an unrecognized nested route', async () => {
     renderAppPage('/app/nonexistent');
-    expect(screen.queryByTestId('dashboard-view')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('tradelog-view')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('analytics-view')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('goals-view')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('profile-view')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('settings-view')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('accounts-view')).not.toBeInTheDocument();
+    // Give lazy loading a chance to resolve, then verify nothing rendered
+    // We wait a tick and then check that no known views appear
+    await waitFor(() => {
+      expect(screen.queryByTestId('dashboard-view')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('tradelog-view')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('analytics-view')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('goals-view')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('profile-view')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('settings-view')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('accounts-view')).not.toBeInTheDocument();
+    });
   });
 
   it('still renders the sidebar for an unknown nested route', () => {

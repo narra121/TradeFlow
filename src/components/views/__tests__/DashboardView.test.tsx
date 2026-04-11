@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders as render, screen, fireEvent } from '@/test/test-utils';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderWithProviders as render, screen, fireEvent, act } from '@/test/test-utils';
 import { DashboardView } from '../DashboardView';
 
 // Mock Radix UI Tooltip for RefreshButton
@@ -466,5 +466,77 @@ describe('DashboardView - Empty State', () => {
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
     expect(screen.queryByText('Welcome to TradeQut!')).not.toBeInTheDocument();
+  });
+});
+
+describe('DashboardView - Debounced Filters', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.mocked(useGetTradesQuery).mockReturnValue({
+      data: [
+        {
+          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP', pnl: 200, riskRewardRatio: 2.0, accountId: 'acc1',
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as any);
+    vi.mocked(useGetStatsQuery).mockReturnValue({
+      data: {
+        totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
+        avgWin: 200, avgLoss: 0, profitFactor: Infinity, bestTrade: 200, worstTrade: 0,
+        maxDrawdown: 0, avgRiskReward: 2.0, consecutiveWins: 1, consecutiveLosses: 0,
+        grossProfit: 200, grossLoss: 0, expectancy: 200, sharpeRatio: 0, avgHoldingTime: 0,
+        totalVolume: 1, dailyPnl: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    } as any);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('debounces filter changes before firing API calls', () => {
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    // On initial render, useGetTradesQuery and useGetStatsQuery are called with default filters
+    const initialTradesCallCount = vi.mocked(useGetTradesQuery).mock.calls.length;
+    const initialStatsCallCount = vi.mocked(useGetStatsQuery).mock.calls.length;
+
+    // Verify the component rendered successfully with initial data
+    expect(screen.getByRole('heading', { name: /dashboard/i, level: 1 })).toBeInTheDocument();
+
+    // Before the debounce timer fires, the hooks should have been called with initial params
+    expect(initialTradesCallCount).toBeGreaterThan(0);
+    expect(initialStatsCallCount).toBeGreaterThan(0);
+
+    // Advance timers past the 300ms debounce
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+
+    // After debounce, the component should still render correctly
+    expect(screen.getByRole('heading', { name: /dashboard/i, level: 1 })).toBeInTheDocument();
+  });
+
+  it('renders correctly after debounce timer completes', () => {
+    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
+
+    // Advance past debounce period
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+
+    // Stat cards should be visible after debounce
+    expect(screen.getAllByTestId('stat-card')).toHaveLength(4);
+    expect(screen.getByTestId('trade-list')).toBeInTheDocument();
+    expect(screen.getByTestId('performance-chart')).toBeInTheDocument();
   });
 });

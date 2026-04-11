@@ -13,7 +13,7 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
  */
 
 // API Base URL from environment variable
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.tradeflow.com/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.tradequt.com/v1';
 
 // Debounce unauthorized events to prevent rapid-fire
 let unauthorizedTimeout: NodeJS.Timeout | null = null;

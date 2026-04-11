@@ -12,9 +12,17 @@ dist-ssr
 # Environment variables
 .env
 .env.local
+.env.development
 .env.development.local
+.env.production
 .env.production.local
 .env.localdev
+
+# Certificates and keys
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Scripts with secrets
 set-github-secrets.ps1

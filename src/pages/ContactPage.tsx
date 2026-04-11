@@ -12,7 +12,7 @@ export function ContactPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">TradeFlow</span>
+            <span className="text-xl font-bold text-foreground">TradeQut</span>
           </Link>
           <Button variant="ghost" asChild className="gap-2">
             <Link to="/">
@@ -71,7 +71,7 @@ export function ContactPage() {
               <h3 className="text-xl font-semibold text-foreground mb-2">Address</h3>
               <p className="text-muted-foreground mb-4">Our registered business address</p>
               <p className="text-foreground/90 leading-relaxed">
-                TradeFlowJournal<br />
+                TradeQutJournal<br />
                 3-187/2, Regonda, Regonda<br />
                 Bhupalpally, Telangana - 506348<br />
                 India
@@ -116,7 +116,7 @@ export function ContactPage() {
               <div className="border-b border-border/50 pb-6">
                 <h3 className="text-foreground font-medium mb-2">Feature Requests & Feedback</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  We're always looking to improve TradeFlow. Share your ideas, suggestions, or feedback
+                  We're always looking to improve TradeQut. Share your ideas, suggestions, or feedback
                   via email. Your input helps us build a better trading journal for everyone.
                 </p>
               </div>
@@ -139,7 +139,7 @@ export function ContactPage() {
       <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} TradeFlow. All rights reserved.
+            &copy; {new Date().getFullYear()} TradeQut. All rights reserved.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
             <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>

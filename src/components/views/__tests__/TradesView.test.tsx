@@ -274,3 +274,73 @@ describe('TradesView - Trade Cards & Direction Indicators', () => {
     expect(buttons.length).toBeGreaterThanOrEqual(7);
   });
 });
+
+describe('TradesView - Filtering with useMemo', () => {
+  const defaultProps = {
+    onAddTrade: vi.fn(),
+    onImportTrades: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [
+        {
+          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP', pnl: 200, pnlPercent: 2.0, riskRewardRatio: 2.0, accountId: 'acc1',
+        },
+        {
+          id: '2', symbol: 'GBPUSD', direction: 'SHORT', entryPrice: 1.3,
+          exitPrice: 1.28, stopLoss: 1.31, takeProfit: 1.27, size: 0.5,
+          entryDate: '2025-01-16T09:00:00Z', exitDate: '2025-01-16T12:00:00Z',
+          outcome: 'SL', pnl: -100, pnlPercent: -1.0, riskRewardRatio: 1.5, accountId: 'acc1',
+        },
+        {
+          id: '3', symbol: 'EURUSD', direction: 'SHORT', entryPrice: 1.12,
+          exitPrice: 1.1, stopLoss: 1.13, takeProfit: 1.09, size: 1,
+          entryDate: '2025-01-17T10:00:00Z', exitDate: '2025-01-17T14:00:00Z',
+          outcome: 'SL', pnl: -50, pnlPercent: -0.5, riskRewardRatio: 1.0, accountId: 'acc1',
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+    });
+  });
+
+  it('filters trades by search query', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    render(<TradesView {...defaultProps} />);
+
+    // All trades visible initially (two EURUSD trades + one GBPUSD)
+    expect(screen.getAllByText('EURUSD').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('GBPUSD')).toBeInTheDocument();
+
+    // Type in search box
+    const searchInput = screen.getByPlaceholderText('Search by symbol...');
+    fireEvent.change(searchInput, { target: { value: 'GBP' } });
+
+    // Only GBPUSD should remain
+    expect(screen.getByText('GBPUSD')).toBeInTheDocument();
+    expect(screen.queryAllByText('EURUSD')).toHaveLength(0);
+  });
+
+  it('filters trades by outcome when clicking outcome filter buttons', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    render(<TradesView {...defaultProps} />);
+
+    // All 3 trades visible initially
+    expect(screen.getByText('GBPUSD')).toBeInTheDocument();
+
+    // Click 'TP' outcome filter (the first TP button is the filter, subsequent are in data rows)
+    const tpButtons = screen.getAllByText('TP');
+    // The filter button is the one in the filter bar area
+    fireEvent.click(tpButtons[0]);
+
+    // Only TP trades should remain (EURUSD with TP outcome)
+    // GBPUSD (SL) should be hidden
+    expect(screen.queryByText('GBPUSD')).not.toBeInTheDocument();
+  });
+});

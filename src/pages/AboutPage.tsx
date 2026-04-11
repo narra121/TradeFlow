@@ -12,7 +12,7 @@ export function AboutPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">TradeFlow</span>
+            <span className="text-xl font-bold text-foreground">TradeQut</span>
           </Link>
           <Button variant="ghost" asChild className="gap-2">
             <Link to="/">
@@ -28,7 +28,7 @@ export function AboutPage() {
       <div className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">About TradeFlow</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">About TradeQut</h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               A trading journal built by a trader, for traders. Helping you track, analyze,
               and improve your trading performance — completely free.
@@ -40,18 +40,18 @@ export function AboutPage() {
             <h2 className="text-2xl font-semibold text-foreground mb-6">Our Story</h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
               <p>
-                TradeFlow was born out of a simple frustration: existing trading journals were either
+                TradeQut was born out of a simple frustration: existing trading journals were either
                 too expensive, too complicated, or lacked the features that active traders actually need.
                 As a trader myself, I wanted a clean, powerful tool that could help me track my trades,
                 spot patterns in my performance, and ultimately become a more disciplined trader.
               </p>
               <p>
-                What started as a personal project quickly grew into something bigger. TradeFlow is now
+                What started as a personal project quickly grew into something bigger. TradeQut is now
                 a full-featured trading journal with advanced analytics, calendar views, goal tracking,
                 multi-account support, and AI-powered trade extraction — all available for free.
               </p>
               <p>
-                TradeFlow is independently developed and maintained with a commitment to keeping the
+                TradeQut is independently developed and maintained with a commitment to keeping the
                 core product free and accessible to every trader, whether you're just starting out or
                 managing multiple accounts professionally.
               </p>
@@ -79,7 +79,7 @@ export function AboutPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">Free Forever</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  All core features of TradeFlow are free and will remain free. We believe that
+                  All core features of TradeQut are free and will remain free. We believe that
                   access to quality trading tools shouldn't depend on your account size or budget.
                 </p>
               </div>
@@ -108,9 +108,9 @@ export function AboutPage() {
             </div>
           </section>
 
-          {/* What TradeFlow Offers */}
+          {/* What TradeQut Offers */}
           <section className="mb-12 sm:mb-16">
-            <h2 className="text-2xl font-semibold text-foreground mb-6">What TradeFlow Offers</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-6">What TradeQut Offers</h2>
             <div className="bg-card/50 rounded-2xl border border-border/50 p-6 sm:p-8 md:p-12">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ul className="space-y-3 text-muted-foreground">
@@ -166,7 +166,7 @@ export function AboutPage() {
             <div className="bg-card rounded-2xl border border-warning/20 p-6 sm:p-8">
               <h2 className="text-2xl font-semibold text-foreground mb-4">Disclaimer</h2>
               <p className="text-muted-foreground leading-relaxed">
-                TradeFlow is a journaling and analytics tool only. It does not provide financial advice,
+                TradeQut is a journaling and analytics tool only. It does not provide financial advice,
                 trading signals, or investment recommendations. Trading in financial markets involves
                 substantial risk of loss and is not suitable for every investor. Past performance recorded
                 in the application reflects your own data and is not indicative of future results. You are
@@ -184,7 +184,7 @@ export function AboutPage() {
                 Have questions, feedback, or partnership inquiries? We'd love to hear from you.
               </p>
               <div className="space-y-2 text-muted-foreground">
-                <p><span className="text-foreground font-medium">Business:</span> TradeFlowJournal</p>
+                <p><span className="text-foreground font-medium">Business:</span> TradeQutJournal</p>
                 <p><span className="text-foreground font-medium">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348, India</p>
                 <p><span className="text-foreground font-medium">Email:</span> Narra77888@gmail.com</p>
                 <p><span className="text-foreground font-medium">Phone:</span> +91 8501018125</p>
@@ -203,7 +203,7 @@ export function AboutPage() {
       <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} TradeFlow. All rights reserved.
+            &copy; {new Date().getFullYear()} TradeQut. All rights reserved.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
             <Link to="/about" className="text-primary hover:text-primary/80 transition-colors">About Us</Link>

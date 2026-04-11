@@ -19,7 +19,7 @@ import {
 const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
 export type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 
-const STORAGE_KEY = 'tradeflow-table-page-size';
+const STORAGE_KEY = 'tradequt-table-page-size';
 
 export function getStoredPageSize(): PageSize {
   try {

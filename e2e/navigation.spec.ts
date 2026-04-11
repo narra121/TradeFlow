@@ -21,9 +21,9 @@ test.describe('App Navigation', () => {
     await expect(page.getByRole('button', { name: /Profile/i })).toBeVisible();
   });
 
-  test('sidebar shows TradeFlow branding', async ({ authedPage }) => {
+  test('sidebar shows TradeQut branding', async ({ authedPage }) => {
     const page = authedPage;
-    await expect(page.getByText('TradeFlow')).toBeVisible();
+    await expect(page.getByText('TradeQut')).toBeVisible();
   });
 
   test('navigates to Dashboard and highlights it as active', async ({ authedPage }) => {

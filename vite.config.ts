@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/TradeFlow/' : '/',
+  base: '/',
   server: {
     host: "::",
     port: 8080,
@@ -30,5 +30,15 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
+          'ui-vendor': ['recharts'],
+          'date-vendor': ['date-fns'],
+        },
+      },
+    },
   },
 }));

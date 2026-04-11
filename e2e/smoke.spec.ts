@@ -12,8 +12,8 @@ test.describe('Smoke Tests', () => {
 
     await page.goto('/');
 
-    // The landing page should show the TradeFlow branding
-    await expect(page.getByText('TradeFlow').first()).toBeVisible();
+    // The landing page should show the TradeQut branding
+    await expect(page.getByText('TradeQut').first()).toBeVisible();
 
     // The hero section should be visible
     await expect(page.getByText('Master Your')).toBeVisible();
@@ -133,13 +133,13 @@ test.describe('Legal & Company Pages', () => {
   test('About Us page loads with company info', async ({ page }) => {
     await page.goto('/about');
 
-    await expect(page.getByRole('heading', { name: 'About TradeFlow' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'About TradeQut' })).toBeVisible();
     await expect(page.getByText('Our Story')).toBeVisible();
     await expect(page.getByText('What We Stand For')).toBeVisible();
-    await expect(page.getByText('What TradeFlow Offers')).toBeVisible();
+    await expect(page.getByText('What TradeQut Offers')).toBeVisible();
     await expect(page.getByText('Disclaimer')).toBeVisible();
     // Business contact details required by PayU
-    await expect(page.getByText('TradeFlowJournal')).toBeVisible();
+    await expect(page.getByText('TradeQutJournal')).toBeVisible();
     await expect(page.getByText('Narra77888@gmail.com')).toBeVisible();
   });
 

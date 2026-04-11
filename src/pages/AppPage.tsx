@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { DashboardView } from '@/components/views/DashboardView';
-import { TradeLogView } from '@/components/views/TradeLogView';
-import { AnalyticsView } from '@/components/views/AnalyticsView';
-import { GoalsView } from '@/components/views/GoalsView';
-import { ProfileView } from '@/components/views/ProfileView';
-import { SettingsView } from '@/components/views/SettingsView';
-import { AccountsView } from '@/components/views/AccountsView';
 import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
+
+const DashboardView = lazy(() => import('@/components/views/DashboardView').then(m => ({ default: m.DashboardView })));
+const TradeLogView = lazy(() => import('@/components/views/TradeLogView').then(m => ({ default: m.TradeLogView })));
+const AnalyticsView = lazy(() => import('@/components/views/AnalyticsView').then(m => ({ default: m.AnalyticsView })));
+const GoalsView = lazy(() => import('@/components/views/GoalsView').then(m => ({ default: m.GoalsView })));
+const ProfileView = lazy(() => import('@/components/views/ProfileView').then(m => ({ default: m.ProfileView })));
+const SettingsView = lazy(() => import('@/components/views/SettingsView').then(m => ({ default: m.SettingsView })));
+const AccountsView = lazy(() => import('@/components/views/AccountsView').then(m => ({ default: m.AccountsView })));
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
 import { useCreateTradeMutation, useBulkImportTradesMutation, useGetSavedOptionsQuery, useGetSubscriptionQuery } from '@/store/api';
 import { useTradesSync } from '@/hooks/useTradesSync';
@@ -148,16 +149,18 @@ export function AppPage() {
           </button>
         )}
         <div className="max-w-7xl mx-auto animate-fade-in">
-          <Routes>
-            <Route index element={<Navigate to="/app/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />} />
-            <Route path="accounts" element={<AccountsView />} />
-            <Route path="tradelog" element={<TradeLogView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />} />
-            <Route path="analytics" element={<AnalyticsView />} />
-            <Route path="goals" element={<GoalsView />} />
-            <Route path="profile" element={<ProfileView />} />
-            <Route path="settings" element={<SettingsView />} />
-          </Routes>
+          <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>}>
+            <Routes>
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
+              <Route path="dashboard" element={<DashboardView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />} />
+              <Route path="accounts" element={<AccountsView />} />
+              <Route path="tradelog" element={<TradeLogView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />} />
+              <Route path="analytics" element={<AnalyticsView />} />
+              <Route path="goals" element={<GoalsView />} />
+              <Route path="profile" element={<ProfileView />} />
+              <Route path="settings" element={<SettingsView />} />
+            </Routes>
+          </Suspense>
         </div>
       </main>
 

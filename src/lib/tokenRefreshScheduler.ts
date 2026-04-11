@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.tradeflow.com/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.tradequt.com/v1';
 
 // JWT token expiration time in seconds (default: 3600 = 1 hour)
 // Cognito IdTokens typically expire in 1 hour

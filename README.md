@@ -1,4 +1,4 @@
-# TradeFlow Frontend
+# TradeQut Frontend
 
 React + TypeScript trading journal frontend. Deployed to GitHub Pages.
 
@@ -40,7 +40,7 @@ Copy `.env.example` and fill in values from the backend stack outputs:
 
 ```bash
 # Get values from deployed backend
-aws cloudformation describe-stacks --stack-name tradeflow-dev \
+aws cloudformation describe-stacks --stack-name tradequt-dev \
   --query "Stacks[0].Outputs" --output table
 ```
 

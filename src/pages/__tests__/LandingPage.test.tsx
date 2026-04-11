@@ -6,7 +6,7 @@ describe('LandingPage', () => {
   it('renders without crashing', () => {
     renderWithProviders(<LandingPage />);
     // The brand name should be present (appears multiple times in nav and footer)
-    expect(screen.getAllByText('TradeFlow').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('TradeQut').length).toBeGreaterThanOrEqual(1);
   });
 
   it('displays the hero headline', () => {
@@ -93,7 +93,7 @@ describe('LandingPage', () => {
     renderWithProviders(<LandingPage />);
     const year = new Date().getFullYear();
     expect(
-      screen.getByText(new RegExp(`${year} TradeFlow`))
+      screen.getByText(new RegExp(`${year} TradeQut`))
     ).toBeInTheDocument();
   });
 

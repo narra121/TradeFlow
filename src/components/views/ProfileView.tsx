@@ -573,7 +573,7 @@ export function ProfileView() {
                   <div className="space-y-3">
                     <div className="p-3 rounded-md bg-orange-500/10 border border-orange-500/20 text-sm text-orange-200">
                       <p className="font-semibold mb-1">Payment Required</p>
-                      <p>Your subscription has been created but not yet activated. Complete the payment to support the developer and help keep TradeFlow running.</p>
+                      <p>Your subscription has been created but not yet activated. Complete the payment to support the developer and help keep TradeQut running.</p>
                     </div>
                     <Button
                       variant="default"
@@ -630,7 +630,7 @@ export function ProfileView() {
 
                 {subscriptionDetails.status === 'active' && (
                   <div className="text-sm text-muted-foreground">
-                    <p>Thank you for supporting TradeFlow! Payments are automatically processed on your billing date.</p>
+                    <p>Thank you for supporting TradeQut! Payments are automatically processed on your billing date.</p>
                   </div>
                 )}
               </>
@@ -658,8 +658,8 @@ export function ProfileView() {
           </div>
           <CardTitle className="text-xl sm:text-2xl">Support the Developer (Optional)</CardTitle>
           <CardDescription className="max-w-xl mx-auto mt-2 text-sm sm:text-base">
-            TradeFlow is <span className="text-success font-semibold">100% free to use</span> with all features included.
-            If you love TradeFlow and want to support the developer, you can contribute a small amount 
+            TradeQut is <span className="text-success font-semibold">100% free to use</span> with all features included.
+            If you love TradeQut and want to support the developer, you can contribute a small amount 
             to help cover hosting and development costs.
             <span className="block mt-2 text-foreground/80 font-medium">
               Minimum ₹99 or ₹299 — completely optional!

@@ -43,7 +43,7 @@ async function setupAuth(page: Page) {
 
 // Mock API responses so the app can render without a real backend.
 // The app uses RTK Query with base URL like:
-//   https://<id>.execute-api.us-east-1.amazonaws.com/tradeflow-dev/v1
+//   https://<id>.execute-api.us-east-1.amazonaws.com/tradequt-dev/v1
 // Routes are matched with glob pattern to cover both dev and prod API URLs.
 async function mockAPIRoutes(page: Page) {
   // Mock the trades endpoint

@@ -98,7 +98,7 @@ export function LandingPage() {
       name: 'Marcus Chen',
       role: 'Prop Trader',
       avatar: 'MC',
-      content: 'TradeFlow helped me pass my FTMO challenge. The analytics showed me exactly where I was leaking money.',
+      content: 'TradeQut helped me pass my FTMO challenge. The analytics showed me exactly where I was leaking money.',
       rating: 5,
     },
     {
@@ -136,7 +136,7 @@ export function LandingPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">TradeFlow</span>
+            <span className="text-xl font-bold text-foreground">TradeQut</span>
           </button>
 
           <div className="hidden md:flex items-center gap-8">
@@ -385,7 +385,7 @@ export function LandingPage() {
               <span className="text-primary"> Thousands of Traders</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              See what our community has to say about TradeFlow.
+              See what our community has to say about TradeQut.
             </p>
           </div>
 
@@ -422,7 +422,7 @@ export function LandingPage() {
               <span className="text-primary"> Free to Use</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              TradeFlow is completely free with all features included. If you love it and want to support the developer, you can contribute optionally.
+              TradeQut is completely free with all features included. If you love it and want to support the developer, you can contribute optionally.
             </p>
           </div>
 
@@ -478,9 +478,9 @@ export function LandingPage() {
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
               <Heart className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Love TradeFlow? Support the Developer</h3>
+            <h3 className="text-xl font-semibold text-foreground mb-2">Love TradeQut? Support the Developer</h3>
             <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              TradeFlow is built with love by an independent developer. If you find it valuable, 
+              TradeQut is built with love by an independent developer. If you find it valuable, 
               consider supporting with a small contribution to help cover hosting and development costs.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
@@ -512,7 +512,7 @@ export function LandingPage() {
             Ready to Transform Your Trading?
           </h2>
           <p className="text-base sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Join thousands of traders who are already using TradeFlow to track, analyze, and improve their performance.
+            Join thousands of traders who are already using TradeQut to track, analyze, and improve their performance.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="lg" asChild className="gap-2 h-14 px-8 text-lg">
@@ -535,7 +535,7 @@ export function LandingPage() {
                 <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
                   <Zap className="w-5 h-5 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-bold text-foreground">TradeFlow</span>
+                <span className="text-xl font-bold text-foreground">TradeQut</span>
               </div>
               <p className="text-muted-foreground text-sm">
                 The professional trading journal for serious traders. Track, analyze, and improve your trading performance.
@@ -594,7 +594,7 @@ export function LandingPage() {
 
           <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground text-center md:text-left">
-              © {new Date().getFullYear()} TradeFlow. All rights reserved.
+              © {new Date().getFullYear()} TradeQut. All rights reserved.
             </p>
             <div className="flex items-center gap-4 sm:gap-6">
               <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">

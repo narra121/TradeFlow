@@ -52,8 +52,8 @@ test.describe('Authentication - Login Page', () => {
     await expect(page).toHaveURL(/\/signup/);
   });
 
-  test('shows the TradeFlow branding', async ({ page }) => {
-    await expect(page.getByText('TradeFlow').first()).toBeVisible();
+  test('shows the TradeQut branding', async ({ page }) => {
+    await expect(page.getByText('TradeQut').first()).toBeVisible();
   });
 });
 

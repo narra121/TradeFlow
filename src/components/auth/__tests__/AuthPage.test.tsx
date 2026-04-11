@@ -309,14 +309,14 @@ describe('AuthPage', () => {
   });
 
   describe('Branding', () => {
-    it('renders the TradeFlow branding on the left panel', () => {
+    it('renders the TradeQut branding on the left panel', () => {
       render(<AuthPage onLogin={mockOnLogin} />, {
         preloadedState: {
           auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
         },
       });
-      // The branding panel shows "TradeFlow" text
-      const brandTexts = screen.getAllByText('TradeFlow');
+      // The branding panel shows "TradeQut" text
+      const brandTexts = screen.getAllByText('TradeQut');
       expect(brandTexts.length).toBeGreaterThanOrEqual(1);
     });
 
