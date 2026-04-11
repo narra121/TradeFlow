@@ -3,7 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, Component } from "react";
+import type { ReactNode, ErrorInfo } from "react";
 import { Loader2 } from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
 import { clearAuth } from "@/store/slices/authSlice";
@@ -21,6 +22,60 @@ const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage').then(
 const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage').then(m => ({ default: m.RefundPolicyPage })));
 const ContactPage = lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
 const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+
+// Error boundary that catches chunk load failures after a new deploy
+// and auto-reloads the page once to fetch the updated index.html.
+const RELOAD_KEY = 'chunk-reload';
+
+function isChunkError(error: Error): boolean {
+  return (
+    error.name === 'ChunkLoadError' ||
+    error.message.includes('Failed to fetch dynamically imported module') ||
+    error.message.includes('Loading chunk') ||
+    error.message.includes('Loading CSS chunk')
+  );
+}
+
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(error: Error) {
+    if (isChunkError(error)) {
+      // Only auto-reload once to avoid infinite loops
+      const alreadyReloaded = sessionStorage.getItem(RELOAD_KEY);
+      if (!alreadyReloaded) {
+        sessionStorage.setItem(RELOAD_KEY, '1');
+        window.location.reload();
+        return { hasError: true };
+      }
+    }
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('ChunkErrorBoundary caught:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
+          <p className="text-muted-foreground">A new version is available.</p>
+          <button
+            className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => {
+              sessionStorage.removeItem(RELOAD_KEY);
+              window.location.reload();
+            }}
+          >
+            Reload page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function PageLoadingFallback() {
   return (
@@ -41,6 +96,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Clear the reload guard on successful app load so future deploys still auto-reload
+sessionStorage.removeItem(RELOAD_KEY);
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -94,6 +152,7 @@ function AppRoutes() {
   }, []); // Empty dependency array - run only once on mount
 
   return (
+    <ChunkErrorBoundary>
     <Suspense fallback={<PageLoadingFallback />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -113,6 +172,7 @@ function AppRoutes() {
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
+    </ChunkErrorBoundary>
   );
 }
 
