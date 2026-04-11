@@ -29,14 +29,14 @@ export interface Trade {
   symbol: string;
   direction: TradeDirection;
   entryPrice: number;
-  exitPrice?: number;
+  exitPrice: number;
   stopLoss: number;
   takeProfit: number;
   size: number;
   entryDate: string; // ISO string for Redux serialization
-  exitDate?: string; // ISO string for Redux serialization
+  exitDate: string; // ISO string for Redux serialization
   outcome: TradeOutcome;
-  pnl?: number;
+  pnl: number;
   pnlPercent?: number;
   riskRewardRatio: number;
   notes?: string;

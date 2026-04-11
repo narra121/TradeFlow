@@ -14,21 +14,18 @@ export interface TradesState {
   };
 }
 
-// Default to this week
+// Default to all time (backend requires startDate/endDate)
 const getDefaultDateRange = () => {
-  const now = new Date();
-  const startDate = startOfWeek(now, { weekStartsOn: 1 });
-  const endDate = endOfDay(endOfWeek(now, { weekStartsOn: 1 }));
   return {
-    startDate: formatLocalDateOnly(startDate),
-    endDate: formatLocalDateOnly(endDate)
+    startDate: '2000-01-01',
+    endDate: new Date().toISOString().slice(0, 10),
   };
 };
 
 const initialState: TradesState = {
   filters: {
     accountId: 'ALL',
-    datePreset: 'thisWeek',
+    datePreset: 'all',
     ...getDefaultDateRange()
   },
 };
@@ -54,7 +51,7 @@ const tradesSlice = createSlice({
     clearFilters: (state) => {
       state.filters = {
         accountId: 'ALL',
-        datePreset: 'thisWeek',
+        datePreset: 'all',
         ...getDefaultDateRange()
       };
     },

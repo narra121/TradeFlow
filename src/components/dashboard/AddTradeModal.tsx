@@ -184,6 +184,21 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate mandatory fields
+    if (!exitPrice || parseFloat(exitPrice) === 0) {
+      return;
+    }
+    if (!exitDateTime) {
+      return;
+    }
+    if (!displayPnl && displayPnl !== '0' && !calculatedPnl) {
+      return;
+    }
+    if (!outcome) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Simulate API call
@@ -205,7 +220,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
         symbol,
         direction,
         entryPrice: entry,
-        exitPrice: exit || undefined,
+        exitPrice: exit,
         stopLoss: sl,
         takeProfit: tp,
         size: posSize,
@@ -375,7 +390,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Exit Price</Label>
+                    <Label className="text-xs">Exit Price <span className="text-destructive">*</span></Label>
                     <Input
                       type="number"
                       step="any"
@@ -383,6 +398,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                       onChange={(e) => setExitPrice(e.target.value)}
                       placeholder="0.00"
                       className="font-mono text-sm"
+                      required
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -409,11 +425,12 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Exit Date & Time</Label>
+                    <Label className="text-xs">Exit Date & Time <span className="text-destructive">*</span></Label>
                     <DateTimePicker
                       value={exitDateTime}
                       onChange={setExitDateTime}
                       placeholder="Select exit time"
+                      required
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -442,7 +459,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Net PnL ($)</Label>
+                    <Label className="text-xs">Net PnL ($) <span className="text-destructive">*</span></Label>
                     <Input
                       type="number"
                       step="any"
@@ -461,7 +478,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                     </p>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Outcome</Label>
+                    <Label className="text-xs">Outcome <span className="text-destructive">*</span></Label>
                     <DynamicSelect
                       value={outcome}
                       onChange={(value) => setOutcome(value as TradeOutcome)}

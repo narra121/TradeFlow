@@ -340,7 +340,7 @@ describe('DashboardView - Empty State', () => {
     vi.clearAllMocks();
   });
 
-  it('shows period empty state when no trades in current filter', () => {
+  it('shows welcome empty state when no trades with default all filter', () => {
     vi.mocked(useGetTradesQuery).mockReturnValue({
       data: [],
       isLoading: false,
@@ -359,12 +359,12 @@ describe('DashboardView - Empty State', () => {
       isFetching: false,
     } as any);
 
-    // Default filter is 'thisWeek', not 'all', so shows period empty state
+    // Default filter is 'all', so shows welcome empty state
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    expect(screen.getByText('No trades in this period')).toBeInTheDocument();
-    expect(screen.getByText(/Try selecting a different date range/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /View All Time/ })).toBeInTheDocument();
+    expect(screen.getByText('Welcome to TradeQut!')).toBeInTheDocument();
+    expect(screen.getByText(/Start by adding your first trade/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add Your First Trade/ })).toBeInTheDocument();
   });
 
   it('calls onAddTrade from period empty state Add Trade button', () => {
@@ -395,7 +395,7 @@ describe('DashboardView - Empty State', () => {
     expect(onAddTrade).toHaveBeenCalled();
   });
 
-  it('shows View All Time button in period empty state', () => {
+  it('shows Import Trades button in welcome empty state', () => {
     vi.mocked(useGetTradesQuery).mockReturnValue({
       data: [],
       isLoading: false,
@@ -416,7 +416,7 @@ describe('DashboardView - Empty State', () => {
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: /View All Time/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Import Trades/ })).toBeInTheDocument();
   });
 
   it('does not show empty state when trades exist', () => {
@@ -447,7 +447,7 @@ describe('DashboardView - Empty State', () => {
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    expect(screen.queryByText('Welcome to TradeFlow!')).not.toBeInTheDocument();
+    expect(screen.queryByText('Welcome to TradeQut!')).not.toBeInTheDocument();
   });
 
   it('does not show empty state while loading', () => {
@@ -465,6 +465,6 @@ describe('DashboardView - Empty State', () => {
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    expect(screen.queryByText('Welcome to TradeFlow!')).not.toBeInTheDocument();
+    expect(screen.queryByText('Welcome to TradeQut!')).not.toBeInTheDocument();
   });
 });

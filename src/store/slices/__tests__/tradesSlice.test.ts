@@ -26,9 +26,9 @@ describe('tradesSlice', () => {
       expect(state.filters.accountId).toBe('ALL');
     });
 
-    it('defaults datePreset to thisWeek', () => {
+    it('defaults datePreset to all', () => {
       const state = getInitialState();
-      expect(state.filters.datePreset).toBe('thisWeek');
+      expect(state.filters.datePreset).toBe('all');
     });
 
     it('has valid date strings for startDate and endDate', () => {
@@ -191,8 +191,8 @@ describe('tradesSlice', () => {
 
       state = tradesReducer(state, clearFilters());
       expect(state.filters.accountId).toBe('ALL');
-      expect(state.filters.datePreset).toBe('thisWeek');
-      expect(state.filters.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(state.filters.datePreset).toBe('all');
+      expect(state.filters.startDate).toBe('2000-01-01');
       expect(state.filters.endDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
@@ -202,14 +202,14 @@ describe('tradesSlice', () => {
       expect(state.filters.accountId).toBe('ALL');
     });
 
-    it('resets datePreset to thisWeek', () => {
+    it('resets datePreset to all', () => {
       let state = tradesReducer(getInitialState(), setDateRangeFilter({
         startDate: '2025-01-01',
         endDate: '2025-12-31',
         datePreset: 365,
       }));
       state = tradesReducer(state, clearFilters());
-      expect(state.filters.datePreset).toBe('thisWeek');
+      expect(state.filters.datePreset).toBe('all');
     });
   });
 
@@ -241,7 +241,7 @@ describe('tradesSlice', () => {
       // Clear filters
       state = tradesReducer(state, clearFilters());
       expect(state.filters.accountId).toBe('ALL');
-      expect(state.filters.datePreset).toBe('thisWeek');
+      expect(state.filters.datePreset).toBe('all');
     });
   });
 

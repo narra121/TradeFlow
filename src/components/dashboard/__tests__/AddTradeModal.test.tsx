@@ -97,6 +97,19 @@ vi.mock('@radix-ui/react-separator', async () => {
   };
 });
 
+// Mock DateTimePicker to render a simple input for testability
+vi.mock('@/components/ui/datetime-picker', () => ({
+  DateTimePicker: ({ value, onChange, placeholder }: any) => (
+    <input
+      type="text"
+      value={value || ''}
+      onChange={(e: any) => onChange(e.target.value)}
+      placeholder={placeholder}
+      aria-label={placeholder}
+    />
+  ),
+}));
+
 // Mock hooks
 vi.mock('@/hooks/useSavedOptions', () => ({
   useSavedOptions: () => ({
@@ -148,6 +161,21 @@ vi.mock('@/components/trade/CachedImage', () => ({
 vi.mock('@/store/api/textApi', () => ({
   useEnhanceTextMutation: () => [vi.fn(), { isLoading: false }],
 }));
+
+// Helper to fill required form fields before submission
+async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
+  // Fill entry price (1st "0.00" placeholder input)
+  const numberInputs = screen.getAllByPlaceholderText('0.00');
+  await user.clear(numberInputs[0]);
+  await user.type(numberInputs[0], '1.10');
+  // Fill exit price (2nd "0.00" placeholder input)
+  await user.clear(numberInputs[1]);
+  await user.type(numberInputs[1], '1.12');
+  // Fill exit date via mocked DateTimePicker input
+  const exitDateInput = screen.getByPlaceholderText('Select exit time');
+  await user.clear(exitDateInput);
+  await user.type(exitDateInput, '2025-01-15T14:00');
+}
 
 describe('AddTradeModal', () => {
   const defaultProps = {
@@ -262,6 +290,9 @@ describe('AddTradeModal', () => {
 
     render(<AddTradeModal {...defaultProps} onAddTrade={onAddTrade} />);
 
+    // Fill required fields so form validation passes
+    await fillRequiredFields(user);
+
     // Click submit button (the "Add Trade" button)
     const submitButton = screen.getByRole('button', { name: /add trade/i });
     await user.click(submitButton);
@@ -280,6 +311,9 @@ describe('AddTradeModal', () => {
     const onAddTrade = vi.fn().mockRejectedValue(new Error('Validation failed'));
 
     render(<AddTradeModal {...defaultProps} onOpenChange={onOpenChange} onAddTrade={onAddTrade} />);
+
+    // Fill required fields so form validation passes
+    await fillRequiredFields(user);
 
     const submitButton = screen.getByRole('button', { name: /add trade/i });
     await user.click(submitButton);
@@ -301,6 +335,9 @@ describe('AddTradeModal', () => {
     const onAddTrade = vi.fn().mockResolvedValue(undefined);
 
     render(<AddTradeModal {...defaultProps} onOpenChange={onOpenChange} onAddTrade={onAddTrade} />);
+
+    // Fill required fields so form validation passes
+    await fillRequiredFields(user);
 
     const submitButton = screen.getByRole('button', { name: /add trade/i });
     await user.click(submitButton);
@@ -326,11 +363,14 @@ describe('AddTradeModal', () => {
       symbol: 'GBPUSD',
       direction: 'SHORT',
       entryPrice: 1.25,
+      exitPrice: 1.28,
       stopLoss: 1.27,
       takeProfit: 1.22,
       size: 0.5,
       entryDate: '2024-03-01T10:00:00.000Z',
+      exitDate: '2024-03-01T14:00:00.000Z',
       outcome: 'SL',
+      pnl: -150,
       riskRewardRatio: 1.5,
     };
 
@@ -373,6 +413,9 @@ describe('AddTradeModal - Error Handling', () => {
 
     render(<AddTradeModal {...defaultProps} onOpenChange={onOpenChange} onAddTrade={onAddTrade} />);
 
+    // Fill required fields so form validation passes
+    await fillRequiredFields(user);
+
     const submitButton = screen.getByRole('button', { name: /add trade/i });
     await user.click(submitButton);
 
@@ -391,6 +434,9 @@ describe('AddTradeModal - Error Handling', () => {
     const onAddTrade = vi.fn().mockRejectedValue(new Error('Server error'));
 
     render(<AddTradeModal {...defaultProps} onAddTrade={onAddTrade} />);
+
+    // Fill required fields so form validation passes
+    await fillRequiredFields(user);
 
     const submitButton = screen.getByRole('button', { name: /add trade/i });
     await user.click(submitButton);
@@ -412,6 +458,9 @@ describe('AddTradeModal - Error Handling', () => {
     const onAddTrade = vi.fn().mockResolvedValue(undefined);
 
     render(<AddTradeModal {...defaultProps} onOpenChange={onOpenChange} onAddTrade={onAddTrade} />);
+
+    // Fill required fields so form validation passes
+    await fillRequiredFields(user);
 
     const submitButton = screen.getByRole('button', { name: /add trade/i });
     await user.click(submitButton);
