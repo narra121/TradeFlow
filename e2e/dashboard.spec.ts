@@ -16,6 +16,8 @@ test.describe('Dashboard', () => {
     const page = authedPage;
 
     // Default filter is "This week" — with no trades, shows period empty state
+    // Wait for lazy-loaded DashboardView to render first
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('No trades in this period')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('View All Time')).toBeVisible();
   });

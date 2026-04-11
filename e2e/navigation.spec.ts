@@ -23,7 +23,7 @@ test.describe('App Navigation', () => {
 
   test('sidebar shows TradeQut branding', async ({ authedPage }) => {
     const page = authedPage;
-    await expect(page.getByText('TradeQut')).toBeVisible();
+    await expect(page.getByText('TradeQut', { exact: true })).toBeVisible();
   });
 
   test('navigates to Dashboard and highlights it as active', async ({ authedPage }) => {
