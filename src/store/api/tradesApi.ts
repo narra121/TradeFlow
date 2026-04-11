@@ -33,7 +33,7 @@ const STREAM_PROPAGATION_DELAY_MS = 4000;
 
 const delayedInvalidateStreamDeps = (dispatch: any) => {
   setTimeout(() => {
-    dispatch(api.util.invalidateTags(['Accounts', 'Goals', 'Rules']));
+    dispatch(api.util.invalidateTags(['Accounts', 'Goals', 'Rules', 'SavedOptions']));
   }, STREAM_PROPAGATION_DELAY_MS);
 };
 

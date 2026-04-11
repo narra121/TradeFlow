@@ -17,6 +17,7 @@ export const savedOptionsApi = api.injectEndpoints({
       query: () => '/options',
       // This data is effectively global app config; keep it around.
       keepUnusedDataFor: 60 * 60,
+      providesTags: ['SavedOptions'],
       transformResponse: (response: any) => {
         const options = response.options || response;
         if (response?._apiMessage) {
