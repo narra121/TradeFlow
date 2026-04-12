@@ -84,7 +84,8 @@ export function ProfileView() {
   // Get plan ID based on selected amount and billing cycle
   const getSelectedPlanId = () => {
     const amount = billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount;
-    const plan = availablePlans.find(p => p.period === billingCycle && p.amount === amount);
+    const periodKey = billingCycle === 'annual' ? 'yearly' : billingCycle;
+    const plan = availablePlans.find(p => p.period === periodKey && p.amount === amount);
     return plan?.planId || '';
   };
   
@@ -178,7 +179,9 @@ export function ProfileView() {
     setIsSubscribing(true);
     try {
       // Find plan ID based on amount and cycle
-      const plan = availablePlans.find(p => p.period === cycle && p.amount === amount);
+      // Backend returns period as 'monthly'/'yearly', UI uses 'monthly'/'annual'
+      const periodKey = cycle === 'annual' ? 'yearly' : cycle;
+      const plan = availablePlans.find(p => p.period === periodKey && p.amount === amount);
       
       if (!plan) {
         console.error('Plan not found for:', { amount, cycle });
