@@ -16,6 +16,7 @@ import { BrokenRulesSelect } from '@/components/trade/BrokenRulesSelect';
 import { AccountSelect } from '@/components/account/AccountSelect';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
+import { useFormDraft } from '@/hooks/useFormDraft';
 import { useTradingRules } from '@/hooks/useTradingRules';
 import { useAccounts } from '@/hooks/useAccounts';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2, Loader2 } from 'lucide-react';
@@ -65,6 +66,10 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
   
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form draft persistence
+  const draftKey = editMode && initialTrade?.id ? `trade-draft-edit-${initialTrade.id}` : 'trade-draft-new';
+  const { draft, hasDraft, save: saveDraft, clear: clearDraft } = useFormDraft(draftKey);
 
   // Saved options hook
   const {
@@ -128,11 +133,60 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     });
   };
 
-  // Reset local form state when closing to avoid stale values on next open.
+  // Reset visual states on close, but don't clear draft (it persists in sessionStorage)
   useEffect(() => {
     if (!open) {
-      resetForm();
+      setIsSubmitting(false);
+      setShowAddAccount(false);
+      setDraftRestored(false);
     }
+  }, [open]);
+
+  // Auto-save form draft to sessionStorage (debounced)
+  useEffect(() => {
+    if (!open) return;
+    saveDraft({
+      direction, symbol, entryPrice, exitPrice, stopLoss, takeProfit,
+      size, manualPnl, entryDateTime, exitDateTime, outcome,
+      strategy, session, marketCondition, newsEvent, mistakes,
+      keyLesson, tradeNotes, brokenRuleIds, selectedAccountIds, images,
+    });
+  }, [
+    open, direction, symbol, entryPrice, exitPrice, stopLoss, takeProfit,
+    size, manualPnl, entryDateTime, exitDateTime, outcome,
+    strategy, session, marketCondition, newsEvent, mistakes,
+    keyLesson, tradeNotes, brokenRuleIds, selectedAccountIds, images, saveDraft,
+  ]);
+
+  // Restore draft when modal opens for new trade (not edit mode)
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    if (!open || editMode || !hasDraft || !draft) {
+      setDraftRestored(false);
+      return;
+    }
+    setDirection(draft.direction || 'LONG');
+    setSymbol(draft.symbol || '');
+    setEntryPrice(draft.entryPrice || '');
+    setExitPrice(draft.exitPrice || '');
+    setStopLoss(draft.stopLoss || '');
+    setTakeProfit(draft.takeProfit || '');
+    setSize(draft.size || '0.1');
+    setManualPnl(draft.manualPnl || '');
+    setEntryDateTime(draft.entryDateTime || '');
+    setExitDateTime(draft.exitDateTime || '');
+    setOutcome(draft.outcome || 'TP');
+    setStrategy(draft.strategy || '');
+    setSession(draft.session || '');
+    setMarketCondition(draft.marketCondition || '');
+    setNewsEvent(draft.newsEvent || '');
+    setMistakes(Array.isArray(draft.mistakes) ? draft.mistakes : []);
+    setKeyLesson(draft.keyLesson || '');
+    setTradeNotes(draft.tradeNotes || '');
+    setBrokenRuleIds(Array.isArray(draft.brokenRuleIds) ? draft.brokenRuleIds : []);
+    setSelectedAccountIds(Array.isArray(draft.selectedAccountIds) ? draft.selectedAccountIds : []);
+    setImages(Array.isArray(draft.images) ? draft.images : []);
+    setDraftRestored(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -252,6 +306,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
       });
 
       resetForm();
+      clearDraft();
       onOpenChange(false);
     } catch {
       // Keep dialog open so user can fix errors — toast middleware handles the error message
@@ -289,7 +344,18 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:w-[90vw] max-w-[95vw] sm:max-w-[90vw] h-[95vh] sm:h-[85vh] max-h-[95vh] sm:max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
-          <DialogTitle className="text-lg sm:text-xl font-semibold">{editMode ? 'Edit Trade' : 'Add New Trade'}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-lg sm:text-xl font-semibold">{editMode ? 'Edit Trade' : 'Add New Trade'}</DialogTitle>
+            {draftRestored && !editMode && (
+              <button
+                type="button"
+                onClick={() => { clearDraft(); resetForm(); setDraftRestored(false); }}
+                className="text-xs text-muted-foreground/60 hover:text-destructive transition-colors"
+              >
+                Discard draft
+              </button>
+            )}
+          </div>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">
