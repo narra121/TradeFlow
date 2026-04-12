@@ -628,39 +628,23 @@ describe('GoalsView - Empty State', () => {
   });
 });
 
-describe('GoalsView - Rules Empty State', () => {
+describe('GoalsView - Default Rules Fallback', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('shows rules empty state when no rules exist', async () => {
+  it('shows default rules when no backend rules exist', async () => {
     const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
     (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        goals: [
-          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
-          { goalId: 'g2', goalType: 'winRate', period: 'weekly', target: 65, accountId: 'acc1' },
-        ],
-        rules: [],
-      },
+      data: { goals: [], rules: [] },
       isLoading: false,
       isFetching: false,
     });
     (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
-        goalProgress: {
-          profit: { current: 200, target: 500, progress: 40, achieved: false },
-          winRate: { current: 100, target: 65, progress: 153.8, achieved: true },
-        },
-        ruleCompliance: {
-          totalRules: 0,
-          followedCount: 0,
-          brokenRulesCounts: {},
-        },
-        goals: [
-          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
-          { goalId: 'g2', goalType: 'winRate', period: 'weekly', target: 65, accountId: 'acc1' },
-        ],
+        goalProgress: { profit: { current: 0, target: 500, progress: 0, achieved: false } },
+        ruleCompliance: { totalRules: 0, followedCount: 0, brokenRulesCounts: {} },
+        goals: [],
         rules: [],
       },
       isLoading: false,
@@ -669,34 +653,25 @@ describe('GoalsView - Rules Empty State', () => {
 
     render(<GoalsView />);
 
-    expect(screen.getByText('No trading rules yet')).toBeInTheDocument();
+    // Should show default rules instead of empty state
+    expect(screen.queryByText('No trading rules yet')).not.toBeInTheDocument();
+    expect(screen.getByText('Never risk more than 1% per trade')).toBeInTheDocument();
+    expect(screen.getByText('Always set stop loss before entry')).toBeInTheDocument();
+    expect(screen.getByText(/default rules/i)).toBeInTheDocument();
   });
 
-  it('shows Create Your First Rule button', async () => {
+  it('shows Add Rule button even with default rules', async () => {
     const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
     (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        goals: [
-          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
-        ],
-        rules: [],
-      },
+      data: { goals: [], rules: [] },
       isLoading: false,
       isFetching: false,
     });
     (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
-        goalProgress: {
-          profit: { current: 200, target: 500, progress: 40, achieved: false },
-        },
-        ruleCompliance: {
-          totalRules: 0,
-          followedCount: 0,
-          brokenRulesCounts: {},
-        },
-        goals: [
-          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
-        ],
+        goalProgress: { profit: { current: 0, target: 500, progress: 0, achieved: false } },
+        ruleCompliance: { totalRules: 0, followedCount: 0, brokenRulesCounts: {} },
+        goals: [],
         rules: [],
       },
       isLoading: false,
@@ -705,82 +680,10 @@ describe('GoalsView - Rules Empty State', () => {
 
     render(<GoalsView />);
 
-    expect(screen.getByRole('button', { name: /Create Your First Rule/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add Rule/i })).toBeInTheDocument();
   });
 
-  it('hides followed counter when no rules', async () => {
-    const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
-    (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        goals: [
-          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
-        ],
-        rules: [],
-      },
-      isLoading: false,
-      isFetching: false,
-    });
-    (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        goalProgress: {
-          profit: { current: 200, target: 500, progress: 40, achieved: false },
-        },
-        ruleCompliance: {
-          totalRules: 0,
-          followedCount: 0,
-          brokenRulesCounts: {},
-        },
-        goals: [
-          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
-        ],
-        rules: [],
-      },
-      isLoading: false,
-      isFetching: false,
-    });
-
-    render(<GoalsView />);
-
-    expect(screen.queryByText(/\d+\/\d+ followed/)).not.toBeInTheDocument();
-  });
-
-  it('hides Add Rule button when no rules exist', async () => {
-    const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
-    (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        goals: [
-          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
-        ],
-        rules: [],
-      },
-      isLoading: false,
-      isFetching: false,
-    });
-    (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        goalProgress: {
-          profit: { current: 200, target: 500, progress: 40, achieved: false },
-        },
-        ruleCompliance: {
-          totalRules: 0,
-          followedCount: 0,
-          brokenRulesCounts: {},
-        },
-        goals: [
-          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
-        ],
-        rules: [],
-      },
-      isLoading: false,
-      isFetching: false,
-    });
-
-    render(<GoalsView />);
-
-    expect(screen.queryByText('Add Rule')).not.toBeInTheDocument();
-  });
-
-  it('does not show rules empty state when rules exist', async () => {
+  it('does not show default rules when backend rules exist', async () => {
     const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
     (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {

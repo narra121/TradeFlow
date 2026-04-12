@@ -207,8 +207,26 @@ export function GoalsView() {
   const loading = rulesGoalsLoading || rulesGoalsFetching;
   
   const reduxRules = rulesGoalsData?.rules || [];
-  
-  const rules = progressData?.rules ?? reduxRules ?? [];
+
+  // Default rules shown when no rules exist for the period
+  const DEFAULT_RULES = [
+    'Never risk more than 1% per trade',
+    'Always set stop loss before entry',
+    'No trading during high-impact news',
+    'Wait for confirmation before entry',
+    'Review trades weekly',
+    'Stick to my trading plan',
+  ];
+  const defaultRuleObjects = DEFAULT_RULES.map((rule, i) => ({
+    ruleId: `default-${i}`,
+    rule,
+    completed: false,
+    isActive: true,
+  }));
+
+  const backendRules = progressData?.rules ?? reduxRules ?? [];
+  const rules = backendRules.length > 0 ? backendRules : defaultRuleObjects;
+  const isUsingDefaultRules = backendRules.length === 0;
   
   // Navigate to previous period
   const goToPreviousPeriod = () => {
@@ -675,7 +693,7 @@ export function GoalsView() {
                 {rules.length - Object.keys(brokenRuleCounts).filter(ruleId => brokenRuleCounts[ruleId] > 0).length}/{rules.length} followed
               </span>
             )}
-            {isCurrentPeriod && rules.length > 0 && (
+            {isCurrentPeriod && (
               <Button
                 variant="outline"
                 size="sm"
@@ -690,28 +708,10 @@ export function GoalsView() {
           </div>
         </div>
 
+        {isUsingDefaultRules && (
+          <p className="text-xs text-muted-foreground mb-2">Showing default rules. Add or edit rules to customize for this period.</p>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {rules.length === 0 && !isAddingRule && (
-            <div className="col-span-full flex flex-col items-center text-center py-8 px-4">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-primary/60" />
-              </div>
-              <h3 className="text-base font-semibold text-foreground mb-1">No trading rules yet</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mb-4">
-                Define rules like "Never risk more than 2%" or "Don't trade during news." When you journal a trade, you can mark which rules you broke.
-              </p>
-              {isCurrentPeriod && (
-                <Button
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setIsAddingRule(true)}
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Your First Rule
-                </Button>
-              )}
-            </div>
-          )}
           {rules.map((item, index) => {
             const ruleId = (item as any).id || (item as any).ruleId;
             const isEditingThis = editingRuleId === ruleId;
@@ -792,7 +792,7 @@ export function GoalsView() {
                         </span>
                       )}
                     </div>
-                    {isCurrentPeriod && (
+                    {isCurrentPeriod && !isUsingDefaultRules && (
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
