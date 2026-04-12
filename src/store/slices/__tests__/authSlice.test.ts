@@ -40,7 +40,7 @@ vi.mock('../../api/authApi', () => {
   };
 });
 
-import authReducer, { clearSignupSuccess, setAuth, clearAuth, type AuthState } from '../authSlice';
+import authReducer, { clearSignupSuccess, setAuth, setGoogleAuth, clearAuth, type AuthState } from '../authSlice';
 
 describe('authSlice', () => {
   const baseInitialState: AuthState = {
@@ -300,6 +300,44 @@ describe('authSlice', () => {
       expect(state.token).toBeNull();
       expect(state.refreshToken).toBeNull();
       expect(state.isAuthenticated).toBe(false);
+    });
+  });
+
+  describe('setGoogleAuth', () => {
+    it('sets user, token, refreshToken, and isAuthenticated', () => {
+      const action = setGoogleAuth({
+        user: { id: 'google-user-1', name: 'Google User', email: 'guser@gmail.com' },
+        token: 'google-id-token',
+        refreshToken: 'google-refresh-token',
+      });
+      const state = authReducer(baseInitialState, action);
+      expect(state.user).toEqual({ id: 'google-user-1', name: 'Google User', email: 'guser@gmail.com' });
+      expect(state.token).toBe('google-id-token');
+      expect(state.refreshToken).toBe('google-refresh-token');
+      expect(state.isAuthenticated).toBe(true);
+    });
+
+    it('starts token refresh scheduler', async () => {
+      const { tokenRefreshScheduler } = await import('@/lib/tokenRefreshScheduler');
+      vi.mocked(tokenRefreshScheduler.start).mockClear();
+      const action = setGoogleAuth({
+        user: { id: 'u1', name: 'Test', email: 'test@test.com' },
+        token: 'tok',
+        refreshToken: 'ref',
+      });
+      authReducer(baseInitialState, action);
+      expect(tokenRefreshScheduler.start).toHaveBeenCalled();
+    });
+
+    it('handles null refreshToken', () => {
+      const action = setGoogleAuth({
+        user: { id: 'u1', name: 'Test', email: 'test@test.com' },
+        token: 'tok',
+        refreshToken: null,
+      });
+      const state = authReducer(baseInitialState, action);
+      expect(state.refreshToken).toBeNull();
+      expect(state.isAuthenticated).toBe(true);
     });
   });
 

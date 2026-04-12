@@ -36,6 +36,13 @@ const authSlice = createSlice({
       state.refreshToken = action.payload.refreshToken;
       state.isAuthenticated = true;
     },
+    setGoogleAuth: (state, action: PayloadAction<{ user: any; token: string; refreshToken: string | null }>) => {
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.refreshToken = action.payload.refreshToken;
+      state.isAuthenticated = true;
+      tokenRefreshScheduler.start();
+    },
     clearAuth: (state) => {
       state.user = null;
       state.token = null;
@@ -76,5 +83,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearSignupSuccess, setAuth, clearAuth } = authSlice.actions;
+export const { clearSignupSuccess, setAuth, setGoogleAuth, clearAuth } = authSlice.actions;
 export default authSlice.reducer;
