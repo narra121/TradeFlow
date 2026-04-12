@@ -60,6 +60,9 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('ChunkErrorBoundary caught:', error, info);
+    import('./lib/errorReporter').then(({ reportReactError }) => {
+      reportReactError(error, info);
+    }).catch(() => {});
   }
 
   render() {
@@ -67,7 +70,7 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
       return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
           <p className="text-muted-foreground">
-            {this.state.isChunk ? 'A new version is available.' : 'Something went wrong.'}
+            {this.state.isChunk ? 'A new version is available.' : 'An unexpected error occurred. Error logs have been sent \u2014 we\u2019ll provide a fix soon.'}
           </p>
           <button
             className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"
