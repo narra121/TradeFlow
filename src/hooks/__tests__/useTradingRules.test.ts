@@ -12,24 +12,30 @@ vi.mock('@/store/api', () => ({
 const mockRules = [
   {
     ruleId: 'rule-1',
-    title: 'Always use stop loss',
-    description: 'Never enter a trade without a stop loss',
-    category: 'risk',
+    rule: 'Always use stop loss',
+    userId: 'u1',
+    completed: false,
     isActive: true,
+    createdAt: '',
+    updatedAt: '',
   },
   {
     ruleId: 'rule-2',
-    title: 'Max 3 trades per day',
-    description: 'Do not take more than 3 trades in a single session',
-    category: 'discipline',
+    rule: 'Max 3 trades per day',
+    userId: 'u1',
+    completed: false,
     isActive: true,
+    createdAt: '',
+    updatedAt: '',
   },
   {
     ruleId: 'rule-3',
-    title: 'No revenge trading',
-    description: 'Wait 30 minutes after a loss before entering another trade',
-    category: 'psychology',
+    rule: 'No revenge trading',
+    userId: 'u1',
+    completed: false,
     isActive: false,
+    createdAt: '',
+    updatedAt: '',
   },
 ];
 
@@ -109,7 +115,7 @@ describe('useTradingRules', () => {
 
     expect(result.current.rules).toHaveLength(1);
     expect(result.current.rules[0].ruleId).toBe('rule-1');
-    expect(result.current.rules[0].title).toBe('Always use stop loss');
+    expect(result.current.rules[0].rule).toBe('Always use stop loss');
   });
 
   it('reflects updated data on re-render', () => {
@@ -124,10 +130,12 @@ describe('useTradingRules', () => {
 
     const updatedRules = [...mockRules, {
       ruleId: 'rule-4',
-      title: 'New rule',
-      description: 'A newly added rule',
-      category: 'general',
+      rule: 'New rule',
+      userId: 'u1',
+      completed: false,
       isActive: true,
+      createdAt: '',
+      updatedAt: '',
     }];
 
     mockUseGetRulesQuery.mockReturnValue({
@@ -138,6 +146,28 @@ describe('useTradingRules', () => {
     rerender();
 
     expect(result.current.rules).toHaveLength(4);
+  });
+
+  it('deduplicates rules with the same rule text across periods', () => {
+    mockUseGetRulesQuery.mockReturnValue({
+      data: [
+        { ruleId: 'week#2026-04-06#r1', rule: 'Always use stop loss', userId: 'u1', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+        { ruleId: 'week#2026-04-13#r1', rule: 'Always use stop loss', userId: 'u1', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+        { ruleId: 'week#2026-04-06#r2', rule: 'Max 3 trades per day', userId: 'u1', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+        { ruleId: 'week#2026-04-13#r2', rule: 'Max 3 trades per day', userId: 'u1', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+        { ruleId: 'legacy-r3', rule: 'No revenge trading', userId: 'u1', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+      ],
+      isLoading: false,
+    });
+
+    const { result } = renderHook(() => useTradingRules());
+
+    expect(result.current.rules).toHaveLength(3);
+    expect(result.current.rules.map((r: any) => r.rule)).toEqual([
+      'Always use stop loss',
+      'Max 3 trades per day',
+      'No revenge trading',
+    ]);
   });
 });
 
@@ -162,17 +192,21 @@ describe('useTradingRules - Additional Scenarios', () => {
     const mixedRules = [
       {
         ruleId: 'rule-active',
-        title: 'Active Rule',
-        description: 'This rule is active',
-        category: 'risk',
+        rule: 'Active Rule',
+        userId: 'u1',
+        completed: false,
         isActive: true,
+        createdAt: '',
+        updatedAt: '',
       },
       {
         ruleId: 'rule-inactive',
-        title: 'Inactive Rule',
-        description: 'This rule is inactive',
-        category: 'discipline',
+        rule: 'Inactive Rule',
+        userId: 'u1',
+        completed: false,
         isActive: false,
+        createdAt: '',
+        updatedAt: '',
       },
     ];
 
@@ -188,7 +222,7 @@ describe('useTradingRules - Additional Scenarios', () => {
     expect(result.current.rules[1].isActive).toBe(false);
   });
 
-  it('returns rules that can be filtered by category', () => {
+  it('returns rules that can be filtered by isActive', () => {
     mockUseGetRulesQuery.mockReturnValue({
       data: mockRules,
       isLoading: false,
@@ -196,13 +230,11 @@ describe('useTradingRules - Additional Scenarios', () => {
 
     const { result } = renderHook(() => useTradingRules());
 
-    const riskRules = result.current.rules.filter((r: any) => r.category === 'risk');
-    const disciplineRules = result.current.rules.filter((r: any) => r.category === 'discipline');
-    const psychologyRules = result.current.rules.filter((r: any) => r.category === 'psychology');
+    const activeRules = result.current.rules.filter((r: any) => r.isActive);
+    const inactiveRules = result.current.rules.filter((r: any) => !r.isActive);
 
-    expect(riskRules).toHaveLength(1);
-    expect(disciplineRules).toHaveLength(1);
-    expect(psychologyRules).toHaveLength(1);
+    expect(activeRules).toHaveLength(2);
+    expect(inactiveRules).toHaveLength(1);
   });
 
   it('returns loading state correctly during fetch', () => {
