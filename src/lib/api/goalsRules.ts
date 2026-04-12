@@ -35,6 +35,7 @@ export interface UpdateGoalPayload {
 
 export interface CreateRulePayload {
   rule: string;
+  periodKey?: string;
 }
 
 export interface UpdateRulePayload {
@@ -46,4 +47,5 @@ export interface CreateGoalPayload {
   goalType: string;
   period: 'weekly' | 'monthly';
   target: number;
+  periodKey?: string;
 }

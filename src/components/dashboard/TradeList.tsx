@@ -87,7 +87,7 @@ export const TradeList = memo(function TradeList({ trades, limit }: TradeListPro
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
                     <span className="text-xs sm:text-sm text-muted-foreground truncate">
-                      {format(new Date(trade.entryDate), 'MMM d, HH:mm')}
+                      {format(new Date(trade.entryDate), "MMM d ''yy, HH:mm")}
                     </span>
                     <span className="text-muted-foreground/50 shrink-0">•</span>
                     <span className="text-xs sm:text-sm text-muted-foreground font-mono shrink-0">

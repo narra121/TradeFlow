@@ -179,7 +179,7 @@ export function TablePagination({
       )}
     >
       {/* Left: Item count + page size */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
         <span className="text-sm text-muted-foreground whitespace-nowrap hidden sm:inline">
           {totalItems === 0 ? (
             'No trades'
@@ -187,7 +187,7 @@ export function TablePagination({
             <>
               Showing{' '}
               <span className="font-medium text-foreground">
-                {startItem}-{endItem}
+                {startItem}&ndash;{endItem}
               </span>{' '}
               of{' '}
               <span className="font-medium text-foreground">{totalItems}</span>{' '}
@@ -198,7 +198,7 @@ export function TablePagination({
 
         {/* Mobile count */}
         <span className="text-sm text-muted-foreground whitespace-nowrap sm:hidden">
-          {totalItems === 0 ? 'No trades' : `${startItem}-${endItem} of ${totalItems}`}
+          {totalItems === 0 ? 'No trades' : `${startItem}–${endItem} of ${totalItems}`}
         </span>
 
         {/* Loading indicator */}
@@ -206,8 +206,9 @@ export function TablePagination({
           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground shrink-0" />
         )}
 
-        {/* Page size selector */}
-        <div className="hidden sm:flex items-center gap-2">
+        {/* Separator + Page size selector */}
+        <span className="hidden sm:inline text-border/70 mx-1">|</span>
+        <div className="hidden sm:flex items-center gap-1.5">
           <span className="text-sm text-muted-foreground">per page</span>
           <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
             <SelectTrigger className="h-8 w-[70px] text-sm">

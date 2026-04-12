@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders as render, screen } from '@/test/test-utils';
+import { renderWithProviders as render, screen, fireEvent, waitFor } from '@/test/test-utils';
 import { GoalsView } from '../GoalsView';
 
 // Mock RTK Query hooks
@@ -72,6 +72,21 @@ vi.mock('@/store/api', () => ({
       accounts: [
         { id: 'acc1', name: 'Main Account', initialBalance: 10000 },
       ],
+    },
+    isLoading: false,
+    isFetching: false,
+  }),
+  useGetProfileQuery: vi.fn().mockReturnValue({
+    data: {
+      name: 'Trader Pro',
+      email: 'trader@example.com',
+      preferences: {
+        darkMode: true,
+        currency: 'USD',
+        timezone: 'UTC',
+        carryForwardGoalsRules: true,
+        notifications: { tradeReminders: true, weeklyReport: true, goalAlerts: true },
+      },
     },
     isLoading: false,
     isFetching: false,
@@ -814,5 +829,169 @@ describe('GoalsView - Rules Empty State', () => {
     render(<GoalsView />);
 
     expect(screen.queryByText('No trading rules yet')).not.toBeInTheDocument();
+  });
+});
+
+describe('GoalsView - Edit Goal Targets', () => {
+  let mockCreateGoal: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    mockCreateGoal = vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() });
+    const {
+      useGetRulesAndGoalsQuery,
+      useGetGoalsProgressQuery,
+      useCreateGoalMutation,
+      useUpdateGoalMutation,
+    } = await import('@/store/api');
+    (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+          { goalId: 'g2', goalType: 'winRate', period: 'weekly', target: 65, accountId: 'acc1' },
+          { goalId: 'g3', goalType: 'maxDrawdown', period: 'weekly', target: 3, accountId: 'acc1' },
+          { goalId: 'g4', goalType: 'maxTrades', period: 'weekly', target: 8, accountId: 'acc1' },
+        ],
+        rules: [
+          { id: 'r1', ruleId: 'r1', rule: 'Always set stop loss', completed: true },
+          { id: 'r2', ruleId: 'r2', rule: 'Never move stop loss', completed: false },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goalProgress: {
+          profit: { current: 200, target: 500, progress: 40, achieved: false },
+          winRate: { current: 100, target: 65, progress: 153.8, achieved: true },
+          maxDrawdown: { current: 1.5, target: 3, progress: 50, achieved: true },
+          tradeCount: { current: 1, target: 8, progress: 12.5, achieved: true },
+        },
+        ruleCompliance: {
+          totalRules: 2,
+          followedCount: 2,
+          brokenRulesCounts: {},
+        },
+        goals: [
+          { goalId: 'g1', goalType: 'profit', period: 'weekly', target: 500, accountId: 'acc1' },
+          { goalId: 'g2', goalType: 'winRate', period: 'weekly', target: 65, accountId: 'acc1' },
+          { goalId: 'g3', goalType: 'maxDrawdown', period: 'weekly', target: 3, accountId: 'acc1' },
+          { goalId: 'g4', goalType: 'maxTrades', period: 'weekly', target: 8, accountId: 'acc1' },
+        ],
+        rules: [
+          { id: 'r1', ruleId: 'r1', rule: 'Always set stop loss', completed: true },
+          { id: 'r2', ruleId: 'r2', rule: 'Never move stop loss', completed: false },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    (useCreateGoalMutation as ReturnType<typeof vi.fn>).mockReturnValue([mockCreateGoal]);
+    (useUpdateGoalMutation as ReturnType<typeof vi.fn>).mockReturnValue([
+      vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
+    ]);
+  });
+
+  it('shows edit pencil buttons on goal cards', () => {
+    render(<GoalsView />);
+    // Each goal card has a Pencil edit button (opacity-0 but in the DOM)
+    // The pencil buttons are inside buttons with ghost variant and icon size
+    // There are 4 goal cards, each with one edit pencil button
+    const allButtons = screen.getAllByRole('button');
+    // Filter to find pencil edit buttons — they are the ones inside goal cards
+    // with the Pencil icon (the SVG has a class containing "w-3.5 h-3.5")
+    // Since we can't easily query by icon, count buttons that contain SVG elements
+    // matching the pencil pattern. Instead, verify 4 goal cards are rendered
+    // and that there are pencil-containing buttons in the DOM.
+    expect(screen.getByText('Profit Target')).toBeInTheDocument();
+    expect(screen.getByText('Win Rate')).toBeInTheDocument();
+    expect(screen.getByText('Max Drawdown')).toBeInTheDocument();
+    expect(screen.getByText('Max Trades')).toBeInTheDocument();
+
+    // Each goal card's edit button is a ghost button with icon size.
+    // We can verify by clicking one and seeing the edit UI appear.
+    // But first, let's just confirm the buttons exist in the DOM.
+    // The pencil buttons have class "opacity-0 group-hover:opacity-100"
+    // Find all buttons and filter to those that have the opacity-0 class
+    const pencilButtons = allButtons.filter(
+      (btn) => btn.classList.contains('opacity-0') && btn.classList.contains('group-hover:opacity-100')
+    );
+    expect(pencilButtons).toHaveLength(4);
+  });
+
+  it('edit pencil count matches number of goal cards', () => {
+    render(<GoalsView />);
+    // There are exactly 4 goal types (Profit Target, Win Rate, Max Drawdown, Max Trades)
+    const goalCardTitles = ['Profit Target', 'Win Rate', 'Max Drawdown', 'Max Trades'];
+    goalCardTitles.forEach((title) => {
+      expect(screen.getByText(title)).toBeInTheDocument();
+    });
+
+    // Each goal card renders exactly one pencil edit button
+    const allButtons = screen.getAllByRole('button');
+    const pencilButtons = allButtons.filter(
+      (btn) => btn.classList.contains('opacity-0') && btn.classList.contains('group-hover:opacity-100')
+    );
+    expect(pencilButtons).toHaveLength(goalCardTitles.length);
+  });
+
+  it('calls createGoal when saving a synthetic goal target', async () => {
+    // Use empty backend goals so all 4 are synthetic
+    const { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery } = await import('@/store/api');
+    (useGetRulesAndGoalsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goals: [],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    (useGetGoalsProgressQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        goalProgress: {
+          profit: { current: 0, target: 500, progress: 0, achieved: false },
+          winRate: { current: 0, target: 65, progress: 0, achieved: false },
+          maxDrawdown: { current: 0, target: 3, progress: 0, achieved: false },
+          tradeCount: { current: 0, target: 8, progress: 0, achieved: false },
+        },
+        ruleCompliance: { totalRules: 0, followedCount: 0, brokenRulesCounts: {} },
+        goals: [],
+        rules: [],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<GoalsView />);
+
+    // Find the pencil edit buttons (opacity-0 group-hover buttons)
+    const allButtons = screen.getAllByRole('button');
+    const pencilButtons = allButtons.filter(
+      (btn) => btn.classList.contains('opacity-0') && btn.classList.contains('group-hover:opacity-100')
+    );
+    expect(pencilButtons.length).toBeGreaterThan(0);
+
+    // Click the first pencil button (Profit Target)
+    fireEvent.click(pencilButtons[0]);
+
+    // An input should appear for editing the target value
+    const input = screen.getByRole('spinbutton');
+    expect(input).toBeInTheDocument();
+
+    // Change the value and confirm
+    fireEvent.change(input, { target: { value: '1000' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    // createGoal should be called for a synthetic goal (no goalId) with periodKey
+    await waitFor(() => {
+      expect(mockCreateGoal).toHaveBeenCalledWith({
+        accountId: 'acc1',
+        goalType: 'profit',
+        period: 'weekly',
+        target: 1000,
+        periodKey: expect.stringMatching(/^week#\d{4}-\d{2}-\d{2}$/),
+      });
+    });
   });
 });

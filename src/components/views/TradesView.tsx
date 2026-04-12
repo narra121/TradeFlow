@@ -304,14 +304,14 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
                   <td className="px-5 py-4">
                     <div>
                       <p className="font-mono text-foreground">{trade.entryPrice}</p>
-                      <p className="text-xs text-muted-foreground">{format(new Date(trade.entryDate), 'MMM d, HH:mm')}</p>
+                      <p className="text-xs text-muted-foreground">{format(new Date(trade.entryDate), "MMM d ''yy, HH:mm")}</p>
                     </div>
                   </td>
                   <td className="px-5 py-4">
                     {trade.exitPrice ? (
                       <div>
                         <p className="font-mono text-foreground">{trade.exitPrice}</p>
-                        <p className="text-xs text-muted-foreground">{trade.exitDate && format(new Date(trade.exitDate), 'MMM d, HH:mm')}</p>
+                        <p className="text-xs text-muted-foreground">{trade.exitDate && format(new Date(trade.exitDate), "MMM d ''yy, HH:mm")}</p>
                       </div>
                     ) : (
                       <span className="text-muted-foreground">—</span>

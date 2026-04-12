@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { 
-  User, 
-  Palette, 
-  Bell, 
+import {
+  User,
+  Palette,
+  Bell,
   Shield,
   Moon,
   Sun,
@@ -11,7 +11,8 @@ import {
   Globe,
   ListChecks,
   RotateCcw,
-  Loader2
+  Loader2,
+  Target
 } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
@@ -62,6 +63,7 @@ export function SettingsView() {
   const [notifications, setNotifications] = useState(profile?.preferences?.notifications?.tradeReminders ?? true);
   const [darkMode, setDarkMode] = useState(profile?.preferences?.darkMode ?? true);
   const [currency, setCurrency] = useState(profile?.preferences?.currency || 'USD');
+  const [carryForwardGoalsRules, setCarryForwardGoalsRules] = useState(profile?.preferences?.carryForwardGoalsRules ?? true);
   const [displayName, setDisplayName] = useState(profile?.name || '');
   const [email, setEmail] = useState(profile?.email || '');
   
@@ -71,6 +73,7 @@ export function SettingsView() {
       setEmail(profile.email || '');
       setDarkMode(profile.preferences?.darkMode ?? true);
       setCurrency(profile.preferences?.currency || 'USD');
+      setCarryForwardGoalsRules(profile.preferences?.carryForwardGoalsRules ?? true);
       setNotifications(profile.preferences?.notifications?.tradeReminders ?? true);
     }
   }, [profile]);
@@ -126,6 +129,11 @@ export function SettingsView() {
     await updatePreferences({ darkMode, currency: value as 'USD' | 'EUR' | 'GBP', timezone: 'UTC' }).unwrap();
   };
   
+  const handleCarryForwardChange = async (checked: boolean) => {
+    setCarryForwardGoalsRules(checked);
+    await updatePreferences({ carryForwardGoalsRules: checked }).unwrap();
+  };
+
   const handleNotificationsChange = async (checked: boolean) => {
     setNotifications(checked);
     await updateNotifications({ tradeReminders: checked, weeklyReport: true, goalAlerts: true }).unwrap();
@@ -264,6 +272,35 @@ export function SettingsView() {
               pendingValue={pendingTradeOption?.category === 'mistakes' ? pendingTradeOption.value : undefined}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Goals & Rules Section */}
+      <div className="glass-card p-4 sm:p-6 animate-fade-in stagger-3">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Goals & Rules</h2>
+            <p className="text-sm text-muted-foreground">Configure how goals and rules behave across periods</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <Label htmlFor="carry-forward-toggle" className="text-sm font-medium text-foreground">
+              Carry forward goals & rules
+            </Label>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              When enabled, your customized goals and rules continue into new periods. When disabled, each new week/month starts with defaults.
+            </p>
+          </div>
+          <Switch
+            id="carry-forward-toggle"
+            checked={carryForwardGoalsRules}
+            onCheckedChange={handleCarryForwardChange}
+          />
         </div>
       </div>
 

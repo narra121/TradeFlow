@@ -76,6 +76,17 @@ vi.mock('sonner', () => ({
 
 import { toast } from 'sonner';
 
+vi.mock('@/hooks/useAccounts', () => ({
+  useAccounts: vi.fn().mockReturnValue({
+    accounts: [
+      { id: 'acc1', name: 'Main Account', initialBalance: 10000, createdAt: '2025-06-15T10:00:00.000Z' },
+    ],
+    selectedAccountId: null,
+    selectedAccount: null,
+    setSelectedAccountId: vi.fn(),
+  }),
+}));
+
 vi.mock('@/lib/tokenRefreshScheduler', () => ({
   tokenRefreshScheduler: {
     start: vi.fn(),
@@ -269,6 +280,24 @@ describe('ProfileView - User Info & Form Fields', () => {
   it('shows profile subtitle text', () => {
     render(<ProfileView />);
     expect(screen.getByText('Manage your profile and subscription')).toBeInTheDocument();
+  });
+
+  it('shows "Member since" with date derived from account createdAt', () => {
+    render(<ProfileView />);
+    expect(screen.getByText(/Member since June 2025/)).toBeInTheDocument();
+  });
+
+  it('hides "Member since" when no accounts exist', async () => {
+    const { useAccounts } = await import('@/hooks/useAccounts');
+    (useAccounts as ReturnType<typeof vi.fn>).mockReturnValue({
+      accounts: [],
+      selectedAccountId: null,
+      selectedAccount: null,
+      setSelectedAccountId: vi.fn(),
+    });
+
+    render(<ProfileView />);
+    expect(screen.queryByText(/Member since/)).not.toBeInTheDocument();
   });
 });
 

@@ -13,7 +13,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Clock, Timer, PieChart as PieChartIcon } from 'lucide-react';
+import { Clock, Timer, PieChart as PieChartIcon, AlertTriangle, Shield, Lightbulb } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { MetricsGridSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton';
@@ -28,7 +28,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { useGetStatsQuery } from '@/store/api';
+import { useGetStatsQuery, useGetRulesAndGoalsQuery } from '@/store/api';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
 import { useAccounts } from '@/hooks/useAccounts';
 import { formatDuration } from '@/lib/tradeCalculations';
@@ -80,6 +80,9 @@ export function AnalyticsView() {
     durationBuckets: [] as any[], symbolDistribution: {} as Record<string, any>, strategyDistribution: {} as Record<string, any>,
     sessionDistribution: {} as Record<string, any>, outcomeDistribution: {} as Record<string, any>, hourlyStats: [] as any[],
     dailyWinRate: [] as any[], dailyPnl: [] as any[],
+    mistakesDistribution: {} as Record<string, { count: number; totalPnl: number }>,
+    brokenRulesDistribution: {} as Record<string, { count: number; totalPnl: number }>,
+    lessonsDistribution: {} as Record<string, number>,
   };
   const stats = { ...defaultStats, ...statsData };
 
@@ -148,6 +151,44 @@ export function AnalyticsView() {
       };
     });
   }, [options.sessions, stats.sessionDistribution]);
+
+  // Fetch rules for broken rules resolution
+  const { data: rulesAndGoals } = useGetRulesAndGoalsQuery();
+
+  // Top Mistakes: sort by count desc, take top 8
+  const topMistakes = useMemo(() => {
+    const dist = stats.mistakesDistribution || {};
+    return Object.entries(dist)
+      .map(([name, data]: [string, any]) => ({ name, count: data.count, totalPnl: data.totalPnl }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [stats.mistakesDistribution]);
+
+  // Broken Rules: resolve ruleId -> rule text, sort by count desc, take top 8
+  const topBrokenRules = useMemo(() => {
+    const dist = stats.brokenRulesDistribution || {};
+    const rulesMap = new Map(
+      (rulesAndGoals?.rules || []).map(r => [r.ruleId, r.rule])
+    );
+    return Object.entries(dist)
+      .map(([ruleId, data]: [string, any]) => ({
+        ruleId,
+        ruleText: rulesMap.get(ruleId) || 'Unknown Rule',
+        count: data.count,
+        totalPnl: data.totalPnl,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [stats.brokenRulesDistribution, rulesAndGoals?.rules]);
+
+  // Key Lessons: sort by count desc, take top 8
+  const topLessons = useMemo(() => {
+    const dist = stats.lessonsDistribution || {};
+    return Object.entries(dist)
+      .map(([text, count]: [string, any]) => ({ text, count: count as number }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [stats.lessonsDistribution]);
 
   // Daily P&L for current week - filter stats.dailyPnl to current week
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -621,6 +662,79 @@ export function AnalyticsView() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Insights: Mistakes, Broken Rules, Key Lessons */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Top Mistakes */}
+        <div className="glass-card p-4 sm:p-6 animate-fade-in">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-warning" />
+            <h3 className="text-sm sm:text-base font-semibold text-foreground">Top Mistakes</h3>
+          </div>
+          {topMistakes.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No mistakes recorded yet</p>
+          ) : (
+            <div>
+              {topMistakes.map((item) => (
+                <div key={item.name} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                  <span className="text-sm text-foreground truncate mr-2">{item.name}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">{item.count}</span>
+                    <span className={cn('font-mono text-xs', item.totalPnl >= 0 ? 'text-success' : 'text-destructive')}>
+                      {item.totalPnl >= 0 ? '+' : ''}${item.totalPnl.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Broken Rules Impact */}
+        <div className="glass-card p-4 sm:p-6 animate-fade-in">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
+            <h3 className="text-sm sm:text-base font-semibold text-foreground">Broken Rules</h3>
+          </div>
+          {topBrokenRules.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No broken rules recorded</p>
+          ) : (
+            <div>
+              {topBrokenRules.map((item) => (
+                <div key={item.ruleId} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                  <span className="text-sm text-foreground truncate mr-2">{item.ruleText}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">{item.count}</span>
+                    <span className={cn('font-mono text-xs', item.totalPnl >= 0 ? 'text-success' : 'text-destructive')}>
+                      {item.totalPnl >= 0 ? '+' : ''}${item.totalPnl.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Key Lessons */}
+        <div className="glass-card p-4 sm:p-6 animate-fade-in">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <h3 className="text-sm sm:text-base font-semibold text-foreground">Key Lessons</h3>
+          </div>
+          {topLessons.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No lessons recorded yet</p>
+          ) : (
+            <div>
+              {topLessons.map((item) => (
+                <div key={item.text} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                  <span className="text-sm text-foreground truncate mr-2" title={item.text}>{item.text}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium shrink-0">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
         </>

@@ -31,6 +31,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { useAccounts } from '@/hooks/useAccounts';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useCreateSubscriptionMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation, useUndoCancellationMutation } from '@/store/api';
 import { useRazorpay } from '@/hooks/useRazorpay';
@@ -45,6 +46,7 @@ export function ProfileView() {
   const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useGetProfileQuery();
   const { data: subscription, isLoading: subscriptionLoading, isFetching: subscriptionFetching, refetch: refetchSubscription } = useGetSubscriptionQuery();
   const { data: availablePlans = [], isLoading: plansLoading } = useGetPlansQuery();
+  const { accounts } = useAccounts();
   const loading = profileLoading || profileFetching || subscriptionLoading || subscriptionFetching;
   const [updateProfile] = useUpdateProfileMutation();
   const [createSubscription] = useCreateSubscriptionMutation();
@@ -102,13 +104,22 @@ export function ProfileView() {
   
   useEffect(() => {
     if (profile) {
+      // Derive "Member since" from earliest account createdAt
+      const earliestAccount = accounts
+        .filter(a => a.createdAt)
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+      const joinedDate = earliestAccount?.createdAt
+        ? new Date(earliestAccount.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        : '';
+
       setUser(prev => ({
         ...prev,
         name: profile.name || '',
-        email: profile.email || ''
+        email: profile.email || '',
+        joinedDate,
       }));
     }
-  }, [profile]);
+  }, [profile, accounts]);
   
   useEffect(() => {
     if (subscription) {
@@ -336,7 +347,7 @@ export function ProfileView() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
@@ -408,10 +419,12 @@ export function ProfileView() {
               </div>
               <div className="min-w-0">
                 <h3 className="text-lg sm:text-xl font-semibold text-foreground truncate">{user.name}</h3>
-                <p className="text-sm sm:text-base text-muted-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Member since {user.joinedDate}</span>
-                </p>
+                {user.joinedDate && (
+                  <p className="text-sm sm:text-base text-muted-foreground flex items-center gap-2">
+                    <Calendar className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Member since {user.joinedDate}</span>
+                  </p>
+                )}
               </div>
             </div>
 

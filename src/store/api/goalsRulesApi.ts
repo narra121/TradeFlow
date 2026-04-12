@@ -37,8 +37,16 @@ interface RulesAndGoalsResponse {
 
 export const goalsRulesApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getRulesAndGoals: builder.query<RulesAndGoalsResponse, void>({
-      query: () => '/rules-goals',
+    getRulesAndGoals: builder.query<RulesAndGoalsResponse, { periodKey?: string; currentPeriod?: boolean } | void>({
+      query: (params) => {
+        const queryParams: Record<string, string> = {};
+        if (params && params.periodKey) queryParams.periodKey = params.periodKey;
+        if (params && params.currentPeriod !== undefined) queryParams.currentPeriod = String(params.currentPeriod);
+        return {
+          url: '/rules-goals',
+          params: Object.keys(queryParams).length > 0 ? queryParams : undefined,
+        };
+      },
       // Provide LIST tags so any goal/rule mutation will refetch this aggregate endpoint.
       providesTags: [
         { type: 'Goals', id: 'LIST' },
@@ -306,8 +314,16 @@ export const goalsRulesApi = api.injectEndpoints({
       startDate: string;
       endDate: string;
       period: 'weekly' | 'monthly';
+      periodKey?: string;
+      currentPeriod?: boolean;
     }>({
-      query: (params) => ({ url: '/goals/progress', params }),
+      query: (params) => ({
+        url: '/goals/progress',
+        params: {
+          ...params,
+          currentPeriod: params.currentPeriod !== undefined ? String(params.currentPeriod) : undefined,
+        },
+      }),
       providesTags: ['Goals', 'Rules', 'Stats'],
     }),
   }),

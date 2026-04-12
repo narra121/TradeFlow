@@ -28,6 +28,10 @@ vi.mock('@/store/api', () => ({
         pnlPercent: 2.0,
         riskRewardRatio: 2.0,
         accountId: 'acc1',
+        strategy: 'Breakout',
+        session: 'London',
+        mistakes: ['FOMO'],
+        keyLesson: 'Wait for confirmation',
       },
       {
         id: '2',
@@ -45,6 +49,10 @@ vi.mock('@/store/api', () => ({
         pnlPercent: -1.0,
         riskRewardRatio: 1.5,
         accountId: 'acc1',
+        strategy: 'Scalp',
+        session: 'NY',
+        mistakes: [],
+        keyLesson: '',
       },
     ],
     isLoading: false,
@@ -212,12 +220,12 @@ describe('TradeLogView', () => {
 
   it('shows Symbol column header in the table', () => {
     render(<TradeLogView {...defaultProps} />);
-    expect(screen.getByText('Symbol')).toBeInTheDocument();
+    expect(screen.getAllByText('Symbol').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows Direction column header in the table', () => {
     render(<TradeLogView {...defaultProps} />);
-    expect(screen.getByText('Direction')).toBeInTheDocument();
+    expect(screen.getAllByText('Direction').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows filter controls', () => {
@@ -362,6 +370,10 @@ describe('TradeLogView - Bulk Delete Confirmation', () => {
           pnlPercent: 2.0,
           riskRewardRatio: 2.0,
           accountId: 'acc1',
+          strategy: 'Breakout',
+          session: 'London',
+          mistakes: ['FOMO'],
+          keyLesson: 'Wait for confirmation',
         },
         {
           id: '2',
@@ -379,6 +391,10 @@ describe('TradeLogView - Bulk Delete Confirmation', () => {
           pnlPercent: -1.0,
           riskRewardRatio: 1.5,
           accountId: 'acc1',
+          strategy: 'Scalp',
+          session: 'NY',
+          mistakes: [],
+          keyLesson: '',
         },
       ],
       isLoading: false,
@@ -514,6 +530,10 @@ describe('TradeLogView - Empty State', () => {
           pnlPercent: 2.0,
           riskRewardRatio: 2.0,
           accountId: 'acc1',
+          strategy: 'Breakout',
+          session: 'London',
+          mistakes: ['FOMO'],
+          keyLesson: 'Wait for confirmation',
         },
       ],
       isLoading: false,
@@ -548,5 +568,41 @@ describe('TradeLogView - Empty State', () => {
     // The header has the Add Trade button, but the empty state should not
     // We check that the filter-specific message is shown instead of the default
     expect(screen.queryByText(/Add your first trade/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('TradeLogView - Column Visibility & New Filters', () => {
+  const defaultProps = {
+    onAddTrade: vi.fn(),
+    onImportTrades: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders "Columns" toggle button', () => {
+    render(<TradeLogView {...defaultProps} />);
+    expect(screen.getByText('Columns')).toBeInTheDocument();
+  });
+
+  it('new columns (Strategy, Session) are hidden by default', () => {
+    render(<TradeLogView {...defaultProps} />);
+    // Strategy and Session column headers should NOT appear in the table
+    // since their defaultVisible is false in COLUMN_DEFS
+    const thElements = document.querySelectorAll('th');
+    const thTexts = Array.from(thElements).map(th => th.textContent?.trim());
+    expect(thTexts).not.toContain('Strategy');
+    expect(thTexts).not.toContain('Session');
+  });
+
+  it('shows Strategy filter button when trades have strategy data', () => {
+    render(<TradeLogView {...defaultProps} />);
+    expect(screen.getByText('All Strategies')).toBeInTheDocument();
+  });
+
+  it('shows Session filter button when trades have session data', () => {
+    render(<TradeLogView {...defaultProps} />);
+    expect(screen.getByText('All Sessions')).toBeInTheDocument();
   });
 });

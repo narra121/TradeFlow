@@ -1,12 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
+import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Trophy, Info, Settings } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery, useUpdateGoalMutation, useCreateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation } from '@/store/api';
+import { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery, useUpdateGoalMutation, useCreateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation, useGetProfileQuery } from '@/store/api';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { startOfWeek } from 'date-fns/startOfWeek';
 import { endOfWeek } from 'date-fns/endOfWeek';
@@ -96,8 +98,9 @@ const defaultGoalData: GoalData[] = [
 
 export function GoalsView() {
 
-  const { data: rulesGoalsData, isLoading: rulesGoalsLoading, isFetching: rulesGoalsFetching, refetch } = useGetRulesAndGoalsQuery();
-  
+  const { data: profile } = useGetProfileQuery();
+  const carryForwardEnabled = profile?.preferences?.carryForwardGoalsRules ?? true;
+
   // State declarations
   const [periodFilter, setPeriodFilter] = useState<'weekly' | 'monthly'>('weekly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -113,7 +116,7 @@ export function GoalsView() {
   const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
   const [isAddingRuleLoading, setIsAddingRuleLoading] = useState(false);
   const [togglingRuleId, setTogglingRuleId] = useState<string | null>(null);
-  
+
   // Debounce date changes - short delay to batch rapid clicks without feeling sluggish
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -122,7 +125,7 @@ export function GoalsView() {
 
     return () => clearTimeout(timer);
   }, [selectedDate, periodFilter]);
-  
+
   // Calculate period date range based on debounced date and period filter
   const periodRange = useMemo(() => {
     if (periodFilter === 'weekly') {
@@ -137,7 +140,7 @@ export function GoalsView() {
       };
     }
   }, [debouncedDate, periodFilter]);
-  
+
   // Check if viewing current period
   const isCurrentPeriod = useMemo(() => {
     const now = new Date();
@@ -147,10 +150,20 @@ export function GoalsView() {
       return isSameMonth(selectedDate, now);
     }
   }, [selectedDate, periodFilter]);
-  
+
+  // Compute periodKey from debounced date and period filter
+  const periodKey = useMemo(() => {
+    if (periodFilter === 'weekly') {
+      const monday = startOfWeek(debouncedDate, { weekStartsOn: 1 });
+      return `week#${format(monday, 'yyyy-MM-dd')}`;
+    } else {
+      return `month#${format(startOfMonth(debouncedDate), 'yyyy-MM')}`;
+    }
+  }, [debouncedDate, periodFilter]);
+
   // Format period label based on selected date (not debounced) for immediate UI feedback
   const periodLabel = useMemo(() => {
-    const displayRange = periodFilter === 'weekly' 
+    const displayRange = periodFilter === 'weekly'
       ? {
           start: startOfWeek(selectedDate, { weekStartsOn: 1 }),
           end: endOfDay(endOfWeek(selectedDate, { weekStartsOn: 1 }))
@@ -159,21 +172,28 @@ export function GoalsView() {
           start: startOfMonth(selectedDate),
           end: endOfDay(endOfMonth(selectedDate))
         };
-    
+
     if (periodFilter === 'weekly') {
       return `${format(displayRange.start, 'MMM d')} - ${format(displayRange.end, 'MMM d, yyyy')}`;
     } else {
       return format(displayRange.start, 'MMMM yyyy');
     }
   }, [selectedDate, periodFilter]);
-  
+
   const { selectedAccountId, accounts } = useAccounts();
-  
+
+  const { data: rulesGoalsData, isLoading: rulesGoalsLoading, isFetching: rulesGoalsFetching, refetch } = useGetRulesAndGoalsQuery({
+    periodKey,
+    currentPeriod: isCurrentPeriod,
+  });
+
   const { data: progressData, isLoading: progressLoading, isFetching: progressFetching, refetch: refetchProgress } = useGetGoalsProgressQuery({
     accountId: selectedAccountId || 'ALL',
     startDate: formatLocalDateOnly(periodRange.start),
     endDate: formatLocalDateOnly(periodRange.end),
     period: periodFilter,
+    periodKey,
+    currentPeriod: isCurrentPeriod,
   });
   
   const [updateGoal] = useUpdateGoalMutation();
@@ -278,6 +298,7 @@ export function GoalsView() {
             goalType,
             period,
             target: newTarget,
+            periodKey,
           }).unwrap();
         } catch (error) {
           // Toast middleware handles error display
@@ -323,7 +344,7 @@ export function GoalsView() {
     if (newRuleValue.trim()) {
       setIsAddingRuleLoading(true);
       try {
-        await createRule({ rule: newRuleValue }).unwrap();
+        await createRule({ rule: newRuleValue, periodKey }).unwrap();
         setNewRuleValue('');
         setIsAddingRule(false);
       } catch (error) {
@@ -338,8 +359,12 @@ export function GoalsView() {
     setDeletingRuleId(ruleId);
     try {
       await deleteRule(ruleId).unwrap();
-    } catch (error) {
-      // Toast middleware handles error display
+    } catch (error: any) {
+      const errorCode = error?.data?.errorCode || error?.errorCode;
+      if (errorCode === 'RULE_IN_USE') {
+        toast.error('This rule is broken in one or more trades. You can edit it but not delete it.');
+      }
+      // Toast middleware handles other errors
     }
     setDeletingRuleId(null);
   };
@@ -450,7 +475,7 @@ export function GoalsView() {
                 <CheckCircle2 className="w-5 h-5 text-success" />
               </div>
             )}
-            {!isEditing && (
+            {isCurrentPeriod && !isEditing && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -605,6 +630,23 @@ export function GoalsView() {
         </div>
       </div>
 
+      {/* Past period read-only banner */}
+      {!isCurrentPeriod && !loading && (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+          <Info className="w-4 h-4 shrink-0" />
+          <span>Viewing a past period — goals and rules are read-only</span>
+        </div>
+      )}
+
+      {/* Carry-forward disabled indicator */}
+      {carryForwardEnabled === false && isCurrentPeriod && !loading && (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/10 text-sm text-muted-foreground">
+          <Settings className="w-4 h-4 shrink-0 text-accent" />
+          <span>Each period starts fresh with defaults.</span>
+          <Link to="/app/settings" className="text-accent hover:underline ml-1">Change in Settings</Link>
+        </div>
+      )}
+
       {/* Goals Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -633,7 +675,7 @@ export function GoalsView() {
                 {rules.length - Object.keys(brokenRuleCounts).filter(ruleId => brokenRuleCounts[ruleId] > 0).length}/{rules.length} followed
               </span>
             )}
-            {rules.length > 0 && (
+            {isCurrentPeriod && rules.length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -658,14 +700,16 @@ export function GoalsView() {
               <p className="text-sm text-muted-foreground max-w-sm mb-4">
                 Define rules like "Never risk more than 2%" or "Don't trade during news." When you journal a trade, you can mark which rules you broke.
               </p>
-              <Button
-                size="sm"
-                className="gap-1.5"
-                onClick={() => setIsAddingRule(true)}
-              >
-                <Plus className="w-4 h-4" />
-                Create Your First Rule
-              </Button>
+              {isCurrentPeriod && (
+                <Button
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setIsAddingRule(true)}
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Your First Rule
+                </Button>
+              )}
             </div>
           )}
           {rules.map((item, index) => {
@@ -748,30 +792,33 @@ export function GoalsView() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => handleRuleEditStart(ruleId, item.rule)}
-                        disabled={deletingRuleId === ruleId}
-                      >
-                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => handleDeleteRule(ruleId)}
-                        disabled={deletingRuleId === ruleId}
-                      >
-                        {deletingRuleId === ruleId ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                        )}
-                      </Button>
-                    </div>
+                    {isCurrentPeriod && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleRuleEditStart(ruleId, item.rule)}
+                          disabled={deletingRuleId === ruleId}
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn("h-7 w-7", brokenCount > 0 && "opacity-50 cursor-not-allowed")}
+                          onClick={() => handleDeleteRule(ruleId)}
+                          disabled={deletingRuleId === ruleId || brokenCount > 0}
+                          title={brokenCount > 0 ? 'Cannot delete — this rule is broken in trades' : undefined}
+                        >
+                          {deletingRuleId === ruleId ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

@@ -10,6 +10,7 @@ const mockProfile = {
     darkMode: true,
     currency: 'USD',
     timezone: 'UTC',
+    carryForwardGoalsRules: true,
     notifications: {
       tradeReminders: true,
       weeklyReport: true,
@@ -133,6 +134,13 @@ describe('SettingsView', () => {
     render(<SettingsView />);
     expect(screen.getByRole('heading', { name: /data management/i })).toBeInTheDocument();
     expect(screen.getByText(/data export and management features coming soon/i)).toBeInTheDocument();
+  });
+
+  it('shows Goals & Rules section with carry forward toggle', () => {
+    render(<SettingsView />);
+    expect(screen.getByRole('heading', { name: /goals & rules/i })).toBeInTheDocument();
+    expect(screen.getByText(/carry forward goals & rules/i)).toBeInTheDocument();
+    expect(screen.getByText(/when enabled, your customized goals and rules continue into new periods/i)).toBeInTheDocument();
   });
 
   it('shows loading skeleton when data is loading', () => {

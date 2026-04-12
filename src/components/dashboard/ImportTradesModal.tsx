@@ -27,7 +27,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Trade, TradeDirection } from '@/types/trade';
 import { useAccounts } from '@/hooks/useAccounts';
 import {
-  Upload,
+  Import,
   Image as ImageIcon,
   FileSpreadsheet,
   ClipboardPaste,
@@ -497,7 +497,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                   "w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-colors",
                   isDragging ? "bg-primary/20" : "bg-muted"
                 )}>
-                  <Upload className={cn(
+                  <Import className={cn(
                     "w-6 h-6 sm:w-8 sm:h-8 transition-colors",
                     isDragging ? "text-primary" : "text-muted-foreground"
                   )} />

@@ -63,6 +63,11 @@ vi.mock('@/store/api', () => ({
     vi.fn(),
     { isLoading: false },
   ]),
+  useGetRulesAndGoalsQuery: vi.fn().mockReturnValue({
+    data: { rules: [], goals: [] },
+    isLoading: false,
+    isFetching: false,
+  }),
   useGetAccountsQuery: vi.fn().mockReturnValue({
     data: {
       accounts: [
@@ -256,5 +261,61 @@ describe('AnalyticsView - Empty State', () => {
     render(<AnalyticsView />);
 
     expect(screen.queryByText('No analytics data yet')).not.toBeInTheDocument();
+  });
+});
+
+describe('AnalyticsView - Insights Sections', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders "Top Mistakes" section heading', () => {
+    render(<AnalyticsView />);
+    expect(screen.getByText('Top Mistakes')).toBeInTheDocument();
+  });
+
+  it('renders "Broken Rules" section heading', () => {
+    render(<AnalyticsView />);
+    expect(screen.getByText('Broken Rules')).toBeInTheDocument();
+  });
+
+  it('renders "Key Lessons" section heading', () => {
+    render(<AnalyticsView />);
+    expect(screen.getByText('Key Lessons')).toBeInTheDocument();
+  });
+
+  it('shows empty state text when no mistakes data', () => {
+    render(<AnalyticsView />);
+    expect(screen.getByText('No mistakes recorded yet')).toBeInTheDocument();
+  });
+
+  it('shows empty state text when no lessons data', () => {
+    render(<AnalyticsView />);
+    expect(screen.getByText('No lessons recorded yet')).toBeInTheDocument();
+  });
+
+  it('shows mistake entries when mistakesDistribution has data', async () => {
+    const { useGetStatsQuery } = await import('@/store/api');
+    (useGetStatsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
+        avgWin: 200, avgLoss: 0, profitFactor: Infinity, bestTrade: 200, worstTrade: 0,
+        maxDrawdown: 0, avgRiskReward: 2.0, consecutiveWins: 1, consecutiveLosses: 0,
+        grossProfit: 200, grossLoss: 0, expectancy: 200, sharpeRatio: 0, avgHoldingTime: 14400,
+        totalVolume: 1, minDuration: 14400, maxDuration: 14400,
+        durationBuckets: [], symbolDistribution: { EURUSD: { count: 1, wins: 1, pnl: 200 } },
+        strategyDistribution: { Breakout: { count: 1, wins: 1, pnl: 200 } },
+        sessionDistribution: { 'London Open': { count: 1, wins: 1, pnl: 200 } },
+        outcomeDistribution: { TP: 1 }, hourlyStats: [], dailyWinRate: [], dailyPnl: [],
+        mistakesDistribution: { 'FOMO': { count: 3, totalPnl: -150 } },
+      },
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    });
+
+    render(<AnalyticsView />);
+    expect(screen.getByText('FOMO')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
   });
 });

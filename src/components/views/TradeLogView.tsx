@@ -18,12 +18,14 @@ import {
   Filter,
   Loader2,
   Trash2,
-  BookOpen
+  BookOpen,
+  SlidersHorizontal
 } from 'lucide-react';
 import { TradeTableSkeleton, CalendarSkeleton } from '@/components/ui/loading-skeleton';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -52,6 +54,50 @@ import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation, useBulkDeleteTradesMutation, useGetAccountsQuery } from '@/store/api';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  defaultVisible: boolean;
+  sortable: boolean;
+}
+
+const COLUMN_DEFS: ColumnDef[] = [
+  { key: 'checkbox', label: '', defaultVisible: true, sortable: false },
+  { key: 'symbol', label: 'Symbol', defaultVisible: true, sortable: true },
+  { key: 'account', label: 'Account', defaultVisible: true, sortable: true },
+  { key: 'direction', label: 'Direction', defaultVisible: true, sortable: true },
+  { key: 'entryDate', label: 'Entry', defaultVisible: true, sortable: true },
+  { key: 'exitDate', label: 'Exit', defaultVisible: true, sortable: true },
+  { key: 'size', label: 'Size', defaultVisible: true, sortable: true },
+  { key: 'rr', label: 'R:R', defaultVisible: true, sortable: true },
+  { key: 'outcome', label: 'Outcome', defaultVisible: true, sortable: true },
+  { key: 'pnl', label: 'P&L', defaultVisible: true, sortable: true },
+  { key: 'strategy', label: 'Strategy', defaultVisible: false, sortable: true },
+  { key: 'session', label: 'Session', defaultVisible: false, sortable: true },
+  { key: 'mistakes', label: 'Mistakes', defaultVisible: false, sortable: false },
+  { key: 'keyLesson', label: 'Key Lesson', defaultVisible: false, sortable: false },
+  { key: 'actions', label: 'Actions', defaultVisible: true, sortable: false },
+];
+
+const STORAGE_KEY = 'tradequt-table-columns';
+
+function getDefaultVisibility(): Record<string, boolean> {
+  return Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultVisible]));
+}
+
+function getStoredVisibility(): Record<string, boolean> {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Merge with defaults to handle new columns added later
+      const defaults = getDefaultVisibility();
+      return { ...defaults, ...parsed };
+    }
+  } catch {}
+  return getDefaultVisibility();
+}
 
 interface TradeLogViewProps {
   onAddTrade: () => void;
@@ -133,7 +179,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   };
   
   // Sorting state
-  type SortColumn = 'symbol' | 'account' | 'direction' | 'entryDate' | 'exitDate' | 'size' | 'rr' | 'outcome' | 'pnl';
+  type SortColumn = 'symbol' | 'account' | 'direction' | 'entryDate' | 'exitDate' | 'size' | 'rr' | 'outcome' | 'pnl' | 'strategy' | 'session';
   type SortDirection = 'asc' | 'desc';
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -150,6 +196,29 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   // Trades table state
   const [symbolFilters, setSymbolFilters] = useState<Set<string>>(new Set());
   const [outcomeFilters, setOutcomeFilters] = useState<Set<string>>(new Set());
+  const [strategyFilters, setStrategyFilters] = useState<Set<string>>(new Set());
+  const [sessionFilters, setSessionFilters] = useState<Set<string>>(new Set());
+  const [mistakeFilters, setMistakeFilters] = useState<Set<string>>(new Set());
+
+  // Column visibility state
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(getStoredVisibility);
+
+  const updateColumnVisibility = (key: string, visible: boolean) => {
+    setColumnVisibility(prev => {
+      const next = { ...prev, [key]: visible };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const resetColumnVisibility = () => {
+    const defaults = getDefaultVisibility();
+    setColumnVisibility(defaults);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
+  };
+
+  const isColumnVisible = (key: string) => columnVisibility[key] !== false;
+
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
@@ -171,11 +240,27 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     return Array.from(symbols).sort();
   }, [dateFilteredTrades]);
 
+  const uniqueStrategies = useMemo(() =>
+    Array.from(new Set(dateFilteredTrades.map(t => t.strategy).filter(Boolean) as string[])).sort(),
+    [dateFilteredTrades]
+  );
+  const uniqueSessions = useMemo(() =>
+    Array.from(new Set(dateFilteredTrades.map(t => t.session).filter(Boolean) as string[])).sort(),
+    [dateFilteredTrades]
+  );
+  const uniqueMistakes = useMemo(() =>
+    Array.from(new Set(dateFilteredTrades.flatMap(t => t.mistakes || []).filter(Boolean))).sort(),
+    [dateFilteredTrades]
+  );
+
   const filteredTrades = useMemo(() => {
     const filtered = dateFilteredTrades.filter(trade => {
       const matchesSymbol = symbolFilters.size === 0 || symbolFilters.has(trade.symbol);
       const matchesOutcome = outcomeFilters.size === 0 || outcomeFilters.has(trade.outcome || '');
-      return matchesSymbol && matchesOutcome;
+      const matchesStrategy = strategyFilters.size === 0 || strategyFilters.has(trade.strategy || '');
+      const matchesSession = sessionFilters.size === 0 || sessionFilters.has(trade.session || '');
+      const matchesMistakes = mistakeFilters.size === 0 || (trade.mistakes || []).some(m => mistakeFilters.has(m));
+      return matchesSymbol && matchesOutcome && matchesStrategy && matchesSession && matchesMistakes;
     });
 
     if (!sortColumn) return filtered;
@@ -200,10 +285,12 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
         case 'rr': cmp = (a.riskRewardRatio || 0) - (b.riskRewardRatio || 0); break;
         case 'outcome': cmp = (a.outcome || '').localeCompare(b.outcome || ''); break;
         case 'pnl': cmp = (a.pnl || 0) - (b.pnl || 0); break;
+        case 'strategy': cmp = (a.strategy || '').localeCompare(b.strategy || ''); break;
+        case 'session': cmp = (a.session || '').localeCompare(b.session || ''); break;
       }
       return sortDirection === 'desc' ? -cmp : cmp;
     });
-  }, [dateFilteredTrades, symbolFilters, outcomeFilters, sortColumn, sortDirection, accounts]);
+  }, [dateFilteredTrades, symbolFilters, outcomeFilters, strategyFilters, sessionFilters, mistakeFilters, sortColumn, sortDirection, accounts]);
 
   // --- Pagination: compute paged slice ---
   const totalFilteredTrades = filteredTrades.length;
@@ -219,7 +306,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   // Reset to page 1 when filters, sort, or query params change
   useEffect(() => {
     setCurrentPage(1);
-  }, [symbolFilters, outcomeFilters, sortColumn, sortDirection, queryParams]);
+  }, [symbolFilters, outcomeFilters, strategyFilters, sessionFilters, mistakeFilters, sortColumn, sortDirection, queryParams]);
 
   const paginatedTrades = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -545,6 +632,178 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                 )}
               </PopoverContent>
             </Popover>
+
+            {/* Strategy Filter (multi-select) */}
+            {uniqueStrategies.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
+                    {strategyFilters.size === 0
+                      ? 'All Strategies'
+                      : strategyFilters.size === 1
+                        ? [...strategyFilters][0]
+                        : `${strategyFilters.size} strategies`}
+                    <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[180px] p-2" align="start">
+                  <div className="space-y-1 max-h-[240px] overflow-auto">
+                    {uniqueStrategies.map(strategy => (
+                      <label
+                        key={strategy}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={strategyFilters.has(strategy)}
+                          onCheckedChange={(checked) => {
+                            setStrategyFilters(prev => {
+                              const next = new Set(prev);
+                              checked ? next.add(strategy) : next.delete(strategy);
+                              return next;
+                            });
+                          }}
+                        />
+                        {strategy}
+                      </label>
+                    ))}
+                  </div>
+                  {strategyFilters.size > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2 text-xs"
+                      onClick={() => setStrategyFilters(new Set())}
+                    >
+                      Clear all
+                    </Button>
+                  )}
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {/* Session Filter (multi-select) */}
+            {uniqueSessions.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
+                    {sessionFilters.size === 0
+                      ? 'All Sessions'
+                      : sessionFilters.size === 1
+                        ? [...sessionFilters][0]
+                        : `${sessionFilters.size} sessions`}
+                    <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[180px] p-2" align="start">
+                  <div className="space-y-1 max-h-[240px] overflow-auto">
+                    {uniqueSessions.map(session => (
+                      <label
+                        key={session}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={sessionFilters.has(session)}
+                          onCheckedChange={(checked) => {
+                            setSessionFilters(prev => {
+                              const next = new Set(prev);
+                              checked ? next.add(session) : next.delete(session);
+                              return next;
+                            });
+                          }}
+                        />
+                        {session}
+                      </label>
+                    ))}
+                  </div>
+                  {sessionFilters.size > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2 text-xs"
+                      onClick={() => setSessionFilters(new Set())}
+                    >
+                      Clear all
+                    </Button>
+                  )}
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {/* Mistakes Filter (multi-select) */}
+            {uniqueMistakes.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
+                    {mistakeFilters.size === 0
+                      ? 'All Mistakes'
+                      : mistakeFilters.size === 1
+                        ? [...mistakeFilters][0]
+                        : `${mistakeFilters.size} mistakes`}
+                    <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-2" align="start">
+                  <div className="space-y-1 max-h-[240px] overflow-auto">
+                    {uniqueMistakes.map(mistake => (
+                      <label
+                        key={mistake}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={mistakeFilters.has(mistake)}
+                          onCheckedChange={(checked) => {
+                            setMistakeFilters(prev => {
+                              const next = new Set(prev);
+                              checked ? next.add(mistake) : next.delete(mistake);
+                              return next;
+                            });
+                          }}
+                        />
+                        {mistake}
+                      </label>
+                    ))}
+                  </div>
+                  {mistakeFilters.size > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2 text-xs"
+                      onClick={() => setMistakeFilters(new Set())}
+                    >
+                      Clear all
+                    </Button>
+                  )}
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {/* Column Visibility Toggle */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm">
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Columns</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2" align="end">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground px-2 py-1">Show/Hide Columns</p>
+                  {COLUMN_DEFS.filter(c => c.key !== 'checkbox' && c.key !== 'actions').map(col => (
+                    <label key={col.key} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent/50 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={isColumnVisible(col.key)}
+                        onCheckedChange={(checked) => updateColumnVisibility(col.key, !!checked)}
+                      />
+                      {col.label}
+                    </label>
+                  ))}
+                  <Separator className="my-1" />
+                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={resetColumnVisibility}>
+                    Reset to defaults
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         )}
       </div>
@@ -587,12 +846,14 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
               <table className="w-full min-w-[1100px]">
                 <thead className="sticky top-0 bg-card z-10">
                   <tr className="border-b border-border/50">
-                    <th className="px-3 py-4 w-10">
-                      <Checkbox
-                        checked={paginatedTrades.length > 0 && selectedTradeIds.size === paginatedTrades.length}
-                        onCheckedChange={toggleSelectAll}
-                      />
-                    </th>
+                    {isColumnVisible('checkbox') && (
+                      <th className="px-3 py-4 w-10">
+                        <Checkbox
+                          checked={paginatedTrades.length > 0 && selectedTradeIds.size === paginatedTrades.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </th>
+                    )}
                     {([
                       { key: 'symbol', label: 'Symbol', align: 'left' },
                       { key: 'account', label: 'Account', align: 'left' },
@@ -603,7 +864,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                       { key: 'rr', label: 'R:R', align: 'left' },
                       { key: 'outcome', label: 'Outcome', align: 'left' },
                       { key: 'pnl', label: 'P&L', align: 'right' },
-                    ] as const).map(col => (
+                    ] as const).filter(col => isColumnVisible(col.key)).map(col => (
                       <th
                         key={col.key}
                         className={cn(
@@ -624,7 +885,49 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                         </span>
                       </th>
                     ))}
-                    <th className="px-5 py-4 text-right text-sm font-medium text-muted-foreground"></th>
+                    {isColumnVisible('strategy') && (
+                      <th
+                        className="px-5 py-4 text-sm font-medium text-muted-foreground select-none cursor-pointer hover:text-foreground transition-colors text-left"
+                        onClick={() => handleSort('strategy')}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          Strategy
+                          {sortColumn === 'strategy' ? (
+                            sortDirection === 'desc'
+                              ? <ArrowDown className="w-3.5 h-3.5 text-primary" />
+                              : <ArrowUp className="w-3.5 h-3.5 text-primary" />
+                          ) : (
+                            <ChevronsUpDown className="w-3.5 h-3.5 opacity-30" />
+                          )}
+                        </span>
+                      </th>
+                    )}
+                    {isColumnVisible('session') && (
+                      <th
+                        className="px-5 py-4 text-sm font-medium text-muted-foreground select-none cursor-pointer hover:text-foreground transition-colors text-left"
+                        onClick={() => handleSort('session')}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          Session
+                          {sortColumn === 'session' ? (
+                            sortDirection === 'desc'
+                              ? <ArrowDown className="w-3.5 h-3.5 text-primary" />
+                              : <ArrowUp className="w-3.5 h-3.5 text-primary" />
+                          ) : (
+                            <ChevronsUpDown className="w-3.5 h-3.5 opacity-30" />
+                          )}
+                        </span>
+                      </th>
+                    )}
+                    {isColumnVisible('mistakes') && (
+                      <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Mistakes</th>
+                    )}
+                    {isColumnVisible('keyLesson') && (
+                      <th className="px-5 py-4 text-left text-sm font-medium text-muted-foreground">Key Lesson</th>
+                    )}
+                    {isColumnVisible('actions') && (
+                      <th className="px-5 py-4 text-right text-sm font-medium text-muted-foreground"></th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
@@ -641,134 +944,180 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                       )}
                       style={{ animationDelay: `${index * 0.03}s` }}
                     >
-                      <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selectedTradeIds.has(trade.id)}
-                          onCheckedChange={() => toggleTradeSelection(trade.id)}
-                        />
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center",
-                            trade.direction === 'LONG' ? "bg-success/10" : "bg-destructive/10"
-                          )}>
-                            {trade.direction === 'LONG' ? (
-                              <ArrowUpRight className="w-4 h-4 text-success" />
-                            ) : (
-                              <ArrowDownRight className="w-4 h-4 text-destructive" />
-                            )}
-                          </div>
-                          <span className="font-semibold text-foreground">{trade.symbol}</span>
-                          {isTradeIncomplete(trade) && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="w-2 h-2 rounded-full bg-warning animate-pulse" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>No account assigned — this trade won't appear in your stats. Click Edit to assign an account.</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-sm text-foreground">{account?.name || '—'}</span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={cn(
-                          "text-xs px-2 py-1 rounded-full font-medium",
-                          trade.direction === 'LONG'
-                            ? "bg-success/10 text-success"
-                            : "bg-destructive/10 text-destructive"
-                        )}>
-                          {trade.direction}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div>
-                          <p className="font-mono text-foreground">{trade.entryPrice}</p>
-                          <p className="text-xs text-muted-foreground">{format(new Date(trade.entryDate), 'MMM d, HH:mm')}</p>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        {trade.exitPrice ? (
-                          <div>
-                            <p className="font-mono text-foreground">{trade.exitPrice}</p>
-                            <p className="text-xs text-muted-foreground">{trade.exitDate && format(new Date(trade.exitDate), 'MMM d, HH:mm')}</p>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-4 font-mono text-foreground">{trade.size}</td>
-                      <td className="px-5 py-4 font-mono text-foreground">{(trade.riskRewardRatio ?? 0).toFixed(2)}</td>
-                      <td className="px-5 py-4">
-                        <span className={cn(
-                          "text-xs px-2 py-1 rounded-full font-medium",
-                          trade.outcome === 'TP' ? "bg-success/10 text-success" :
-                          trade.outcome === 'PARTIAL' ? "bg-primary/10 text-primary" :
-                          trade.outcome === 'BREAKEVEN' ? "bg-muted text-muted-foreground" :
-                          "bg-destructive/10 text-destructive"
-                        )}>
-                          {trade.outcome}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        {trade.pnl !== undefined ? (
-                          <div>
-                            <p className={cn(
-                              "font-semibold font-mono",
-                              trade.pnl >= 0 ? "text-success" : "text-destructive"
+                      {isColumnVisible('checkbox') && (
+                        <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedTradeIds.has(trade.id)}
+                            onCheckedChange={() => toggleTradeSelection(trade.id)}
+                          />
+                        </td>
+                      )}
+                      {isColumnVisible('symbol') && (
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center",
+                              trade.direction === 'LONG' ? "bg-success/10" : "bg-destructive/10"
                             )}>
-                              {trade.pnl >= 0 ? '+' : ''}${(trade.pnl ?? 0).toFixed(2)}
-                            </p>
-                            {trade.pnlPercent !== undefined && (
-                              <p className={cn(
-                                "text-xs font-mono",
-                                trade.pnlPercent >= 0 ? "text-success/70" : "text-destructive/70"
-                              )}>
-                                {trade.pnlPercent >= 0 ? '+' : ''}{(trade.pnlPercent ?? 0).toFixed(2)}%
-                              </p>
+                              {trade.direction === 'LONG' ? (
+                                <ArrowUpRight className="w-4 h-4 text-success" />
+                              ) : (
+                                <ArrowDownRight className="w-4 h-4 text-destructive" />
+                              )}
+                            </div>
+                            <span className="font-semibold text-foreground">{trade.symbol}</span>
+                            {isTradeIncomplete(trade) && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="w-2 h-2 rounded-full bg-warning animate-pulse" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>No account assigned — this trade won't appear in your stats. Click Edit to assign an account.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleViewTrade(globalIndex)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewTrade(globalIndex)}>
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditTrade(trade)}>Edit Trade</DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-destructive" 
-                                onClick={() => handleDeleteTrade(trade.id)}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </td>
+                        </td>
+                      )}
+                      {isColumnVisible('account') && (
+                        <td className="px-5 py-4">
+                          <span className="text-sm text-foreground">{account?.name || '—'}</span>
+                        </td>
+                      )}
+                      {isColumnVisible('direction') && (
+                        <td className="px-5 py-4">
+                          <span className={cn(
+                            "text-xs px-2 py-1 rounded-full font-medium",
+                            trade.direction === 'LONG'
+                              ? "bg-success/10 text-success"
+                              : "bg-destructive/10 text-destructive"
+                          )}>
+                            {trade.direction}
+                          </span>
+                        </td>
+                      )}
+                      {isColumnVisible('entryDate') && (
+                        <td className="px-5 py-4">
+                          <div>
+                            <p className="font-mono text-foreground">{trade.entryPrice}</p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(trade.entryDate), "MMM d ''yy, HH:mm")}</p>
+                          </div>
+                        </td>
+                      )}
+                      {isColumnVisible('exitDate') && (
+                        <td className="px-5 py-4">
+                          {trade.exitPrice ? (
+                            <div>
+                              <p className="font-mono text-foreground">{trade.exitPrice}</p>
+                              <p className="text-xs text-muted-foreground">{trade.exitDate && format(new Date(trade.exitDate), "MMM d ''yy, HH:mm")}</p>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      )}
+                      {isColumnVisible('size') && (
+                        <td className="px-5 py-4 font-mono text-foreground">{trade.size}</td>
+                      )}
+                      {isColumnVisible('rr') && (
+                        <td className="px-5 py-4 font-mono text-foreground">{(trade.riskRewardRatio ?? 0).toFixed(2)}</td>
+                      )}
+                      {isColumnVisible('outcome') && (
+                        <td className="px-5 py-4">
+                          <span className={cn(
+                            "text-xs px-2 py-1 rounded-full font-medium",
+                            trade.outcome === 'TP' ? "bg-success/10 text-success" :
+                            trade.outcome === 'PARTIAL' ? "bg-primary/10 text-primary" :
+                            trade.outcome === 'BREAKEVEN' ? "bg-muted text-muted-foreground" :
+                            "bg-destructive/10 text-destructive"
+                          )}>
+                            {trade.outcome}
+                          </span>
+                        </td>
+                      )}
+                      {isColumnVisible('pnl') && (
+                        <td className="px-5 py-4 text-right">
+                          {trade.pnl !== undefined ? (
+                            <div>
+                              <p className={cn(
+                                "font-semibold font-mono",
+                                trade.pnl >= 0 ? "text-success" : "text-destructive"
+                              )}>
+                                {trade.pnl >= 0 ? '+' : ''}${(trade.pnl ?? 0).toFixed(2)}
+                              </p>
+                              {trade.pnlPercent !== undefined && (
+                                <p className={cn(
+                                  "text-xs font-mono",
+                                  trade.pnlPercent >= 0 ? "text-success/70" : "text-destructive/70"
+                                )}>
+                                  {trade.pnlPercent >= 0 ? '+' : ''}{(trade.pnlPercent ?? 0).toFixed(2)}%
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      )}
+                      {isColumnVisible('strategy') && (
+                        <td className="px-5 py-4 text-sm text-muted-foreground">{trade.strategy || '—'}</td>
+                      )}
+                      {isColumnVisible('session') && (
+                        <td className="px-5 py-4 text-sm text-muted-foreground">{trade.session || '—'}</td>
+                      )}
+                      {isColumnVisible('mistakes') && (
+                        <td className="px-5 py-4">
+                          {trade.mistakes && trade.mistakes.length > 0 ? (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
+                              {trade.mistakes.length}
+                            </span>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </td>
+                      )}
+                      {isColumnVisible('keyLesson') && (
+                        <td className="px-5 py-4">
+                          {trade.keyLesson ? (
+                            <span className="text-xs text-muted-foreground max-w-[200px] truncate block" title={trade.keyLesson}>
+                              {trade.keyLesson}
+                            </span>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </td>
+                      )}
+                      {isColumnVisible('actions') && (
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleViewTrade(globalIndex)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewTrade(globalIndex)}>
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditTrade(trade)}>Edit Trade</DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDeleteTrade(trade.id)}
+                                >
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   )})}
                 </tbody>
@@ -782,11 +1131,11 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                 </div>
                 <h3 className="text-base font-medium text-foreground mb-1">No trades found</h3>
                 <p className="text-sm text-muted-foreground max-w-sm mb-6">
-                  {symbolFilters.size > 0 || outcomeFilters.size > 0
+                  {symbolFilters.size > 0 || outcomeFilters.size > 0 || strategyFilters.size > 0 || sessionFilters.size > 0 || mistakeFilters.size > 0
                     ? "Try adjusting your filters to see more trades."
                     : "Add your first trade to start building your trading log."}
                 </p>
-                {symbolFilters.size === 0 && outcomeFilters.size === 0 && (
+                {symbolFilters.size === 0 && outcomeFilters.size === 0 && strategyFilters.size === 0 && sessionFilters.size === 0 && mistakeFilters.size === 0 && (
                   <Button onClick={onAddTrade} size="sm" className="gap-2">
                     <Plus className="w-4 h-4" />
                     Add Trade
