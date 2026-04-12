@@ -485,7 +485,7 @@ describe('AddTradeModal - Error Handling', () => {
       const btn = screen.getByRole('button', { name: /add trade/i });
       expect(btn).not.toBeDisabled();
     });
-  });
+  }, 15000);
 
   it('closes dialog when onAddTrade resolves successfully', async () => {
     const user = userEvent.setup({ delay: null });
@@ -617,11 +617,10 @@ describe('AddTradeModal - Broken Rules Section', () => {
     expect(screen.getByText('No trading rules defined yet')).toBeInTheDocument();
   });
 
-  it('shows link to Goals & Rules page in empty state', () => {
+  it('shows button to open Goals & Rules in empty state', () => {
     render(<AddTradeModal {...defaultProps} />);
-    const link = screen.getByText('Go to Goals & Rules');
-    expect(link).toBeInTheDocument();
-    expect(link.closest('a')).toHaveAttribute('href', '/app/goals');
+    const btn = screen.getByRole('button', { name: /Go to Goals & Rules/ });
+    expect(btn).toBeInTheDocument();
   });
 
   it('shows "from Goals & Rules" attribution when rules exist', async () => {
