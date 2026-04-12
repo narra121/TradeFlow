@@ -46,7 +46,10 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
       const alreadyReloaded = sessionStorage.getItem(RELOAD_KEY);
       if (!alreadyReloaded) {
         sessionStorage.setItem(RELOAD_KEY, '1');
-        window.location.reload();
+        // Cache-busting reload: append timestamp to force fresh fetch
+        const url = new URL(window.location.href);
+        url.searchParams.set('_cb', Date.now().toString());
+        window.location.replace(url.toString());
         return { hasError: true };
       }
     }
@@ -66,7 +69,9 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
             className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => {
               sessionStorage.removeItem(RELOAD_KEY);
-              window.location.reload();
+              const url = new URL(window.location.href);
+              url.searchParams.set('_cb', Date.now().toString());
+              window.location.replace(url.toString());
             }}
           >
             Reload page
