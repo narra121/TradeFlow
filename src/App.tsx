@@ -37,8 +37,8 @@ function isChunkError(error: Error): boolean {
   );
 }
 
-class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; isChunk: boolean }> {
+  state = { hasError: false, isChunk: false };
 
   static getDerivedStateFromError(error: Error) {
     if (isChunkError(error)) {
@@ -50,10 +50,12 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
         const url = new URL(window.location.href);
         url.searchParams.set('_cb', Date.now().toString());
         window.location.replace(url.toString());
-        return { hasError: true };
+        return { hasError: true, isChunk: true };
       }
+      return { hasError: true, isChunk: true };
     }
-    return { hasError: true };
+    // Non-chunk errors: catch to prevent white screen, but show generic error
+    return { hasError: true, isChunk: false };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -64,7 +66,9 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
-          <p className="text-muted-foreground">A new version is available.</p>
+          <p className="text-muted-foreground">
+            {this.state.isChunk ? 'A new version is available.' : 'Something went wrong.'}
+          </p>
           <button
             className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => {

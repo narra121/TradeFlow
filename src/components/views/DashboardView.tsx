@@ -232,16 +232,16 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <StatCard
                 title="Total P&L"
-                value={stats.totalPnl.toFixed(2)}
+                value={(stats.totalPnl ?? 0).toFixed(2)}
                 prefix="$"
                 icon={DollarSign}
-                variant={stats.totalPnl >= 0 ? 'success' : 'danger'}
+                variant={(stats.totalPnl ?? 0) >= 0 ? 'success' : 'danger'}
                 trend={totalPnlTrend}
                 className="stagger-1"
               />
               <StatCard
                 title="Win Rate"
-                value={stats.winRate.toFixed(1)}
+                value={(stats.winRate ?? 0).toFixed(1)}
                 suffix="%"
                 icon={TrendingUp}
                 variant="success"
@@ -249,14 +249,14 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
               />
               <StatCard
                 title="Total Trades"
-                value={stats.totalTrades}
+                value={stats.totalTrades ?? 0}
                 icon={Activity}
                 variant="default"
                 className="stagger-3"
               />
               <StatCard
                 title="Profit Factor"
-                value={stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2)}
+                value={stats.profitFactor === Infinity ? '∞' : (stats.profitFactor ?? 0).toFixed(2)}
                 icon={BarChart3}
                 variant="accent"
                 className="stagger-4"
