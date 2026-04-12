@@ -207,20 +207,21 @@ export function AnalyticsView() {
     });
   }, [stats.dailyPnl, currentWeekStart]);
 
-  // Performance metrics using calculated stats
+  // Performance metrics using calculated stats (guard nulls with ?? 0)
+  const n = (v: number | null | undefined) => v ?? 0;
   const metrics = [
-    { label: 'Total P&L', value: `$${stats.totalPnl.toFixed(2)}`, isPositive: stats.totalPnl >= 0 },
-    { label: 'Win Rate', value: `${stats.winRate.toFixed(1)}%`, isPositive: stats.winRate >= 50 },
-    { label: 'Profit Factor', value: stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2), isPositive: stats.profitFactor >= 1 },
-    { label: 'Average Win', value: `$${stats.avgWin.toFixed(2)}`, isPositive: true },
-    { label: 'Average Loss', value: `$${stats.avgLoss.toFixed(2)}`, isPositive: false },
-    { label: 'Max Drawdown', value: `${stats.maxDrawdown.toFixed(1)}%`, isPositive: false },
-    { label: 'Best Trade', value: `$${stats.bestTrade.toFixed(2)}`, isPositive: true },
-    { label: 'Worst Trade', value: `$${stats.worstTrade.toFixed(2)}`, isPositive: false },
-    { label: 'Avg R:R', value: stats.avgRiskReward.toFixed(2), isPositive: stats.avgRiskReward >= 1.5 },
-    { label: 'Total Trades', value: stats.totalTrades.toString(), isPositive: true },
-    { label: 'Win Streak', value: stats.consecutiveWins.toString(), isPositive: true },
-    { label: 'Loss Streak', value: stats.consecutiveLosses.toString(), isPositive: false },
+    { label: 'Total P&L', value: `$${n(stats.totalPnl).toFixed(2)}`, isPositive: n(stats.totalPnl) >= 0 },
+    { label: 'Win Rate', value: `${n(stats.winRate).toFixed(1)}%`, isPositive: n(stats.winRate) >= 50 },
+    { label: 'Profit Factor', value: stats.profitFactor === Infinity ? '∞' : n(stats.profitFactor).toFixed(2), isPositive: n(stats.profitFactor) >= 1 },
+    { label: 'Average Win', value: `$${n(stats.avgWin).toFixed(2)}`, isPositive: true },
+    { label: 'Average Loss', value: `$${n(stats.avgLoss).toFixed(2)}`, isPositive: false },
+    { label: 'Max Drawdown', value: `${n(stats.maxDrawdown).toFixed(1)}%`, isPositive: false },
+    { label: 'Best Trade', value: `$${n(stats.bestTrade).toFixed(2)}`, isPositive: true },
+    { label: 'Worst Trade', value: `$${n(stats.worstTrade).toFixed(2)}`, isPositive: false },
+    { label: 'Avg R:R', value: n(stats.avgRiskReward).toFixed(2), isPositive: n(stats.avgRiskReward) >= 1.5 },
+    { label: 'Total Trades', value: (stats.totalTrades ?? 0).toString(), isPositive: true },
+    { label: 'Win Streak', value: (stats.consecutiveWins ?? 0).toString(), isPositive: true },
+    { label: 'Loss Streak', value: (stats.consecutiveLosses ?? 0).toString(), isPositive: false },
   ];
 
   if (showShimmer) {
@@ -646,7 +647,7 @@ export function AnalyticsView() {
                       "font-mono",
                       session.winRate >= 50 ? "text-success" : "text-destructive"
                     )}>
-                      {session.trades > 0 ? session.winRate.toFixed(1) : '0.0'}%
+                      {session.trades > 0 ? (session.winRate ?? 0).toFixed(1) : '0.0'}%
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -655,7 +656,7 @@ export function AnalyticsView() {
                       "font-mono",
                       session.pnl >= 0 ? "text-success" : "text-destructive"
                     )}>
-                      {session.pnl >= 0 ? '+' : ''}{session.pnl > 0 ? `$${session.pnl.toFixed(0)}` : session.pnl < 0 ? `-$${Math.abs(session.pnl).toFixed(0)}` : '$0'}
+                      {(session.pnl ?? 0) >= 0 ? '+' : ''}{(session.pnl ?? 0) > 0 ? `$${(session.pnl ?? 0).toFixed(0)}` : (session.pnl ?? 0) < 0 ? `-$${Math.abs(session.pnl ?? 0).toFixed(0)}` : '$0'}
                     </span>
                   </div>
                 </div>
@@ -682,8 +683,8 @@ export function AnalyticsView() {
                   <span className="text-sm text-foreground truncate mr-2">{item.name}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">{item.count}</span>
-                    <span className={cn('font-mono text-xs', item.totalPnl >= 0 ? 'text-success' : 'text-destructive')}>
-                      {item.totalPnl >= 0 ? '+' : ''}${item.totalPnl.toFixed(2)}
+                    <span className={cn('font-mono text-xs', (item.totalPnl ?? 0) >= 0 ? 'text-success' : 'text-destructive')}>
+                      {(item.totalPnl ?? 0) >= 0 ? '+' : ''}${(item.totalPnl ?? 0).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -707,8 +708,8 @@ export function AnalyticsView() {
                   <span className="text-sm text-foreground truncate mr-2">{item.ruleText}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">{item.count}</span>
-                    <span className={cn('font-mono text-xs', item.totalPnl >= 0 ? 'text-success' : 'text-destructive')}>
-                      {item.totalPnl >= 0 ? '+' : ''}${item.totalPnl.toFixed(2)}
+                    <span className={cn('font-mono text-xs', (item.totalPnl ?? 0) >= 0 ? 'text-success' : 'text-destructive')}>
+                      {(item.totalPnl ?? 0) >= 0 ? '+' : ''}${(item.totalPnl ?? 0).toFixed(2)}
                     </span>
                   </div>
                 </div>
