@@ -75,7 +75,7 @@ export const userApi = api.injectEndpoints({
       providesTags: ['Subscription'],
     }),
     
-    createSubscription: builder.mutation<{ subscription: Subscription }, UserCreateSubscriptionPayload>({
+    createSubscription: builder.mutation<Subscription, UserCreateSubscriptionPayload>({
       query: (payload) => ({
         url: '/subscriptions',
         method: 'POST',

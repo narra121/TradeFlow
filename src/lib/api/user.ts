@@ -37,14 +37,38 @@ export interface UpdateNotificationsPayload {
 
 export interface Subscription {
   userId: string;
-  status: 'active' | 'inactive' | 'cancelled';
-  plan: string;
-  amount: number;
-  billingCycle: 'monthly' | 'annual';
-  nextBillingDate: string;
+  subscriptionId: string;
+  planId: string;
+  status: 'created' | 'authenticated' | 'active' | 'paused' | 'pending' | 'halted' | 'cancellation_requested' | 'cancelled' | 'completed';
+  paidCount: number;
+  remainingCount?: number;
+  totalCount?: number;
+  authAttempts?: number;
+  quantity?: number;
+  paymentLink?: string;
+  shortUrl?: string;
+  currentStart?: string;
+  currentEnd?: string;
+  chargeAt?: string;
+  startAt?: string;
+  endAt?: string;
+  cancelAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  razorpayDetails?: {
+    status: string;
+    paidCount: number;
+    remainingCount?: number;
+    currentStart?: number;
+    currentEnd?: number;
+    chargeAt?: number;
+    endedAt?: number;
+  };
 }
 
 export interface UserCreateSubscriptionPayload {
-  amount: number;
-  billingCycle: 'monthly' | 'annual';
+  planId: string;
+  totalCount?: number;
+  quantity?: number;
+  customerNotify?: number;
 }

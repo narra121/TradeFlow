@@ -33,7 +33,7 @@ import {
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useCreateSubscriptionMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation, useUndoCancellationMutation } from '@/store/api';
+import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation, useUndoCancellationMutation } from '@/store/api';
 import { useRazorpay } from '@/hooks/useRazorpay';
 import { SubscriptionDetails, PlanResponse } from '@/lib/api';
 import { toast } from 'sonner';
@@ -49,7 +49,7 @@ export function ProfileView() {
   const { accounts } = useAccounts();
   const loading = profileLoading || profileFetching || subscriptionLoading || subscriptionFetching;
   const [updateProfile] = useUpdateProfileMutation();
-  const [createSubscription] = useCreateSubscriptionMutation();
+
   const [cancelSubscription] = useCancelSubscriptionMutation();
   const [pauseSubscription] = usePauseSubscriptionMutation();
   const [resumeSubscription] = useResumeSubscriptionMutation();
@@ -97,8 +97,6 @@ export function ProfileView() {
     subscription: {
       status: subscription?.status || 'inactive',
       plan: 'Supporter',
-      amount: subscription?.amount || 0,
-      nextBilling: subscription?.nextBillingDate || ''
     }
   });
   
@@ -128,11 +126,9 @@ export function ProfileView() {
         subscription: {
           status: subscription.status,
           plan: 'Supporter',
-          amount: subscription.amount,
-          nextBilling: subscription.nextBillingDate
         }
       }));
-      
+
       // Sync RTK Query data to local state if not already loaded
       if (!subscriptionDetails) {
         setSubscriptionDetails(subscription as unknown as SubscriptionDetails);
@@ -204,17 +200,11 @@ export function ProfileView() {
         description: plan.description || `${cycle === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ₹${amount}`,
         onSuccess: async (subscriptionId) => {
           console.log('Subscription activated:', subscriptionId);
-          
+
           toast.success("Your payment was successful and your subscription is now active.");
-          
-          // Refresh subscription details immediately
+
+          // Refetch to get latest subscription data from backend
           try {
-            // Update Redux store
-            await createSubscription({ 
-              amount, 
-              billingCycle: cycle 
-            }).unwrap();
-            // Refetch to get latest data
             const { data: updatedSubscription } = await refetchSubscription();
             if (updatedSubscription) {
               setSubscriptionDetails(updatedSubscription as unknown as SubscriptionDetails);
@@ -319,15 +309,10 @@ export function ProfileView() {
         description: plan.description || `${plan.period === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ₹${plan.amount}`,
         onSuccess: async (subscriptionId) => {
           console.log('Subscription activated:', subscriptionId);
-          
+
           toast.success("Your payment was successful and your subscription is now active.");
-          
-          // Refresh subscription details immediately
+
           try {
-            await createSubscription({ 
-              amount: plan.amount, 
-              billingCycle: plan.period as 'monthly' | 'annual'
-            }).unwrap();
             const { data: updatedSubscription } = await refetchSubscription();
             if (updatedSubscription) {
               setSubscriptionDetails(updatedSubscription as unknown as SubscriptionDetails);
