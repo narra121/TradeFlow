@@ -64,7 +64,7 @@ export const goalsRulesApi = api.injectEndpoints({
         }
         return goal;
       },
-      invalidatesTags: [], // Don't invalidate, use manual cache update
+      invalidatesTags: ['Goals'],
       async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
         try {
           const { data: updatedGoal } = await queryFulfilled;
@@ -167,7 +167,7 @@ export const goalsRulesApi = api.injectEndpoints({
         }
         return rule;
       },
-      invalidatesTags: [], // Don't invalidate, use manual cache update
+      invalidatesTags: ['Rules'],
       async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
         try {
           const { data: updatedRule } = await queryFulfilled;
@@ -214,7 +214,7 @@ export const goalsRulesApi = api.injectEndpoints({
         }
         return rule;
       },
-      invalidatesTags: [], // Don't invalidate, use manual cache update
+      invalidatesTags: ['Rules'],
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
         try {
           const { data: updatedRule } = await queryFulfilled;
@@ -264,7 +264,7 @@ export const goalsRulesApi = api.injectEndpoints({
         }
         return result;
       },
-      invalidatesTags: [], // Don't invalidate, use manual cache update
+      invalidatesTags: ['Rules'],
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
         // Optimistic delete
         const patchResults: any[] = [];

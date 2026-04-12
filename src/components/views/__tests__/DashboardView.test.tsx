@@ -737,7 +737,7 @@ describe('DashboardView - Unmapped Trades Empty State', () => {
 
     const tradeLogBtn = screen.getByRole('button', { name: /Go to Trade Log/ });
     fireEvent.click(tradeLogBtn);
-    expect(mockNavigate).toHaveBeenCalledWith('/app/trade-log');
+    expect(mockNavigate).toHaveBeenCalledWith('/app/tradelog');
   });
 
   it('still shows Add Trade button in unmapped empty state', () => {

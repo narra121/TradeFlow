@@ -166,7 +166,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
                   : `You have ${unmappedCount} trades that aren't assigned to any account. Map them to accounts so they show up in your stats.`}
               </p>
               <div className="flex items-center gap-3">
-                <Button onClick={() => navigate('/app/trade-log')} size="default" className="gap-2">
+                <Button onClick={() => navigate('/app/tradelog')} size="default" className="gap-2">
                   <AlertTriangle className="w-4 h-4" />
                   Go to Trade Log
                 </Button>
