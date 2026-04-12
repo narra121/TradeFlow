@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
+import Papa from 'papaparse';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -28,6 +29,8 @@ import { useAccounts } from '@/hooks/useAccounts';
 import {
   Upload,
   Image as ImageIcon,
+  FileSpreadsheet,
+  ClipboardPaste,
   Trash2,
   Pencil,
   Merge,
@@ -63,6 +66,13 @@ interface ImportTradesModalProps {
   onImportTrades: (trades: Omit<Trade, 'id'>[]) => Promise<{ success: boolean; error?: any }>;
 }
 
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+const SPREADSHEET_EXTENSIONS = ['.csv', '.txt', '.xls', '.xlsx'];
+const isSpreadsheetFile = (file: File) => {
+  const ext = '.' + file.name.toLowerCase().split('.').pop();
+  return SPREADSHEET_EXTENSIONS.includes(ext);
+};
+
 const toLocalISOString = (date: Date) => {
   const offset = date.getTimezoneOffset() * 60000;
   const localDate = new Date(date.getTime() - offset);
@@ -76,7 +86,13 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [importAccountId, setImportAccountId] = useState<string>('');
+  const [uploadedFile, setUploadedFile] = useState<{
+    name: string; size: number; type: string; parsedText: string; rowCount: number;
+  } | null>(null);
+  const [importMode, setImportMode] = useState<'none' | 'image' | 'file'>('none');
+  const [extractionError, setExtractionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const spreadsheetInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const { accounts } = useAccounts();
 
@@ -88,19 +104,42 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
       const items = e.clipboardData?.items;
       if (!items) return;
 
+      // Check for images first
       for (const item of items) {
         if (item.type.startsWith('image/')) {
+          if (importMode === 'file') return; // Don't mix modes
           const file = item.getAsFile();
           if (file) {
+            setImportMode('image');
             processImageFile(file);
           }
+          return;
+        }
+      }
+
+      // Check for text (pasted CSV/tabular data)
+      const text = e.clipboardData?.getData('text/plain');
+      if (text && text.trim().length > 10 && (text.includes('\t') || text.includes(',')) && text.includes('\n')) {
+        if (importMode === 'image' && uploadedImages.length > 0) return; // Don't mix
+        const parseResult = Papa.parse(text.trim(), { header: false, skipEmptyLines: true });
+        if (parseResult.data.length > 1) {
+          setUploadedFile({
+            name: 'Pasted data',
+            size: new Blob([text]).size,
+            type: 'paste',
+            parsedText: text,
+            rowCount: parseResult.data.length - 1,
+          });
+          setImportMode('file');
+          setUploadedImages([]);
+          setExtractionError(null);
         }
       }
     };
 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [open]);
+  }, [open, importMode, uploadedImages.length]);
 
   const processImageFile = (file: File) => {
     const reader = new FileReader();
@@ -113,6 +152,44 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
       }]);
     };
     reader.readAsDataURL(file);
+  };
+
+  const processSpreadsheetFile = async (file: File) => {
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`File size (${(file.size / 1024).toFixed(1)} KB) exceeds 1 MB limit`);
+      return;
+    }
+
+    try {
+      const ext = file.name.toLowerCase().split('.').pop() || '';
+      const isExcel = ext === 'xls' || ext === 'xlsx';
+      let csvText: string;
+
+      if (isExcel) {
+        const buffer = await file.arrayBuffer();
+        const XLSX = await import('xlsx');
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        csvText = XLSX.utils.sheet_to_csv(firstSheet);
+      } else {
+        csvText = await file.text();
+      }
+
+      const parseResult = Papa.parse(csvText.trim(), { header: false, skipEmptyLines: true });
+      const rowCount = Math.max(0, parseResult.data.length - 1);
+
+      if (rowCount === 0) {
+        toast.error('File contains no data rows');
+        return;
+      }
+
+      setUploadedFile({ name: file.name, size: file.size, type: ext, parsedText: csvText, rowCount });
+      setImportMode('file');
+      setUploadedImages([]);
+      setExtractionError(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to parse file');
+    }
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -130,40 +207,75 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    files.forEach(file => {
+    for (const file of files) {
       if (file.type.startsWith('image/')) {
+        if (importMode === 'file') {
+          toast.error('Remove the uploaded file before adding images');
+          return;
+        }
+        setImportMode('image');
         processImageFile(file);
+      } else if (isSpreadsheetFile(file)) {
+        if (importMode === 'image' && uploadedImages.length > 0) {
+          toast.error('Remove uploaded images before adding a file');
+          return;
+        }
+        processSpreadsheetFile(file);
       }
-    });
-  }, []);
+    }
+  }, [importMode, uploadedImages.length]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     files.forEach(file => {
       if (file.type.startsWith('image/')) {
+        setImportMode('image');
         processImageFile(file);
       }
     });
     e.target.value = '';
   };
 
+  const handleSpreadsheetSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) processSpreadsheetFile(files[0]);
+    e.target.value = '';
+  };
+
   const removeImage = (id: string) => {
-    setUploadedImages(prev => prev.filter(img => img.id !== id));
+    setUploadedImages(prev => {
+      const next = prev.filter(img => img.id !== id);
+      if (next.length === 0) setImportMode('none');
+      return next;
+    });
   };
 
   const extractTrades = async () => {
-    if (uploadedImages.length === 0) return;
+    if (importMode === 'image' && uploadedImages.length === 0) return;
+    if (importMode === 'file' && !uploadedFile) return;
 
     setIsProcessing(true);
-    
+    setExtractionError(null);
+
     try {
-      // Extract base64 data from uploaded images (max 3)
-      const imageData = uploadedImages.slice(0, 3).map(img => img.url);
-      
-      // Call backend API to extract trades from all images
-      const response = await tradesApi.extractTrades(imageData);
-      
-      // Transform API response to ImportedTrade format
+      let response;
+
+      if (importMode === 'image') {
+        const imageData = uploadedImages.slice(0, 3).map(img => img.url);
+        response = await tradesApi.extractTrades({ images: imageData });
+      } else {
+        response = await tradesApi.extractTrades({ textContent: uploadedFile!.parsedText });
+      }
+
+      // Check for extraction errors returned by the API
+      if (response.error) {
+        setExtractionError(response.error.message || 'Extraction failed');
+        if (response.items.length === 0) {
+          setIsProcessing(false);
+          return; // Keep source intact for retry
+        }
+      }
+
       const extracted: ImportedTrade[] = response.items.map((trade: any, index: number) => ({
         id: (Date.now() + index).toString(),
         symbol: trade.symbol || '',
@@ -180,9 +292,22 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         isSelected: false,
       }));
 
-      setExtractedTrades(extracted);
-    } catch (error) {
-      toast.error('Failed to extract trades from image');
+      if (extracted.length > 50) {
+        toast.warning(`File contains ${extracted.length} trades. Only the first 50 will be imported.`);
+      }
+
+      setExtractedTrades(extracted.slice(0, 50));
+
+      // On success, clear the source material
+      if (extracted.length > 0) {
+        setUploadedImages([]);
+        setUploadedFile(null);
+      }
+    } catch (error: any) {
+      const source = importMode === 'image' ? 'image' : 'file';
+      const msg = error?.response?.data?.message || error?.message || `Failed to extract trades from ${source}`;
+      setExtractionError(msg);
+      // Keep source intact for retry
     } finally {
       setIsProcessing(false);
     }
@@ -315,9 +440,12 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
 
   const resetModal = () => {
     setUploadedImages([]);
+    setUploadedFile(null);
+    setImportMode('none');
     setExtractedTrades([]);
     setIsProcessing(false);
     setImportAccountId('');
+    setExtractionError(null);
   };
 
   return (
@@ -327,9 +455,9 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
     }}>
       <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[80vw] max-w-[95vw] sm:max-w-[90vw] md:max-w-[80vw] h-[95vh] sm:h-[85vh] max-h-[95vh] sm:max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
-          <DialogTitle className="text-lg sm:text-xl font-semibold">Import Trades from Screenshot</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl font-semibold">Import Trades</DialogTitle>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Import extracts basic trade data only. To add screenshots, notes, and other details, edit each trade in the Trade Log after importing.
+            Upload screenshots, spreadsheet files (CSV, Excel, TXT), or paste trade data directly. AI extracts and normalizes trade data from any format.
           </p>
         </DialogHeader>
 
@@ -353,7 +481,14 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                 type="file"
                 accept="image/*"
                 multiple
-                onChange={handleFileSelect}
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              <input
+                ref={spreadsheetInputRef}
+                type="file"
+                accept=".csv,.txt,.xls,.xlsx"
+                onChange={handleSpreadsheetSelect}
                 className="hidden"
               />
 
@@ -370,23 +505,84 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
 
                 <div className="space-y-1 sm:space-y-2">
                   <p className="text-base sm:text-lg font-medium">
-                    {isDragging ? "Drop your screenshots here" : "Upload Trade Screenshots"}
+                    {isDragging ? "Drop your file here" : "Import Trades"}
                   </p>
                   <p className="text-xs sm:text-sm text-muted-foreground">
                     Drag & drop, paste from clipboard (Ctrl+V), or click to select
                   </p>
                 </div>
 
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  Select Images
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={importMode === 'file'}
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Select Images
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => spreadsheetInputRef.current?.click()}
+                    disabled={importMode === 'image'}
+                  >
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Select File
+                  </Button>
+                </div>
+
+                <p className="text-[10px] sm:text-xs text-muted-foreground/60">
+                  Supports: PNG, JPG, CSV, TXT, XLS, XLSX · Paste text directly · Max 1 MB for files
+                </p>
               </div>
             </div>
+
+            {/* Uploaded File Preview */}
+            {uploadedFile && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Uploaded File
+                  </h3>
+                  <Button
+                    onClick={extractTrades}
+                    disabled={isProcessing}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Extracting...
+                      </>
+                    ) : (
+                      <>Extract Trades</>
+                    )}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
+                  {uploadedFile.type === 'paste' ? (
+                    <ClipboardPaste className="w-8 h-8 text-muted-foreground shrink-0" />
+                  ) : (
+                    <FileSpreadsheet className="w-8 h-8 text-muted-foreground shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(uploadedFile.size / 1024).toFixed(1)} KB · {uploadedFile.rowCount} rows detected · {uploadedFile.type.toUpperCase()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { setUploadedFile(null); setImportMode('none'); setExtractionError(null); }}
+                    className="p-1 rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Uploaded Images Preview */}
             {uploadedImages.length > 0 && (
@@ -435,11 +631,28 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
               </div>
             )}
 
+            {/* Extraction Error Banner */}
+            {extractionError && !isProcessing && (
+              <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-fade-in">
+                <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-destructive">Extraction Failed</p>
+                  <p className="text-xs text-muted-foreground mt-1">{extractionError}</p>
+                </div>
+                <button
+                  onClick={() => setExtractionError(null)}
+                  className="p-1 rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
             {/* Processing Indicator */}
             {isProcessing && (
               <div className="flex items-center justify-center gap-3 py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <span className="text-muted-foreground">AI is extracting trades from your screenshots...</span>
+                <span className="text-muted-foreground">{importMode === 'image' ? 'AI is extracting trades from your screenshots...' : 'AI is extracting trades from your data...'}</span>
               </div>
             )}
 
@@ -727,7 +940,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                 {extractedTrades.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                     <AlertCircle className="w-8 h-8 mb-2" />
-                    <p>No trades extracted. Try uploading a clearer screenshot.</p>
+                    <p>No trades extracted. Try a different file format or a clearer screenshot.</p>
                   </div>
                 )}
               </div>

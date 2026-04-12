@@ -164,14 +164,13 @@ describe('ImportTradesModal', () => {
     vi.clearAllMocks();
   });
 
-  it('renders "Import Trades from Screenshot" title when open', () => {
+  it('renders "Import Trades" title when open', () => {
     render(<ImportTradesModal {...defaultProps} />);
-    expect(screen.getByText('Import Trades from Screenshot')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Import Trades' })).toBeInTheDocument();
   });
 
   it('shows upload zone with drag/drop area', () => {
     render(<ImportTradesModal {...defaultProps} />);
-    expect(screen.getByText('Upload Trade Screenshots')).toBeInTheDocument();
     expect(
       screen.getByText('Drag & drop, paste from clipboard (Ctrl+V), or click to select')
     ).toBeInTheDocument();
@@ -206,18 +205,16 @@ describe('ImportTradesModal', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('shows info text about import limitations', () => {
+  it('shows info text about import capabilities', () => {
     render(<ImportTradesModal {...defaultProps} />);
     expect(
-      screen.getByText(
-        /Import extracts basic trade data only.*edit each trade in the Trade Log after importing/i
-      )
+      screen.getByText(/Upload screenshots.*spreadsheet files.*paste trade data/i)
     ).toBeInTheDocument();
   });
 
   it('does not render when open is false', () => {
     render(<ImportTradesModal {...defaultProps} open={false} />);
-    expect(screen.queryByText('Import Trades from Screenshot')).not.toBeInTheDocument();
+    expect(screen.queryByText('Import Trades')).not.toBeInTheDocument();
   });
 
   it('has a hidden file input for image uploads', () => {
@@ -319,12 +316,11 @@ describe('ImportTradesModal - Error Handling', () => {
     // Dialog should NOT have been closed
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
     // Modal content should still be visible
-    expect(screen.getByText('Import Trades from Screenshot')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Import Trades' })).toBeInTheDocument();
   });
 
-  it('shows toast.error when extract API fails', async () => {
+  it('shows extraction error banner when extract API fails', async () => {
     const user = userEvent.setup({ delay: null });
-    const { toast } = await import('sonner');
     const { tradesApi } = await import('@/lib/api/trades');
 
     (tradesApi.extractTrades as ReturnType<typeof vi.fn>).mockRejectedValue(
@@ -339,7 +335,7 @@ describe('ImportTradesModal - Error Handling', () => {
     await user.click(extractButton);
 
     await vi.waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Failed to extract trades from image');
+      expect(screen.getByText('Extraction Failed')).toBeInTheDocument();
     });
   });
 });
@@ -429,5 +425,37 @@ describe('ImportTradesModal - Toolbar & Account Selector', () => {
 
     expect(canMerge).toBe(true);
     expect(mergeDisabledReason).toBe('');
+  });
+});
+
+describe('ImportTradesModal - File Import UI', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onImportTrades: vi.fn().mockResolvedValue({ success: true }),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows both "Select Images" and "Select File" buttons', () => {
+    render(<ImportTradesModal {...defaultProps} />);
+    expect(screen.getByRole('button', { name: /select images/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /select file/i })).toBeInTheDocument();
+  });
+
+  it('has a hidden spreadsheet file input with correct accept types', () => {
+    render(<ImportTradesModal {...defaultProps} />);
+    const inputs = document.querySelectorAll('input[type="file"]');
+    const spreadsheetInput = Array.from(inputs).find(
+      (input) => (input as HTMLInputElement).accept === '.csv,.txt,.xls,.xlsx'
+    );
+    expect(spreadsheetInput).toBeInTheDocument();
+  });
+
+  it('shows supported formats text', () => {
+    render(<ImportTradesModal {...defaultProps} />);
+    expect(screen.getByText(/Supports:.*CSV.*TXT.*XLS.*XLSX.*Paste text/i)).toBeInTheDocument();
   });
 });

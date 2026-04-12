@@ -41,7 +41,7 @@ export interface BulkImportPayload {
 
 export const tradesApi = {
   // POST /v1/trades/extract (supports up to 3 images)
-  extractTrades: async (images: string[]): Promise<{ items: any[] }> => {
-    return apiClient.post('/trades/extract', { images });
+  extractTrades: async (payload: { images: string[] } | { textContent: string }): Promise<{ items: any[]; error?: { code: string; message: string } }> => {
+    return apiClient.post('/trades/extract', payload);
   },
 };
