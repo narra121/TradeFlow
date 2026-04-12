@@ -16,14 +16,14 @@ export function QuickStats({ stats }: QuickStatsProps) {
   const items = [
     {
       label: 'Profit Factor',
-      value: stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2),
+      value: stats.profitFactor == null || stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2),
       icon: Target,
       color: 'text-accent',
       bgColor: 'bg-accent/10',
     },
     {
       label: 'Avg R:R',
-      value: stats.avgRiskReward.toFixed(2),
+      value: (stats.avgRiskReward ?? 0).toFixed(2),
       icon: BarChart3,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
@@ -51,7 +51,7 @@ export function QuickStats({ stats }: QuickStatsProps) {
     },
     {
       label: 'Max Drawdown',
-      value: `${stats.maxDrawdown.toFixed(2)}%`,
+      value: `${(stats.maxDrawdown ?? 0).toFixed(2)}%`,
       icon: Snowflake,
       color: 'text-chart-4',
       bgColor: 'bg-chart-4/10',
