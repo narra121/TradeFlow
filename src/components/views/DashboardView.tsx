@@ -256,7 +256,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
               />
               <StatCard
                 title="Profit Factor"
-                value={stats.profitFactor === Infinity ? '∞' : (stats.profitFactor ?? 0).toFixed(2)}
+                value={stats.profitFactor == null || stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2)}
                 icon={BarChart3}
                 variant="accent"
                 className="stagger-4"
