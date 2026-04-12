@@ -85,7 +85,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [importAccountId, setImportAccountId] = useState<string>('');
+  const [importAccountIds, setImportAccountIds] = useState<string[]>([]);
   const [uploadedFile, setUploadedFile] = useState<{
     name: string; size: number; type: string; parsedText: string; rowCount: number;
   } | null>(null);
@@ -420,7 +420,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         outcome: t.pnl > 0 ? 'TP' as const : t.pnl < 0 ? 'SL' as const : 'BREAKEVEN' as const,
         pnl: t.pnl,
         riskRewardRatio: 0,
-        ...(importAccountId && importAccountId !== 'none' ? { accountId: importAccountId } : {}),
+        ...(importAccountIds.length > 0 ? { accountIds: importAccountIds } : {}),
       }));
 
       const result = await onImportTrades(tradesToSave);
@@ -444,7 +444,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
     setImportMode('none');
     setExtractedTrades([]);
     setIsProcessing(false);
-    setImportAccountId('');
+    setImportAccountIds([]);
     setExtractionError(null);
   };
 
@@ -950,29 +950,56 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
 
         {/* Footer */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border bg-secondary/30 shrink-0 space-y-3">
-          {/* Account selector row — only show when trades are extracted and accounts exist */}
-          {extractedTrades.length > 0 && accounts.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          {/* Account selector — show when trades are extracted */}
+          {extractedTrades.length > 0 && (
+            <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
                 <Building2 className="w-4 h-4" />
-                <span>Save to account:</span>
+                <span>Save to account{accounts.length > 1 ? '(s)' : ''}:</span>
               </div>
-              <Select value={importAccountId} onValueChange={setImportAccountId}>
-                <SelectTrigger className="w-full sm:w-56 h-9 text-sm">
-                  <SelectValue placeholder="None (map later)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None (map later)</SelectItem>
-                  {accounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      {acc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!importAccountId && (
-                <span className="text-xs text-muted-foreground/60 hidden sm:inline">
-                  You can map to accounts later
+              {accounts.length === 0 ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground/70 bg-secondary/30 rounded-lg p-2.5">
+                  <span>No accounts yet.</span>
+                  <button
+                    type="button"
+                    onClick={() => window.open('/app/accounts', '_blank')}
+                    className="text-primary hover:text-primary/80 font-medium transition-colors"
+                  >
+                    Create an account
+                  </button>
+                  <span>to organize trades, or save without an account.</span>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {accounts.map((acc) => {
+                    const isSelected = importAccountIds.includes(acc.id);
+                    return (
+                      <button
+                        key={acc.id}
+                        type="button"
+                        onClick={() => {
+                          setImportAccountIds(prev =>
+                            isSelected
+                              ? prev.filter(id => id !== acc.id)
+                              : [...prev, acc.id]
+                          );
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                          isSelected
+                            ? 'bg-primary/10 border-primary/40 text-primary'
+                            : 'bg-secondary/30 border-transparent text-muted-foreground hover:bg-secondary/50'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3 h-3" />}
+                        {acc.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {importAccountIds.length === 0 && accounts.length > 0 && (
+                <span className="text-xs text-muted-foreground/60">
+                  No account selected — trades will be saved without an account
                 </span>
               )}
             </div>
@@ -1004,8 +1031,8 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                   Saving...
                 </>
               ) : (
-                importAccountId && importAccountId !== 'none'
-                  ? `Save to ${accounts.find(a => a.id === importAccountId)?.name || 'Account'}`
+                importAccountIds.length > 0
+                  ? `Save to ${importAccountIds.map(id => accounts.find(a => a.id === id)?.name).filter(Boolean).join(', ')}`
                   : 'Save All'
               )}
             </Button>
