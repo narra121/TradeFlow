@@ -81,9 +81,18 @@ const COLUMN_DEFS: ColumnDef[] = [
 ];
 
 const STORAGE_KEY = 'tradequt-table-columns';
+const SORT_STORAGE_KEY = 'tradequt-table-sort';
 
 function getDefaultVisibility(): Record<string, boolean> {
   return Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultVisible]));
+}
+
+function getStoredSort(): { column: string | null; direction: 'asc' | 'desc' } {
+  try {
+    const stored = localStorage.getItem(SORT_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return { column: null, direction: 'desc' };
 }
 
 function getStoredVisibility(): Record<string, boolean> {
@@ -178,19 +187,21 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     }));
   };
   
-  // Sorting state
+  // Sorting state (persisted to localStorage)
   type SortColumn = 'symbol' | 'account' | 'direction' | 'entryDate' | 'exitDate' | 'size' | 'rr' | 'outcome' | 'pnl' | 'strategy' | 'session';
   type SortDirection = 'asc' | 'desc';
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const storedSort = getStoredSort();
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(storedSort.column as SortColumn | null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(storedSort.direction);
 
   const handleSort = (column: SortColumn) => {
+    let newDirection: SortDirection = 'desc';
     if (sortColumn === column) {
-      setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('desc');
+      newDirection = sortDirection === 'desc' ? 'asc' : 'desc';
     }
+    setSortColumn(column);
+    setSortDirection(newDirection);
+    localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({ column, direction: newDirection }));
   };
 
   // Trades table state
