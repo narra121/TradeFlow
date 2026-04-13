@@ -23,6 +23,8 @@ const skipToastEndpoints = [
   'getSymbolDistribution',
   'getStrategyDistribution',
   'getRules',
+  'getRulesAndGoals',
+  'getGoalsProgress',
   'getTrades',
   'getAccounts',
   'login', // Skip login toasts, handled in auth component
