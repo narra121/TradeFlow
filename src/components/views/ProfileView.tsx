@@ -23,19 +23,23 @@ import {
   Mail,
   Calendar,
   CreditCard,
-  Heart,
+  Crown,
   Check,
   Edit2,
   Camera,
   Loader2,
   LogOut,
-  Pencil
+  Pencil,
+  Clock,
+  AlertTriangle,
+  Heart
 } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation, useUndoCancellationMutation } from '@/store/api';
-import { useRazorpay } from '@/hooks/useRazorpay';
+import { useStripeCheckout } from '@/hooks/useStripeCheckout';
+import { useCurrency } from '@/hooks/useCurrency';
 import { SubscriptionDetails, PlanResponse } from '@/lib/api';
 import { toast } from 'sonner';
 import { ProfileCardSkeleton, SubscriptionCardSkeleton, SubscriptionPlansCardSkeleton } from '@/components/ui/loading-skeleton';
@@ -56,7 +60,8 @@ export function ProfileView() {
   const [resumeSubscription] = useResumeSubscriptionMutation();
   const [undoCancellation] = useUndoCancellationMutation();
   const [logout] = useLogoutMutation();
-  const { initiateSubscription, loading: paymentLoading, error: paymentError } = useRazorpay();
+  const { initiateSubscription, loading: paymentLoading, error: paymentError } = useStripeCheckout();
+  const { currency } = useCurrency();
   
   const handleLogout = async () => {
     try {
@@ -75,13 +80,13 @@ export function ProfileView() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [selectedAmount, setSelectedAmount] = useState(99);
   const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(999);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
   const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
   const [managingSubscription, setManagingSubscription] = useState(false);
-  
+
   // Get plan ID based on selected amount and billing cycle
   const getSelectedPlanId = () => {
     const amount = billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount;

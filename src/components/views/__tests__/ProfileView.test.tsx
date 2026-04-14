@@ -57,12 +57,18 @@ vi.mock('@/store/api', () => ({
   ]),
 }));
 
-vi.mock('@/hooks/useRazorpay', () => ({
-  useRazorpay: () => ({
+vi.mock('@/hooks/useStripeCheckout', () => ({
+  useStripeCheckout: () => ({
     initiateSubscription: vi.fn(),
-    initiatePayment: vi.fn(),
     loading: false,
     error: null,
+  }),
+}));
+
+vi.mock('@/hooks/useCurrency', () => ({
+  useCurrency: () => ({
+    currency: 'USD',
+    loading: false,
   }),
 }));
 

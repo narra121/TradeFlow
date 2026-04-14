@@ -182,18 +182,30 @@ apiClient.interceptors.response.use(
       } else {
         // Handle other error cases
         switch (status) {
-          case 403:
-            console.error('Access forbidden');
+          case 403: {
+            // Check if this is a subscription-required error
+            const responseData = error.response.data as any;
+            const errorCode = responseData?.errorCode || responseData?.error?.code;
+            if (errorCode === 'SUBSCRIPTION_REQUIRED') {
+              const reason = responseData?.errors?.[0]?.reason || responseData?.error?.details?.reason || 'subscription_ended';
+              const message = responseData?.message || 'Please subscribe to continue using TradeQut.';
+              window.dispatchEvent(new CustomEvent('subscription-required', {
+                detail: { reason, message },
+              }));
+            } else {
+              console.error('Access forbidden');
+            }
             break;
-          
+          }
+
           case 404:
             console.error('Resource not found');
             break;
-          
+
           case 500:
             console.error('Server error');
             break;
-          
+
           default:
             console.error('API Error:', error.response.data);
         }

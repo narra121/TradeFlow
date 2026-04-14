@@ -7,7 +7,7 @@ import type {
   Subscription,
   UserCreateSubscriptionPayload,
 } from '@/lib/api';
-import type { PlanResponse } from '@/lib/api/razorpay';
+import type { PlanResponse } from '@/lib/api/stripe';
 
 export const userApi = api.injectEndpoints({
   endpoints: (builder) => ({

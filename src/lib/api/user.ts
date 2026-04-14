@@ -37,38 +37,28 @@ export interface UpdateNotificationsPayload {
 
 export interface Subscription {
   userId: string;
-  subscriptionId: string;
-  planId: string;
-  status: 'created' | 'authenticated' | 'active' | 'paused' | 'pending' | 'halted' | 'cancellation_requested' | 'cancelled' | 'completed';
-  paidCount: number;
+  subscriptionId?: string;
+  stripeSubscriptionId?: string;
+  stripeCustomerId?: string;
+  planId?: string;
+  status: 'created' | 'trial' | 'active' | 'paused' | 'past_due' | 'cancellation_requested' | 'cancelled' | 'completed';
+  paidCount?: number;
   remainingCount?: number;
-  totalCount?: number;
-  authAttempts?: number;
-  quantity?: number;
-  paymentLink?: string;
-  shortUrl?: string;
   currentStart?: string;
   currentEnd?: string;
   chargeAt?: string;
-  startAt?: string;
-  endAt?: string;
+  endedAt?: string;
   cancelAt?: string;
+  trialEnd?: string;
+  trialStarted?: string;
+  checkoutUrl?: string;
+  checkoutSessionId?: string;
   createdAt: string;
   updatedAt: string;
-  razorpayDetails?: {
-    status: string;
-    paidCount: number;
-    remainingCount?: number;
-    currentStart?: number;
-    currentEnd?: number;
-    chargeAt?: number;
-    endedAt?: number;
-  };
 }
 
 export interface UserCreateSubscriptionPayload {
   planId: string;
-  totalCount?: number;
-  quantity?: number;
-  customerNotify?: number;
+  successUrl?: string;
+  cancelUrl?: string;
 }

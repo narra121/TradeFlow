@@ -5,7 +5,7 @@ export * from './trades';
 export * from './analytics';
 export * from './goalsRules';
 export * from './user';
-export * from './razorpay';
+export * from './stripe';
 
 // Re-export the main API client and utilities
 export { default as apiClient, handleApiError } from './api';
