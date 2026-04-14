@@ -71,6 +71,12 @@ export const stripeApi = {
     return response as CreateCheckoutResponse;
   },
 
+  // Verify checkout session after redirect
+  verifyCheckoutSession: async (sessionId: string): Promise<{ status: string; subscriptionId?: string; message: string }> => {
+    const response: any = await apiClient.get(`/subscriptions/verify?session_id=${sessionId}`);
+    return response;
+  },
+
   // Subscription management
   getSubscription: async (): Promise<SubscriptionDetails> => {
     const response: any = await apiClient.get('/subscriptions');

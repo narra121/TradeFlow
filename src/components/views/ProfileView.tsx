@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +41,7 @@ import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, 
 import { useStripeCheckout } from '@/hooks/useStripeCheckout';
 import { useCurrency } from '@/hooks/useCurrency';
 import { SubscriptionDetails, PlanResponse } from '@/lib/api';
+import { stripeApi } from '@/lib/api/stripe';
 import { toast } from 'sonner';
 import { ProfileCardSkeleton, SubscriptionCardSkeleton, SubscriptionPlansCardSkeleton } from '@/components/ui/loading-skeleton';
 import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
@@ -48,10 +49,49 @@ import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
 export function ProfileView() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useGetProfileQuery();
   const { data: subscription, isLoading: subscriptionLoading, isFetching: subscriptionFetching, refetch: refetchSubscription } = useGetSubscriptionQuery();
   const { currency } = useCurrency();
   const { data: availablePlans = [], isLoading: plansLoading } = useGetPlansQuery(currency);
+  const verifiedRef = useRef(false);
+
+  // Handle Stripe redirect: verify checkout session after payment
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    const cancelled = searchParams.get('checkout');
+
+    if (cancelled === 'cancelled') {
+      toast.info('Checkout was cancelled.');
+      setSearchParams({}, { replace: true });
+      return;
+    }
+
+    if (sessionId && !verifiedRef.current) {
+      verifiedRef.current = true;
+      (async () => {
+        try {
+          const result = await stripeApi.verifyCheckoutSession(sessionId);
+          if (result.status === 'active') {
+            toast.success(result.message || 'Payment successful! Your subscription is now active.');
+            refetchSubscription();
+          } else if (result.status === 'expired') {
+            toast.error(result.message || 'Checkout session expired. Please try again.');
+          } else {
+            toast.info(result.message || 'Payment is being processed...');
+            // Refetch anyway in case webhook already updated it
+            refetchSubscription();
+          }
+        } catch (err: any) {
+          toast.error('Failed to verify payment. Please refresh the page.');
+          console.error('Verify checkout error:', err);
+        } finally {
+          // Clean URL
+          setSearchParams({}, { replace: true });
+        }
+      })();
+    }
+  }, [searchParams, setSearchParams, refetchSubscription]);
   const { accounts } = useAccounts();
   const loading = profileLoading || profileFetching || subscriptionLoading || subscriptionFetching;
   const [updateProfile] = useUpdateProfileMutation();
