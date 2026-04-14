@@ -4,15 +4,19 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface SubscriptionBannerProps {
-  reason: 'trial_expired' | 'subscription_cancelled' | 'payment_failed' | 'subscription_ended' | 'no_subscription';
+  reason: 'trial_active' | 'trial_expired' | 'subscription_cancelled' | 'payment_failed' | 'subscription_ended' | 'no_subscription';
   trialEnd?: string;
   onSubscribe: () => void;
   onDismiss: () => void;
 }
 
-const DISMISS_KEY = 'tradeQut_banner_dismissed';
-
 const bannerConfig = {
+  trial_active: {
+    icon: Sparkles,
+    bgClass: 'bg-primary/5 border-primary/20',
+    iconClass: 'text-primary',
+    ctaLabel: 'Subscribe Now',
+  },
   trial_expired: {
     icon: Clock,
     bgClass: 'bg-amber-500/10 border-amber-500/30',
@@ -59,6 +63,10 @@ function formatDate(iso: string): string {
 
 function getMessage(reason: SubscriptionBannerProps['reason'], trialEnd?: string): string {
   switch (reason) {
+    case 'trial_active':
+      return trialEnd
+        ? `Your free trial expires on ${formatDate(trialEnd)}. Subscribe now — you'll be charged from ${formatDate(trialEnd)}.`
+        : 'You are on a free trial. Subscribe now to continue after it ends.';
     case 'trial_expired':
       return trialEnd
         ? `Your free trial ended on ${formatDate(trialEnd)}. Subscribe to continue.`
@@ -75,11 +83,12 @@ function getMessage(reason: SubscriptionBannerProps['reason'], trialEnd?: string
 }
 
 export function SubscriptionBanner({ reason, trialEnd, onSubscribe, onDismiss }: SubscriptionBannerProps) {
+  const dismissKey = `tradeQut_banner_dismissed_${reason}`;
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(true);
 
   useEffect(() => {
-    const dismissed = sessionStorage.getItem(DISMISS_KEY);
+    const dismissed = sessionStorage.getItem(dismissKey);
     if (dismissed === 'true') {
       setMounted(false);
       return;
@@ -91,7 +100,7 @@ export function SubscriptionBanner({ reason, trialEnd, onSubscribe, onDismiss }:
 
   const handleDismiss = () => {
     setVisible(false);
-    sessionStorage.setItem(DISMISS_KEY, 'true');
+    sessionStorage.setItem(dismissKey, 'true');
     // Wait for slide-up animation to complete before unmounting
     setTimeout(() => {
       setMounted(false);

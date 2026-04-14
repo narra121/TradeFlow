@@ -161,6 +161,20 @@ const baseQueryWithReauth: BaseQueryFn<
     }
   }
 
+  // Check for subscription-required 403
+  const httpStatus = getHttpStatus(result);
+  if (httpStatus === 403 && result.error) {
+    const errData: any = (result.error as any)?.data;
+    const errorCode = errData?.errorCode || errData?.error?.code;
+    if (errorCode === 'SUBSCRIPTION_REQUIRED') {
+      const reason = errData?.error?.details?.reason || 'subscription_ended';
+      const message = errData?.message || 'Please subscribe to continue using TradeQut.';
+      window.dispatchEvent(new CustomEvent('subscription-required', {
+        detail: { reason, message },
+      }));
+    }
+  }
+
   if (isUnauthorized(result)) {
     // If the refresh endpoint itself is unauthorized, immediately logout.
     if (isRefreshRequest(args)) {

@@ -18,6 +18,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Menu } from 'lucide-react';
 import type { Trade } from '@/types/trade';
+import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
+import { api } from '@/store/api/baseApi';
+import { useAppDispatch } from '@/store/hooks';
+import { getSubscriptionBannerReason } from '@/lib/subscriptionUtils';
 
 export function AppPage() {
   const [createTrade] = useCreateTradeMutation();
@@ -33,7 +37,7 @@ export function AppPage() {
   });
 
   // Fetch subscription status on initial load (will be cached)
-  useGetSubscriptionQuery(undefined, {
+  const { data: subscription } = useGetSubscriptionQuery(undefined, {
     refetchOnMountOrArgChange: false,
     refetchOnFocus: false,
     refetchOnReconnect: false,
@@ -42,10 +46,21 @@ export function AppPage() {
   // Centralized trades sync with account selection
   useTradesSync();
   const isMobile = useIsMobile();
+  const dispatch = useAppDispatch();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
   const [isImportTradesOpen, setIsImportTradesOpen] = useState(false);
+
+  const bannerReason = getSubscriptionBannerReason(subscription);
+
+  useEffect(() => {
+    const handler = () => {
+      dispatch(api.util.invalidateTags(['Subscription']));
+    };
+    window.addEventListener('subscription-required', handler);
+    return () => window.removeEventListener('subscription-required', handler);
+  }, [dispatch]);
 
   // Auto-collapse sidebar on tablet-sized screens (768-1024px)
   useEffect(() => {
@@ -114,6 +129,14 @@ export function AppPage() {
           ? "ml-0"
           : sidebarCollapsed ? "ml-[72px]" : "ml-[240px]"
       )}>
+        {bannerReason && (
+          <SubscriptionBanner
+            reason={bannerReason}
+            trialEnd={subscription?.trialEnd}
+            onSubscribe={() => navigate('/app/profile')}
+            onDismiss={() => {}}
+          />
+        )}
         {/* Mobile hamburger button */}
         {isMobile && (
           <button
