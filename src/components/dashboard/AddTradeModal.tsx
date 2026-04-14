@@ -303,7 +303,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
         emotions: editMode ? editTrade?.emotions : undefined,
         // Send accountIds array for both create and edit (backend handles multi-account logic)
         accountIds: selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
-        brokenRuleIds: brokenRuleIds.length > 0 ? brokenRuleIds : undefined,
+        brokenRuleIds,
       });
 
       resetForm();
