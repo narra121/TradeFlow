@@ -62,6 +62,7 @@ import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation, useBulkDeleteTradesMutation, useGetAccountsQuery } from '@/store/api';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
+import { CreateTradePayload } from '@/lib/api/trades';
 
 interface ColumnDef {
   key: string;
@@ -139,7 +140,8 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   
   const { data: trades = [], isLoading: tradesLoading, isFetching: tradesFetching, refetch } = useGetTradesQuery(queryParams);
   const { data: accountsData, isFetching: accountsFetching } = useGetAccountsQuery();
-  const loading = tradesLoading || tradesFetching || accountsFetching;
+  const showSkeleton = tradesLoading;
+  const isRefreshing = tradesFetching || accountsFetching;
   const accounts = accountsData?.accounts || [];
   const [updateTrade] = useUpdateTradeMutation();
   const [deleteTrade] = useDeleteTradeMutation();
@@ -273,6 +275,11 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     [dateFilteredTrades]
   );
 
+  const accountNameMap = useMemo(() =>
+    new Map(accounts.map(a => [a.id, a.name])),
+    [accounts]
+  );
+
   const filteredTrades = useMemo(() => {
     const filtered = dateFilteredTrades.filter(trade => {
       const matchesSymbol = symbolFilters.size === 0 || symbolFilters.has(trade.symbol);
@@ -290,8 +297,8 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
       switch (sortColumn) {
         case 'symbol': cmp = a.symbol.localeCompare(b.symbol); break;
         case 'account': {
-          const aName = accounts.find(acc => acc.id === a.accountId)?.name || '';
-          const bName = accounts.find(acc => acc.id === b.accountId)?.name || '';
+          const aName = accountNameMap.get(a.accountId) || '';
+          const bName = accountNameMap.get(b.accountId) || '';
           cmp = aName.localeCompare(bName); break;
         }
         case 'direction': cmp = a.direction.localeCompare(b.direction); break;
@@ -310,7 +317,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
       }
       return sortDirection === 'desc' ? -cmp : cmp;
     });
-  }, [dateFilteredTrades, symbolFilters, outcomeFilters, strategyFilters, sessionFilters, mistakeFilters, sortColumn, sortDirection, accounts]);
+  }, [dateFilteredTrades, symbolFilters, outcomeFilters, strategyFilters, sessionFilters, mistakeFilters, sortColumn, sortDirection, accountNameMap]);
 
   // --- Pagination: compute paged slice ---
   const totalFilteredTrades = filteredTrades.length;
@@ -323,10 +330,10 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     }
   }, [currentPage, totalPages]);
 
-  // Reset to page 1 when filters, sort, or query params change
+  // Reset to page 1 when filters or query params change
   useEffect(() => {
     setCurrentPage(1);
-  }, [symbolFilters, outcomeFilters, strategyFilters, sessionFilters, mistakeFilters, sortColumn, sortDirection, queryParams]);
+  }, [symbolFilters, outcomeFilters, strategyFilters, sessionFilters, mistakeFilters, queryParams]);
 
   const paginatedTrades = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -360,7 +367,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
     // IMPORTANT: `useUpdateTradeMutation` expects UI-shaped fields (CreateTradePayload),
     // and the API layer maps them to backend keys.
-    await updateTrade({ id: editingTrade.id, payload: updatedTrade as any }).unwrap();
+    await updateTrade({ id: editingTrade.id, payload: updatedTrade as Partial<CreateTradePayload> }).unwrap();
     setEditingTrade(null);
   };
 
@@ -372,11 +379,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     if (deletingTradeId) {
       setIsDeleting(true);
       try {
-        // Ensure minimum 1 second loading for better UX
-        await Promise.all([
-          deleteTrade(deletingTradeId).unwrap(),
-          new Promise(resolve => setTimeout(resolve, 1000))
-        ]);
+        await deleteTrade(deletingTradeId).unwrap();
         setDeletingTradeId(null);
       } catch (error: any) {
         // Toast middleware handles error display
@@ -1047,7 +1050,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           )}
 
           {/* Trades Table with Loading State */}
-          {loading ? (
+          {showSkeleton ? (
             <TradeTableSkeleton rows={8} />
           ) : isMobile ? (
           /* Mobile card layout */
@@ -1448,7 +1451,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
       {/* Calendar Tab Content */}
       {activeTab === 'calendar' && (
         <>
-          {loading ? (
+          {showSkeleton ? (
             <CalendarSkeleton />
           ) : (
             <>

@@ -29,19 +29,11 @@ export function AppPage() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Fetch saved options on initial load (will be cached)
-  useGetSavedOptionsQuery(undefined, {
-    refetchOnMountOrArgChange: false,
-    refetchOnFocus: false,
-    refetchOnReconnect: false,
-  });
+  // Fetch saved options on initial load (will be cached; global refetch is already disabled)
+  useGetSavedOptionsQuery();
 
   // Fetch subscription status on initial load (will be cached)
-  const { data: subscription } = useGetSubscriptionQuery(undefined, {
-    refetchOnMountOrArgChange: false,
-    refetchOnFocus: false,
-    refetchOnReconnect: false,
-  });
+  const { data: subscription } = useGetSubscriptionQuery();
   
   // Centralized trades sync with account selection
   useTradesSync();

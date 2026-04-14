@@ -84,22 +84,18 @@ function getMessage(reason: SubscriptionBannerProps['reason'], trialEnd?: string
 
 export function SubscriptionBanner({ reason, trialEnd, onSubscribe, onDismiss }: SubscriptionBannerProps) {
   const dismissKey = `tradeQut_banner_dismissed_${reason}`;
-  const [visible, setVisible] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
   const [mounted, setMounted] = useState(true);
 
   useEffect(() => {
     const dismissed = sessionStorage.getItem(dismissKey);
     if (dismissed === 'true') {
       setMounted(false);
-      return;
     }
-    // Trigger slide-down animation after mount
-    const timer = requestAnimationFrame(() => setVisible(true));
-    return () => cancelAnimationFrame(timer);
-  }, []);
+  }, [dismissKey]);
 
   const handleDismiss = () => {
-    setVisible(false);
+    setDismissing(true);
     sessionStorage.setItem(dismissKey, 'true');
     // Wait for slide-up animation to complete before unmounting
     setTimeout(() => {
@@ -117,10 +113,16 @@ export function SubscriptionBanner({ reason, trialEnd, onSubscribe, onDismiss }:
   return (
     <div
       className={cn(
-        'sticky top-0 z-50 w-full border-b transition-all duration-300 ease-out',
+        'sticky top-0 z-50 w-full border-b',
         config.bgClass,
-        visible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+        dismissing
+          ? 'animate-banner-slide-up'
+          : 'animate-banner-slide-down'
       )}
+      style={{
+        animationDuration: '300ms',
+        animationFillMode: 'forwards',
+      }}
     >
       <div className="mx-auto flex items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
         <div className="flex items-center gap-3 min-w-0">

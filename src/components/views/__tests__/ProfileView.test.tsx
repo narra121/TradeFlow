@@ -55,6 +55,9 @@ vi.mock('@/store/api', () => ({
   useUndoCancellationMutation: vi.fn(() => [
     vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
   ]),
+  useVerifyCheckoutSessionMutation: vi.fn(() => [
+    vi.fn().mockReturnValue({ unwrap: () => Promise.resolve({ status: 'active', message: 'OK' }) }),
+  ]),
 }));
 
 vi.mock('@/hooks/useStripeCheckout', () => ({

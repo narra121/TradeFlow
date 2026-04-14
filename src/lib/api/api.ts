@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { refreshToken } from '@/lib/api/tokenRefresh';
 
 /**
  * API Client Module with Automatic Token Refresh
@@ -109,37 +110,24 @@ apiClient.interceptors.response.use(
         
         // Allow max 1 retry (refresh once and retry)
         if (originalRequest._retryCount < 1) {
-          const refreshToken = localStorage.getItem('refreshToken');
-          
-          if (refreshToken && !isRefreshing) {
+          const rt = localStorage.getItem('refreshToken');
+
+          if (rt && !isRefreshing) {
             originalRequest._retryCount += 1;
             isRefreshing = true;
-            
+
             try {
-              // Call refresh token endpoint
-              const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-                refreshToken: refreshToken
-              });
-              
-              // Backend returns envelope format: { data: { IdToken, ... }, error: null }
-              const tokens = response.data?.data || response.data;
-              const newToken = tokens.IdToken;
-              
-              if (!newToken) {
-                throw new Error('No token received from refresh endpoint');
-              }
-              
-              localStorage.setItem('idToken', newToken);
-              
+              const newToken = await refreshToken();
+
               // Update the original request with new token
               if (originalRequest.headers) {
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
               }
-              
+
               // Process the queued requests
               processQueue(null, newToken);
               isRefreshing = false;
-              
+
               // Retry the original request
               return apiClient(originalRequest);
             } catch (refreshError) {

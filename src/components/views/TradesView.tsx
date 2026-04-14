@@ -137,16 +137,10 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
       if (deleteScope === 'all' && linkedTrades.length > 0) {
         // Delete this trade + all linked copies
         const allIds = [deletingTradeId, ...linkedTrades.map(t => t.id)];
-        await Promise.all([
-          bulkDeleteTrades({ tradeIds: allIds }).unwrap(),
-          new Promise(resolve => setTimeout(resolve, 1000))
-        ]);
+        await bulkDeleteTrades({ tradeIds: allIds }).unwrap();
       } else {
         // Delete only this specific trade
-        await Promise.all([
-          deleteTrade(deletingTradeId).unwrap(),
-          new Promise(resolve => setTimeout(resolve, 1000))
-        ]);
+        await deleteTrade(deletingTradeId).unwrap();
       }
       setDeletingTradeId(null);
     } catch (error: any) {

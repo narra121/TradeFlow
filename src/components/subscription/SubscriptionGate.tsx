@@ -11,6 +11,8 @@ interface SubscriptionGateProps {
     status: string;
     trialEnd?: string;
   } | null;
+  /** When true, subscription data hasn't loaded yet -- render children to avoid flashing the gate */
+  isLoading?: boolean;
 }
 
 const ACTIVE_STATUSES = ['active', 'trialing'];
@@ -71,8 +73,11 @@ const features = [
   'Goal tracking & reports',
 ];
 
-export function SubscriptionGate({ children, subscription }: SubscriptionGateProps) {
+export function SubscriptionGate({ children, subscription, isLoading }: SubscriptionGateProps) {
   const active = useMemo(() => isSubscriptionActive(subscription), [subscription]);
+
+  // If subscription data hasn't loaded yet, don't flash the gate
+  if (isLoading) return <>{children}</>;
 
   if (active) {
     return <>{children}</>;

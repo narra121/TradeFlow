@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
+import { cn } from '@/lib/utils';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useGetTradesQuery, useGetStatsQuery } from '@/store/api';
@@ -69,7 +70,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
   };
 
   const filteredTrades = useMemo(() => getEligibleTrades(trades), [trades]);
-  const unmappedCount = trades.length - filteredTrades.length;
+  const unmappedCount = useMemo(() => trades.length - filteredTrades.length, [trades.length, filteredTrades.length]);
 
   // Calculate total capital based on selected accounts
   const totalCapital = useMemo(() => {
@@ -110,7 +111,9 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     value: totalCapital > 0 ? Math.abs((stats.totalPnl / totalCapital) * 100) : 0,
     isPositive: stats.totalPnl >= 0,
   }), [stats.totalPnl, totalCapital]);
-  const tradesLoading = isLoading || isFetching || statsLoading || statsFetching;
+  const showSkeleton = isLoading || statsLoading;           // first-time load only
+  const isRefreshing = isFetching || statsFetching;          // background refetch, keep stale data visible
+  const isFilterPending = debouncedFilters !== filters;      // filter change not yet applied
 
   // All trades are closed - no open trades section needed
 
@@ -148,7 +151,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
       </div>
 
       {/* Empty State - shown when not loading and no trades */}
-      {!tradesLoading && filteredTrades.length === 0 ? (
+      {!showSkeleton && filteredTrades.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
           {unmappedCount > 0 ? (
             <>
@@ -224,9 +227,9 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           )}
         </div>
       ) : (
-        <>
+        <div className={cn('transition-opacity duration-200', (isRefreshing || isFilterPending) && 'opacity-60')}>
           {/* Stats Grid */}
-          {tradesLoading ? (
+          {showSkeleton ? (
             <DashboardStatsSkeleton />
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -266,7 +269,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           )}
 
           {/* Unmapped Trades Banner */}
-          {!tradesLoading && unmappedCount > 0 && (
+          {!showSkeleton && unmappedCount > 0 && (
             <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-warning/8 border-l-2 border-warning animate-fade-in">
               <Info className="w-4 h-4 text-warning mt-0.5 shrink-0" />
               <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -280,7 +283,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           )}
 
           {/* Main Content Grid */}
-          {tradesLoading ? (
+          {showSkeleton ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="lg:col-span-2">
                 <ChartSkeleton height="h-[280px]" />
@@ -306,7 +309,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           )}
 
           {/* Bottom Grid */}
-          {tradesLoading ? (
+          {showSkeleton ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="lg:col-span-2">
                 <RecentTradesListSkeleton />
@@ -326,7 +329,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

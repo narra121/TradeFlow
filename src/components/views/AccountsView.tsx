@@ -78,8 +78,8 @@ export function AccountsView() {
     setIsAddModalOpen(true);
   };
 
-  const handleStatusChange = (id: string, status: AccountStatus) => {
-    updateAccountStatus({ id, status });
+  const handleStatusChange = async (id: string, status: AccountStatus) => {
+    try { await updateAccountStatus({ id, status }).unwrap(); } catch { /* toast middleware handles */ }
   };
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);

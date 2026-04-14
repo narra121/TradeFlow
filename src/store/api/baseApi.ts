@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { refreshToken } from '@/lib/api/tokenRefresh';
 
 // API Base URL from environment variable with fallback logic
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
@@ -183,51 +184,13 @@ const baseQueryWithReauth: BaseQueryFn<
       return result;
     }
 
-    const refreshToken = localStorage.getItem('refreshToken');
-    
-    if (refreshToken && !isRefreshing) {
+    const rt = localStorage.getItem('refreshToken');
+
+    if (rt && !isRefreshing) {
       isRefreshing = true;
-      
+
       try {
-        // Call refresh token endpoint
-        const refreshResult = await baseQuery(
-          {
-            url: '/auth/refresh',
-            method: 'POST',
-            body: { refreshToken },
-          },
-          api,
-          extraOptions
-        );
-
-        // Refresh unauthorized -> logout
-        if (isUnauthorized(refreshResult)) {
-          processQueue((refreshResult as any).error);
-          isRefreshing = false;
-          clearStoredTokens();
-          dispatchUnauthorized();
-          return result;
-        }
-
-        // Other refresh failures -> reject queued calls, but don't force logout
-        if ((refreshResult as any).error) {
-          processQueue((refreshResult as any).error);
-          isRefreshing = false;
-          return result;
-        }
-
-        const refreshPayload: any = (refreshResult.data as any)?.data ?? refreshResult.data;
-        const newToken: string | undefined = refreshPayload?.IdToken ?? refreshPayload?.token;
-
-        if (!newToken) {
-          processQueue(new Error('No token received from refresh endpoint'));
-          isRefreshing = false;
-          clearStoredTokens();
-          dispatchUnauthorized();
-          return result;
-        }
-
-        localStorage.setItem('idToken', newToken);
+        const newToken = await refreshToken();
 
         // Process the queued requests
         processQueue(null, newToken);
@@ -284,6 +247,6 @@ export const api = createApi({
   refetchOnReconnect: false,
   refetchOnFocus: false,
   refetchOnMountOrArgChange: false,
-  tagTypes: ['Auth', 'Accounts', 'Trades', 'Stats', 'Analytics', 'Goals', 'Rules', 'User', 'Subscription', 'SavedOptions'],
+  tagTypes: ['Auth', 'Accounts', 'Trades', 'Stats', 'Goals', 'Rules', 'User', 'Subscription', 'SavedOptions'],
   endpoints: () => ({}),
 });

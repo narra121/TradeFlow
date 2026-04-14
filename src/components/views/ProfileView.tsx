@@ -37,11 +37,10 @@ import {
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation, useUndoCancellationMutation } from '@/store/api';
+import { useGetProfileQuery, useGetSubscriptionQuery, useUpdateProfileMutation, useLogoutMutation, useGetPlansQuery, useCancelSubscriptionMutation, usePauseSubscriptionMutation, useResumeSubscriptionMutation, useUndoCancellationMutation, useVerifyCheckoutSessionMutation } from '@/store/api';
 import { useStripeCheckout } from '@/hooks/useStripeCheckout';
 import { useCurrency } from '@/hooks/useCurrency';
-import { SubscriptionDetails, PlanResponse } from '@/lib/api';
-import { stripeApi } from '@/lib/api/stripe';
+import { SubscriptionDetails } from '@/lib/api';
 import { toast } from 'sonner';
 import { ProfileCardSkeleton, SubscriptionCardSkeleton, SubscriptionPlansCardSkeleton } from '@/components/ui/loading-skeleton';
 import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
@@ -55,6 +54,7 @@ export function ProfileView() {
   const { currency } = useCurrency();
   const { data: availablePlans = [], isLoading: plansLoading } = useGetPlansQuery(currency);
   const verifiedRef = useRef(false);
+  const [verifyCheckout] = useVerifyCheckoutSessionMutation();
 
   // Handle Stripe redirect: verify checkout session after payment
   useEffect(() => {
@@ -71,7 +71,7 @@ export function ProfileView() {
       verifiedRef.current = true;
       (async () => {
         try {
-          const result = await stripeApi.verifyCheckoutSession(sessionId);
+          const result = await verifyCheckout(sessionId).unwrap();
           if (result.status === 'active') {
             toast.success(result.message || 'Payment successful! Your subscription is now active.');
             refetchSubscription();
@@ -91,7 +91,7 @@ export function ProfileView() {
         }
       })();
     }
-  }, [searchParams, setSearchParams, refetchSubscription]);
+  }, [searchParams, setSearchParams, refetchSubscription, verifyCheckout]);
   const { accounts } = useAccounts();
   const loading = profileLoading || profileFetching || subscriptionLoading || subscriptionFetching;
   const [updateProfile] = useUpdateProfileMutation();
@@ -176,13 +176,11 @@ export function ProfileView() {
         }
       }));
 
-      // Sync RTK Query data to local state if not already loaded
-      if (!subscriptionDetails) {
-        setSubscriptionDetails(subscription as unknown as SubscriptionDetails);
-        setSubscriptionLoaded(true);
-      }
+      // Sync RTK Query data to local state
+      setSubscriptionDetails(subscription as unknown as SubscriptionDetails);
+      setSubscriptionLoaded(true);
     }
-  }, [subscription, subscriptionDetails]);
+  }, [subscription]);
 
   // Derive tiers from API plans
   const monthlyPlan = availablePlans.find(p => p.period === 'monthly');
@@ -215,14 +213,6 @@ export function ProfileView() {
       setIsSavingProfile(false);
     }
   };
-
-  // Sync RTK Query subscription data to local state
-  useEffect(() => {
-    if (subscription && !subscriptionLoaded) {
-      setSubscriptionDetails(subscription as unknown as SubscriptionDetails);
-      setSubscriptionLoaded(true);
-    }
-  }, [subscription, subscriptionLoaded]);
 
   const handleSubscribe = async (amount: number, cycle: 'monthly' | 'annual') => {
     setIsSubscribing(true);

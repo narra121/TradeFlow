@@ -170,7 +170,7 @@ export const accountsApi = api.injectEndpoints({
         }
         return result;
       },
-      invalidatesTags: ['Stats', 'Analytics', 'Trades', 'Goals', 'Rules'], // Invalidate related data
+      invalidatesTags: ['Stats', 'Trades', 'Goals', 'Rules'], // Invalidate related data
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
         // Optimistic delete
         const patchResult = dispatch(

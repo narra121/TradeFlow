@@ -94,7 +94,7 @@ export function SettingsView() {
   ) => {
     return (value: string) => {
       setPendingTradeOption({ category, action: 'add', value });
-      fn(value);
+      try { fn(value); } catch { setPendingTradeOption(null); }
     };
   };
 
@@ -104,7 +104,7 @@ export function SettingsView() {
   ) => {
     return (value: string) => {
       setPendingTradeOption({ category, action: 'remove', value });
-      fn(value);
+      try { fn(value); } catch { setPendingTradeOption(null); }
     };
   };
 

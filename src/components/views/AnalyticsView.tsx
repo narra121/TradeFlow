@@ -79,7 +79,8 @@ export function AnalyticsView() {
   }), [filters.accountId, filters.startDate, filters.endDate, totalCapital]);
 
   const { data: statsData, isLoading: statsLoading, isFetching: statsFetching, refetch } = useGetStatsQuery(statsQueryParams);
-  const showShimmer = statsLoading || statsFetching;
+  const showSkeleton = statsLoading;                         // first-time load only
+  const isRefreshing = statsFetching;                        // background refetch, keep stale data visible
 
   const defaultStats = {
     totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
@@ -234,7 +235,7 @@ export function AnalyticsView() {
     { label: 'Loss Streak', value: (stats.consecutiveLosses ?? 0).toString(), isPositive: false },
   ];
 
-  if (showShimmer) {
+  if (showSkeleton) {
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -268,7 +269,7 @@ export function AnalyticsView() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={cn('space-y-6 transition-opacity duration-200', isRefreshing && 'opacity-60')}>
       {/* Header */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">

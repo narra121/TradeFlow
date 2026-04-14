@@ -97,10 +97,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
   const { accounts } = useAccounts();
 
   // Use the trade data passed from the list - no need for separate API call
-  const editTrade = useMemo(() => {
-    if (!editMode) return null;
-    return initialTrade ?? null;
-  }, [editMode, initialTrade]);
+  const editTrade = editMode && initialTrade ? initialTrade : null;
 
   const normalizeImages = (raw: any[] | undefined): TradeImage[] => {
     if (!Array.isArray(raw)) return [];
@@ -140,8 +137,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
       setIsSubmitting(false);
       setShowAddAccount(false);
       setDraftRestored(false);
+      if (editMode) resetForm();
     }
-  }, [open]);
+  }, [open, editMode]);
 
   // Auto-save form draft to sessionStorage (debounced)
   useEffect(() => {
@@ -261,9 +259,6 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
     }
 
     setIsSubmitting(true);
-
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
 
     const sl = parseFloat(stopLoss) || 0;
     const tp = parseFloat(takeProfit) || 0;

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Trophy, Info, Settings } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -35,13 +35,6 @@ interface GoalType {
   icon: React.ElementType;
   color: string;
   isInverse?: boolean; // true for goals where lower is better (e.g., drawdown)
-}
-
-interface GoalData {
-  goalTypeId: string;
-  period: 'weekly' | 'monthly';
-  target: number;
-  current: number;
 }
 
 // 4 goal types that apply to both weekly and monthly
@@ -82,20 +75,6 @@ const goalTypes: GoalType[] = [
   },
 ];
 
-// Default values for each goal type per period
-const defaultGoalData: GoalData[] = [
-  // Weekly goals
-  { goalTypeId: 'profit', period: 'weekly', target: 500, current: 387 },
-  { goalTypeId: 'winrate', period: 'weekly', target: 65, current: 68 },
-  { goalTypeId: 'drawdown', period: 'weekly', target: 3, current: 2.1 },
-  { goalTypeId: 'trades', period: 'weekly', target: 8, current: 5 },
-  // Monthly goals
-  { goalTypeId: 'profit', period: 'monthly', target: 2000, current: 1637 },
-  { goalTypeId: 'winrate', period: 'monthly', target: 70, current: 66 },
-  { goalTypeId: 'drawdown', period: 'monthly', target: 10, current: 7.5 },
-  { goalTypeId: 'trades', period: 'monthly', target: 30, current: 22 },
-];
-
 export function GoalsView() {
 
   const { data: profile } = useGetProfileQuery();
@@ -124,7 +103,7 @@ export function GoalsView() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [selectedDate, periodFilter]);
+  }, [selectedDate]);
 
   // Calculate period date range based on debounced date and period filter
   const periodRange = useMemo(() => {
@@ -203,7 +182,7 @@ export function GoalsView() {
   const [deleteRule] = useDeleteRuleMutation();
   const [toggleRule] = useToggleRuleMutation();
 
-  const handleRefresh = () => { refetch(); refetchProgress(); };
+  const handleRefresh = useCallback(() => { refetch(); refetchProgress(); }, [refetch, refetchProgress]);
   const loading = rulesGoalsLoading || rulesGoalsFetching;
   
   const reduxRules = rulesGoalsData?.rules || [];

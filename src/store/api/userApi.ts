@@ -26,8 +26,9 @@ export const userApi = api.injectEndpoints({
         return user;
       },
       providesTags: ['User'],
+      keepUnusedDataFor: 300,
     }),
-    
+
     updateProfile: builder.mutation<UserProfile['user'], UpdateProfilePayload>({
       query: (payload) => ({
         url: '/user/profile',
@@ -78,8 +79,9 @@ export const userApi = api.injectEndpoints({
         return subscription;
       },
       providesTags: ['Subscription'],
+      keepUnusedDataFor: 300,
     }),
-    
+
     createSubscription: builder.mutation<Subscription, UserCreateSubscriptionPayload>({
       query: (payload) => ({
         url: '/subscriptions',
@@ -125,6 +127,11 @@ export const userApi = api.injectEndpoints({
       invalidatesTags: ['Subscription'],
     }),
     
+    verifyCheckoutSession: builder.mutation<{ status: string; subscriptionId?: string; message: string }, string>({
+      query: (sessionId) => `/subscriptions/verify?session_id=${sessionId}`,
+      invalidatesTags: ['Subscription'],
+    }),
+
     getPlans: builder.query<PlanResponse[], string | void>({
       query: (currency) => `/subscriptions/plans${currency ? `?currency=${currency}` : ''}`,
       transformResponse: (response: any) => {
@@ -145,5 +152,6 @@ export const {
   usePauseSubscriptionMutation,
   useResumeSubscriptionMutation,
   useUndoCancellationMutation,
+  useVerifyCheckoutSessionMutation,
   useGetPlansQuery,
 } = userApi;
