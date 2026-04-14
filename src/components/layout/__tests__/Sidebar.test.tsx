@@ -139,8 +139,8 @@ describe('Sidebar', () => {
   it('renders SVG icons for all nav items', () => {
     const { container } = render(<Sidebar {...defaultProps} collapsed={true} />);
     const svgs = container.querySelectorAll('svg');
-    // 6 nav items + 1 Zap logo + 1 Profile (User icon) + 1 ChevronRight toggle = 9
-    expect(svgs.length).toBe(9);
+    // 6 nav items + 1 Zap logo + 1 Guide (HelpCircle) + 1 Profile (User icon) + 1 ChevronRight toggle = 10
+    expect(svgs.length).toBe(10);
   });
 
   // ─── Mobile-specific tests ─────────────────────────────────────────

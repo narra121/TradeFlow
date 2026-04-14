@@ -144,6 +144,7 @@ export function LandingPage() {
             <a href="#how-it-works" className="text-foreground/70 hover:text-foreground font-medium transition-colors">How it Works</a>
             <a href="#testimonials" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Testimonials</a>
             <a href="#pricing" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Pricing</a>
+            <Link to="/guide" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Guide</Link>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -200,6 +201,13 @@ export function LandingPage() {
               >
                 Pricing
               </a>
+              <Link
+                to="/guide"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
+              >
+                Guide
+              </Link>
               <div className="pt-3 border-t border-border/50 flex flex-col gap-2">
                 <Button variant="ghost" asChild className="w-full justify-center">
                   <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
@@ -556,7 +564,10 @@ export function LandingPage() {
             <div>
               <h4 className="font-semibold text-foreground mb-4">Resources</h4>
               <ul className="space-y-3">
-                {['Documentation', 'Blog', 'Community', 'Support'].map((item) => (
+                <li>
+                  <Link to="/guide" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Guide</Link>
+                </li>
+                {['Blog', 'Community', 'Support'].map((item) => (
                   <li key={item}>
                     <a href="#" className="text-muted-foreground hover:text-foreground transition-colors text-sm">{item}</a>
                   </li>

@@ -11,6 +11,7 @@ import {
   Target,
   User,
   Building2,
+  HelpCircle,
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -212,6 +213,25 @@ export function Sidebar({ activeView, onViewChange, collapsed, onCollapsedChange
 
         {/* Bottom Section - Profile & Expand */}
         <div className="p-3 border-t border-sidebar-border space-y-1">
+          {/* Guide Link */}
+          <NavTooltipWrapper label="User Guide" showTooltip={!showExpanded}>
+            <a
+              href="/guide"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                "hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-foreground",
+                !showExpanded && "justify-center",
+              )}
+            >
+              <HelpCircle className="w-5 h-5 shrink-0" />
+              {showExpanded && (
+                <span className="font-medium whitespace-nowrap">Guide</span>
+              )}
+            </a>
+          </NavTooltipWrapper>
+
           {/* Profile Button */}
           <NavTooltipWrapper label="Profile" showTooltip={!showExpanded}>
             <button

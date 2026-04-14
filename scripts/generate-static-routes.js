@@ -17,6 +17,7 @@ const routes = [
   'contact',
   'login',
   'signup',
+  'guide',
 ];
 
 const indexFile = join(distDir, 'index.html');
