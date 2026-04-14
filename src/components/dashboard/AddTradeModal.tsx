@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { TextEnhancerButton } from '@/components/ui/text-enhancer-button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Trade, TradeDirection, TradeImage, TradeOutcome } from '@/types/trade';
 import { DynamicSelect } from '@/components/trade/DynamicSelect';
 import { SmartInput } from '@/components/trade/SmartInput';
@@ -19,7 +20,7 @@ import { useSavedOptions } from '@/hooks/useSavedOptions';
 import { useFormDraft } from '@/hooks/useFormDraft';
 import { useTradingRules } from '@/hooks/useTradingRules';
 import { useAccounts } from '@/hooks/useAccounts';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2, Loader2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Clock, BarChart3, Camera, Lightbulb, FileText, Shield, Building2, Loader2, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -597,179 +598,187 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
               <Separator className="bg-border" />
 
-              {/* Section B: Trade Context */}
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              {/* Section B: Trade Context (Collapsible) */}
+              <Collapsible defaultOpen={false}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group">
                   <Clock className="w-4 h-4" />
-                  Trade Context
-                </div>
-                <p className="text-xs text-muted-foreground -mt-2">Optional — helps with pattern analysis</p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Strategy / Setup</Label>
-                    <DynamicSelect
-                      value={strategy}
-                      onChange={setStrategy}
-                      options={options.strategies}
-                      onAddNew={addStrategy}
-                      onRemove={removeStrategy}
-                      placeholder="e.g. Breakout"
-                    />
+                  <span>Trade Context</span>
+                  <span className="text-xs text-muted-foreground ml-auto mr-2">Optional</span>
+                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Strategy / Setup</Label>
+                      <DynamicSelect
+                        value={strategy}
+                        onChange={setStrategy}
+                        options={options.strategies}
+                        onAddNew={addStrategy}
+                        onRemove={removeStrategy}
+                        placeholder="e.g. Breakout"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Session</Label>
+                      <DynamicSelect
+                        value={session}
+                        onChange={setSession}
+                        options={options.sessions}
+                        onAddNew={addSession}
+                        onRemove={removeSession}
+                        placeholder="e.g. London"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Market Condition</Label>
+                      <DynamicSelect
+                        value={marketCondition}
+                        onChange={setMarketCondition}
+                        options={options.marketConditions}
+                        onAddNew={addMarketCondition}
+                        onRemove={removeMarketCondition}
+                        placeholder="e.g. Trending"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Session</Label>
-                    <DynamicSelect
-                      value={session}
-                      onChange={setSession}
-                      options={options.sessions}
-                      onAddNew={addSession}
-                      onRemove={removeSession}
-                      placeholder="e.g. London"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Market Condition</Label>
-                    <DynamicSelect
-                      value={marketCondition}
-                      onChange={setMarketCondition}
-                      options={options.marketConditions}
-                      onAddNew={addMarketCondition}
-                      onRemove={removeMarketCondition}
-                      placeholder="e.g. Trending"
-                    />
-                  </div>
-                </div>
-              </section>
+                </CollapsibleContent>
+              </Collapsible>
 
               <Separator className="bg-border" />
 
-              {/* Section C: Analysis */}
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              {/* Section C: Analysis (Collapsible) */}
+              <Collapsible defaultOpen={false}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group">
                   <BarChart3 className="w-4 h-4" />
-                  Analysis
-                </div>
-                <p className="text-xs text-muted-foreground -mt-2">Optional — track lessons and mistakes</p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5 h-6">
-                      <Label className="text-xs">News / Events</Label>
+                  <span>Analysis</span>
+                  <span className="text-xs text-muted-foreground ml-auto mr-2">Optional</span>
+                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 h-6">
+                        <Label className="text-xs">News / Events</Label>
+                      </div>
+                      <SmartInput
+                        value={newsEvent}
+                        onChange={setNewsEvent}
+                        suggestions={options.newsEvents}
+                        onAddNew={addNewsEvent}
+                        placeholder="Type to search or add new..."
+                      />
                     </div>
-                    <SmartInput
-                      value={newsEvent}
-                      onChange={setNewsEvent}
-                      suggestions={options.newsEvents}
-                      onAddNew={addNewsEvent}
-                      placeholder="Type to search or add new..."
-                    />
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 h-6">
+                        <Lightbulb className="w-3.5 h-3.5 text-warning" />
+                        <Label className="text-xs">Key Lesson</Label>
+                      </div>
+                      <div className="relative">
+                        <SmartInput
+                          value={keyLesson}
+                          onChange={setKeyLesson}
+                          suggestions={options.lessons}
+                          onAddNew={addLesson}
+                          placeholder="What did you learn from this trade?"
+                          className="pr-12"
+                        />
+                        <div className="absolute top-2 right-2">
+                          <TextEnhancerButton
+                            text={keyLesson}
+                            onEnhanced={setKeyLesson}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5 h-6">
-                      <Lightbulb className="w-3.5 h-3.5 text-warning" />
-                      <Label className="text-xs">Key Lesson</Label>
+                    <Label className="text-xs">Mistakes</Label>
+                    <MistakeTagsInput
+                      selectedTags={mistakes}
+                      onChange={setMistakes}
+                      availableTags={options.mistakes}
+                      onAddNew={addMistake}
+                    />
+                  </div>
+
+                  {/* Broken Rules — always visible so users discover the feature */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-destructive" />
+                      <Label className="text-xs">Broken Rules</Label>
+                      {brokenRuleIds.length > 0 && (
+                        <span className="text-xs text-destructive">({brokenRuleIds.length} broken)</span>
+                      )}
+                      {rules.length > 0 && (
+                        <span className="text-xs text-muted-foreground/60 ml-auto">
+                          from Goals & Rules
+                        </span>
+                      )}
                     </div>
+                    <BrokenRulesSelect
+                      rules={rules}
+                      selectedRuleIds={brokenRuleIds}
+                      onChange={setBrokenRuleIds}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Separator className="bg-border" />
+
+              {/* Section D: Trade Notes (Collapsible) */}
+              <Collapsible defaultOpen={false}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group">
+                  <FileText className="w-4 h-4" />
+                  <span>Trade Notes</span>
+                  <span className="text-xs text-muted-foreground ml-auto mr-2">Optional</span>
+                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-2">
+                  <div className="space-y-1.5 relative">
                     <div className="relative">
-                      <SmartInput
-                        value={keyLesson}
-                        onChange={setKeyLesson}
-                        suggestions={options.lessons}
-                        onAddNew={addLesson}
-                        placeholder="What did you learn from this trade?"
-                        className="pr-12"
+                      <Textarea
+                        value={tradeNotes}
+                        onChange={(e) => setTradeNotes(e.target.value)}
+                        placeholder="Add any additional notes about this trade..."
+                        rows={4}
+                        className="text-sm resize-y pr-12"
                       />
                       <div className="absolute top-2 right-2">
                         <TextEnhancerButton
-                          text={keyLesson}
-                          onEnhanced={setKeyLesson}
+                          text={tradeNotes}
+                          onEnhanced={setTradeNotes}
+                          isTradingNotes={true}
                         />
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Mistakes</Label>
-                  <MistakeTagsInput
-                    selectedTags={mistakes}
-                    onChange={setMistakes}
-                    availableTags={options.mistakes}
-                    onAddNew={addMistake}
-                  />
-                </div>
-
-                {/* Broken Rules — always visible so users discover the feature */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-destructive" />
-                    <Label className="text-xs">Broken Rules</Label>
-                    {brokenRuleIds.length > 0 && (
-                      <span className="text-xs text-destructive">({brokenRuleIds.length} broken)</span>
-                    )}
-                    {rules.length > 0 && (
-                      <span className="text-xs text-muted-foreground/60 ml-auto">
-                        from Goals & Rules
-                      </span>
-                    )}
-                  </div>
-                  <BrokenRulesSelect
-                    rules={rules}
-                    selectedRuleIds={brokenRuleIds}
-                    onChange={setBrokenRuleIds}
-                  />
-                </div>
-              </section>
+                </CollapsibleContent>
+              </Collapsible>
 
               <Separator className="bg-border" />
 
-              {/* Section D: Trade Notes */}
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <FileText className="w-4 h-4" />
-                  Trade Notes
-                </div>
-                <p className="text-xs text-muted-foreground -mt-2">Optional — add context for future review</p>
-
-                <div className="space-y-1.5 relative">
-                  <div className="relative">
-                    <Textarea
-                      value={tradeNotes}
-                      onChange={(e) => setTradeNotes(e.target.value)}
-                      placeholder="Add any additional notes about this trade..."
-                      rows={4}
-                      className="text-sm resize-y pr-12"
-                    />
-                    <div className="absolute top-2 right-2">
-                      <TextEnhancerButton
-                        text={tradeNotes}
-                        onEnhanced={setTradeNotes}
-                        isTradingNotes={true}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <Separator className="bg-border" />
-
-              {/* Section E: Visual Evidence */}
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              {/* Section E: Visual Evidence (Collapsible) */}
+              <Collapsible defaultOpen={false}>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group">
                   <Camera className="w-4 h-4" />
-                  Visual Evidence
-                </div>
-                <p className="text-xs text-muted-foreground -mt-2">Optional — attach chart screenshots</p>
-
-                <ImageUploader
-                  images={images}
-                  onChange={setImages}
-                  timeframeOptions={options.timeframes}
-                  onAddTimeframe={addTimeframe}
-                  onRemoveTimeframe={removeTimeframe}
-                />
-              </section>
+                  <span>Visual Evidence</span>
+                  <span className="text-xs text-muted-foreground ml-auto mr-2">Optional</span>
+                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-2">
+                  <ImageUploader
+                    images={images}
+                    onChange={setImages}
+                    timeframeOptions={options.timeframes}
+                    onAddTimeframe={addTimeframe}
+                    onRemoveTimeframe={removeTimeframe}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </form>
         </ScrollArea>

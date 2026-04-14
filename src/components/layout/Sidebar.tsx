@@ -23,23 +23,28 @@ interface NavItem {
   id: string;
 }
 
-const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
-  { icon: Building2, label: 'Accounts', id: 'accounts' },
-  { icon: BookOpen, label: 'Trade Log', id: 'tradelog' },
-  { icon: TrendingUp, label: 'Analytics', id: 'analytics' },
-  { icon: Target, label: 'Goals', id: 'goals' },
-  { icon: Settings, label: 'Settings', id: 'settings' },
+const navItems: (NavItem & { shortcut?: string })[] = [
+  { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', shortcut: '1' },
+  { icon: Building2, label: 'Accounts', id: 'accounts', shortcut: '2' },
+  { icon: BookOpen, label: 'Trade Log', id: 'tradelog', shortcut: '3' },
+  { icon: TrendingUp, label: 'Analytics', id: 'analytics', shortcut: '4' },
+  { icon: Target, label: 'Goals', id: 'goals', shortcut: '5' },
+  { icon: Settings, label: 'Settings', id: 'settings', shortcut: '6' },
 ];
 
 /** Conditionally wraps children in a tooltip (only when sidebar is collapsed on desktop). */
-function NavTooltipWrapper({ label, showTooltip, children }: { label: string; showTooltip: boolean; children: React.ReactElement }) {
+function NavTooltipWrapper({ label, shortcut, showTooltip, children }: { label: string; shortcut?: string; showTooltip: boolean; children: React.ReactElement }) {
   if (!showTooltip) return children;
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="right" className="font-medium">
-        {label}
+      <TooltipContent side="right" className="font-medium flex items-center gap-2">
+        <span>{label}</span>
+        {shortcut && (
+          <kbd className="inline-flex items-center rounded border border-border/50 bg-muted/50 px-1 py-0.5 text-[10px] font-mono text-muted-foreground">
+            {shortcut}
+          </kbd>
+        )}
       </TooltipContent>
     </Tooltip>
   );
@@ -66,6 +71,21 @@ export function Sidebar({ activeView, onViewChange, collapsed, onCollapsedChange
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isMobile, mobileOpen, onMobileOpenChange]);
+
+  // Keyboard shortcuts: number keys (1-6) navigate to views when no input is focused
+  useEffect(() => {
+    const handleShortcut = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement)?.isContentEditable) return;
+      const idx = parseInt(e.key, 10);
+      if (idx >= 1 && idx <= navItems.length) {
+        e.preventDefault();
+        onViewChange(navItems[idx - 1].id);
+      }
+    };
+    document.addEventListener('keydown', handleShortcut);
+    return () => document.removeEventListener('keydown', handleShortcut);
+  }, [onViewChange]);
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
@@ -102,7 +122,7 @@ export function Sidebar({ activeView, onViewChange, collapsed, onCollapsedChange
           "fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 z-50 overflow-hidden",
           // Mobile: full-width drawer, translated off-screen by default
           isMobile
-            ? cn("w-[280px]", mobileOpen ? "translate-x-0" : "-translate-x-full")
+            ? cn("w-[280px] transition-transform duration-300 ease-in-out", mobileOpen ? "translate-x-0" : "-translate-x-full")
             // Desktop/tablet: normal collapsed/expanded behavior
             : collapsed ? "w-[72px]" : "w-[240px]"
         )}
@@ -161,7 +181,7 @@ export function Sidebar({ activeView, onViewChange, collapsed, onCollapsedChange
 
               return (
                 <li key={item.id}>
-                  <NavTooltipWrapper label={item.label} showTooltip={!showExpanded}>
+                  <NavTooltipWrapper label={item.label} shortcut={item.shortcut} showTooltip={!showExpanded}>
                     <button
                       onClick={() => handleNavClick(item.id)}
                       className={cn(

@@ -155,9 +155,10 @@ describe('AnalyticsView', () => {
     expect(screen.getByText('Profit Factor')).toBeInTheDocument();
   });
 
-  it('renders the performance chart section', () => {
+  it('renders the equity curve section', () => {
     render(<AnalyticsView />);
-    expect(screen.getByTestId('performance-chart')).toBeInTheDocument();
+    // With only 1 trade (< MIN_TRADES_FOR_CHARTS=3), the chart empty state is shown
+    expect(screen.getByText('Equity Curve')).toBeInTheDocument();
   });
 
   it('renders the Daily P&L chart section', () => {

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Trade } from '@/types/trade';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, eachWeekOfInterval, subDays, isWithinInterval } from 'date-fns';
 import {
@@ -12,7 +13,6 @@ import {
   ArrowDown,
   ChevronsUpDown,
   MoreHorizontal,
-  Eye,
   ChevronLeft,
   ChevronRight,
   Filter,
@@ -21,6 +21,14 @@ import {
   BookOpen,
   SlidersHorizontal
 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { TradeTableSkeleton, CalendarSkeleton } from '@/components/ui/loading-skeleton';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -116,6 +124,7 @@ interface TradeLogViewProps {
 type TabType = 'trades' | 'calendar';
 
 export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) {
+  const isMobile = useIsMobile();
   const dispatch = useAppDispatch();
   const { filters } = useAppSelector((state) => state.trades);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -472,6 +481,12 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     }
   };
 
+  const activeFilterCount = (symbolFilters.size > 0 ? 1 : 0)
+    + (outcomeFilters.size > 0 ? 1 : 0)
+    + (strategyFilters.size > 0 ? 1 : 0)
+    + (sessionFilters.size > 0 ? 1 : 0)
+    + (mistakeFilters.size > 0 ? 1 : 0);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -542,279 +557,462 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
         {activeTab === 'trades' && (
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground hidden sm:inline">Filters:</span>
-            </div>
-            
-            {/* Symbol Filter (multi-select) */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
-                  {symbolFilters.size === 0
-                    ? 'All Symbols'
-                    : symbolFilters.size === 1
-                      ? [...symbolFilters][0]
-                      : `${symbolFilters.size} symbols`}
-                  <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[180px] p-2" align="start">
-                <div className="space-y-1 max-h-[240px] overflow-auto">
-                  {uniqueSymbols.map(symbol => (
-                    <label
-                      key={symbol}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
-                    >
-                      <Checkbox
-                        checked={symbolFilters.has(symbol)}
-                        onCheckedChange={(checked) => {
-                          setSymbolFilters(prev => {
-                            const next = new Set(prev);
-                            checked ? next.add(symbol) : next.delete(symbol);
-                            return next;
-                          });
-                        }}
-                      />
-                      {symbol}
-                    </label>
-                  ))}
+            {isMobile ? (
+              /* Mobile: Filters collapsed into a bottom sheet */
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Filter className="w-4 h-4" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <Badge variant="default" className="h-5 w-5 p-0 text-xs rounded-full flex items-center justify-center">
+                        {activeFilterCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="max-h-[70vh] overflow-auto">
+                  <SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader>
+                  <div className="space-y-4 py-4">
+                    {/* Symbol Filter */}
+                    <div>
+                      <p className="text-sm font-medium mb-2">Symbol</p>
+                      <div className="space-y-1 max-h-[160px] overflow-auto">
+                        {uniqueSymbols.map(symbol => (
+                          <label
+                            key={symbol}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                          >
+                            <Checkbox
+                              checked={symbolFilters.has(symbol)}
+                              onCheckedChange={(checked) => {
+                                setSymbolFilters(prev => {
+                                  const next = new Set(prev);
+                                  checked ? next.add(symbol) : next.delete(symbol);
+                                  return next;
+                                });
+                              }}
+                            />
+                            {symbol}
+                          </label>
+                        ))}
+                      </div>
+                      {symbolFilters.size > 0 && (
+                        <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setSymbolFilters(new Set())}>Clear</Button>
+                      )}
+                    </div>
+                    <Separator />
+                    {/* Outcome Filter */}
+                    <div>
+                      <p className="text-sm font-medium mb-2">Outcome</p>
+                      <div className="space-y-1">
+                        {([
+                          { value: 'TP', label: 'TP (Take Profit)' },
+                          { value: 'PARTIAL', label: 'Partial' },
+                          { value: 'SL', label: 'SL (Stop Loss)' },
+                          { value: 'BREAKEVEN', label: 'Breakeven' },
+                        ] as const).map(opt => (
+                          <label
+                            key={opt.value}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                          >
+                            <Checkbox
+                              checked={outcomeFilters.has(opt.value)}
+                              onCheckedChange={(checked) => {
+                                setOutcomeFilters(prev => {
+                                  const next = new Set(prev);
+                                  checked ? next.add(opt.value) : next.delete(opt.value);
+                                  return next;
+                                });
+                              }}
+                            />
+                            {opt.label}
+                          </label>
+                        ))}
+                      </div>
+                      {outcomeFilters.size > 0 && (
+                        <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setOutcomeFilters(new Set())}>Clear</Button>
+                      )}
+                    </div>
+                    {/* Strategy Filter */}
+                    {uniqueStrategies.length > 0 && (
+                      <>
+                        <Separator />
+                        <div>
+                          <p className="text-sm font-medium mb-2">Strategy</p>
+                          <div className="space-y-1 max-h-[160px] overflow-auto">
+                            {uniqueStrategies.map(strategy => (
+                              <label
+                                key={strategy}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                              >
+                                <Checkbox
+                                  checked={strategyFilters.has(strategy)}
+                                  onCheckedChange={(checked) => {
+                                    setStrategyFilters(prev => {
+                                      const next = new Set(prev);
+                                      checked ? next.add(strategy) : next.delete(strategy);
+                                      return next;
+                                    });
+                                  }}
+                                />
+                                {strategy}
+                              </label>
+                            ))}
+                          </div>
+                          {strategyFilters.size > 0 && (
+                            <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setStrategyFilters(new Set())}>Clear</Button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {/* Session Filter */}
+                    {uniqueSessions.length > 0 && (
+                      <>
+                        <Separator />
+                        <div>
+                          <p className="text-sm font-medium mb-2">Session</p>
+                          <div className="space-y-1 max-h-[160px] overflow-auto">
+                            {uniqueSessions.map(session => (
+                              <label
+                                key={session}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                              >
+                                <Checkbox
+                                  checked={sessionFilters.has(session)}
+                                  onCheckedChange={(checked) => {
+                                    setSessionFilters(prev => {
+                                      const next = new Set(prev);
+                                      checked ? next.add(session) : next.delete(session);
+                                      return next;
+                                    });
+                                  }}
+                                />
+                                {session}
+                              </label>
+                            ))}
+                          </div>
+                          {sessionFilters.size > 0 && (
+                            <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setSessionFilters(new Set())}>Clear</Button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {/* Mistakes Filter */}
+                    {uniqueMistakes.length > 0 && (
+                      <>
+                        <Separator />
+                        <div>
+                          <p className="text-sm font-medium mb-2">Mistakes</p>
+                          <div className="space-y-1 max-h-[160px] overflow-auto">
+                            {uniqueMistakes.map(mistake => (
+                              <label
+                                key={mistake}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                              >
+                                <Checkbox
+                                  checked={mistakeFilters.has(mistake)}
+                                  onCheckedChange={(checked) => {
+                                    setMistakeFilters(prev => {
+                                      const next = new Set(prev);
+                                      checked ? next.add(mistake) : next.delete(mistake);
+                                      return next;
+                                    });
+                                  }}
+                                />
+                                {mistake}
+                              </label>
+                            ))}
+                          </div>
+                          {mistakeFilters.size > 0 && (
+                            <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setMistakeFilters(new Set())}>Clear</Button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            ) : (
+              /* Desktop: inline filter popovers */
+              <>
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Filters:</span>
                 </div>
-                {symbolFilters.size > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full mt-2 text-xs"
-                    onClick={() => setSymbolFilters(new Set())}
-                  >
-                    Clear all
-                  </Button>
+
+                {/* Symbol Filter (multi-select) */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-[160px] justify-between font-normal">
+                      {symbolFilters.size === 0
+                        ? 'All Symbols'
+                        : symbolFilters.size === 1
+                          ? [...symbolFilters][0]
+                          : `${symbolFilters.size} symbols`}
+                      <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[180px] p-2" align="start">
+                    <div className="space-y-1 max-h-[240px] overflow-auto">
+                      {uniqueSymbols.map(symbol => (
+                        <label
+                          key={symbol}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                        >
+                          <Checkbox
+                            checked={symbolFilters.has(symbol)}
+                            onCheckedChange={(checked) => {
+                              setSymbolFilters(prev => {
+                                const next = new Set(prev);
+                                checked ? next.add(symbol) : next.delete(symbol);
+                                return next;
+                              });
+                            }}
+                          />
+                          {symbol}
+                        </label>
+                      ))}
+                    </div>
+                    {symbolFilters.size > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-2 text-xs"
+                        onClick={() => setSymbolFilters(new Set())}
+                      >
+                        Clear all
+                      </Button>
+                    )}
+                  </PopoverContent>
+                </Popover>
+
+                {/* Outcome Filter (multi-select) */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-[160px] justify-between font-normal">
+                      {outcomeFilters.size === 0
+                        ? 'All Outcomes'
+                        : outcomeFilters.size === 1
+                          ? [...outcomeFilters][0]
+                          : `${outcomeFilters.size} outcomes`}
+                      <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[180px] p-2" align="start">
+                    <div className="space-y-1">
+                      {([
+                        { value: 'TP', label: 'TP (Take Profit)' },
+                        { value: 'PARTIAL', label: 'Partial' },
+                        { value: 'SL', label: 'SL (Stop Loss)' },
+                        { value: 'BREAKEVEN', label: 'Breakeven' },
+                      ] as const).map(opt => (
+                        <label
+                          key={opt.value}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                        >
+                          <Checkbox
+                            checked={outcomeFilters.has(opt.value)}
+                            onCheckedChange={(checked) => {
+                              setOutcomeFilters(prev => {
+                                const next = new Set(prev);
+                                checked ? next.add(opt.value) : next.delete(opt.value);
+                                return next;
+                              });
+                            }}
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                    {outcomeFilters.size > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-2 text-xs"
+                        onClick={() => setOutcomeFilters(new Set())}
+                      >
+                        Clear all
+                      </Button>
+                    )}
+                  </PopoverContent>
+                </Popover>
+
+                {/* Strategy Filter (multi-select) */}
+                {uniqueStrategies.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-[160px] justify-between font-normal">
+                        {strategyFilters.size === 0
+                          ? 'All Strategies'
+                          : strategyFilters.size === 1
+                            ? [...strategyFilters][0]
+                            : `${strategyFilters.size} strategies`}
+                        <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[180px] p-2" align="start">
+                      <div className="space-y-1 max-h-[240px] overflow-auto">
+                        {uniqueStrategies.map(strategy => (
+                          <label
+                            key={strategy}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                          >
+                            <Checkbox
+                              checked={strategyFilters.has(strategy)}
+                              onCheckedChange={(checked) => {
+                                setStrategyFilters(prev => {
+                                  const next = new Set(prev);
+                                  checked ? next.add(strategy) : next.delete(strategy);
+                                  return next;
+                                });
+                              }}
+                            />
+                            {strategy}
+                          </label>
+                        ))}
+                      </div>
+                      {strategyFilters.size > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mt-2 text-xs"
+                          onClick={() => setStrategyFilters(new Set())}
+                        >
+                          Clear all
+                        </Button>
+                      )}
+                    </PopoverContent>
+                  </Popover>
                 )}
-              </PopoverContent>
-            </Popover>
 
-            {/* Outcome Filter (multi-select) */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
-                  {outcomeFilters.size === 0
-                    ? 'All Outcomes'
-                    : outcomeFilters.size === 1
-                      ? [...outcomeFilters][0]
-                      : `${outcomeFilters.size} outcomes`}
-                  <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[180px] p-2" align="start">
-                <div className="space-y-1">
-                  {([
-                    { value: 'TP', label: 'TP (Take Profit)' },
-                    { value: 'PARTIAL', label: 'Partial' },
-                    { value: 'SL', label: 'SL (Stop Loss)' },
-                    { value: 'BREAKEVEN', label: 'Breakeven' },
-                  ] as const).map(opt => (
-                    <label
-                      key={opt.value}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
-                    >
-                      <Checkbox
-                        checked={outcomeFilters.has(opt.value)}
-                        onCheckedChange={(checked) => {
-                          setOutcomeFilters(prev => {
-                            const next = new Set(prev);
-                            checked ? next.add(opt.value) : next.delete(opt.value);
-                            return next;
-                          });
-                        }}
-                      />
-                      {opt.label}
-                    </label>
-                  ))}
-                </div>
-                {outcomeFilters.size > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full mt-2 text-xs"
-                    onClick={() => setOutcomeFilters(new Set())}
-                  >
-                    Clear all
-                  </Button>
+                {/* Session Filter (multi-select) */}
+                {uniqueSessions.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-[160px] justify-between font-normal">
+                        {sessionFilters.size === 0
+                          ? 'All Sessions'
+                          : sessionFilters.size === 1
+                            ? [...sessionFilters][0]
+                            : `${sessionFilters.size} sessions`}
+                        <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[180px] p-2" align="start">
+                      <div className="space-y-1 max-h-[240px] overflow-auto">
+                        {uniqueSessions.map(session => (
+                          <label
+                            key={session}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                          >
+                            <Checkbox
+                              checked={sessionFilters.has(session)}
+                              onCheckedChange={(checked) => {
+                                setSessionFilters(prev => {
+                                  const next = new Set(prev);
+                                  checked ? next.add(session) : next.delete(session);
+                                  return next;
+                                });
+                              }}
+                            />
+                            {session}
+                          </label>
+                        ))}
+                      </div>
+                      {sessionFilters.size > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mt-2 text-xs"
+                          onClick={() => setSessionFilters(new Set())}
+                        >
+                          Clear all
+                        </Button>
+                      )}
+                    </PopoverContent>
+                  </Popover>
                 )}
-              </PopoverContent>
-            </Popover>
 
-            {/* Strategy Filter (multi-select) */}
-            {uniqueStrategies.length > 0 && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
-                    {strategyFilters.size === 0
-                      ? 'All Strategies'
-                      : strategyFilters.size === 1
-                        ? [...strategyFilters][0]
-                        : `${strategyFilters.size} strategies`}
-                    <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[180px] p-2" align="start">
-                  <div className="space-y-1 max-h-[240px] overflow-auto">
-                    {uniqueStrategies.map(strategy => (
-                      <label
-                        key={strategy}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
-                      >
-                        <Checkbox
-                          checked={strategyFilters.has(strategy)}
-                          onCheckedChange={(checked) => {
-                            setStrategyFilters(prev => {
-                              const next = new Set(prev);
-                              checked ? next.add(strategy) : next.delete(strategy);
-                              return next;
-                            });
-                          }}
-                        />
-                        {strategy}
-                      </label>
-                    ))}
-                  </div>
-                  {strategyFilters.size > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full mt-2 text-xs"
-                      onClick={() => setStrategyFilters(new Set())}
-                    >
-                      Clear all
-                    </Button>
-                  )}
-                </PopoverContent>
-              </Popover>
-            )}
-
-            {/* Session Filter (multi-select) */}
-            {uniqueSessions.length > 0 && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
-                    {sessionFilters.size === 0
-                      ? 'All Sessions'
-                      : sessionFilters.size === 1
-                        ? [...sessionFilters][0]
-                        : `${sessionFilters.size} sessions`}
-                    <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[180px] p-2" align="start">
-                  <div className="space-y-1 max-h-[240px] overflow-auto">
-                    {uniqueSessions.map(session => (
-                      <label
-                        key={session}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
-                      >
-                        <Checkbox
-                          checked={sessionFilters.has(session)}
-                          onCheckedChange={(checked) => {
-                            setSessionFilters(prev => {
-                              const next = new Set(prev);
-                              checked ? next.add(session) : next.delete(session);
-                              return next;
-                            });
-                          }}
-                        />
-                        {session}
-                      </label>
-                    ))}
-                  </div>
-                  {sessionFilters.size > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full mt-2 text-xs"
-                      onClick={() => setSessionFilters(new Set())}
-                    >
-                      Clear all
-                    </Button>
-                  )}
-                </PopoverContent>
-              </Popover>
-            )}
-
-            {/* Mistakes Filter (multi-select) */}
-            {uniqueMistakes.length > 0 && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-[140px] sm:w-[160px] justify-between font-normal">
-                    {mistakeFilters.size === 0
-                      ? 'All Mistakes'
-                      : mistakeFilters.size === 1
-                        ? [...mistakeFilters][0]
-                        : `${mistakeFilters.size} mistakes`}
-                    <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-2" align="start">
-                  <div className="space-y-1 max-h-[240px] overflow-auto">
-                    {uniqueMistakes.map(mistake => (
-                      <label
-                        key={mistake}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
-                      >
-                        <Checkbox
-                          checked={mistakeFilters.has(mistake)}
-                          onCheckedChange={(checked) => {
-                            setMistakeFilters(prev => {
-                              const next = new Set(prev);
-                              checked ? next.add(mistake) : next.delete(mistake);
-                              return next;
-                            });
-                          }}
-                        />
-                        {mistake}
-                      </label>
-                    ))}
-                  </div>
-                  {mistakeFilters.size > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full mt-2 text-xs"
-                      onClick={() => setMistakeFilters(new Set())}
-                    >
-                      Clear all
-                    </Button>
-                  )}
-                </PopoverContent>
-              </Popover>
+                {/* Mistakes Filter (multi-select) */}
+                {uniqueMistakes.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-[160px] justify-between font-normal">
+                        {mistakeFilters.size === 0
+                          ? 'All Mistakes'
+                          : mistakeFilters.size === 1
+                            ? [...mistakeFilters][0]
+                            : `${mistakeFilters.size} mistakes`}
+                        <ChevronsUpDown className="w-3.5 h-3.5 ml-2 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-2" align="start">
+                      <div className="space-y-1 max-h-[240px] overflow-auto">
+                        {uniqueMistakes.map(mistake => (
+                          <label
+                            key={mistake}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
+                          >
+                            <Checkbox
+                              checked={mistakeFilters.has(mistake)}
+                              onCheckedChange={(checked) => {
+                                setMistakeFilters(prev => {
+                                  const next = new Set(prev);
+                                  checked ? next.add(mistake) : next.delete(mistake);
+                                  return next;
+                                });
+                              }}
+                            />
+                            {mistake}
+                          </label>
+                        ))}
+                      </div>
+                      {mistakeFilters.size > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mt-2 text-xs"
+                          onClick={() => setMistakeFilters(new Set())}
+                        >
+                          Clear all
+                        </Button>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </>
             )}
 
             {/* Column Visibility Toggle */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm">
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Columns</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-2" align="end">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground px-2 py-1">Show/Hide Columns</p>
-                  {COLUMN_DEFS.filter(c => c.key !== 'checkbox' && c.key !== 'actions').map(col => (
-                    <label key={col.key} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent/50 cursor-pointer text-sm">
-                      <Checkbox
-                        checked={isColumnVisible(col.key)}
-                        onCheckedChange={(checked) => updateColumnVisibility(col.key, !!checked)}
-                      />
-                      {col.label}
-                    </label>
-                  ))}
-                  <Separator className="my-1" />
-                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={resetColumnVisibility}>
-                    Reset to defaults
+            {!isMobile && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5 h-9 text-sm">
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    Columns
                   </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2" align="end">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground px-2 py-1">Show/Hide Columns</p>
+                    {COLUMN_DEFS.filter(c => c.key !== 'checkbox' && c.key !== 'actions').map(col => (
+                      <label key={col.key} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent/50 cursor-pointer text-sm">
+                        <Checkbox
+                          checked={isColumnVisible(col.key)}
+                          onCheckedChange={(checked) => updateColumnVisibility(col.key, !!checked)}
+                        />
+                        {col.label}
+                      </label>
+                    ))}
+                    <Separator className="my-1" />
+                    <Button variant="ghost" size="sm" className="w-full text-xs" onClick={resetColumnVisibility}>
+                      Reset to defaults
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         )}
       </div>
@@ -851,7 +1049,85 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           {/* Trades Table with Loading State */}
           {loading ? (
             <TradeTableSkeleton rows={8} />
+          ) : isMobile ? (
+          /* Mobile card layout */
+          <div className="space-y-2">
+            <div className="space-y-3 px-2">
+              {paginatedTrades.map((trade, idx) => {
+                const account = accounts.find(a => a.id === trade.accountId);
+                return (
+                <div
+                  key={trade.id}
+                  className="glass-card p-4 cursor-pointer active:bg-secondary/30"
+                  onClick={() => handleViewTrade((currentPage - 1) * pageSize + idx)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-6 h-6 rounded flex items-center justify-center",
+                        trade.direction === 'LONG' ? 'bg-success/10' : 'bg-destructive/10'
+                      )}>
+                        {trade.direction === 'LONG'
+                          ? <ArrowUpRight className="w-3.5 h-3.5 text-success" />
+                          : <ArrowDownRight className="w-3.5 h-3.5 text-destructive" />
+                        }
+                      </div>
+                      <span className="font-semibold">{trade.symbol}</span>
+                      <Badge variant={trade.direction === 'LONG' ? 'default' : 'destructive'}
+                        className={trade.direction === 'LONG' ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'}>
+                        {trade.direction}
+                      </Badge>
+                    </div>
+                    <span className={cn(
+                      "font-mono font-bold",
+                      (trade.pnl ?? 0) >= 0 ? 'text-success' : 'text-destructive'
+                    )}>
+                      {(trade.pnl ?? 0) >= 0 ? '+' : ''}${trade.pnl?.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>{account?.name || '—'}</span>
+                    <span>{format(new Date(trade.entryDate), "MMM d, HH:mm")}</span>
+                    <Badge variant="outline" className="text-xs">{trade.outcome}</Badge>
+                  </div>
+                </div>
+              )})}
+            </div>
+
+            {filteredTrades.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
+                <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                  <BookOpen className="w-7 h-7 text-muted-foreground/60" />
+                </div>
+                <h3 className="text-base font-medium text-foreground mb-1">No trades found</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mb-6">
+                  {activeFilterCount > 0
+                    ? "Try adjusting your filters to see more trades."
+                    : "Add your first trade to start building your trading log."}
+                </p>
+                {activeFilterCount === 0 && (
+                  <Button onClick={onAddTrade} size="sm" className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Trade
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Pagination bar */}
+            {filteredTrades.length > pageSize && (
+              <TablePagination
+                currentPage={currentPage}
+                totalItems={totalFilteredTrades}
+                pageSize={pageSize}
+                isLoading={tradesFetching}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            )}
+          </div>
           ) : (
+          /* Desktop table layout */
           <div className="glass-card overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
             <div className="overflow-auto flex-1">
               <table className="w-full min-w-[1100px]">
@@ -950,10 +1226,15 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                     <tr
                       key={trade.id}
                       className={cn(
-                        "hover:bg-secondary/30 transition-colors animate-fade-in",
+                        "border-b border-border/30 hover:bg-secondary/30 transition-colors cursor-pointer animate-fade-in",
                         selectedTradeIds.has(trade.id) && "bg-primary/5"
                       )}
                       style={{ animationDelay: `${index * 0.03}s` }}
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target.closest('button') || target.closest('[role="checkbox"]') || target.closest('[role="menuitem"]')) return;
+                        handleViewTrade(globalIndex);
+                      }}
                     >
                       {isColumnVisible('checkbox') && (
                         <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
@@ -976,7 +1257,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                                 <ArrowDownRight className="w-4 h-4 text-destructive" />
                               )}
                             </div>
-                            <span className="font-semibold text-foreground">{trade.symbol}</span>
+                            <span className="font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">{trade.symbol}</span>
                             {isTradeIncomplete(trade) && (
                               <TooltipProvider>
                                 <Tooltip>
@@ -1097,16 +1378,8 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                         </td>
                       )}
                       {isColumnVisible('actions') && (
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleViewTrade(globalIndex)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                        <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -1136,7 +1409,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             </div>
 
             {filteredTrades.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
                 <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
                   <BookOpen className="w-7 h-7 text-muted-foreground/60" />
                 </div>
@@ -1156,7 +1429,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             )}
 
             {/* Pagination bar */}
-            {filteredTrades.length > 0 && (
+            {filteredTrades.length > pageSize && (
               <TablePagination
                 currentPage={currentPage}
                 totalItems={totalFilteredTrades}

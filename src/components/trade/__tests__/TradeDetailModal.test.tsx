@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { format } from 'date-fns';
 import { TradeDetailModal } from '../TradeDetailModal';
 import { Trade } from '@/types/trade';
 
@@ -44,6 +45,10 @@ vi.mock('lucide-react', () => ({
   X: () => <span data-testid="icon-x" />,
   TrendingUp: () => <span data-testid="icon-trending-up" />,
   TrendingDown: () => <span data-testid="icon-trending-down" />,
+  Pencil: (props: any) => <span data-testid="pencil-icon" {...props} />,
+  Trash2: (props: any) => <span data-testid="trash2-icon" {...props} />,
+  ArrowUpRight: (props: any) => <span data-testid="icon-arrow-up-right" {...props} />,
+  ArrowDownRight: (props: any) => <span data-testid="icon-arrow-down-right" {...props} />,
 }));
 
 const makeTrade = (overrides: Partial<Trade> = {}): Trade => ({
@@ -154,8 +159,11 @@ describe('TradeDetailModal', () => {
 
     expect(screen.getByText('Open Date')).toBeInTheDocument();
     expect(screen.getByText('Close Date')).toBeInTheDocument();
-    expect(screen.getByText('2025-03-15 09:30')).toBeInTheDocument();
-    expect(screen.getByText('2025-03-15 15:30')).toBeInTheDocument();
+    // Component formats dates as "MMM d 'yy, HH:mm"
+    const entryFormatted = format(new Date('2025-03-15T09:30:00'), "MMM d ''yy, HH:mm");
+    const exitFormatted = format(new Date('2025-03-15T15:30:00'), "MMM d ''yy, HH:mm");
+    expect(screen.getByText(entryFormatted)).toBeInTheDocument();
+    expect(screen.getByText(exitFormatted)).toBeInTheDocument();
   });
 
   it('shows dash for missing exit date', () => {
@@ -173,7 +181,7 @@ describe('TradeDetailModal', () => {
 
     render(<TradeDetailModal {...defaultProps} trade={trade} />);
 
-    expect(screen.getByText('TP')).toBeInTheDocument();
+    expect(screen.getByText('TP: 182')).toBeInTheDocument();
   });
 
   it('shows trade notes', () => {
@@ -223,7 +231,8 @@ describe('TradeDetailModal', () => {
     expect(screen.getByText('4H')).toBeInTheDocument();
     expect(screen.getByText('Entry chart')).toBeInTheDocument();
     expect(screen.getByText('Higher TF context')).toBeInTheDocument();
-    expect(screen.getAllByTestId('cached-image')).toHaveLength(2);
+    // 2 thumbnail previews in the strip + 2 main images = 4 CachedImage elements
+    expect(screen.getAllByTestId('cached-image')).toHaveLength(4);
   });
 
   it('shows "No screenshots attached" when trade has no images', () => {

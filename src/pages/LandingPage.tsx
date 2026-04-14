@@ -140,10 +140,10 @@ export function LandingPage() {
           </button>
 
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
-            <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-            <a href="#testimonials" className="text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+            <a href="#features" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Features</a>
+            <a href="#how-it-works" className="text-foreground/70 hover:text-foreground font-medium transition-colors">How it Works</a>
+            <a href="#testimonials" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Testimonials</a>
+            <a href="#pricing" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Pricing</a>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -175,28 +175,28 @@ export function LandingPage() {
               <a
                 href="#features"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
               >
                 Features
               </a>
               <a
                 href="#how-it-works"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
               >
                 How it Works
               </a>
               <a
                 href="#testimonials"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
               >
                 Testimonials
               </a>
               <a
                 href="#pricing"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
               >
                 Pricing
               </a>

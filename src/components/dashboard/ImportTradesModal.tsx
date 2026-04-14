@@ -531,6 +531,42 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                     <FileSpreadsheet className="w-4 h-4 mr-2" />
                     Select File
                   </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const text = await navigator.clipboard.readText();
+                        if (text && text.trim().length > 10 && (text.includes('\t') || text.includes(',')) && text.includes('\n')) {
+                          const parseResult = Papa.parse(text.trim(), { header: false, skipEmptyLines: true });
+                          if (parseResult.data.length > 1) {
+                            setUploadedFile({
+                              name: 'Pasted data',
+                              size: new Blob([text]).size,
+                              type: 'paste',
+                              parsedText: text,
+                              rowCount: parseResult.data.length - 1,
+                            });
+                            setImportMode('file');
+                            setUploadedImages([]);
+                            setExtractionError(null);
+                          } else {
+                            toast.info('Clipboard text does not appear to contain tabular trade data');
+                          }
+                        } else if (text && text.trim()) {
+                          toast.info('Clipboard text does not appear to contain tabular trade data. Use CSV or tab-separated format.');
+                        } else {
+                          toast.info('Clipboard is empty');
+                        }
+                      } catch {
+                        toast.error('Unable to read clipboard. Please use Ctrl+V to paste instead.');
+                      }
+                    }}
+                    disabled={importMode === 'image' && uploadedImages.length > 0}
+                  >
+                    <ClipboardPaste className="w-4 h-4 mr-2" />
+                    Paste from Clipboard
+                  </Button>
                 </div>
 
                 <p className="text-[10px] sm:text-xs text-muted-foreground/60">

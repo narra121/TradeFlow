@@ -109,6 +109,18 @@ vi.mock('@radix-ui/react-separator', async () => {
   };
 });
 
+// Mock Radix UI Collapsible to always render content (defaultOpen ignored)
+vi.mock('@radix-ui/react-collapsible', async () => {
+  const React = await import('react');
+  return {
+    Root: ({ children }: any) => <div>{children}</div>,
+    CollapsibleTrigger: React.forwardRef(({ children, ...props }: any, ref: any) => (
+      <button ref={ref} {...props}>{children}</button>
+    )),
+    CollapsibleContent: ({ children }: any) => <div>{children}</div>,
+  };
+});
+
 // Mock DateTimePicker to render a simple input for testability
 vi.mock('@/components/ui/datetime-picker', () => ({
   DateTimePicker: ({ value, onChange, placeholder }: any) => (
@@ -332,8 +344,10 @@ describe('AddTradeModal', () => {
     const submitButton = screen.getByRole('button', { name: /add trade/i });
     await user.click(submitButton);
 
-    // Should show loading text
-    expect(screen.getByText('Adding...')).toBeInTheDocument();
+    // Should show loading text (waitFor handles async state updates)
+    await vi.waitFor(() => {
+      expect(screen.getByText('Adding...')).toBeInTheDocument();
+    });
 
     // Submit button should be disabled during submission
     const savingButton = screen.getByRole('button', { name: /adding/i });
@@ -545,13 +559,12 @@ describe('AddTradeModal - UX Enhancements', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows optional section descriptions', () => {
+  it('shows optional section labels', () => {
     render(<AddTradeModal {...defaultProps} />);
 
-    expect(screen.getByText(/helps with pattern analysis/)).toBeInTheDocument();
-    expect(screen.getByText(/track lessons and mistakes/)).toBeInTheDocument();
-    expect(screen.getByText(/add context for future review/)).toBeInTheDocument();
-    expect(screen.getByText(/attach chart screenshots/)).toBeInTheDocument();
+    // Collapsible sections show "Optional" labels
+    const optionalLabels = screen.getAllByText('Optional');
+    expect(optionalLabels.length).toBeGreaterThanOrEqual(4);
   });
 
   it('shows PnL helper text for auto-calculation', async () => {

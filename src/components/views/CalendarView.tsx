@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CalendarTradeModal } from '@/components/trade/CalendarTradeModal';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CalendarViewProps {
   trades: Trade[];
@@ -14,6 +15,7 @@ export function CalendarView({ trades }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -205,15 +207,26 @@ export function CalendarView({ trades }: CalendarViewProps) {
                       
                       {stats && (
                         <div className="flex-1 flex flex-col justify-end">
-                          <span className={cn(
-                            "text-xs font-semibold font-mono",
-                            stats.pnl >= 0 ? "text-success" : "text-destructive"
-                          )}>
-                            {stats.pnl >= 0 ? '+' : ''}{stats.pnl.toFixed(0)}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {stats.trades} trade{stats.trades !== 1 ? 's' : ''}
-                          </span>
+                          {isMobile ? (
+                            <span className={cn(
+                              "text-[10px] font-mono font-semibold",
+                              stats.pnl >= 0 ? "text-success" : "text-destructive"
+                            )}>
+                              {stats.pnl >= 0 ? '+' : ''}{stats.pnl.toFixed(0)}
+                            </span>
+                          ) : (
+                            <>
+                              <span className={cn(
+                                "text-xs font-semibold font-mono",
+                                stats.pnl >= 0 ? "text-success" : "text-destructive"
+                              )}>
+                                {stats.pnl >= 0 ? '+' : ''}{stats.pnl.toFixed(0)}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {stats.trades} trade{stats.trades !== 1 ? 's' : ''}
+                              </span>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>

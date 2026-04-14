@@ -13,7 +13,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Clock, Timer, PieChart as PieChartIcon, AlertTriangle, Shield, Lightbulb } from 'lucide-react';
+import { Clock, Timer, PieChart as PieChartIcon, AlertTriangle, Shield, Lightbulb, TrendingUp } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { MetricsGridSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton';
@@ -32,6 +32,16 @@ import { useGetStatsQuery, useGetRulesAndGoalsQuery } from '@/store/api';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
 import { useAccounts } from '@/hooks/useAccounts';
 import { formatDuration } from '@/lib/tradeCalculations';
+
+const MIN_TRADES_FOR_CHARTS = 3;
+
+const ChartEmptyState = () => (
+  <div className="flex flex-col items-center justify-center h-[280px] text-center">
+    <TrendingUp className="w-8 h-8 text-muted-foreground/50 mb-3" />
+    <p className="text-sm text-muted-foreground">Add at least {MIN_TRADES_FOR_CHARTS} trades to see trends</p>
+    <p className="text-xs text-muted-foreground/70 mt-1">Charts need multiple data points to be meaningful</p>
+  </div>
+);
 
 export function AnalyticsView() {
   const navigate = useNavigate();
@@ -280,9 +290,33 @@ export function AnalyticsView() {
         </div>
       </div>
 
+      {/* Section Navigation */}
+      {stats.totalTrades > 0 && (
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/30 px-4 py-2 -mx-4 sm:-mx-6 mb-4">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+            {[
+              { id: 'metrics', label: 'Metrics' },
+              { id: 'charts', label: 'Charts' },
+              { id: 'distributions', label: 'Distributions' },
+              { id: 'insights', label: 'Insights' },
+            ].map(section => (
+              <Button
+                key={section.id}
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-xs h-7"
+                onClick={() => document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                {section.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Empty State - shown when no trade data */}
       {stats.totalTrades === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
+        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
             <PieChartIcon className="w-8 h-8 text-primary/60" />
           </div>
@@ -299,7 +333,7 @@ export function AnalyticsView() {
       ) : (
         <>
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div id="metrics" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
         {metrics.map((metric, index) => (
           <div
             key={metric.label}
@@ -318,9 +352,16 @@ export function AnalyticsView() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div id="charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Equity Curve */}
-        <PerformanceChart dailyPnl={stats?.dailyPnl} />
+        {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
+          <PerformanceChart dailyPnl={stats?.dailyPnl} />
+        ) : (
+          <div className="glass-card p-3 sm:p-5">
+            <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Equity Curve</h3>
+            <ChartEmptyState />
+          </div>
+        )}
 
         {/* Daily P&L Bar Chart - Current Week */}
         <div className="glass-card p-3 sm:p-5">
@@ -328,18 +369,19 @@ export function AnalyticsView() {
             <h3 className="font-semibold text-foreground text-sm sm:text-base">Daily P&L</h3>
             <span className="text-xs text-muted-foreground hidden sm:inline">This Week (Sun - Sat)</span>
           </div>
+          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
           <div className="h-[240px] sm:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailyPnL} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
-                <XAxis 
-                  dataKey="day" 
-                  axisLine={false} 
+                <XAxis
+                  dataKey="day"
+                  axisLine={false}
                   tickLine={false}
                   tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
                 />
-                <YAxis 
-                  axisLine={false} 
+                <YAxis
+                  axisLine={false}
                   tickLine={false}
                   tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
                   tickFormatter={(value) => `$${value}`}
@@ -355,20 +397,23 @@ export function AnalyticsView() {
                   formatter={(value: number) => [`$${value.toFixed(2)}`, 'P&L']}
                   labelFormatter={(label, payload) => payload?.[0]?.payload?.date || label}
                 />
-                <Bar 
-                  dataKey="pnl" 
+                <Bar
+                  dataKey="pnl"
                   radius={[4, 4, 0, 0]}
                 >
                   {dailyPnL.map((entry, index) => (
-                    <Cell 
+                    <Cell
                       key={`cell-${entry.day}`}
-                      fill={entry.pnl >= 0 ? 'hsl(160, 84%, 39%)' : 'hsl(0, 72%, 51%)'} 
+                      fill={entry.pnl >= 0 ? 'hsl(160, 84%, 39%)' : 'hsl(0, 72%, 51%)'}
                     />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
+          ) : (
+            <ChartEmptyState />
+          )}
         </div>
       </div>
 
@@ -380,19 +425,20 @@ export function AnalyticsView() {
             <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             <h3 className="font-semibold text-foreground text-sm sm:text-base">Hourly Win Rate</h3>
           </div>
+          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
           <div className="h-[240px] sm:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={localHourlyStats} margin={{ top: 10, right: 5, left: 0, bottom: 0 }} barCategoryGap="8%">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
-                <XAxis 
-                  dataKey="hour" 
-                  axisLine={false} 
+                <XAxis
+                  dataKey="hour"
+                  axisLine={false}
                   tickLine={false}
                   tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 9 }}
                   interval={0}
                 />
-                <YAxis 
-                  axisLine={false} 
+                <YAxis
+                  axisLine={false}
                   tickLine={false}
                   tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
                   tickFormatter={(value) => `${value}%`}
@@ -413,8 +459,8 @@ export function AnalyticsView() {
                   }}
                   labelFormatter={(label) => `${label}:00`}
                 />
-                <Bar 
-                  dataKey="winRate" 
+                <Bar
+                  dataKey="winRate"
                   radius={[2, 2, 0, 0]}
                   fill="hsl(var(--primary))"
                   maxBarSize={20}
@@ -422,6 +468,9 @@ export function AnalyticsView() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          ) : (
+            <ChartEmptyState />
+          )}
         </div>
 
         {/* Daily Win Rate - Horizontal Bar */}
@@ -430,22 +479,23 @@ export function AnalyticsView() {
             <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
             <h3 className="font-semibold text-foreground text-sm sm:text-base">Daily Win Rate</h3>
           </div>
+          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
           <div className="h-[240px] sm:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={localDailyWinRate} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" horizontal={false} />
-                <XAxis 
+                <XAxis
                   type="number"
-                  axisLine={false} 
+                  axisLine={false}
                   tickLine={false}
                   tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
                   tickFormatter={(value) => `${value}%`}
                   domain={[0, 100]}
                 />
-                <YAxis 
+                <YAxis
                   type="category"
                   dataKey="day"
-                  axisLine={false} 
+                  axisLine={false}
                   tickLine={false}
                   tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
                   width={40}
@@ -461,8 +511,8 @@ export function AnalyticsView() {
                   formatter={(value: number) => [`${value.toFixed(1)}%`, 'Win Rate']}
                   labelFormatter={(label) => `${label}`}
                 />
-                <Bar 
-                  dataKey="winRate" 
+                <Bar
+                  dataKey="winRate"
                   radius={[0, 4, 4, 0]}
                   fill="hsl(var(--accent))"
                   maxBarSize={28}
@@ -470,6 +520,9 @@ export function AnalyticsView() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          ) : (
+            <ChartEmptyState />
+          )}
         </div>
 
         {/* Trade Duration Chart */}
@@ -478,7 +531,9 @@ export function AnalyticsView() {
             <Timer className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
             <h3 className="font-semibold text-foreground text-sm sm:text-base">Trade Duration (Time to TP/SL)</h3>
           </div>
-          
+
+          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
+          <>
           {/* Duration Stats */}
           <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
             <div className="p-2 sm:p-3 bg-secondary/30 rounded-lg text-center">
@@ -499,14 +554,14 @@ export function AnalyticsView() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={durationData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
-                <XAxis 
-                  dataKey="range" 
-                  axisLine={false} 
+                <XAxis
+                  dataKey="range"
+                  axisLine={false}
                   tickLine={false}
                   tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
                 />
-                <YAxis 
-                  axisLine={false} 
+                <YAxis
+                  axisLine={false}
                   tickLine={false}
                   tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
                 />
@@ -534,14 +589,20 @@ export function AnalyticsView() {
               <span className="text-muted-foreground">Losses</span>
             </div>
           </div>
+          </>
+          ) : (
+            <ChartEmptyState />
+          )}
         </div>
       </div>
 
       {/* Distribution Charts Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div id="distributions" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Symbol Distribution */}
         <div className="glass-card p-3 sm:p-5">
           <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Symbol Distribution</h3>
+          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
+          <>
           <div className="h-[220px] sm:h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -572,7 +633,7 @@ export function AnalyticsView() {
           <div className="flex flex-wrap gap-3 justify-center mt-4">
             {pieData.map((item, index) => (
               <div key={item.name} className="flex items-center gap-2">
-                <div 
+                <div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                 />
@@ -580,11 +641,17 @@ export function AnalyticsView() {
               </div>
             ))}
           </div>
+          </>
+          ) : (
+            <ChartEmptyState />
+          )}
         </div>
 
         {/* Strategy Distribution */}
         <div className="glass-card p-3 sm:p-5">
           <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Strategy Distribution</h3>
+          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
+          <>
           <div className="h-[220px] sm:h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -615,7 +682,7 @@ export function AnalyticsView() {
           <div className="flex flex-wrap gap-3 justify-center mt-4">
             {strategyPieData.map((item, index) => (
               <div key={item.name} className="flex items-center gap-2">
-                <div 
+                <div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: COLORS[(index + 2) % COLORS.length] }}
                 />
@@ -623,6 +690,10 @@ export function AnalyticsView() {
               </div>
             ))}
           </div>
+          </>
+          ) : (
+            <ChartEmptyState />
+          )}
         </div>
 
         {/* Trade Distribution by Time */}
@@ -667,7 +738,7 @@ export function AnalyticsView() {
       </div>
 
       {/* Insights: Mistakes, Broken Rules, Key Lessons */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div id="insights" className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Top Mistakes */}
         <div className="glass-card p-4 sm:p-6 animate-fade-in">
           <div className="flex items-center gap-2 mb-3 sm:mb-4">

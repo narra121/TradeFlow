@@ -59,14 +59,14 @@ export function DateRangeFilter({
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-1 p-1 bg-secondary/50 rounded-lg overflow-x-auto">
+      <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg overflow-x-auto scrollbar-none pb-1 -mb-1 max-w-full">
         <span className="px-1.5 sm:px-2 text-xs sm:text-sm text-muted-foreground shrink-0">Last</span>
         {daysPresets.map((preset) => (
           <button
             key={preset.value}
             onClick={() => onPresetChange(preset.value)}
             className={cn(
-              "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0",
+              "shrink-0 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
               selectedPreset === preset.value
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -79,7 +79,7 @@ export function DateRangeFilter({
           <button
             onClick={() => onPresetChange('custom')}
             className={cn(
-              "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0",
+              "shrink-0 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
               selectedPreset === 'custom'
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -90,13 +90,13 @@ export function DateRangeFilter({
         )}
       </div>
 
-      <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg">
+      <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg overflow-x-auto scrollbar-none max-w-full">
         {periodPresets.map((preset) => (
           <button
             key={preset.value}
             onClick={() => onPresetChange(preset.value)}
             className={cn(
-              "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
+              "shrink-0 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
               selectedPreset === preset.value
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"

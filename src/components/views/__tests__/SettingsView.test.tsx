@@ -107,7 +107,7 @@ describe('SettingsView', () => {
 
   it('shows description text', () => {
     render(<SettingsView />);
-    expect(screen.getByText('Configure trade options, preferences, and display settings')).toBeInTheDocument();
+    expect(screen.getByText(/Configure trade options, preferences, and display settings/)).toBeInTheDocument();
   });
 
   it('does not show Preferences section (hidden for now)', () => {
@@ -133,7 +133,9 @@ describe('SettingsView', () => {
   it('shows Data Management section', () => {
     render(<SettingsView />);
     expect(screen.getByRole('heading', { name: /data management/i })).toBeInTheDocument();
-    expect(screen.getByText(/data export and management features coming soon/i)).toBeInTheDocument();
+    expect(screen.getByText(/export trades as csv/i)).toBeInTheDocument();
+    expect(screen.getByText(/backup & restore data/i)).toBeInTheDocument();
+    expect(screen.getByText(/bulk data management/i)).toBeInTheDocument();
   });
 
   it('shows Goals & Rules section with carry forward toggle', () => {
@@ -154,7 +156,7 @@ describe('SettingsView', () => {
 
     // Heading and description should still be present
     expect(screen.getByRole('heading', { name: /settings/i, level: 1 })).toBeInTheDocument();
-    expect(screen.getByText('Configure trade options, preferences, and display settings')).toBeInTheDocument();
+    expect(screen.getByText(/Configure trade options, preferences, and display settings/)).toBeInTheDocument();
 
     // Skeleton elements should be rendered (the SettingsSectionSkeleton components)
     // Trade Options section should NOT be present when loading

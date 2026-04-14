@@ -260,7 +260,7 @@ describe('DashboardView - Stat Cards With Data', () => {
     expect(statCards).toHaveLength(4);
 
     expect(screen.getByText('Total P&L')).toBeInTheDocument();
-    expect(screen.getByText('1250.50')).toBeInTheDocument();
+    expect(screen.getByText('+1250.50')).toBeInTheDocument();
     expect(screen.getByText('Win Rate')).toBeInTheDocument();
     expect(screen.getByText('72.5')).toBeInTheDocument();
     expect(screen.getByText('Total Trades')).toBeInTheDocument();

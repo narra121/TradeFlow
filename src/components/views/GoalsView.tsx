@@ -497,7 +497,7 @@ export function GoalsView() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-7 w-7 shrink-0 opacity-60 hover:opacity-100 transition-opacity"
                 onClick={() => handleEditStart(key, target)}
               >
                 <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
@@ -570,7 +570,7 @@ export function GoalsView() {
                 {isInverse ? (
                   isExceeded ? 'Exceeded!' : `${((target - current) / target * 100).toFixed(0)}% left`
                 ) : (
-                  `${progress.toFixed(0)}%`
+                  isCompleted ? 'Complete!' : `${Math.max(0, 100 - progress).toFixed(0)}% left`
                 )}
               </span>
             )}
@@ -793,7 +793,7 @@ export function GoalsView() {
                       )}
                     </div>
                     {isCurrentPeriod && !isUsingDefaultRules && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
                           size="icon"

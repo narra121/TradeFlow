@@ -81,6 +81,20 @@ export function ImageViewerModal({
     setScale(prev => Math.max(0.5, Math.min(5, prev + delta)));
   };
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case '+': case '=': handleZoomIn(); break;
+        case '-': handleZoomOut(); break;
+        case 'r': case 'R': handleReset(); break;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[98vw] max-w-[98vw] sm:w-[95vw] sm:max-w-[95vw] h-[95vh] max-h-[95vh] p-0 bg-background/95 backdrop-blur-xl border-border/50 overflow-hidden">
@@ -96,21 +110,21 @@ export function ImageViewerModal({
 
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Zoom Controls */}
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-background/80 backdrop-blur-sm rounded-lg p-0.5 sm:p-1">
+            <div className="flex items-center gap-1 sm:gap-1.5 bg-background/95 border border-border/50 rounded-lg p-1 sm:p-1.5 shadow-lg">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 sm:h-8 sm:w-8"
+                className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary"
                 onClick={handleZoomOut}
                 disabled={scale <= 0.5}
               >
                 <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
-              <span className="text-xs font-mono w-9 sm:w-12 text-center hidden xs:inline">{Math.round(scale * 100)}%</span>
+              <span className="text-xs font-mono w-12 text-center text-foreground font-medium">{Math.round(scale * 100)}%</span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 sm:h-8 sm:w-8"
+                className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary"
                 onClick={handleZoomIn}
                 disabled={scale >= 5}
               >
@@ -119,7 +133,7 @@ export function ImageViewerModal({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 sm:h-8 sm:w-8"
+                className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary"
                 onClick={handleReset}
               >
                 <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -130,7 +144,7 @@ export function ImageViewerModal({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 sm:h-8 sm:w-8 bg-background/80 backdrop-blur-sm hidden sm:flex"
+              className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary bg-background/95 border border-border/50 backdrop-blur-sm hidden sm:flex shadow-lg"
               onClick={handleReset}
             >
               <Minimize2 className="w-4 h-4" />
@@ -142,7 +156,7 @@ export function ImageViewerModal({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-7 w-7 sm:h-8 sm:w-8 bg-background/80 backdrop-blur-sm",
+                  "h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary bg-background/95 border border-border/50 backdrop-blur-sm shadow-lg",
                   showDescription && "bg-primary/20"
                 )}
                 onClick={() => setShowDescription(!showDescription)}
@@ -155,7 +169,7 @@ export function ImageViewerModal({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 sm:h-8 sm:w-8 bg-background/80 backdrop-blur-sm"
+              className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary bg-background/95 border border-border/50 backdrop-blur-sm shadow-lg"
               onClick={onClose}
             >
               <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

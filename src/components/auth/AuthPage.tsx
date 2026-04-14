@@ -57,6 +57,26 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
   const [otpCode, setOtpCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  const validateEmail = (value: string) => {
+    if (!value) {
+      setEmailError("");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    setEmailError(emailRegex.test(value) ? "" : "Please enter a valid email address");
+  };
+
+  const validatePassword = (value: string) => {
+    if (!value) {
+      setPasswordError("");
+      return;
+    }
+    setPasswordError(value.length < 8 ? "Password must be at least 8 characters" : "");
+  };
 
   // Handle authentication success
   useEffect(() => {
@@ -210,6 +230,8 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
     setConfirmPassword("");
     setName("");
     setOtpCode("");
+    setEmailError("");
+    setPasswordError("");
   };
 
   return (
@@ -297,24 +319,17 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       type="email"
                       placeholder="you@example.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-11 h-12 bg-card border-border"
+                      onChange={(e) => { setEmail(e.target.value); if (emailError) validateEmail(e.target.value); }}
+                      onBlur={(e) => validateEmail(e.target.value)}
+                      className={cn("pl-11 h-12 bg-card border-border", emailError && "border-red-500 focus-visible:ring-red-500")}
                       required
                     />
                   </div>
+                  {emailError && <p className="text-xs text-red-500">{emailError}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor="password" className="text-foreground">Password</Label>
-                    <button
-                      type="button"
-                      onClick={() => { resetForm(); setView("forgot"); }}
-                      className="text-sm text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
+                  <Label htmlFor="password" className="text-foreground">Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -322,8 +337,9 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-11 pr-11 h-12 bg-card border-border"
+                      onChange={(e) => { setPassword(e.target.value); if (passwordError) validatePassword(e.target.value); }}
+                      onBlur={(e) => validatePassword(e.target.value)}
+                      className={cn("pl-11 pr-11 h-12 bg-card border-border", passwordError && "border-red-500 focus-visible:ring-red-500")}
                       required
                     />
                     <button
@@ -334,6 +350,26 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
+                  {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary accent-primary"
+                    />
+                    Remember me
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { resetForm(); setView("forgot"); }}
+                    className="text-sm text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Forgot password?
+                  </button>
                 </div>
 
                 <Button
@@ -409,11 +445,13 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       type="email"
                       placeholder="you@example.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-11 h-12 bg-card border-border"
+                      onChange={(e) => { setEmail(e.target.value); if (emailError) validateEmail(e.target.value); }}
+                      onBlur={(e) => validateEmail(e.target.value)}
+                      className={cn("pl-11 h-12 bg-card border-border", emailError && "border-red-500 focus-visible:ring-red-500")}
                       required
                     />
                   </div>
+                  {emailError && <p className="text-xs text-red-500">{emailError}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -425,8 +463,9 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-11 pr-11 h-12 bg-card border-border"
+                      onChange={(e) => { setPassword(e.target.value); if (passwordError) validatePassword(e.target.value); }}
+                      onBlur={(e) => validatePassword(e.target.value)}
+                      className={cn("pl-11 pr-11 h-12 bg-card border-border", passwordError && "border-red-500 focus-visible:ring-red-500")}
                       required
                     />
                     <button

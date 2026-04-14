@@ -113,6 +113,13 @@ const queryClient = new QueryClient({
 // Clear the reload guard on successful app load so future deploys still auto-reload
 sessionStorage.removeItem(RELOAD_KEY);
 
+// Strip the cache-buster param from the URL bar without reloading
+if (window.location.search.includes('_cb=')) {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('_cb');
+  window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+}
+
 function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -194,7 +201,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      <Sonner position="top-right" duration={5000} closeButton />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AppRoutes />
       </BrowserRouter>

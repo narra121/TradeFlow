@@ -815,10 +815,10 @@ describe('GoalsView - Edit Goal Targets', () => {
     // Each goal card's edit button is a ghost button with icon size.
     // We can verify by clicking one and seeing the edit UI appear.
     // But first, let's just confirm the buttons exist in the DOM.
-    // The pencil buttons have class "opacity-0 group-hover:opacity-100"
-    // Find all buttons and filter to those that have the opacity-0 class
+    // The pencil buttons have class "opacity-60 hover:opacity-100"
+    // Find all buttons and filter to those that have the opacity-60 class
     const pencilButtons = allButtons.filter(
-      (btn) => btn.classList.contains('opacity-0') && btn.classList.contains('group-hover:opacity-100')
+      (btn) => btn.classList.contains('opacity-60') && btn.classList.contains('hover:opacity-100')
     );
     expect(pencilButtons).toHaveLength(4);
   });
@@ -834,7 +834,7 @@ describe('GoalsView - Edit Goal Targets', () => {
     // Each goal card renders exactly one pencil edit button
     const allButtons = screen.getAllByRole('button');
     const pencilButtons = allButtons.filter(
-      (btn) => btn.classList.contains('opacity-0') && btn.classList.contains('group-hover:opacity-100')
+      (btn) => btn.classList.contains('opacity-60') && btn.classList.contains('hover:opacity-100')
     );
     expect(pencilButtons).toHaveLength(goalCardTitles.length);
   });
@@ -868,10 +868,10 @@ describe('GoalsView - Edit Goal Targets', () => {
 
     render(<GoalsView />);
 
-    // Find the pencil edit buttons (opacity-0 group-hover buttons)
+    // Find the pencil edit buttons (opacity-60 hover buttons)
     const allButtons = screen.getAllByRole('button');
     const pencilButtons = allButtons.filter(
-      (btn) => btn.classList.contains('opacity-0') && btn.classList.contains('group-hover:opacity-100')
+      (btn) => btn.classList.contains('opacity-60') && btn.classList.contains('hover:opacity-100')
     );
     expect(pencilButtons.length).toBeGreaterThan(0);
 

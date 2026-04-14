@@ -12,8 +12,12 @@ import {
   ListChecks,
   RotateCcw,
   Loader2,
-  Target
+  Target,
+  Download,
+  Upload,
+  Trash2
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -155,7 +159,12 @@ export function SettingsView() {
       <div className="space-y-6 max-w-3xl mx-auto">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">Configure trade options, preferences, and display settings</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            Configure trade options, preferences, and display settings.
+            <Link to="/app/profile" className="text-primary hover:underline ml-1">
+              Looking for account settings?
+            </Link>
+          </p>
         </div>
         <SettingsSectionSkeleton />
         <SettingsSectionSkeleton />
@@ -170,7 +179,12 @@ export function SettingsView() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">Configure trade options, preferences, and display settings</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            Configure trade options, preferences, and display settings.
+            <Link to="/app/profile" className="text-primary hover:underline ml-1">
+              Looking for account settings?
+            </Link>
+          </p>
         </div>
         <RefreshButton onRefresh={refetch} isFetching={isFetching} />
       </div>
@@ -312,7 +326,21 @@ export function SettingsView() {
           <h2 className="text-base sm:text-lg font-semibold text-foreground">Data Management</h2>
         </div>
 
-        <p className="text-sm text-muted-foreground">Data export and management features coming soon.</p>
+        <ul className="text-sm text-muted-foreground space-y-3">
+          <li className="flex items-center gap-2.5">
+            <Download className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+            Export trades as CSV / Excel
+          </li>
+          <li className="flex items-center gap-2.5">
+            <Upload className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+            Backup & restore data
+          </li>
+          <li className="flex items-center gap-2.5">
+            <Trash2 className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+            Bulk data management
+          </li>
+        </ul>
+        <p className="text-xs text-muted-foreground/60 mt-3">These features are planned for a future update.</p>
       </div>
     </div>
   );

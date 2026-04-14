@@ -148,9 +148,9 @@ describe('ProfileView', () => {
   it('shows subscription plans section when no active subscription', () => {
     render(<ProfileView />);
     // The support section heading
-    expect(screen.getByRole('heading', { name: /support the developer/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /optional support/i })).toBeInTheDocument();
     // Plan tiers should be visible
-    expect(screen.getByText(/100% free to use/i)).toBeInTheDocument();
+    expect(screen.getByText(/100% free/i)).toBeInTheDocument();
   });
 
   it('shows loading skeletons when loading', () => {
@@ -337,8 +337,8 @@ describe('ProfileView - Subscription Status', () => {
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByRole('heading', { name: /support the developer/i })).toBeInTheDocument();
-    expect(screen.getByText(/100% free to use/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /optional support/i })).toBeInTheDocument();
+    expect(screen.getByText(/100% free/i)).toBeInTheDocument();
   });
 });
 

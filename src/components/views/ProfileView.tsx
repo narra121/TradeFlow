@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,17 +18,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { 
-  User, 
-  Mail, 
-  Calendar, 
-  CreditCard, 
-  Heart, 
+import {
+  User,
+  Mail,
+  Calendar,
+  CreditCard,
+  Heart,
   Check,
   Edit2,
   Camera,
   Loader2,
-  LogOut
+  LogOut,
+  Pencil
 } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAccounts } from '@/hooks/useAccounts';
@@ -139,13 +140,13 @@ export function ProfileView() {
   }, [subscription, subscriptionDetails]);
 
   const supportTiers = [
-    { amount: 99, label: 'Basic', description: 'Minimum support' },
-    { amount: 299, label: 'Supporter', description: 'Help us grow' },
+    { amount: 99, label: 'Basic', description: 'Minimum support', recommended: false },
+    { amount: 299, label: 'Supporter', description: 'Help us grow', recommended: true },
   ];
 
   const annualTiers = [
-    { amount: 999, label: 'Basic', description: 'Save 17%!', monthly: 99 },
-    { amount: 2999, label: 'Supporter', description: 'Save 17%!', monthly: 299 },
+    { amount: 999, label: 'Basic', description: 'Save 17%!', monthly: 99, recommended: false },
+    { amount: 2999, label: 'Supporter', description: 'Save 17%!', monthly: 299, recommended: true },
   ];
 
   const handleSaveProfile = async () => {
@@ -341,9 +342,22 @@ export function ProfileView() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Profile</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your profile and subscription</p>
+          <p className="text-muted-foreground text-sm">
+            Your account details and subscription.
+            <Link to="/app/settings" className="text-primary hover:underline ml-1">
+              Looking for trade options?
+            </Link>
+          </p>
         </div>
         <RefreshButton onRefresh={refetchSubscription} isFetching={profileFetching || subscriptionFetching} />
       </div>
+
+      {isEditing && (
+        <div className="bg-primary/10 border border-primary/30 rounded-lg px-4 py-2 mb-4 flex items-center gap-2">
+          <Pencil className="w-4 h-4 text-primary" />
+          <span className="text-sm text-primary">Editing — make changes below, then save</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* User Profile Card */}
@@ -666,13 +680,11 @@ export function ProfileView() {
           <div className="mx-auto w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
             <Heart className="w-6 h-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-xl sm:text-2xl">Support the Developer (Optional)</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl">Optional Support</CardTitle>
           <CardDescription className="max-w-xl mx-auto mt-2 text-sm sm:text-base">
-            TradeQut is <span className="text-success font-semibold">100% free to use</span> with all features included.
-            If you love TradeQut and want to support the developer, you can contribute a small amount 
-            to help cover hosting and development costs.
-            <span className="block mt-2 text-foreground/80 font-medium">
-              Minimum ₹99 or ₹299 — completely optional!
+            TradeQut is <span className="text-success font-semibold">100% free</span> — all features, no limits.
+            <span className="block mt-2 text-foreground/80">
+              If you'd like to support development, here are optional support tiers:
             </span>
           </CardDescription>
         </CardHeader>
@@ -713,12 +725,15 @@ export function ProfileView() {
                   <button
                     key={tier.amount}
                     onClick={() => setSelectedAmount(tier.amount)}
-                    className={`p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 text-left ${
+                    className={`relative p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 text-left ${
                       selectedAmount === tier.amount
                         ? 'border-primary bg-primary/10'
                         : 'border-border/50 hover:border-primary/50 bg-background/30'
                     }`}
                   >
+                    {tier.recommended && (
+                      <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground text-xs px-2 py-0.5">Recommended</Badge>
+                    )}
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-2xl font-bold text-foreground">₹{tier.amount}</span>
                       <span className="text-sm text-muted-foreground">/month</span>
@@ -747,12 +762,15 @@ export function ProfileView() {
                   <button
                     key={tier.amount}
                     onClick={() => setSelectedAnnualAmount(tier.amount)}
-                    className={`p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 text-left ${
+                    className={`relative p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 text-left ${
                       selectedAnnualAmount === tier.amount
                         ? 'border-primary bg-primary/10'
                         : 'border-border/50 hover:border-primary/50 bg-background/30'
                     }`}
                   >
+                    {tier.recommended && (
+                      <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground text-xs px-2 py-0.5">Recommended</Badge>
+                    )}
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-2xl font-bold text-foreground">₹{tier.amount}</span>
                       <span className="text-sm text-muted-foreground">/year</span>
@@ -775,8 +793,8 @@ export function ProfileView() {
           {/* Info Box */}
           <div className="p-4 rounded-lg bg-muted/30 border border-border/50 mb-6">
             <p className="text-sm text-muted-foreground text-center">
-              <span className="text-success font-medium">The app is completely free!</span> Your support is optional but greatly appreciated. 
-              It helps cover server hosting, database costs, and ongoing development. 
+              <span className="text-success font-medium">All features are free, no limits.</span> Your support is optional but greatly appreciated.
+              It helps cover server hosting, database costs, and ongoing development.
               No features are locked — this is purely a way to say thanks!
             </p>
           </div>

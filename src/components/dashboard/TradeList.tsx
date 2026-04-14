@@ -26,7 +26,7 @@ export const TradeList = memo(function TradeList({ trades, limit }: TradeListPro
       </div>
       <div className="divide-y divide-border/30">
         {displayTrades.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
+          <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
               <BookOpen className="w-8 h-8 text-primary/60" />
             </div>
@@ -106,9 +106,13 @@ export const TradeList = memo(function TradeList({ trades, limit }: TradeListPro
                   )} />
                   {trade.pnl !== undefined && (
                     <span className={cn(
-                      "font-semibold font-mono text-sm sm:text-base",
+                      "font-semibold font-mono text-sm sm:text-base flex items-center gap-0.5",
                       trade.pnl >= 0 ? "text-success" : "text-destructive"
                     )}>
+                      {trade.pnl >= 0
+                        ? <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
+                        : <ArrowDownRight className="w-3.5 h-3.5 shrink-0" />
+                      }
                       {trade.pnl >= 0 ? '+' : ''}{(trade.pnl ?? 0).toFixed(2)}
                     </span>
                   )}

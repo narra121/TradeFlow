@@ -66,9 +66,7 @@ export function TextEnhancerButton({
             )}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>
-          <p>Enhance with AI</p>
-        </TooltipContent>
+        <TooltipContent>AI Enhance</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

@@ -149,7 +149,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
 
       {/* Empty State - shown when not loading and no trades */}
       {!tradesLoading && filteredTrades.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
+        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
           {unmappedCount > 0 ? (
             <>
               <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mb-6">
@@ -232,11 +232,12 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <StatCard
                 title="Total P&L"
-                value={(stats.totalPnl ?? 0).toFixed(2)}
+                value={`${(stats.totalPnl ?? 0) >= 0 ? '+' : ''}${(stats.totalPnl ?? 0).toFixed(2)}`}
                 prefix="$"
                 icon={DollarSign}
                 variant={(stats.totalPnl ?? 0) >= 0 ? 'success' : 'danger'}
                 trend={totalPnlTrend}
+                showArrow
                 className="stagger-1"
               />
               <StatCard
@@ -256,7 +257,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
               />
               <StatCard
                 title="Profit Factor"
-                value={stats.profitFactor == null || stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2)}
+                value={stats.profitFactor == null || !isFinite(stats.profitFactor) ? '—' : stats.profitFactor.toFixed(2)}
                 icon={BarChart3}
                 variant="accent"
                 className="stagger-4"
