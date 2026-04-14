@@ -1,32 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useStripeCheckout } from '../useStripeCheckout';
 
 const mockCreateCheckoutSession = vi.fn();
-const mockGetSubscription = vi.fn();
 
 vi.mock('@/lib/api/stripe', () => ({
   stripeApi: {
     createCheckoutSession: (...args: any[]) => mockCreateCheckoutSession(...args),
-    getSubscription: (...args: any[]) => mockGetSubscription(...args),
   },
 }));
 
-vi.mock('sonner', () => ({
-  toast: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
-}));
-
 describe('useStripeCheckout', () => {
-  let originalOpen: typeof window.open;
   let originalLocation: Location;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
-    originalOpen = window.open;
     originalLocation = window.location;
 
-    // Mock window.location.origin
+    // Mock window.location
     Object.defineProperty(window, 'location', {
       value: { ...window.location, origin: 'https://tradequt.com', href: '' },
       writable: true,
@@ -34,8 +25,6 @@ describe('useStripeCheckout', () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers();
-    window.open = originalOpen;
     Object.defineProperty(window, 'location', {
       value: originalLocation,
       writable: true,
@@ -50,64 +39,10 @@ describe('useStripeCheckout', () => {
     expect(typeof result.current.initiateSubscription).toBe('function');
   });
 
-  it('calls createCheckoutSession with correct payload', async () => {
-    const mockPopup = { closed: true, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(mockPopup as any);
-
+  it('calls createCheckoutSession with correct payload including session_id template', async () => {
     mockCreateCheckoutSession.mockResolvedValue({
       checkoutUrl: 'https://checkout.stripe.com/session_123',
       checkoutSessionId: 'cs_123',
-      status: 'open',
-    });
-
-    const { result } = renderHook(() => useStripeCheckout());
-
-    await act(async () => {
-      const promise = result.current.initiateSubscription({ planId: 'price_monthly' });
-      // Advance past the poll interval so the closed-popup check resolves the promise
-      await vi.advanceTimersByTimeAsync(2500);
-      await promise;
-    });
-
-    expect(mockCreateCheckoutSession).toHaveBeenCalledWith({
-      planId: 'price_monthly',
-      successUrl: 'https://tradequt.com/app/profile?checkout=success',
-      cancelUrl: 'https://tradequt.com/app/profile?checkout=cancelled',
-    });
-  });
-
-  it('opens popup window with checkout URL', async () => {
-    const mockPopup = { closed: true, close: vi.fn() };
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue(mockPopup as any);
-
-    mockCreateCheckoutSession.mockResolvedValue({
-      checkoutUrl: 'https://checkout.stripe.com/session_abc',
-      checkoutSessionId: 'cs_abc',
-      status: 'open',
-    });
-
-    const { result } = renderHook(() => useStripeCheckout());
-
-    await act(async () => {
-      const promise = result.current.initiateSubscription({ planId: 'price_monthly' });
-      await vi.advanceTimersByTimeAsync(2500);
-      await promise;
-    });
-
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://checkout.stripe.com/session_abc',
-      'StripeCheckout',
-      expect.stringContaining('width=')
-    );
-  });
-
-  it('falls back to redirect when popup is blocked', async () => {
-    vi.spyOn(window, 'open').mockReturnValue(null);
-
-    mockCreateCheckoutSession.mockResolvedValue({
-      checkoutUrl: 'https://checkout.stripe.com/session_blocked',
-      checkoutSessionId: 'cs_blocked',
-      status: 'open',
     });
 
     const { result } = renderHook(() => useStripeCheckout());
@@ -116,103 +51,42 @@ describe('useStripeCheckout', () => {
       await result.current.initiateSubscription({ planId: 'price_monthly' });
     });
 
-    // When popup is blocked, it redirects via window.location.href
-    expect(window.location.href).toBe('https://checkout.stripe.com/session_blocked');
+    expect(mockCreateCheckoutSession).toHaveBeenCalledWith({
+      planId: 'price_monthly',
+      successUrl: 'https://tradequt.com/app/profile?session_id={CHECKOUT_SESSION_ID}',
+      cancelUrl: 'https://tradequt.com/app/profile?checkout=cancelled',
+    });
   });
 
-  it('polls for subscription status until active', async () => {
-    const mockPopup = { closed: false, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(mockPopup as any);
-
+  it('redirects to Stripe checkout URL via window.location.href', async () => {
     mockCreateCheckoutSession.mockResolvedValue({
-      checkoutUrl: 'https://checkout.stripe.com/session_poll',
-      checkoutSessionId: 'cs_poll',
-      status: 'open',
+      checkoutUrl: 'https://checkout.stripe.com/session_abc',
+      checkoutSessionId: 'cs_abc',
     });
-
-    // First call: inactive, second call: active
-    mockGetSubscription
-      .mockResolvedValueOnce({ status: 'incomplete', subscriptionId: 'sub_1' })
-      .mockResolvedValueOnce({ status: 'active', subscriptionId: 'sub_1' });
 
     const { result } = renderHook(() => useStripeCheckout());
 
     await act(async () => {
-      const promise = result.current.initiateSubscription({ planId: 'price_monthly' });
-      // First poll — incomplete
-      await vi.advanceTimersByTimeAsync(2000);
-      // Second poll — active
-      await vi.advanceTimersByTimeAsync(2000);
-      await promise;
+      await result.current.initiateSubscription({ planId: 'price_monthly' });
     });
 
-    expect(mockGetSubscription).toHaveBeenCalledTimes(2);
-    expect(mockPopup.close).toHaveBeenCalled();
+    expect(window.location.href).toBe('https://checkout.stripe.com/session_abc');
   });
 
-  it('calls onSuccess when subscription becomes active', async () => {
-    const mockPopup = { closed: false, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(mockPopup as any);
-
+  it('throws error when no checkout URL received', async () => {
     mockCreateCheckoutSession.mockResolvedValue({
-      checkoutUrl: 'https://checkout.stripe.com/session_success',
-      checkoutSessionId: 'cs_success',
-      status: 'open',
+      checkoutUrl: null,
+      checkoutSessionId: 'cs_no_url',
     });
-
-    mockGetSubscription.mockResolvedValue({
-      status: 'active',
-      subscriptionId: 'sub_active',
-      stripeSubscriptionId: 'sub_stripe_123',
-    });
-
-    const onSuccess = vi.fn();
-    const { result } = renderHook(() => useStripeCheckout());
-
-    await act(async () => {
-      const promise = result.current.initiateSubscription({
-        planId: 'price_monthly',
-        onSuccess,
-      });
-      await vi.advanceTimersByTimeAsync(2500);
-      await promise;
-    });
-
-    expect(onSuccess).toHaveBeenCalledWith('sub_active');
-  });
-
-  it('resolves when popup is closed by user', async () => {
-    const mockPopup = { closed: false, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(mockPopup as any);
-
-    mockCreateCheckoutSession.mockResolvedValue({
-      checkoutUrl: 'https://checkout.stripe.com/session_close',
-      checkoutSessionId: 'cs_close',
-      status: 'open',
-    });
-
-    // Never return active — user closes popup instead
-    mockGetSubscription.mockResolvedValue({ status: 'incomplete', subscriptionId: 'sub_1' });
 
     const { result } = renderHook(() => useStripeCheckout());
 
     await act(async () => {
-      const promise = result.current.initiateSubscription({ planId: 'price_monthly' });
-
-      // First poll — popup still open, subscription incomplete
-      await vi.advanceTimersByTimeAsync(2000);
-
-      // User closes popup
-      mockPopup.closed = true;
-
-      // Next poll detects closed popup and resolves
-      await vi.advanceTimersByTimeAsync(2000);
-      await promise;
+      await result.current.initiateSubscription({ planId: 'price_monthly' });
     });
 
-    // The promise resolved without error — loading should be false
+    expect(result.current.error).toBe('No checkout URL received from server');
     expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBeNull();
   });
 
   it('sets error when createCheckoutSession fails', async () => {
@@ -225,6 +99,7 @@ describe('useStripeCheckout', () => {
     });
 
     expect(result.current.error).toBe('Network error');
+    expect(result.current.loading).toBe(false);
   });
 
   it('calls onFailure callback on error', async () => {
@@ -244,10 +119,7 @@ describe('useStripeCheckout', () => {
     expect(onFailure).toHaveBeenCalledWith(networkError);
   });
 
-  it('sets loading=true during operation and loading=false after', async () => {
-    const mockPopup = { closed: true, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(mockPopup as any);
-
+  it('sets loading=true during operation', async () => {
     let resolveCheckout: (value: any) => void;
     mockCreateCheckoutSession.mockReturnValue(
       new Promise((resolve) => {
@@ -271,10 +143,21 @@ describe('useStripeCheckout', () => {
       resolveCheckout!({
         checkoutUrl: 'https://checkout.stripe.com/session_load',
         checkoutSessionId: 'cs_load',
-        status: 'open',
       });
-      await vi.advanceTimersByTimeAsync(2500);
       await promise!;
+    });
+
+    // loading stays true during redirect (page will unload)
+    expect(result.current.loading).toBe(true);
+  });
+
+  it('sets loading=false after error', async () => {
+    mockCreateCheckoutSession.mockRejectedValue(new Error('fail'));
+
+    const { result } = renderHook(() => useStripeCheckout());
+
+    await act(async () => {
+      await result.current.initiateSubscription({ planId: 'price_monthly' });
     });
 
     expect(result.current.loading).toBe(false);
