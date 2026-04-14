@@ -50,30 +50,52 @@ export const useStripeCheckout = () => {
           return;
         }
 
-        // Poll for subscription status
+        // Poll for subscription status (max 5 minutes)
+        const MAX_POLL_DURATION = 5 * 60 * 1000;
+        const pollStart = Date.now();
+
         await new Promise<void>((resolve) => {
           const pollInterval = setInterval(async () => {
             // Check if popup was closed by user
             if (popup.closed) {
               clearInterval(pollInterval);
+              // Popup closed — do a final check
+              try {
+                const finalCheck: any = await stripeApi.getSubscription();
+                const sub = finalCheck?.subscription || finalCheck;
+                if (sub?.status === 'active') {
+                  options.onSuccess?.(sub?.stripeSubscriptionId || sub?.subscriptionId || '');
+                }
+              } catch { /* ignore */ }
+              resolve();
+              return;
+            }
+
+            // Timeout after 5 minutes
+            if (Date.now() - pollStart > MAX_POLL_DURATION) {
+              clearInterval(pollInterval);
+              popup.close();
               resolve();
               return;
             }
 
             try {
-              const details = await stripeApi.getSubscription();
+              const response: any = await stripeApi.getSubscription();
+              // API returns { subscription: {...} } after envelope unwrap
+              const sub = response?.subscription || response;
+              const status = sub?.status;
 
-              if (details.status === 'active') {
+              if (status === 'active') {
                 clearInterval(pollInterval);
                 popup.close();
-                options.onSuccess?.(details.subscriptionId || details.stripeSubscriptionId || '');
+                options.onSuccess?.(sub?.stripeSubscriptionId || sub?.subscriptionId || '');
                 resolve();
               }
             } catch (e) {
               // Ignore polling errors (subscription may not be propagated yet)
               console.log('Polling subscription status...', e);
             }
-          }, 2000); // Poll every 2 seconds
+          }, 3000); // Poll every 3 seconds
         });
       } catch (err: any) {
         console.error('Stripe checkout error:', err);
