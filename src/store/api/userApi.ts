@@ -55,13 +55,18 @@ export const userApi = api.injectEndpoints({
       invalidatesTags: ['User'],
     }),
     
-    getSubscription: builder.query<Subscription, void>({
+    getSubscription: builder.query<Subscription | null, void>({
       query: () => '/subscriptions',
       transformResponse: (response: any) => {
-        // Backend returns the subscription object directly in the data envelope
-        // baseApi unwraps the envelope, so response IS the subscription object
-        const subscription = response;
-        
+        // Backend returns { subscription: {...} | null, status: '...' } in the data envelope
+        // baseApi unwraps the envelope, so response = { subscription, status }
+        const subscription = response?.subscription ?? response;
+
+        // No subscription found
+        if (!subscription || subscription.status === 'none') {
+          return null;
+        }
+
         if (response?._apiMessage && subscription && typeof subscription === 'object') {
              Object.defineProperty(subscription, '_apiMessage', {
                 value: response._apiMessage,

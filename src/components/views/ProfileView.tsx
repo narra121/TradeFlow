@@ -530,30 +530,57 @@ export function ProfileView() {
                     <span className="text-lg font-semibold text-foreground">
                       Subscription Status
                     </span>
-                    <Badge 
-                      variant="default" 
+                    <Badge
+                      variant="default"
                       className={
-                        subscriptionDetails.status === 'active' 
+                        subscriptionDetails.status === 'active'
                           ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          : subscriptionDetails.status === 'trial'
+                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                           : subscriptionDetails.status === 'created'
                           ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                           : subscriptionDetails.status === 'cancellation_requested'
                           ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                           : subscriptionDetails.status === 'paused'
                           ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                          : subscriptionDetails.status === 'past_due'
+                          ? 'bg-red-500/20 text-red-400 border-red-500/30'
                           : 'bg-red-500/20 text-red-400 border-red-500/30'
                       }
                     >
-                      {subscriptionDetails.status === 'active' ? 'Active' 
+                      {subscriptionDetails.status === 'active' ? 'Active'
+                        : subscriptionDetails.status === 'trial' ? 'Free Trial'
                         : subscriptionDetails.status === 'created' ? 'Pending Payment'
-                        : subscriptionDetails.status === 'cancellation_requested' ? 'Cancelling' 
+                        : subscriptionDetails.status === 'cancellation_requested' ? 'Cancelling'
                         : subscriptionDetails.status === 'paused' ? 'Paused'
+                        : subscriptionDetails.status === 'past_due' ? 'Payment Failed'
                         : subscriptionDetails.status}
                     </Badge>
                   </div>
-                  {subscriptionDetails.currentEnd && (
+                  {subscriptionDetails.status === 'trial' && subscriptionDetails.trialEnd && (
+                    <>
+                      <p className="text-sm text-emerald-400 mt-1">
+                        {(() => {
+                          const daysLeft = Math.max(0, Math.ceil((new Date(subscriptionDetails.trialEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+                          return `${daysLeft} days remaining — expires ${new Date(subscriptionDetails.trialEnd).toLocaleDateString()}`;
+                        })()}
+                      </p>
+                      <div className="w-full bg-white/10 rounded-full h-2 mt-2">
+                        <div
+                          className="bg-emerald-500 h-2 rounded-full transition-all"
+                          style={{
+                            width: `${Math.max(0, Math.min(100, ((new Date(subscriptionDetails.trialEnd).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)) * 100))}%`,
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        All features are available during your free trial. Subscribe before it ends to keep access.
+                      </p>
+                    </>
+                  )}
+                  {subscriptionDetails.currentEnd && subscriptionDetails.status !== 'trial' && (
                     <p className="text-sm text-muted-foreground">
-                      {subscriptionDetails.status === 'cancellation_requested' 
+                      {subscriptionDetails.status === 'cancellation_requested'
                         ? `Cancels on: ${new Date(subscriptionDetails.currentEnd).toLocaleDateString()}`
                         : `Next billing: ${new Date(subscriptionDetails.currentEnd).toLocaleDateString()}`
                       }
@@ -564,10 +591,17 @@ export function ProfileView() {
                       Your subscription will remain active until the end of your current billing period.
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Paid cycles: {subscriptionDetails.paidCount}
-                    {subscriptionDetails.remainingCount && ` • Remaining: ${subscriptionDetails.remainingCount}`}
-                  </p>
+                  {subscriptionDetails.status === 'past_due' && (
+                    <p className="text-xs text-red-400 mt-1">
+                      Your payment failed. Please update your payment method to continue.
+                    </p>
+                  )}
+                  {subscriptionDetails.status !== 'trial' && subscriptionDetails.paidCount != null && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Paid cycles: {subscriptionDetails.paidCount}
+                      {subscriptionDetails.remainingCount && ` • Remaining: ${subscriptionDetails.remainingCount}`}
+                    </p>
+                  )}
                 </div>
 
                 {/* Subscription Management Buttons */}

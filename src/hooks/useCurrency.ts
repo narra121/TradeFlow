@@ -52,15 +52,28 @@ export const useCurrency = () => {
     const detectCurrency = async () => {
       setLoading(true);
       try {
-        // Use ipapi.co — free, no API key needed, 1000 req/day
-        const response = await fetch('https://ipapi.co/json/', {
-          signal: AbortSignal.timeout(5000),
-        });
+        // Try multiple geolocation APIs as fallbacks
+        let countryCode = '';
+        try {
+          const response = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) });
+          if (response.ok) {
+            const data = await response.json();
+            countryCode = data.country_code || '';
+          }
+        } catch {
+          // Fallback API
+          try {
+            const response = await fetch('https://ip-api.com/json/?fields=countryCode', { signal: AbortSignal.timeout(5000) });
+            if (response.ok) {
+              const data = await response.json();
+              countryCode = data.countryCode || '';
+            }
+          } catch {
+            // Both failed
+          }
+        }
 
-        if (!response.ok) throw new Error('Geolocation API failed');
-
-        const data = await response.json();
-        const detected: Currency = data.country_code === 'IN' ? 'INR' : 'USD';
+        const detected: Currency = countryCode === 'IN' ? 'INR' : 'USD';
 
         setCurrency(detected);
 
