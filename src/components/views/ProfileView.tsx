@@ -50,7 +50,8 @@ export function ProfileView() {
   const navigate = useNavigate();
   const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useGetProfileQuery();
   const { data: subscription, isLoading: subscriptionLoading, isFetching: subscriptionFetching, refetch: refetchSubscription } = useGetSubscriptionQuery();
-  const { data: availablePlans = [], isLoading: plansLoading } = useGetPlansQuery();
+  const { currency } = useCurrency();
+  const { data: availablePlans = [], isLoading: plansLoading } = useGetPlansQuery(currency);
   const { accounts } = useAccounts();
   const loading = profileLoading || profileFetching || subscriptionLoading || subscriptionFetching;
   const [updateProfile] = useUpdateProfileMutation();
@@ -61,8 +62,7 @@ export function ProfileView() {
   const [undoCancellation] = useUndoCancellationMutation();
   const [logout] = useLogoutMutation();
   const { initiateSubscription, loading: paymentLoading, error: paymentError } = useStripeCheckout();
-  const { currency } = useCurrency();
-  
+
   const handleLogout = async () => {
     try {
       await logout().unwrap();
@@ -81,8 +81,8 @@ export function ProfileView() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-  const [selectedAmount, setSelectedAmount] = useState(99);
-  const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(999);
+  const [selectedAmount, setSelectedAmount] = useState(currency === 'INR' ? 99 : 1.99);
+  const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(currency === 'INR' ? 999 : 19.99);
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
   const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
   const [managingSubscription, setManagingSubscription] = useState(false);
@@ -144,15 +144,18 @@ export function ProfileView() {
     }
   }, [subscription, subscriptionDetails]);
 
-  const supportTiers = [
-    { amount: 99, label: 'Basic', description: 'Minimum support', recommended: false },
-    { amount: 299, label: 'Supporter', description: 'Help us grow', recommended: true },
-  ];
+  // Derive tiers from API plans
+  const monthlyPlan = availablePlans.find(p => p.period === 'monthly');
+  const yearlyPlan = availablePlans.find(p => p.period === 'yearly');
+  const currencySymbol = currency === 'INR' ? '₹' : '$';
 
-  const annualTiers = [
-    { amount: 999, label: 'Basic', description: 'Save 17%!', monthly: 99, recommended: false },
-    { amount: 2999, label: 'Supporter', description: 'Save 17%!', monthly: 299, recommended: true },
-  ];
+  const supportTiers = monthlyPlan
+    ? [{ amount: monthlyPlan.amount, label: 'Monthly', description: 'Most flexible', recommended: false }]
+    : [{ amount: currency === 'INR' ? 99 : 1.99, label: 'Monthly', description: 'Most flexible', recommended: false }];
+
+  const annualTiers = yearlyPlan
+    ? [{ amount: yearlyPlan.amount, label: 'Annual', description: yearlyPlan.savings ? `Save ${yearlyPlan.savings}!` : 'Best value', monthly: yearlyPlan.monthlyEquivalent, recommended: true }]
+    : [{ amount: currency === 'INR' ? 999 : 19.99, label: 'Annual', description: 'Save 17%!', monthly: currency === 'INR' ? 83 : 1.67, recommended: true }];
 
   const handleSaveProfile = async () => {
     if (!user.name.trim()) {
@@ -206,7 +209,7 @@ export function ProfileView() {
       await initiateSubscription({
         planId: plan.planId,
         name: plan.name,
-        description: plan.description || `${cycle === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ₹${amount}`,
+        description: plan.description || `${cycle === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ${currency === 'INR' ? '₹' : '$'}${amount}`,
         onSuccess: async (subscriptionId) => {
           console.log('Subscription activated:', subscriptionId);
 
@@ -315,7 +318,7 @@ export function ProfileView() {
       await initiateSubscription({
         planId: plan.planId,
         name: plan.name,
-        description: plan.description || `${plan.period === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ₹${plan.amount}`,
+        description: plan.description || `${plan.period === 'monthly' ? 'Monthly' : 'Annual'} recurring subscription - ${currency === 'INR' ? '₹' : '$'}${plan.amount}`,
         onSuccess: async (subscriptionId) => {
           console.log('Subscription activated:', subscriptionId);
 
@@ -774,7 +777,7 @@ export function ProfileView() {
                       <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground text-xs px-2 py-0.5">Recommended</Badge>
                     )}
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-bold text-foreground">₹{tier.amount}</span>
+                      <span className="text-2xl font-bold text-foreground">{currencySymbol}{tier.amount}</span>
                       <span className="text-sm text-muted-foreground">/month</span>
                     </div>
                     <h3 className="font-semibold text-foreground mb-1">{tier.label}</h3>
@@ -811,12 +814,12 @@ export function ProfileView() {
                       <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground text-xs px-2 py-0.5">Recommended</Badge>
                     )}
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-bold text-foreground">₹{tier.amount}</span>
+                      <span className="text-2xl font-bold text-foreground">{currencySymbol}{tier.amount}</span>
                       <span className="text-sm text-muted-foreground">/year</span>
                     </div>
                     <h3 className="font-semibold text-foreground mb-1">{tier.label}</h3>
                     <p className="text-sm text-muted-foreground">{tier.description}</p>
-                    <p className="text-xs text-primary mt-1">(₹{tier.monthly}/month)</p>
+                    <p className="text-xs text-primary mt-1">({currencySymbol}{tier.monthly}/month)</p>
                     {selectedAnnualAmount === tier.amount && (
                       <div className="mt-3 flex items-center gap-1 text-primary text-sm">
                         <Check className="w-4 h-4" />
@@ -857,7 +860,7 @@ export function ProfileView() {
               ) : (
                 <>
                   <Heart className="w-4 h-4 mr-2" />
-                  Subscribe for ₹{billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount}/{billingCycle === 'monthly' ? 'month' : 'year'}
+                  Subscribe for {currency === 'INR' ? '₹' : '$'}{billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount}/{billingCycle === 'monthly' ? 'month' : 'year'}
                 </>
               )}
             </Button>

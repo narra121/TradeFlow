@@ -125,8 +125,8 @@ export const userApi = api.injectEndpoints({
       invalidatesTags: ['Subscription'],
     }),
     
-    getPlans: builder.query<PlanResponse[], void>({
-      query: () => '/subscriptions/plans',
+    getPlans: builder.query<PlanResponse[], string | void>({
+      query: (currency) => `/subscriptions/plans${currency ? `?currency=${currency}` : ''}`,
       transformResponse: (response: any) => {
         return response.plans || [];
       },
