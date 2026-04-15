@@ -227,7 +227,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           )}
         </div>
       ) : (
-        <div className={cn('transition-opacity duration-200', (isRefreshing || isFilterPending) && 'opacity-60')}>
+        <div className={cn('transition-opacity duration-200 space-y-4 sm:space-y-6', (isRefreshing || isFilterPending) && 'opacity-60')}>
           {/* Stats Grid */}
           {showSkeleton ? (
             <DashboardStatsSkeleton />
