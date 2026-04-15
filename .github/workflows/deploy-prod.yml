@@ -43,6 +43,7 @@ jobs:
         run: |
           echo "VITE_API_URL=${{ secrets.VITE_API_URL_PROD }}" > .env.production
           echo "VITE_RAZORPAY_KEY_ID=${{ secrets.VITE_RAZORPAY_KEY_ID_PROD }}" >> .env.production
+          echo "VITE_EXTRACT_TRADES_URL=${{ secrets.VITE_EXTRACT_TRADES_URL_PROD }}" >> .env.production
 
       - name: Build for production
         run: bun run build

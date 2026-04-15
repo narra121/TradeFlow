@@ -40,6 +40,7 @@ jobs:
           echo "VITE_RAZORPAY_KEY_ID=${{ secrets.VITE_RAZORPAY_KEY_ID_DEV }}" >> .env.development
           echo "VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN_DEV }}" >> .env.development
           echo "VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID_DEV }}" >> .env.development
+          echo "VITE_EXTRACT_TRADES_URL=${{ secrets.VITE_EXTRACT_TRADES_URL_DEV }}" >> .env.development
 
       - name: Build for dev
         run: bun run build:dev
