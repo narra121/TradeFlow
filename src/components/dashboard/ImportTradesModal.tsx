@@ -292,6 +292,12 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         isSelected: false,
       }));
 
+      if (extracted.length === 0) {
+        const apiMsg = response.message || 'No trades found in the uploaded data';
+        toast.warning(apiMsg);
+        return; // Keep source intact for retry
+      }
+
       if (extracted.length > 50) {
         toast.warning(`File contains ${extracted.length} trades. Only the first 50 will be imported.`);
       }
@@ -299,10 +305,8 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
       setExtractedTrades(extracted.slice(0, 50));
 
       // On success, clear the source material
-      if (extracted.length > 0) {
-        setUploadedImages([]);
-        setUploadedFile(null);
-      }
+      setUploadedImages([]);
+      setUploadedFile(null);
     } catch (error: any) {
       const source = importMode === 'image' ? 'image' : 'file';
       const msg = error?.response?.data?.message || error?.message || `Failed to extract trades from ${source}`;

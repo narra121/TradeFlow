@@ -41,7 +41,8 @@ export interface BulkImportPayload {
 
 export const tradesApi = {
   // POST /v1/trades/extract (supports up to 3 images)
+  // 90s timeout for Gemini processing of large files/images
   extractTrades: async (payload: { images: string[] } | { textContent: string }): Promise<{ items: any[]; error?: { code: string; message: string } }> => {
-    return apiClient.post('/trades/extract', payload);
+    return apiClient.post('/trades/extract', payload, { timeout: 90_000 });
   },
 };
