@@ -715,3 +715,205 @@ describe('AddTradeModal - Toast Validation', () => {
     expect(toast.warning).not.toHaveBeenCalled();
   });
 });
+
+describe('AddTradeModal - brokenRuleIds payload', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onAddTrade: vi.fn().mockResolvedValue(undefined),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('includes brokenRuleIds as empty array (not undefined) when no rules selected', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onAddTrade = vi.fn().mockResolvedValue(undefined);
+    render(<AddTradeModal {...defaultProps} onAddTrade={onAddTrade} />);
+
+    await fillRequiredFields(user);
+
+    const submitButton = screen.getByRole('button', { name: /add trade/i });
+    await user.click(submitButton);
+
+    await vi.waitFor(() => {
+      expect(onAddTrade).toHaveBeenCalledTimes(1);
+    });
+
+    const payload = onAddTrade.mock.calls[0][0];
+    expect(payload.brokenRuleIds).toEqual([]);
+    expect(payload.brokenRuleIds).not.toBeUndefined();
+  });
+});
+
+describe('AddTradeModal - Form Draft Integration', () => {
+  const draftKey = 'trade-draft-new';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    sessionStorage.clear();
+  });
+
+  it('shows "Discard draft" button when modal opens with existing draft', () => {
+    // Pre-populate sessionStorage with a draft
+    const draftData = {
+      direction: 'SHORT',
+      symbol: 'GBPUSD',
+      entryPrice: '1.25',
+      exitPrice: '1.22',
+      stopLoss: '',
+      takeProfit: '',
+      size: '0.5',
+      manualPnl: '',
+      entryDateTime: '2025-01-15T10:00',
+      exitDateTime: '2025-01-15T14:00',
+      outcome: 'TP',
+      strategy: '',
+      session: '',
+      marketCondition: '',
+      newsEvent: '',
+      mistakes: [],
+      keyLesson: '',
+      tradeNotes: '',
+      brokenRuleIds: [],
+      selectedAccountIds: [],
+      images: [],
+    };
+    sessionStorage.setItem(draftKey, JSON.stringify(draftData));
+
+    render(
+      <AddTradeModal
+        open={true}
+        onOpenChange={vi.fn()}
+        onAddTrade={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Discard draft')).toBeInTheDocument();
+  });
+
+  it('restores form fields from draft when modal opens', () => {
+    const draftData = {
+      direction: 'SHORT',
+      symbol: 'GBPUSD',
+      entryPrice: '1.25',
+      exitPrice: '1.22',
+      stopLoss: '',
+      takeProfit: '',
+      size: '0.5',
+      manualPnl: '',
+      entryDateTime: '2025-01-15T10:00',
+      exitDateTime: '2025-01-15T14:00',
+      outcome: 'TP',
+      strategy: '',
+      session: '',
+      marketCondition: '',
+      newsEvent: '',
+      mistakes: [],
+      keyLesson: '',
+      tradeNotes: '',
+      brokenRuleIds: [],
+      selectedAccountIds: [],
+      images: [],
+    };
+    sessionStorage.setItem(draftKey, JSON.stringify(draftData));
+
+    render(
+      <AddTradeModal
+        open={true}
+        onOpenChange={vi.fn()}
+        onAddTrade={vi.fn()}
+      />
+    );
+
+    // The entry price input should be populated with the draft value
+    const numberInputs = screen.getAllByPlaceholderText('0.00');
+    // Entry Price is the first 0.00 input
+    expect((numberInputs[0] as HTMLInputElement).value).toBe('1.25');
+    // Exit Price is the second 0.00 input
+    expect((numberInputs[1] as HTMLInputElement).value).toBe('1.22');
+  });
+
+  it('clears draft and resets form when "Discard draft" is clicked', async () => {
+    const user = userEvent.setup({ delay: null });
+
+    const draftData = {
+      direction: 'SHORT',
+      symbol: 'GBPUSD',
+      entryPrice: '1.25',
+      exitPrice: '1.22',
+      stopLoss: '',
+      takeProfit: '',
+      size: '0.5',
+      manualPnl: '',
+      entryDateTime: '2025-01-15T10:00',
+      exitDateTime: '2025-01-15T14:00',
+      outcome: 'TP',
+      strategy: '',
+      session: '',
+      marketCondition: '',
+      newsEvent: '',
+      mistakes: [],
+      keyLesson: '',
+      tradeNotes: '',
+      brokenRuleIds: [],
+      selectedAccountIds: [],
+      images: [],
+    };
+    sessionStorage.setItem(draftKey, JSON.stringify(draftData));
+
+    render(
+      <AddTradeModal
+        open={true}
+        onOpenChange={vi.fn()}
+        onAddTrade={vi.fn()}
+      />
+    );
+
+    const discardButton = screen.getByText('Discard draft');
+    await user.click(discardButton);
+
+    // "Discard draft" button should disappear after clicking
+    expect(screen.queryByText('Discard draft')).not.toBeInTheDocument();
+
+    // sessionStorage should be cleared for the draft key
+    expect(sessionStorage.getItem(draftKey)).toBeNull();
+
+    // Entry price should be reset to empty
+    const numberInputs = screen.getAllByPlaceholderText('0.00');
+    expect((numberInputs[0] as HTMLInputElement).value).toBe('');
+  });
+
+  it('auto-saves form changes to sessionStorage', async () => {
+    const user = userEvent.setup({ delay: null });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    render(
+      <AddTradeModal
+        open={true}
+        onOpenChange={vi.fn()}
+        onAddTrade={vi.fn()}
+      />
+    );
+
+    // Type into entry price field
+    const numberInputs = screen.getAllByPlaceholderText('0.00');
+    await user.clear(numberInputs[0]);
+    await user.type(numberInputs[0], '1.35');
+
+    // Advance timers past the debounce period (500ms in useFormDraft)
+    vi.advanceTimersByTime(600);
+
+    const stored = sessionStorage.getItem(draftKey);
+    expect(stored).not.toBeNull();
+    const parsedDraft = JSON.parse(stored!);
+    expect(parsedDraft.entryPrice).toBe('1.35');
+
+    vi.useRealTimers();
+  });
+});

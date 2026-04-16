@@ -120,4 +120,68 @@ describe('GoogleSignInButton', () => {
     const button = screen.getByRole('button', { name: /continue with google/i });
     expect(button.className).toContain('custom-class');
   });
+
+  it('shows "Redirecting..." text after click instead of "Continue with Google"', async () => {
+    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
+    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
+
+    vi.resetModules();
+
+    const { GoogleSignInButton } = await import('../GoogleSignInButton');
+    const { render } = await import('@/test/test-utils');
+
+    render(<GoogleSignInButton />);
+
+    const user = userEvent.setup();
+    const button = screen.getByRole('button', { name: /continue with google/i });
+    await user.click(button);
+
+    expect(screen.getByText('Redirecting...')).toBeInTheDocument();
+    expect(screen.queryByText('Continue with Google')).not.toBeInTheDocument();
+  });
+
+  it('becomes disabled with opacity-70 and cursor-not-allowed after click', async () => {
+    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
+    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
+
+    vi.resetModules();
+
+    const { GoogleSignInButton } = await import('../GoogleSignInButton');
+    const { render } = await import('@/test/test-utils');
+
+    render(<GoogleSignInButton />);
+
+    const user = userEvent.setup();
+    const button = screen.getByRole('button', { name: /continue with google/i });
+    await user.click(button);
+
+    // After click, button should be disabled
+    expect(button).toBeDisabled();
+    // Button should have loading-related classes
+    expect(button.className).toContain('opacity-70');
+    expect(button.className).toContain('cursor-not-allowed');
+  });
+
+  it('shows spinner icon while loading', async () => {
+    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
+    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
+
+    vi.resetModules();
+
+    const { GoogleSignInButton } = await import('../GoogleSignInButton');
+    const { render } = await import('@/test/test-utils');
+
+    const { container } = render(<GoogleSignInButton />);
+
+    const user = userEvent.setup();
+    const button = screen.getByRole('button', { name: /continue with google/i });
+    await user.click(button);
+
+    // The Google SVG should be replaced by the Loader2 spinner
+    // Before click: SVG with viewBox="0 0 24 24" (Google logo)
+    // After click: SVG with animate-spin class (Loader2)
+    const svg = container.querySelector('svg');
+    expect(svg).toBeInTheDocument();
+    expect(svg!.classList.contains('animate-spin')).toBe(true);
+  });
 });

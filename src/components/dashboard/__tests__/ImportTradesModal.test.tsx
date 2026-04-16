@@ -4,7 +4,7 @@ import { ImportTradesModal } from '../ImportTradesModal';
 
 // Mock sonner toast
 vi.mock('sonner', () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: vi.fn(), success: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
 
 // Mock trades API
@@ -457,5 +457,177 @@ describe('ImportTradesModal - File Import UI', () => {
   it('shows supported formats text', () => {
     render(<ImportTradesModal {...defaultProps} />);
     expect(screen.getByText(/Supports:.*CSV.*TXT.*XLS.*XLSX.*Paste text/i)).toBeInTheDocument();
+  });
+});
+
+describe('ImportTradesModal - Zero Trades Warning', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onImportTrades: vi.fn().mockResolvedValue({ success: true }),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Helper: upload a fake image via the hidden file input */
+  async function uploadFakeImage(user: ReturnType<typeof userEvent.setup>) {
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['fake-image-data'], 'trade.png', { type: 'image/png' });
+
+    const originalFileReader = globalThis.FileReader;
+    const mockReader = {
+      readAsDataURL: vi.fn(),
+      onload: null as any,
+      result: 'data:image/png;base64,fakedata',
+    };
+    vi.spyOn(globalThis, 'FileReader').mockImplementation(() => mockReader as any);
+
+    await user.upload(fileInput, file);
+
+    if (mockReader.onload) {
+      mockReader.onload({ target: { result: mockReader.result } });
+    }
+
+    globalThis.FileReader = originalFileReader;
+  }
+
+  it('shows warning toast when extraction returns 0 trades', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { tradesApi } = await import('@/lib/api/trades');
+    const { toast } = await import('sonner');
+
+    (tradesApi.extractTrades as ReturnType<typeof vi.fn>).mockResolvedValue({
+      items: [],
+      message: 'No trades found in the uploaded data',
+    });
+
+    render(<ImportTradesModal {...defaultProps} />);
+
+    await uploadFakeImage(user);
+
+    const extractButton = screen.getByRole('button', { name: /extract trades/i });
+    await user.click(extractButton);
+
+    await vi.waitFor(() => {
+      expect((toast as any).warning).toHaveBeenCalledWith('No trades found in the uploaded data');
+    });
+  });
+});
+
+describe('ImportTradesModal - Multi-Account Selection', () => {
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onImportTrades: vi.fn().mockResolvedValue({ success: true }),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    // Mock useAccounts to return multiple accounts
+    const { useAccounts } = await import('@/hooks/useAccounts');
+    (useAccounts as ReturnType<typeof vi.fn>).mockReturnValue({
+      accounts: [
+        { id: 'acc1', name: 'Main Account' },
+        { id: 'acc2', name: 'Demo Account' },
+        { id: 'acc3', name: 'Prop Firm' },
+      ],
+      selectedAccountId: null,
+      selectedAccount: null,
+      setSelectedAccountId: vi.fn(),
+      addAccount: vi.fn(),
+      updateAccount: vi.fn(),
+      updateAccountStatus: vi.fn(),
+      deleteAccount: vi.fn(),
+    });
+  });
+
+  /** Helper: upload a fake image via the hidden file input */
+  async function uploadFakeImage(user: ReturnType<typeof userEvent.setup>) {
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['fake-image-data'], 'trade.png', { type: 'image/png' });
+
+    const originalFileReader = globalThis.FileReader;
+    const mockReader = {
+      readAsDataURL: vi.fn(),
+      onload: null as any,
+      result: 'data:image/png;base64,fakedata',
+    };
+    vi.spyOn(globalThis, 'FileReader').mockImplementation(() => mockReader as any);
+
+    await user.upload(fileInput, file);
+
+    if (mockReader.onload) {
+      mockReader.onload({ target: { result: mockReader.result } });
+    }
+
+    globalThis.FileReader = originalFileReader;
+  }
+
+  /** Helper: extract trades with a successful API response returning one trade row */
+  async function extractWithOneTrade(user: ReturnType<typeof userEvent.setup>) {
+    const { tradesApi } = await import('@/lib/api/trades');
+    (tradesApi.extractTrades as ReturnType<typeof vi.fn>).mockResolvedValue({
+      items: [
+        {
+          symbol: 'EURUSD',
+          side: 'BUY',
+          entryPrice: '1.1000',
+          exitPrice: '1.1050',
+          stopLoss: '1.0950',
+          takeProfit: '1.1100',
+          quantity: '1',
+          pnl: '50',
+          openDate: '2024-06-01T10:00:00Z',
+          closeDate: '2024-06-01T14:00:00Z',
+        },
+      ],
+    });
+
+    const extractButton = screen.getByRole('button', { name: /extract trades/i });
+    await user.click(extractButton);
+
+    await vi.waitFor(() => {
+      expect(screen.getByText('EURUSD')).toBeInTheDocument();
+    });
+  }
+
+  it('renders chip buttons for each account when trades are extracted', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ImportTradesModal {...defaultProps} />);
+
+    await uploadFakeImage(user);
+    await extractWithOneTrade(user);
+
+    // Account chip buttons should now be visible in the footer
+    expect(screen.getByText('Main Account')).toBeInTheDocument();
+    expect(screen.getByText('Demo Account')).toBeInTheDocument();
+    expect(screen.getByText('Prop Firm')).toBeInTheDocument();
+  });
+
+  it('sends accountIds array when multiple accounts are selected and saved', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onImportTrades = vi.fn().mockResolvedValue({ success: true });
+    render(<ImportTradesModal {...defaultProps} onImportTrades={onImportTrades} />);
+
+    await uploadFakeImage(user);
+    await extractWithOneTrade(user);
+
+    // Click on "Main Account" and "Demo Account" chip buttons
+    await user.click(screen.getByText('Main Account'));
+    await user.click(screen.getByText('Demo Account'));
+
+    // The Save button should now reflect selected accounts
+    const saveButton = screen.getByRole('button', { name: /save to/i });
+    await user.click(saveButton);
+
+    await vi.waitFor(() => {
+      expect(onImportTrades).toHaveBeenCalledTimes(1);
+    });
+
+    const payload = onImportTrades.mock.calls[0][0];
+    // Each trade in the payload should have accountIds
+    expect(payload[0].accountIds).toEqual(['acc1', 'acc2']);
   });
 });

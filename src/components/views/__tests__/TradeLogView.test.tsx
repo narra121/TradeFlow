@@ -606,3 +606,111 @@ describe('TradeLogView - Column Visibility & New Filters', () => {
     expect(screen.getByText('All Sessions')).toBeInTheDocument();
   });
 });
+
+describe('TradeLogView - Sort Persistence', () => {
+  const SORT_STORAGE_KEY = 'tradequt-table-sort';
+
+  const defaultProps = {
+    onAddTrade: vi.fn(),
+    onImportTrades: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    localStorage.removeItem(SORT_STORAGE_KEY);
+    // Reset the mock to default (with trades) before each test
+    const { useGetTradesQuery } = await import('@/store/api');
+    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [
+        {
+          id: '1',
+          symbol: 'EURUSD',
+          direction: 'LONG',
+          entryPrice: 1.1,
+          exitPrice: 1.12,
+          stopLoss: 1.09,
+          takeProfit: 1.13,
+          size: 1,
+          entryDate: '2025-01-15T10:00:00Z',
+          exitDate: '2025-01-15T14:00:00Z',
+          outcome: 'TP',
+          pnl: 200,
+          pnlPercent: 2.0,
+          riskRewardRatio: 2.0,
+          accountId: 'acc1',
+          strategy: 'Breakout',
+          session: 'London',
+          mistakes: ['FOMO'],
+          keyLesson: 'Wait for confirmation',
+        },
+        {
+          id: '2',
+          symbol: 'GBPUSD',
+          direction: 'SHORT',
+          entryPrice: 1.3,
+          exitPrice: 1.28,
+          stopLoss: 1.31,
+          takeProfit: 1.27,
+          size: 0.5,
+          entryDate: '2025-01-16T09:00:00Z',
+          exitDate: '2025-01-16T12:00:00Z',
+          outcome: 'SL',
+          pnl: -100,
+          pnlPercent: -1.0,
+          riskRewardRatio: 1.5,
+          accountId: 'acc1',
+          strategy: 'Scalp',
+          session: 'NY',
+          mistakes: [],
+          keyLesson: '',
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    localStorage.removeItem(SORT_STORAGE_KEY);
+  });
+
+  it('saves sort state to localStorage when a column header is clicked', async () => {
+    const user = userEvent.setup();
+    render(<TradeLogView {...defaultProps} />);
+
+    // Click the "Symbol" column header to sort
+    const symbolHeaders = screen.getAllByText('Symbol');
+    // The clickable header is inside a <th> element
+    const thHeader = symbolHeaders.find(el => el.closest('th'));
+    expect(thHeader).toBeTruthy();
+    await user.click(thHeader!.closest('th')!);
+
+    const stored = localStorage.getItem(SORT_STORAGE_KEY);
+    expect(stored).not.toBeNull();
+    const parsedSort = JSON.parse(stored!);
+    expect(parsedSort.column).toBe('symbol');
+    expect(parsedSort.direction).toBe('desc');
+  });
+
+  it('restores sort state from localStorage on component mount', () => {
+    // Pre-set sort state in localStorage
+    localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({ column: 'pnl', direction: 'asc' }));
+
+    render(<TradeLogView {...defaultProps} />);
+
+    // The P&L column header should show an ascending sort indicator (ArrowUp icon)
+    // When sorted, the icon changes from ChevronsUpDown to ArrowUp/ArrowDown
+    const pnlHeaders = screen.getAllByText('P&L');
+    const pnlTh = pnlHeaders.find(el => el.closest('th'));
+    expect(pnlTh).toBeTruthy();
+
+    // Check that the P&L th contains an ArrowUp or ArrowDown SVG (active sort indicator)
+    // rather than a ChevronsUpDown (unsorted state)
+    const thElement = pnlTh!.closest('th')!;
+    const svgs = thElement.querySelectorAll('svg');
+    // An active sort column should have a primary-colored icon
+    const hasPrimaryIcon = Array.from(svgs).some(svg => svg.classList.contains('text-primary'));
+    expect(hasPrimaryIcon).toBe(true);
+  });
+});

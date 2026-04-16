@@ -11,15 +11,30 @@ const mockRevokeObjectURL = vi.fn();
 globalThis.URL.createObjectURL = mockCreateObjectURL;
 globalThis.URL.revokeObjectURL = mockRevokeObjectURL;
 
-// Mock Cache API (caches.open / cache.match / cache.put)
+// Mock Cache API (caches.open / cache.match / cache.put / cache.delete / caches.delete)
 const mockCachePut = vi.fn();
 const mockCacheMatch = vi.fn().mockResolvedValue(null);
+const mockCacheDelete = vi.fn().mockResolvedValue(true);
+const mockCachesDelete = vi.fn().mockResolvedValue(true);
 const mockCachesOpen = vi.fn().mockResolvedValue({
   match: mockCacheMatch,
   put: mockCachePut,
-  delete: vi.fn(),
+  delete: mockCacheDelete,
 });
-vi.stubGlobal('caches', { open: mockCachesOpen, delete: vi.fn() });
+vi.stubGlobal('caches', { open: mockCachesOpen, delete: mockCachesDelete });
+
+// Stub Response constructor — jsdom Blob lacks .stream(), causing
+// `new Response(blob, opts)` to throw "object.stream is not a function".
+// We replace it with a lightweight stub that writeToCacheApi can construct.
+class FakeResponse {
+  body: any;
+  headers: any;
+  constructor(body: any, init?: any) {
+    this.body = body;
+    this.headers = init?.headers;
+  }
+}
+vi.stubGlobal('Response', FakeResponse);
 
 // Mock localStorage
 const storage = new Map<string, string>();
@@ -275,5 +290,218 @@ describe('imageCache — fetchImage with token refresh', () => {
 
     expect(result.data).toBe('blob:http://localhost/mock-url');
     expect(storage.get('idToken')).toBe('alt-field-token');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cache API persistence layer tests
+// ---------------------------------------------------------------------------
+describe('imageCache — Cache API (Layer 2) persistence', () => {
+  it('returns blob from Cache API when memory cache misses', async () => {
+    storage.set('idToken', 'valid-token');
+    const cachedBlob = new Blob(['cached-image-data'], { type: 'image/png' });
+    // Simulate a Cache API hit — cache.match returns a Response with a blob
+    mockCacheMatch.mockResolvedValueOnce({
+      blob: vi.fn().mockResolvedValue(cachedBlob),
+    });
+
+    const result = await getImageQueryFn('cached-image-key', fakeQueryApi);
+
+    expect(result.data).toBe('blob:http://localhost/mock-url');
+    // Cache API was consulted
+    expect(mockCachesOpen).toHaveBeenCalledWith('tradequt-images-v1');
+    expect(mockCacheMatch).toHaveBeenCalledWith('cached-image-key');
+    // No network fetch was made
+    expect(mockFetch).not.toHaveBeenCalled();
+    // Object URL was created from the cached blob
+    expect(mockCreateObjectURL).toHaveBeenCalledWith(cachedBlob);
+  });
+
+  it('skips Cache API hit when cached response has empty blob', async () => {
+    storage.set('idToken', 'valid-token');
+    const emptyBlob = new Blob([], { type: 'image/jpeg' });
+    mockCacheMatch.mockResolvedValueOnce({
+      blob: vi.fn().mockResolvedValue(emptyBlob),
+    });
+    // Should fall through to network fetch
+    mockFetch.mockResolvedValueOnce(mockImageResponse(200));
+
+    const result = await getImageQueryFn('empty-cached-key', fakeQueryApi);
+
+    expect(result.data).toBe('blob:http://localhost/mock-url');
+    // Network fetch was made because cached blob was empty
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('stores fetched image in both memory cache and Cache API', async () => {
+    storage.set('idToken', 'valid-token');
+    mockFetch.mockResolvedValueOnce(mockImageResponse(200));
+
+    await getImageQueryFn('new-image-key', fakeQueryApi);
+
+    // writeToCacheApi opens the cache store for the write pass
+    // caches.open is called once for readFromCacheApi and once for writeToCacheApi
+    expect(mockCachesOpen).toHaveBeenCalledWith('tradequt-images-v1');
+    expect(mockCachesOpen.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    // cache.put is called with the imageId and a Response wrapping the blob
+    expect(mockCachePut).toHaveBeenCalledTimes(1);
+    expect(mockCachePut.mock.calls[0][0]).toBe('new-image-key');
+
+    // Verify memory cache was populated (second call should not fetch)
+    const result2 = await getImageQueryFn('new-image-key', fakeQueryApi);
+    expect(result2.data).toBeDefined();
+    expect(mockFetch).toHaveBeenCalledTimes(1); // No additional network call
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evictImage / clearImageCache tests
+// ---------------------------------------------------------------------------
+describe('imageCache — evictImage and clearImageCache', () => {
+  let evictImage: (imageId: string) => Promise<void>;
+  let clearImageCache: () => Promise<void>;
+
+  beforeEach(async () => {
+    // Re-import to get fresh exports after module reset
+    const mod = await import('../imageCache');
+    evictImage = mod.evictImage;
+    clearImageCache = mod.clearImageCache;
+  });
+
+  it('evictImage removes from memory cache and Cache API', async () => {
+    storage.set('idToken', 'valid-token');
+    mockFetch.mockResolvedValueOnce(mockImageResponse(200));
+
+    // Populate caches via a fetch
+    await getImageQueryFn('evict-me', fakeQueryApi);
+    expect(mockCreateObjectURL).toHaveBeenCalled();
+
+    // Clear mock call counts so we can assert eviction-specific calls
+    vi.clearAllMocks();
+
+    await evictImage('evict-me');
+
+    // Object URL was revoked
+    expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/mock-url');
+    // Cache API entry was deleted
+    expect(mockCachesOpen).toHaveBeenCalledWith('tradequt-images-v1');
+    expect(mockCacheDelete).toHaveBeenCalledWith('evict-me');
+
+    // Next request should go to network again (not memory cache)
+    storage.set('idToken', 'valid-token');
+    mockFetch.mockResolvedValueOnce(mockImageResponse(200));
+    await getImageQueryFn('evict-me', fakeQueryApi);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('evictImage is a no-op for non-existent keys', async () => {
+    await evictImage('never-cached');
+
+    // Should not throw, and cache.delete is still called (Cache API side)
+    expect(mockCachesOpen).toHaveBeenCalledWith('tradequt-images-v1');
+    expect(mockCacheDelete).toHaveBeenCalledWith('never-cached');
+    // No URL.revokeObjectURL since nothing was in memory
+    expect(mockRevokeObjectURL).not.toHaveBeenCalled();
+  });
+
+  it('clearImageCache clears memory cache and deletes Cache API store', async () => {
+    storage.set('idToken', 'valid-token');
+    mockFetch.mockResolvedValueOnce(mockImageResponse(200));
+
+    // Populate caches
+    await getImageQueryFn('clear-me', fakeQueryApi);
+
+    vi.clearAllMocks();
+
+    await clearImageCache();
+
+    // Object URLs were revoked (LRUCache.clear does this)
+    expect(mockRevokeObjectURL).toHaveBeenCalled();
+    // Entire Cache API store was deleted
+    expect(mockCachesDelete).toHaveBeenCalledWith('tradequt-images-v1');
+
+    // Subsequent request should go to network
+    storage.set('idToken', 'valid-token');
+    mockFetch.mockResolvedValueOnce(mockImageResponse(200));
+    await getImageQueryFn('clear-me', fakeQueryApi);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Graceful fallback when Cache API is unavailable
+// ---------------------------------------------------------------------------
+describe('imageCache — graceful fallback without Cache API', () => {
+  let getImageQueryFnNoCacheApi: (imageId: string, queryApi: any) => Promise<{ data?: string; error?: any }>;
+  let evictImageNoCacheApi: (imageId: string) => Promise<void>;
+  let clearImageCacheNoCacheApi: () => Promise<void>;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    storage.clear();
+    vi.resetModules();
+
+    // Remove caches global before importing the module so cacheApiAvailable = false
+    const savedCaches = globalThis.caches;
+    // @ts-expect-error — intentionally removing for test
+    delete globalThis.caches;
+
+    const mod = await import('../imageCache');
+    evictImageNoCacheApi = mod.evictImage;
+    clearImageCacheNoCacheApi = mod.clearImageCache;
+
+    const { api } = await import('../baseApi');
+    const injectCall = (api.injectEndpoints as any).mock.calls[0][0];
+    const endpoints = injectCall.endpoints({
+      query: (opts: any) => opts,
+    });
+    getImageQueryFnNoCacheApi = endpoints.getImage.queryFn;
+
+    // Restore caches global for other test suites
+    globalThis.caches = savedCaches;
+  });
+
+  it('fetches from network and caches only in memory when Cache API is unavailable', async () => {
+    storage.set('idToken', 'valid-token');
+    mockFetch.mockResolvedValueOnce(mockImageResponse(200));
+
+    const result = await getImageQueryFnNoCacheApi('no-cache-api-image', fakeQueryApi);
+
+    expect(result.data).toBe('blob:http://localhost/mock-url');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // Cache API was never consulted
+    expect(mockCachesOpen).not.toHaveBeenCalled();
+    expect(mockCachePut).not.toHaveBeenCalled();
+  });
+
+  it('evictImage works without Cache API (only memory eviction)', async () => {
+    storage.set('idToken', 'valid-token');
+    mockFetch.mockResolvedValueOnce(mockImageResponse(200));
+
+    // Populate memory cache
+    await getImageQueryFnNoCacheApi('evict-no-cacheapi', fakeQueryApi);
+    vi.clearAllMocks();
+
+    await evictImageNoCacheApi('evict-no-cacheapi');
+
+    expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/mock-url');
+    // Cache API was never touched
+    expect(mockCachesOpen).not.toHaveBeenCalled();
+    expect(mockCacheDelete).not.toHaveBeenCalled();
+  });
+
+  it('clearImageCache works without Cache API (only memory cleared)', async () => {
+    storage.set('idToken', 'valid-token');
+    mockFetch.mockResolvedValueOnce(mockImageResponse(200));
+
+    await getImageQueryFnNoCacheApi('clear-no-cacheapi', fakeQueryApi);
+    vi.clearAllMocks();
+
+    await clearImageCacheNoCacheApi();
+
+    expect(mockRevokeObjectURL).toHaveBeenCalled();
+    // Cache API was never touched
+    expect(mockCachesDelete).not.toHaveBeenCalled();
   });
 });
