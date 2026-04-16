@@ -182,9 +182,21 @@ export function ProfileView() {
     }
   }, [subscription]);
 
-  // Derive tiers from API plans
+  // Sync selected amounts when plans or currency change
   const monthlyPlan = availablePlans.find(p => p.period === 'monthly');
   const yearlyPlan = availablePlans.find(p => p.period === 'yearly');
+
+  useEffect(() => {
+    if (monthlyPlan) setSelectedAmount(monthlyPlan.amount);
+    else setSelectedAmount(currency === 'INR' ? 99 : 1.99);
+  }, [monthlyPlan?.amount, currency]);
+
+  useEffect(() => {
+    if (yearlyPlan) setSelectedAnnualAmount(yearlyPlan.amount);
+    else setSelectedAnnualAmount(currency === 'INR' ? 999 : 19.99);
+  }, [yearlyPlan?.amount, currency]);
+
+  // Derive tiers from API plans
   const currencySymbol = currency === 'INR' ? '₹' : '$';
 
   const supportTiers = monthlyPlan
