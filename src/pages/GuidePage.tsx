@@ -764,10 +764,10 @@ export function GuidePage() {
             {/* CTA */}
             <div className="text-center py-12 border-t border-border/50">
               <h2 className="text-2xl font-semibold text-foreground mb-3">Ready to start?</h2>
-              <p className="text-muted-foreground mb-6">Create your free account and start journaling your trades today.</p>
+              <p className="text-muted-foreground mb-6">Start your free trial and begin journaling your trades today. No credit card required.</p>
               <Button asChild size="lg" className="gap-2">
                 <Link to="/signup">
-                  Get Started Free
+                  Start Free Trial
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </Button>

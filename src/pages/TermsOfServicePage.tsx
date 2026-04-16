@@ -45,8 +45,8 @@ export function TermsOfServicePage() {
               <p className="text-muted-foreground leading-relaxed">
                 TradeQut is a web-based trading journal application that allows users to log trades, track
                 performance, analyze trading patterns, and maintain a journal of their trading activity. The
-                Service is provided free of charge with all core features included. Optional paid support
-                contributions are available but not required.
+                Service includes a 1-month free trial with all features. After the trial period, a paid
+                subscription is required to continue using the platform.
               </p>
             </section>
 
@@ -104,10 +104,11 @@ export function TermsOfServicePage() {
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">7. Payment Terms</h2>
               <p className="text-muted-foreground leading-relaxed">
-                The core Service is provided free of charge. Optional support contributions (starting at
-                &#8377;99/month) are entirely voluntary and do not unlock additional features. Payments are
-                processed through PayU, a third-party payment gateway. By making a payment, you agree to
-                PayU's terms and conditions. All payment-related disputes are subject to our Refund & Cancellation Policy.
+                TradeQut offers a 1-month free trial with no credit card required. After the trial,
+                a paid subscription (starting at &#8377;99/month) is required to continue using the Service.
+                All features are included in every plan. Payments are processed through Stripe, a third-party
+                payment gateway. By making a payment, you agree to Stripe's terms and conditions. All
+                payment-related disputes are subject to our Refund & Cancellation Policy.
               </p>
             </section>
 

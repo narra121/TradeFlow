@@ -32,21 +32,20 @@ export function RefundPolicyPage() {
 
           <div className="space-y-10 text-foreground/90">
             <section className="bg-card rounded-2xl border border-success/20 p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-success mb-4">TradeQut is Free</h2>
+              <h2 className="text-2xl font-semibold text-success mb-4">TradeQut Free Trial</h2>
               <p className="text-muted-foreground leading-relaxed">
-                TradeQut is a <span className="text-foreground font-medium">100% free trading journal</span> with
-                all features included at no cost. There are no premium tiers, paywalls, or feature restrictions.
-                You can use TradeQut indefinitely without any payment.
+                TradeQut offers a <span className="text-foreground font-medium">1-month free trial</span> with
+                all features included — no credit card required. After the trial, a paid subscription is
+                required to continue using the platform.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">1. Optional Support Contributions</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">1. Subscription Plans</h2>
               <p className="text-muted-foreground leading-relaxed">
-                TradeQut offers optional support contributions (&#8377;99/month or &#8377;299/month) for users
-                who wish to support the independent developer behind the platform. These contributions are entirely
-                voluntary and do not unlock any additional features or benefits. The app remains fully functional
-                without any payment.
+                After your 1-month free trial, TradeQut requires a paid subscription (starting at &#8377;99/month)
+                to continue using the platform. All features are included in every plan — there are no premium tiers
+                or feature restrictions between plans.
               </p>
             </section>
 

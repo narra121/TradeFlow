@@ -744,8 +744,8 @@ export function ProfileView() {
               </>
             ) : (
               <div className="text-center p-4 text-muted-foreground">
-                <p className="text-success font-medium mb-1">Free Account</p>
-                <p className="text-sm">You have full access to all features! Support us below if you'd like.</p>
+                <p className="text-primary font-medium mb-1">No Active Subscription</p>
+                <p className="text-sm">Subscribe to a plan below to access all features.</p>
               </div>
             )}
           </CardContent>
@@ -764,11 +764,11 @@ export function ProfileView() {
           <div className="mx-auto w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
             <Heart className="w-6 h-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-xl sm:text-2xl">Optional Support</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl">Subscription Plans</CardTitle>
           <CardDescription className="max-w-xl mx-auto mt-2 text-sm sm:text-base">
-            TradeQut is <span className="text-success font-semibold">100% free</span> — all features, no limits.
+            Choose a plan to continue using TradeQut.
             <span className="block mt-2 text-foreground/80">
-              If you'd like to support development, here are optional support tiers:
+              Your subscription directly supports hosting and development:
             </span>
           </CardDescription>
         </CardHeader>
@@ -877,9 +877,8 @@ export function ProfileView() {
           {/* Info Box */}
           <div className="p-4 rounded-lg bg-muted/30 border border-border/50 mb-6">
             <p className="text-sm text-muted-foreground text-center">
-              <span className="text-success font-medium">All features are free, no limits.</span> Your support is optional but greatly appreciated.
-              It helps cover server hosting, database costs, and ongoing development.
-              No features are locked — this is purely a way to say thanks!
+              Your subscription helps cover server hosting, database costs, and ongoing development.
+              Cancel anytime — no long-term commitment.
             </p>
           </div>
 

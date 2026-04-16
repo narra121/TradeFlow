@@ -31,7 +31,7 @@ export function AboutPage() {
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">About TradeQut</h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               A trading journal built by a trader, for traders. Helping you track, analyze,
-              and improve your trading performance — completely free.
+              and improve your trading performance.
             </p>
           </div>
 
@@ -48,11 +48,11 @@ export function AboutPage() {
               <p>
                 What started as a personal project quickly grew into something bigger. TradeQut is now
                 a full-featured trading journal with advanced analytics, calendar views, goal tracking,
-                multi-account support, and AI-powered trade extraction — all available for free.
+                multi-account support, and AI-powered trade extraction.
               </p>
               <p>
                 TradeQut is independently developed and maintained with a commitment to keeping the
-                core product free and accessible to every trader, whether you're just starting out or
+                product accessible to every trader with a free trial, whether you're just starting out or
                 managing multiple accounts professionally.
               </p>
             </div>
@@ -69,7 +69,7 @@ export function AboutPage() {
                 <h3 className="text-xl font-semibold text-foreground mb-3">Mission</h3>
                 <p className="text-muted-foreground leading-relaxed">
                   To provide every trader with a professional-grade journaling and analytics tool
-                  that helps them make better, more informed trading decisions — without the paywall.
+                  that helps them make better, more informed trading decisions.
                 </p>
               </div>
 
@@ -77,10 +77,10 @@ export function AboutPage() {
                 <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-4">
                   <Heart className="w-6 h-6 text-success" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Free Forever</h3>
+                <h3 className="text-xl font-semibold text-foreground mb-3">Try Before You Pay</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  All core features of TradeQut are free and will remain free. We believe that
-                  access to quality trading tools shouldn't depend on your account size or budget.
+                  Start with a 1-month free trial — no credit card required. We believe you should
+                  experience the full product before committing.
                 </p>
               </div>
 
