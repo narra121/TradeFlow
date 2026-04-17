@@ -44,6 +44,7 @@ vi.mock('@/components/insights', () => ({
   InsightCard: ({ insight }: any) => <div data-testid="insight-card">{insight.title}</div>,
   TradeSpotlight: ({ spotlight }: any) => <div data-testid="trade-spotlight">{spotlight.symbol}</div>,
   InsightsSummary: ({ summary }: any) => <div data-testid="insights-summary">{summary}</div>,
+  AuroraBackground: ({ children }: any) => <div data-testid="aurora-background">{children}</div>,
 }));
 
 // Mock insights API
