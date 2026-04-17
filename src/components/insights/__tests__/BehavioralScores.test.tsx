@@ -1,7 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderWithProviders as render, screen } from '@/test/test-utils';
 import { BehavioralScores } from '../BehavioralScores';
 import type { BehavioralScore } from '@/types/insights';
+
+vi.mock('@/hooks/useAnimatedCounter', () => ({
+  useAnimatedCounter: (target: number) => target,
+}));
 
 describe('BehavioralScores', () => {
   const mockScores: BehavioralScore[] = [

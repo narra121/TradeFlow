@@ -1,7 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderWithProviders as render, screen } from '@/test/test-utils';
 import { ProfileScoreCard } from '../ProfileScoreCard';
 import type { TraderProfile } from '@/types/insights';
+
+vi.mock('@/hooks/useAnimatedCounter', () => ({
+  useAnimatedCounter: (target: number) => target,
+}));
 
 describe('ProfileScoreCard', () => {
   const mockProfile: TraderProfile = {
