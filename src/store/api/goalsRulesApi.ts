@@ -56,7 +56,7 @@ export const goalsRulesApi = api.injectEndpoints({
     
     updateGoal: builder.mutation<Goal, { id: string; payload: UpdateGoalPayload }>({
       query: ({ id, payload }) => ({
-        url: `/goals/${id}`,
+        url: `/goals/${encodeURIComponent(id)}`,
         method: 'PUT',
         body: payload,
       }),
@@ -159,7 +159,7 @@ export const goalsRulesApi = api.injectEndpoints({
     
     updateRule: builder.mutation<TradingRule, { id: string; payload: UpdateRulePayload }>({
       query: ({ id, payload }) => ({
-        url: `/rules/${id}`,
+        url: `/rules/${encodeURIComponent(id)}`,
         method: 'PUT',
         body: payload,
       }),
@@ -207,7 +207,7 @@ export const goalsRulesApi = api.injectEndpoints({
     
     toggleRule: builder.mutation<TradingRule, string>({
       query: (id) => ({
-        url: `/rules/${id}/toggle`,
+        url: `/rules/${encodeURIComponent(id)}/toggle`,
         method: 'PUT',
       }),
       transformResponse: (response: any) => {
@@ -254,7 +254,7 @@ export const goalsRulesApi = api.injectEndpoints({
     
     deleteRule: builder.mutation<{ message: string; rule: TradingRule }, string>({
       query: (id) => ({
-        url: `/rules/${id}`,
+        url: `/rules/${encodeURIComponent(id)}`,
         method: 'DELETE',
       }),
       transformResponse: (response: any) => {
