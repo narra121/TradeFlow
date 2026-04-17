@@ -12,10 +12,9 @@ export function AdSlot({ placementId, className }: AdSlotProps) {
   const adPushed = useRef(false);
 
   const placement = getPlacement(placementId);
+  const isTestMode = adConfig?.testMode === true;
 
   useEffect(() => {
-    // AdSense script is loaded via index.html <head> tag.
-    // We just need to push the ad slot for this placement.
     if (placement && adConfig?.clientId && !adPushed.current) {
       try {
         (window as any).adsbygoogle = (window as any).adsbygoogle || [];
@@ -49,6 +48,7 @@ export function AdSlot({ placementId, className }: AdSlotProps) {
         data-ad-slot={placement.slotId}
         data-ad-format={placement.format}
         data-full-width-responsive="true"
+        {...(isTestMode ? { 'data-adtest': 'on' } : {})}
       />
     </div>
   );

@@ -12,6 +12,7 @@ export interface AdConfig {
   tier: 'paid' | 'trial' | 'free_with_ads';
   provider?: string;
   clientId?: string;
+  testMode?: boolean;
   placements: AdPlacement[];
 }
 
