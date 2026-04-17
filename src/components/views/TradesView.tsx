@@ -402,6 +402,16 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
           setIsDetailModalOpen(false);
           setSelectedTradeIndex(null);
         }}
+        onEdit={(trade) => {
+          setIsDetailModalOpen(false);
+          setSelectedTradeIndex(null);
+          handleEditTrade(trade);
+        }}
+        onDelete={(tradeId) => {
+          setIsDetailModalOpen(false);
+          setSelectedTradeIndex(null);
+          handleDeleteTrade(tradeId);
+        }}
         onPrevious={handlePreviousTrade}
         onNext={handleNextTrade}
         hasPrevious={selectedTradeIndex !== null && selectedTradeIndex > 0}
