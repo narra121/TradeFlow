@@ -169,18 +169,11 @@ describe('AppPage - default route redirect', () => {
 });
 
 describe('AppPage - unknown nested routes', () => {
-  it('does not render any known view for an unrecognized nested route', async () => {
+  it('redirects unknown nested routes to dashboard', async () => {
     renderAppPage('/app/nonexistent');
-    // Give lazy loading a chance to resolve, then verify nothing rendered
-    // We wait a tick and then check that no known views appear
+    // The catch-all route redirects to /app/dashboard
     await waitFor(() => {
-      expect(screen.queryByTestId('dashboard-view')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('tradelog-view')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('analytics-view')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('goals-view')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('profile-view')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('settings-view')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('accounts-view')).not.toBeInTheDocument();
+      expect(screen.getByTestId('dashboard-view')).toBeInTheDocument();
     });
   });
 
@@ -188,12 +181,6 @@ describe('AppPage - unknown nested routes', () => {
     renderAppPage('/app/unknown-route');
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
     expect(screen.getByText('Sidebar')).toBeInTheDocument();
-  });
-
-  it('derives the unknown path segment as activeView for the sidebar', () => {
-    renderAppPage('/app/foobar');
-    const sidebar = screen.getByTestId('sidebar');
-    expect(sidebar).toHaveAttribute('data-active-view', 'foobar');
   });
 });
 

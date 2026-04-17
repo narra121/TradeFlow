@@ -156,6 +156,7 @@ export function AppPage() {
               <Route path="goals" element={<GoalsView />} />
               <Route path="profile" element={<ProfileView />} />
               <Route path="settings" element={<SettingsView />} />
+              <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
             </Routes>
           </Suspense>
         </div>
