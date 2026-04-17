@@ -275,6 +275,106 @@
   animation: banner-slide-up 300ms ease-out forwards;
 }
 
+/* Aurora background blobs */
+@keyframes aurora-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -40px) scale(1.1); }
+  50% { transform: translate(-20px, 20px) scale(0.95); }
+  75% { transform: translate(40px, 30px) scale(1.05); }
+}
+
+@keyframes aurora-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-40px, 30px) scale(1.05); }
+  50% { transform: translate(30px, -20px) scale(1.1); }
+  75% { transform: translate(-20px, -40px) scale(0.95); }
+}
+
+@keyframes aurora-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1.05); }
+  33% { transform: translate(25px, 35px) scale(0.95); }
+  66% { transform: translate(-35px, -15px) scale(1.1); }
+}
+
+/* Text shimmer for AI headings */
+@keyframes text-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* One-shot shimmer sweep across a card */
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Subtle glow pulse for borders and rings */
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Blur-to-clear reveal */
+@keyframes blur-reveal {
+  from { opacity: 0; filter: blur(4px); }
+  to { opacity: 1; filter: blur(0); }
+}
+
+/* Rotating conic gradient border */
+@keyframes border-rotate {
+  from { --border-angle: 0deg; }
+  to { --border-angle: 360deg; }
+}
+
+.ai-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    hsl(160 84% 39%) 0%,
+    hsl(170 80% 55%) 25%,
+    hsl(265 89% 62%) 50%,
+    hsl(170 80% 55%) 75%,
+    hsl(160 84% 39%) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: text-shimmer 4s linear infinite;
+}
+
+.ai-glow-card {
+  @apply glass-card relative overflow-hidden transition-all duration-300;
+}
+
+.ai-glow-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 30px hsl(160 84% 39% / 0.15), 0 4px 24px hsl(220 20% 3% / 0.5);
+  border-color: hsl(160 84% 39% / 0.3);
+}
+
+.ai-glow-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(160 84% 39% / 0.06) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer-sweep 1.5s ease-out 0.3s forwards;
+  pointer-events: none;
+}
+
+.animate-blur-reveal {
+  animation: blur-reveal 0.3s ease-out forwards;
+}
+
+.animate-glow-breathe {
+  animation: glow-breathe 3s ease-in-out infinite;
+}
+
 /* Stagger animation delays */
 .stagger-1 { animation-delay: 0.1s; }
 .stagger-2 { animation-delay: 0.2s; }

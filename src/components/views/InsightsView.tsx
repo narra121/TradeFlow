@@ -19,6 +19,7 @@ import {
   InsightCard,
   TradeSpotlight,
   InsightsSummary,
+  AuroraBackground,
 } from '@/components/insights';
 import {
   Sparkles,
@@ -249,7 +250,7 @@ export function InsightsView() {
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">AI Insights</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold ai-shimmer-text">AI Insights</h1>
               <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">Beta</Badge>
             </div>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">
@@ -362,59 +363,61 @@ export function InsightsView() {
 
           {/* Results */}
           {insights && (
-            <div className="space-y-6 animate-in fade-in-0 duration-500">
-              {/* Summary */}
-              {insights.summary && <InsightsSummary summary={insights.summary} />}
+            <AuroraBackground>
+              <div className="space-y-6 animate-in fade-in-0 duration-500 p-1">
+                {/* Summary */}
+                {insights.summary && <InsightsSummary summary={insights.summary} />}
 
-              {/* Profile + Behavioral Scores */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {insights.profile && (
-                  <ProfileScoreCard profile={insights.profile} />
+                {/* Profile + Behavioral Scores */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  {insights.profile && (
+                    <ProfileScoreCard profile={insights.profile} />
+                  )}
+                  {insights.scores && insights.scores.length > 0 && (
+                    <BehavioralScores scores={insights.scores} />
+                  )}
+                </div>
+
+                {/* Insights */}
+                {sortedInsights.length > 0 && (
+                  <div>
+                    <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                      Key Insights
+                      <span className="text-xs text-muted-foreground font-normal">
+                        ({sortedInsights.length})
+                      </span>
+                    </h2>
+                    <div className="space-y-3">
+                      {sortedInsights.map((insight, index) => (
+                        <InsightCard
+                          key={`${insight.severity}-${insight.title}-${index}`}
+                          insight={insight}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 )}
-                {insights.scores && insights.scores.length > 0 && (
-                  <BehavioralScores scores={insights.scores} />
+
+                {/* Trade Spotlights */}
+                {insights.tradeSpotlights && insights.tradeSpotlights.length > 0 && (
+                  <div>
+                    <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                      Trade Spotlights
+                      <span className="text-xs text-muted-foreground font-normal">
+                        ({insights.tradeSpotlights.length})
+                      </span>
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {insights.tradeSpotlights.map((spotlight) => (
+                        <TradeSpotlight key={spotlight.tradeId} spotlight={spotlight} />
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
-
-              {/* Insights */}
-              {sortedInsights.length > 0 && (
-                <div>
-                  <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                    Key Insights
-                    <span className="text-xs text-muted-foreground font-normal">
-                      ({sortedInsights.length})
-                    </span>
-                  </h2>
-                  <div className="space-y-3">
-                    {sortedInsights.map((insight, index) => (
-                      <InsightCard
-                        key={`${insight.severity}-${insight.title}-${index}`}
-                        insight={insight}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Trade Spotlights */}
-              {insights.tradeSpotlights && insights.tradeSpotlights.length > 0 && (
-                <div>
-                  <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                    Trade Spotlights
-                    <span className="text-xs text-muted-foreground font-normal">
-                      ({insights.tradeSpotlights.length})
-                    </span>
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {insights.tradeSpotlights.map((spotlight) => (
-                      <TradeSpotlight key={spotlight.tradeId} spotlight={spotlight} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            </AuroraBackground>
           )}
         </>
       )}

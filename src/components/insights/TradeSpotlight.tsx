@@ -19,7 +19,7 @@ export function TradeSpotlight({ spotlight }: TradeSpotlightProps) {
 
   return (
     <div
-      className="glass-card p-3 sm:p-4 cursor-pointer hover:bg-secondary/20 transition-all duration-200 animate-fade-in group"
+      className="ai-glow-card p-3 sm:p-4 cursor-pointer animate-fade-in group"
       onClick={handleClick}
       role="button"
       tabIndex={0}
@@ -39,6 +39,11 @@ export function TradeSpotlight({ spotlight }: TradeSpotlightProps) {
               ? 'bg-success/10 text-success'
               : 'bg-destructive/10 text-destructive'
           )}
+          style={{
+            boxShadow: isPositive
+              ? '0 0 10px hsl(160 84% 39% / 0.25)'
+              : '0 0 10px hsl(0 72% 51% / 0.25)',
+          }}
         >
           {isPositive ? '+' : ''}${Math.abs(pnl).toFixed(2)}
         </div>
