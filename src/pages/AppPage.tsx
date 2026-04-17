@@ -10,6 +10,7 @@ const GoalsView = lazy(() => import('@/components/views/GoalsView').then(m => ({
 const ProfileView = lazy(() => import('@/components/views/ProfileView').then(m => ({ default: m.ProfileView })));
 const SettingsView = lazy(() => import('@/components/views/SettingsView').then(m => ({ default: m.SettingsView })));
 const AccountsView = lazy(() => import('@/components/views/AccountsView').then(m => ({ default: m.AccountsView })));
+const InsightsView = lazy(() => import('@/components/views/InsightsView').then(m => ({ default: m.InsightsView })));
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
 import { useCreateTradeMutation, useBulkImportTradesMutation, useGetSavedOptionsQuery, useGetSubscriptionQuery } from '@/store/api';
 import { useGetAdConfigQuery } from '@/store/api/adConfigApi';
@@ -151,6 +152,7 @@ export function AppPage() {
               <Route path="accounts" element={<AccountsView />} />
               <Route path="tradelog" element={<TradeLogView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />} />
               <Route path="analytics" element={<AnalyticsView />} />
+              <Route path="insights" element={<InsightsView />} />
               <Route path="goals" element={<GoalsView />} />
               <Route path="profile" element={<ProfileView />} />
               <Route path="settings" element={<SettingsView />} />

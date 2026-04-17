@@ -12,6 +12,7 @@ import {
   User,
   Building2,
   HelpCircle,
+  Sparkles,
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,8 +30,9 @@ const navItems: (NavItem & { shortcut?: string })[] = [
   { icon: Building2, label: 'Accounts', id: 'accounts', shortcut: '2' },
   { icon: BookOpen, label: 'Trade Log', id: 'tradelog', shortcut: '3' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics', shortcut: '4' },
-  { icon: Target, label: 'Goals', id: 'goals', shortcut: '5' },
-  { icon: Settings, label: 'Settings', id: 'settings', shortcut: '6' },
+  { icon: Sparkles, label: 'AI Insights', id: 'insights', shortcut: '5' },
+  { icon: Target, label: 'Goals', id: 'goals', shortcut: '6' },
+  { icon: Settings, label: 'Settings', id: 'settings', shortcut: '7' },
 ];
 
 /** Conditionally wraps children in a tooltip (only when sidebar is collapsed on desktop). */
