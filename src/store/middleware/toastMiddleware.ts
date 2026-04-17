@@ -94,6 +94,7 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
         }
         
         if (message) {
+          toast.dismiss();
           toast.success(message);
         }
       }
@@ -139,6 +140,7 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
 
         // Skip auth errors - handled in auth component
         if (endpointName !== 'login' && endpointName !== 'signup') {
+          toast.dismiss();
           if (errorDetails.length > 0) {
             toast.error(`${errorMessage}: ${errorDetails.join(', ')}`);
           } else {

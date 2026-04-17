@@ -3,10 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock sonner toast
 const toastSuccessMock = vi.fn();
 const toastErrorMock = vi.fn();
+const toastDismissMock = vi.fn();
 vi.mock('sonner', () => ({
   toast: {
     success: (...args: any[]) => toastSuccessMock(...args),
     error: (...args: any[]) => toastErrorMock(...args),
+    dismiss: () => toastDismissMock(),
   },
 }));
 
