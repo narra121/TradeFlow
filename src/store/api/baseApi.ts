@@ -76,105 +76,107 @@ const baseQueryWithReauth: BaseQueryFn<
     validateStatus: (response) => response.ok, // Only treat 2xx as success
   });
 
-  let result = await baseQuery(args, api, extraOptions);
-  
-  // Handle response data transformation for successful requests
-  if (result.data) {
-    const data = result.data as any;
-    
-    // New format: { success, message, data, ... }
-    if (data && typeof data === 'object' && 'success' in data) {
-      if (!data.success) {
-        // Convert to error with proper message
-        return {
-          error: {
-            status: 'CUSTOM_ERROR',
-            data,
-            error: data.message || 'Request failed',
-          } as FetchBaseQueryError,
-        };
-      }
-      
-      let responseData = data.data;
-      
-      // If result is null/undefined, use an empty object to attach message
-      if (responseData === null || responseData === undefined) {
-        responseData = {};
-      }
+  // Transform response: unwrap backend envelope, normalize errors
+  const transformResult = (raw: typeof result) => {
+    let r = raw;
 
-      // Attach message to result using non-enumerable property
-      if (responseData && (typeof responseData === 'object' || typeof responseData === 'function') && data.message) {
-        try {
-          Object.defineProperty(responseData, '_apiMessage', {
-            value: data.message,
-            enumerable: false,
-            writable: true,
-            configurable: true
-          });
-        } catch (e) {
-          // Ignore if immutable
+    // Handle response data transformation for successful requests
+    if (r.data) {
+      const data = r.data as any;
+
+      // New format: { success, message, data, ... }
+      if (data && typeof data === 'object' && 'success' in data) {
+        if (!data.success) {
+          return {
+            error: {
+              status: 'CUSTOM_ERROR',
+              data,
+              error: data.message || 'Request failed',
+            } as FetchBaseQueryError,
+          };
         }
+
+        let responseData = data.data;
+
+        if (responseData === null || responseData === undefined) {
+          responseData = {};
+        }
+
+        if (responseData && (typeof responseData === 'object' || typeof responseData === 'function') && data.message) {
+          try {
+            Object.defineProperty(responseData, '_apiMessage', {
+              value: data.message,
+              enumerable: false,
+              writable: true,
+              configurable: true
+            });
+          } catch (e) {
+            // Ignore if immutable
+          }
+        }
+
+        r = { ...r, data: responseData } as any;
       }
-      
-      result = { ...result, data: responseData } as any;
-    }
-    // Old format: { data, error, meta }
-    else if (data && typeof data === 'object' && 'data' in data) {
-      // Check if backend returned an error in the envelope
-      if (data.error && data.error !== null) {
-        const errorMsg = typeof data.error === 'object' ? data.error.message : data.error;
-        return {
-          error: {
-            status: 'CUSTOM_ERROR',
-            data: {
-              message: errorMsg || 'Request failed',
-              error: data.error,
-            },
-            error: errorMsg || 'Request failed',
-          } as FetchBaseQueryError,
-        };
+      // Old format: { data, error, meta }
+      else if (data && typeof data === 'object' && 'data' in data) {
+        if (data.error && data.error !== null) {
+          const errorMsg = typeof data.error === 'object' ? data.error.message : data.error;
+          return {
+            error: {
+              status: 'CUSTOM_ERROR',
+              data: {
+                message: errorMsg || 'Request failed',
+                error: data.error,
+              },
+              error: errorMsg || 'Request failed',
+            } as FetchBaseQueryError,
+          };
+        }
+        r = { ...r, data: data.data } as any;
       }
-      result = { ...result, data: data.data } as any;
-    }
-  }
-
-  // Normalize network errors (no backend response, so no root `message`)
-  if (result.error) {
-    const err: any = result.error;
-    const status = err?.status;
-
-    // fetchBaseQuery network errors usually come as:
-    // { status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' }
-    if (status === 'FETCH_ERROR') {
-      const isOffline = typeof navigator !== 'undefined' && navigator && navigator.onLine === false;
-      const raw = typeof err?.error === 'string' ? err.error : '';
-      const looksLikeDns = raw.toLowerCase().includes('name_not_resolved');
-
-      err.data = isOffline
-        ? 'You appear to be offline. Please check your internet connection.'
-        : looksLikeDns
-          ? 'Network issue (DNS lookup failed). Please try again.'
-          : 'Network error. Please try again.';
     }
 
-    if (status === 'TIMEOUT_ERROR') {
-      err.data = 'Request timed out. Please try again.';
-    }
-  }
+    // Normalize network errors
+    if (r.error) {
+      const err: any = r.error;
+      const status = err?.status;
 
-  // Check for subscription-required 403
-  const httpStatus = getHttpStatus(result);
-  if (httpStatus === 403 && result.error) {
-    const errData: any = (result.error as any)?.data;
-    const errorCode = errData?.errorCode || errData?.error?.code;
-    if (errorCode === 'SUBSCRIPTION_REQUIRED') {
-      const reason = errData?.error?.details?.reason || 'subscription_ended';
-      const message = errData?.message || 'Please subscribe to continue using TradeQut.';
-      window.dispatchEvent(new CustomEvent('subscription-required', {
-        detail: { reason, message },
-      }));
+      if (status === 'FETCH_ERROR') {
+        const isOffline = typeof navigator !== 'undefined' && navigator && navigator.onLine === false;
+        const raw = typeof err?.error === 'string' ? err.error : '';
+        const looksLikeDns = raw.toLowerCase().includes('name_not_resolved');
+
+        err.data = isOffline
+          ? 'You appear to be offline. Please check your internet connection.'
+          : looksLikeDns
+            ? 'Network issue (DNS lookup failed). Please try again.'
+            : 'Network error. Please try again.';
+      }
+
+      if (status === 'TIMEOUT_ERROR') {
+        err.data = 'Request timed out. Please try again.';
+      }
     }
-  }
+
+    // Check for subscription-required 403
+    const httpStatus = getHttpStatus(r);
+    if (httpStatus === 403 && r.error) {
+      const errData: any = (r.error as any)?.data;
+      const errorCode = errData?.errorCode || errData?.error?.code;
+      if (errorCode === 'SUBSCRIPTION_REQUIRED') {
+        const reason = errData?.error?.details?.reason || 'subscription_ended';
+        const message = errData?.message || 'Please subscribe to continue using TradeQut.';
+        window.dispatchEvent(new CustomEvent('subscription-required', {
+          detail: { reason, message },
+        }));
+      }
+    }
+
+    return r;
+  };
+
+  let result = await baseQuery(args, api, extraOptions);
+  result = transformResult(result) as any;
 
   if (isUnauthorized(result)) {
     // If the refresh endpoint itself is unauthorized, immediately logout.
@@ -196,8 +198,8 @@ const baseQueryWithReauth: BaseQueryFn<
         processQueue(null, newToken);
         isRefreshing = false;
 
-        // Retry the original request
-        result = await baseQuery(args, api, extraOptions);
+        // Retry the original request (transform the response)
+        result = transformResult(await baseQuery(args, api, extraOptions)) as any;
 
         // If the retried request is still unauthorized, logout.
         if (isUnauthorized(result)) {
@@ -217,8 +219,8 @@ const baseQueryWithReauth: BaseQueryFn<
           failedQueue.push({ resolve, reject });
         });
 
-        // Retry after token is refreshed
-        result = await baseQuery(args, api, extraOptions);
+        // Retry after token is refreshed (transform the response)
+        result = transformResult(await baseQuery(args, api, extraOptions)) as any;
 
         // If the retried request is still unauthorized, logout.
         if (isUnauthorized(result)) {

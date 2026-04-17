@@ -27,6 +27,9 @@ const skipToastEndpoints = [
   'getGoalsProgress',
   'getTrades',
   'getAccounts',
+  'getAdConfig',
+  'getStats',
+  'getPlans',
   'login', // Skip login toasts, handled in auth component
 ];
 
