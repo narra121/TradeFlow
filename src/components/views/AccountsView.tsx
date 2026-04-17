@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { TradingAccount, AccountStatus } from '@/types/trade';
 import { Plus, Building2, AlertTriangle, Loader2 } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { AdSlot } from '@/components/ads/AdSlot';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -191,6 +192,8 @@ export function AccountsView() {
           </button>
         </div>
       )}
+
+      <AdSlot placementId="accounts-empty-space" className="mt-6" />
 
       <AddAccountModal
         open={isAddModalOpen}

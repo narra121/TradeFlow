@@ -57,6 +57,10 @@ vi.mock('@/store/api', () => ({
   useGetSubscriptionQuery: () => ({ data: undefined }),
 }));
 
+vi.mock('@/store/api/adConfigApi', () => ({
+  useGetAdConfigQuery: () => ({ data: undefined }),
+}));
+
 vi.mock('@/hooks/useTradesSync', () => ({
   useTradesSync: () => {},
 }));

@@ -163,6 +163,17 @@ describe('SubscriptionBanner', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders free_with_ads message with Go Ad-Free CTA', () => {
+    render(
+      <SubscriptionBanner {...defaultProps} reason="free_with_ads" />
+    );
+
+    expect(
+      screen.getByText(/subscribe to remove ads and support development/i)
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Go Ad-Free' })).toBeInTheDocument();
+  });
+
   it('uses reason-specific dismiss keys so dismissing one reason does not affect another', () => {
     sessionStorage.setItem('tradeQut_banner_dismissed_trial_expired', 'true');
 

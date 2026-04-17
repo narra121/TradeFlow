@@ -111,7 +111,7 @@ export const accountsApi = api.injectEndpoints({
     updateAccountStatus: builder.mutation<TradingAccount, { id: string; status: AccountStatus }>({
       query: ({ id, status }) => ({
         url: `/accounts/${id}/status`,
-        method: 'PUT',
+        method: 'PATCH',
         body: { status },
       }),
       transformResponse: (response: any) => {

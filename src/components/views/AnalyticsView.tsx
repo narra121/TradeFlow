@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { cn } from '@/lib/utils';
+import { AdSlot } from '@/components/ads/AdSlot';
 import {
   BarChart,
   Bar,
@@ -417,6 +418,8 @@ export function AnalyticsView() {
           )}
         </div>
       </div>
+
+      <AdSlot placementId="analytics-between-charts" className="my-6" />
 
       {/* Hourly Win Rate & Trade Duration Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

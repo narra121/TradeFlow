@@ -12,6 +12,7 @@ const SettingsView = lazy(() => import('@/components/views/SettingsView').then(m
 const AccountsView = lazy(() => import('@/components/views/AccountsView').then(m => ({ default: m.AccountsView })));
 import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
 import { useCreateTradeMutation, useBulkImportTradesMutation, useGetSavedOptionsQuery, useGetSubscriptionQuery } from '@/store/api';
+import { useGetAdConfigQuery } from '@/store/api/adConfigApi';
 import type { CreateTradePayload } from '@/lib/api';
 import { useTradesSync } from '@/hooks/useTradesSync';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -34,6 +35,9 @@ export function AppPage() {
 
   // Fetch subscription status on initial load (will be cached)
   const { data: subscription } = useGetSubscriptionQuery();
+
+  // Prefetch ad config on app load
+  useGetAdConfigQuery();
   
   // Centralized trades sync with account selection
   useTradesSync();

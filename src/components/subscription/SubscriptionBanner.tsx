@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface SubscriptionBannerProps {
-  reason: 'trial_active' | 'trial_expired' | 'subscription_cancelled' | 'payment_failed' | 'subscription_ended' | 'no_subscription';
+  reason: 'trial_active' | 'trial_expired' | 'subscription_cancelled' | 'payment_failed' | 'subscription_ended' | 'no_subscription' | 'free_with_ads';
   trialEnd?: string;
   onSubscribe: () => void;
   onDismiss: () => void;
@@ -47,6 +47,12 @@ const bannerConfig = {
     iconClass: 'text-muted-foreground',
     ctaLabel: 'Subscribe Now',
   },
+  free_with_ads: {
+    icon: Sparkles,
+    bgClass: 'bg-primary/5 border-primary/20',
+    iconClass: 'text-primary',
+    ctaLabel: 'Go Ad-Free',
+  },
 } as const;
 
 function formatDate(iso: string): string {
@@ -79,6 +85,8 @@ function getMessage(reason: SubscriptionBannerProps['reason'], trialEnd?: string
       return 'Your subscription has ended. Renew to continue.';
     case 'no_subscription':
       return 'Subscribe to access all TradeQut features.';
+    case 'free_with_ads':
+      return 'Enjoying TradeQut? Subscribe to remove ads and support development.';
   }
 }
 

@@ -3,6 +3,7 @@ import { Trade } from '@/types/trade';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { AdSlot } from '@/components/ads/AdSlot';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, eachWeekOfInterval, subDays, isWithinInterval } from 'date-fns';
 import {
   Plus,
@@ -1446,6 +1447,10 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           </div>
           )}
         </>
+      )}
+
+      {activeTab === 'trades' && (
+        <AdSlot placementId="tradelog-below-pagination" className="mt-6" />
       )}
 
       {/* Calendar Tab Content */}

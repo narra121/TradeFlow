@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { AdSlot } from '@/components/ads/AdSlot';
 import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Trophy, Info, Settings } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
@@ -865,6 +866,8 @@ export function GoalsView() {
           </div>
         </div>
       </div>
+
+      <AdSlot placementId="goals-below-quote" className="mt-6" />
     </div>
   );
 }

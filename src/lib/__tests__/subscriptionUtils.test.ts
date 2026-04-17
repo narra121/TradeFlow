@@ -23,33 +23,33 @@ describe('getSubscriptionBannerReason', () => {
     expect(getSubscriptionBannerReason({ status: 'trial', trialEnd: futureDate })).toBe('trial_active');
   });
 
-  it('returns trial_expired for trial with past trialEnd', () => {
+  it('returns free_with_ads for trial with past trialEnd', () => {
     const pastDate = new Date(Date.now() - 86400000).toISOString();
-    expect(getSubscriptionBannerReason({ status: 'trial', trialEnd: pastDate })).toBe('trial_expired');
+    expect(getSubscriptionBannerReason({ status: 'trial', trialEnd: pastDate })).toBe('free_with_ads');
   });
 
-  it('returns trial_expired for trial without trialEnd', () => {
-    expect(getSubscriptionBannerReason({ status: 'trial' })).toBe('trial_expired');
+  it('returns free_with_ads for trial without trialEnd', () => {
+    expect(getSubscriptionBannerReason({ status: 'trial' })).toBe('free_with_ads');
   });
 
-  it('returns subscription_cancelled for cancelled status', () => {
-    expect(getSubscriptionBannerReason({ status: 'cancelled' })).toBe('subscription_cancelled');
+  it('returns free_with_ads for cancelled status', () => {
+    expect(getSubscriptionBannerReason({ status: 'cancelled' })).toBe('free_with_ads');
   });
 
   it('returns payment_failed for past_due status', () => {
     expect(getSubscriptionBannerReason({ status: 'past_due' })).toBe('payment_failed');
   });
 
-  it('returns subscription_ended for completed status', () => {
-    expect(getSubscriptionBannerReason({ status: 'completed' })).toBe('subscription_ended');
+  it('returns free_with_ads for completed status', () => {
+    expect(getSubscriptionBannerReason({ status: 'completed' })).toBe('free_with_ads');
   });
 
-  it('returns subscription_ended for paused status', () => {
-    expect(getSubscriptionBannerReason({ status: 'paused' })).toBe('subscription_ended');
+  it('returns free_with_ads for paused status', () => {
+    expect(getSubscriptionBannerReason({ status: 'paused' })).toBe('free_with_ads');
   });
 
-  it('returns no_subscription for created status', () => {
-    expect(getSubscriptionBannerReason({ status: 'created' })).toBe('no_subscription');
+  it('returns free_with_ads for created status', () => {
+    expect(getSubscriptionBannerReason({ status: 'created' })).toBe('free_with_ads');
   });
 
   it('returns null for unknown status', () => {

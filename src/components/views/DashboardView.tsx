@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
+import { AdSlot } from '@/components/ads/AdSlot';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useGetTradesQuery, useGetStatsQuery } from '@/store/api';
@@ -329,6 +330,8 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
               </div>
             </div>
           )}
+
+          <AdSlot placementId="dashboard-bottom" className="mt-6" />
         </div>
       )}
     </div>
