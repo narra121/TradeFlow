@@ -7,17 +7,6 @@ interface AdSlotProps {
   className?: string;
 }
 
-let adsenseLoaded = false;
-function loadAdsenseScript(clientId: string) {
-  if (adsenseLoaded) return;
-  const script = document.createElement('script');
-  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`;
-  script.async = true;
-  script.crossOrigin = 'anonymous';
-  document.head.appendChild(script);
-  adsenseLoaded = true;
-}
-
 export function AdSlot({ placementId, className }: AdSlotProps) {
   const { showAds, adConfig, getPlacement } = useShowAds();
   const adPushed = useRef(false);
@@ -25,8 +14,9 @@ export function AdSlot({ placementId, className }: AdSlotProps) {
   const placement = getPlacement(placementId);
 
   useEffect(() => {
+    // AdSense script is loaded via index.html <head> tag.
+    // We just need to push the ad slot for this placement.
     if (placement && adConfig?.clientId && !adPushed.current) {
-      loadAdsenseScript(adConfig.clientId);
       try {
         (window as any).adsbygoogle = (window as any).adsbygoogle || [];
         (window as any).adsbygoogle.push({});
