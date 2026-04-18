@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { preview } from 'vite';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 const ROUTES = [
@@ -20,6 +20,20 @@ const distDir = join(process.cwd(), 'dist');
 async function prerender() {
   console.log('Starting pre-render...');
 
+  // Pre-seed route directories with index.html so the preview server can serve them
+  const indexFile = join(distDir, 'index.html');
+  for (const route of ROUTES) {
+    if (route === '/') continue;
+    const routeDir = join(distDir, route.slice(1));
+    if (!existsSync(routeDir)) {
+      mkdirSync(routeDir, { recursive: true });
+    }
+    const dest = join(routeDir, 'index.html');
+    if (!existsSync(dest)) {
+      writeFileSync(dest, readFileSync(indexFile, 'utf-8'), 'utf-8');
+    }
+  }
+
   const server = await preview({
     preview: { port: 4173, strictPort: false },
   });
@@ -31,14 +45,16 @@ async function prerender() {
 
   for (const route of ROUTES) {
     const page = await browser.newPage();
-    const url = `${address}${route}`;
+    const url = `${address.replace(/\/$/, '')}${route}`;
 
     await page.goto(url, { waitUntil: 'networkidle' });
 
-    // Wait for React to mount and Helmet to update the <head>
-    await page.waitForSelector('#root > *', { timeout: 15000 });
-    // Small extra wait for Helmet DOM updates
-    await page.waitForTimeout(1500);
+    // Wait for SEO component to set the robots meta tag (indicates page fully rendered)
+    await page.waitForFunction(
+      () => document.querySelector('meta[name="robots"]') !== null,
+      { timeout: 30000 }
+    );
+    await page.waitForTimeout(2000);
 
     const html = await page.content();
 

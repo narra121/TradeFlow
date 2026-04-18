@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:local": "vite --mode localdev",
-    "build": "vite build && node scripts/prerender-routes.js",
-    "build:dev": "vite build --mode development",
+    "build": "vite build && node scripts/prerender-routes.js && node scripts/generate-sitemap.js && node scripts/generate-og-image.js && node scripts/convert-images.js",
+    "build:dev": "vite build --mode development && node scripts/prerender-routes.js && node scripts/generate-sitemap.js && node scripts/generate-og-image.js && node scripts/convert-images.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
