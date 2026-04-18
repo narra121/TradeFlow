@@ -10,6 +10,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { clearAuth } from "@/store/slices/authSlice";
 import { tokenRefreshScheduler } from "./lib/tokenRefreshScheduler";
 import { RequireAuth } from "./components/auth/RequireAuth";
+import { HelmetProvider } from 'react-helmet-async';
 
 // Lazy-loaded page components
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -204,9 +205,11 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner position="top-right" duration={5000} closeButton />
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <AppRoutes />
-      </BrowserRouter>
+      <HelmetProvider>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <AppRoutes />
+        </BrowserRouter>
+      </HelmetProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
