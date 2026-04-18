@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { createElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 
 const mockUseAppSelector = vi.fn();
 vi.mock('@/store/hooks', () => ({
@@ -19,9 +20,11 @@ beforeAll(async () => {
 function renderAuth(isAuthenticated: boolean, route = '/') {
   mockUseAppSelector.mockReturnValue({ isAuthenticated });
   return renderToString(
-    createElement(MemoryRouter, { initialEntries: [route] },
-      createElement(RequireAuth, null,
-        createElement('div', { 'data-testid': 'protected' }, 'Secret Content')
+    createElement(HelmetProvider, null,
+      createElement(MemoryRouter, { initialEntries: [route] },
+        createElement(RequireAuth, null,
+          createElement('div', { 'data-testid': 'protected' }, 'Secret Content')
+        )
       )
     )
   );
@@ -57,9 +60,11 @@ describe('RequireAuth', () => {
       // Simulate a state where token is null, meaning isAuthenticated is false
       mockUseAppSelector.mockReturnValue({ isAuthenticated: false, token: null });
       const html = renderToString(
-        createElement(MemoryRouter, { initialEntries: ['/app/dashboard'] },
-          createElement(RequireAuth, null,
-            createElement('div', { 'data-testid': 'protected' }, 'Secret Content')
+        createElement(HelmetProvider, null,
+          createElement(MemoryRouter, { initialEntries: ['/app/dashboard'] },
+            createElement(RequireAuth, null,
+              createElement('div', { 'data-testid': 'protected' }, 'Secret Content')
+            )
           )
         )
       );
@@ -71,9 +76,11 @@ describe('RequireAuth', () => {
       // If the selector returns an object where isAuthenticated is undefined/falsy
       mockUseAppSelector.mockReturnValue({ isAuthenticated: undefined });
       const html = renderToString(
-        createElement(MemoryRouter, { initialEntries: ['/app/settings'] },
-          createElement(RequireAuth, null,
-            createElement('div', { 'data-testid': 'protected' }, 'Secret Content')
+        createElement(HelmetProvider, null,
+          createElement(MemoryRouter, { initialEntries: ['/app/settings'] },
+            createElement(RequireAuth, null,
+              createElement('div', { 'data-testid': 'protected' }, 'Secret Content')
+            )
           )
         )
       );
@@ -84,9 +91,11 @@ describe('RequireAuth', () => {
     it('does not render children when isAuthenticated is explicitly false', () => {
       mockUseAppSelector.mockReturnValue({ isAuthenticated: false });
       const html = renderToString(
-        createElement(MemoryRouter, { initialEntries: ['/'] },
-          createElement(RequireAuth, null,
-            createElement('div', { 'data-testid': 'protected' }, 'Should Not Appear')
+        createElement(HelmetProvider, null,
+          createElement(MemoryRouter, { initialEntries: ['/'] },
+            createElement(RequireAuth, null,
+              createElement('div', { 'data-testid': 'protected' }, 'Should Not Appear')
+            )
           )
         )
       );
@@ -96,9 +105,11 @@ describe('RequireAuth', () => {
     it('renders children when isAuthenticated is true regardless of route', () => {
       mockUseAppSelector.mockReturnValue({ isAuthenticated: true });
       const html = renderToString(
-        createElement(MemoryRouter, { initialEntries: ['/app/some-deep/route'] },
-          createElement(RequireAuth, null,
-            createElement('div', { 'data-testid': 'protected' }, 'Deep Route Content')
+        createElement(HelmetProvider, null,
+          createElement(MemoryRouter, { initialEntries: ['/app/some-deep/route'] },
+            createElement(RequireAuth, null,
+              createElement('div', { 'data-testid': 'protected' }, 'Deep Route Content')
+            )
           )
         )
       );
