@@ -1,12 +1,19 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { SEO } from '@/components/SEO';
 import { Zap, ArrowLeft, Target, Heart, Shield, BarChart3 } from 'lucide-react';
 
 export function AboutPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEO
+        title="About TradeQut - Built by Traders, for Traders"
+        description="Learn about TradeQut's mission to help traders track, analyze, and improve their trading performance with modern tools."
+        path="/about"
+      />
+      <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <nav aria-label="About page navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
@@ -24,6 +31,8 @@ export function AboutPage() {
         </div>
       </nav>
 
+      <main id="main-content">
+      <article>
       {/* Content */}
       <div className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
@@ -198,6 +207,8 @@ export function AboutPage() {
           </section>
         </div>
       </div>
+      </article>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
@@ -215,5 +226,6 @@ export function AboutPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

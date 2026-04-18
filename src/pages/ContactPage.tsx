@@ -1,12 +1,21 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { SEO } from '@/components/SEO';
+import { CONTACT_SCHEMA } from '@/config/seo';
 import { Zap, ArrowLeft, Mail, Phone, MapPin, Clock } from 'lucide-react';
 
 export function ContactPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <SEO
+        title="Contact TradeQut - Support & Feedback"
+        description="Get in touch with the TradeQut team. We're here to help with questions, feedback, and support for your trading journal."
+        path="/contact"
+        jsonLd={CONTACT_SCHEMA}
+      />
+      <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <nav aria-label="Contact page navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
@@ -24,6 +33,7 @@ export function ContactPage() {
         </div>
       </nav>
 
+      <main id="main-content">
       {/* Content */}
       <div className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
@@ -134,6 +144,7 @@ export function ContactPage() {
           </div>
         </div>
       </div>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
@@ -151,5 +162,6 @@ export function ContactPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
