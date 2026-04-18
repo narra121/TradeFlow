@@ -8,7 +8,7 @@ export function AboutPage() {
     <>
       <SEO
         title="About TradeQut - Built by Traders, for Traders"
-        description="Learn about TradeQut's mission to help traders track, analyze, and improve their trading performance with modern tools."
+        description="TradeQut is a free trading journal app for stocks, forex, crypto, and options. Track trades, analyze performance, and improve your trading strategy."
         path="/about"
       />
       <div className="min-h-screen bg-background">
@@ -39,8 +39,8 @@ export function AboutPage() {
           <div className="text-center mb-12 sm:mb-16">
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">About TradeQut</h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A trading journal built by a trader, for traders. Helping you track, analyze,
-              and improve your trading performance.
+              A free trading journal app built by a trader, for traders. Whether you trade stocks, forex,
+              crypto, or options — TradeQut helps you log trades, track performance, and improve your strategy.
             </p>
           </div>
 
@@ -49,15 +49,15 @@ export function AboutPage() {
             <h2 className="text-2xl font-semibold text-foreground mb-6">Our Story</h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
               <p>
-                TradeQut was born out of a simple frustration: existing trading journals were either
-                too expensive, too complicated, or lacked the features that active traders actually need.
-                As a trader myself, I wanted a clean, powerful tool that could help me track my trades,
-                spot patterns in my performance, and ultimately become a more disciplined trader.
+                TradeQut was born out of a simple frustration: existing trading journal software was either
+                too expensive, too complicated, or lacked the features that active day traders and swing traders actually need.
+                As a trader myself, I wanted a clean, powerful trade tracker that could help me log my trades,
+                spot patterns in my win rate and profit factor, and ultimately become a more disciplined trader.
               </p>
               <p>
-                What started as a personal project quickly grew into something bigger. TradeQut is now
-                a full-featured trading journal with advanced analytics, calendar views, goal tracking,
-                multi-account support, and AI-powered trade extraction.
+                What started as a personal trading log quickly grew into something bigger. TradeQut is now
+                a full-featured trading journal app with advanced trading analytics, calendar views, goal tracking,
+                multi-account support, and AI-powered trade extraction from broker statements.
               </p>
               <p>
                 TradeQut is independently developed and maintained with a commitment to keeping the
@@ -77,8 +77,8 @@ export function AboutPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">Mission</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  To provide every trader with a professional-grade journaling and analytics tool
-                  that helps them make better, more informed trading decisions.
+                  To provide every stock, forex, crypto, and options trader with a professional-grade
+                  journaling and analytics tool that helps them make better, data-driven trading decisions.
                 </p>
               </div>
 
@@ -125,11 +125,11 @@ export function AboutPage() {
                 <ul className="space-y-3 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-1">&#10003;</span>
-                    Unlimited trade logging and journaling
+                    Unlimited trade logging and trading journal entries
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-1">&#10003;</span>
-                    Advanced performance analytics and charts
+                    Advanced trading analytics — win rate, profit factor, risk-reward, and more
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-1">&#10003;</span>
@@ -155,7 +155,7 @@ export function AboutPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-1">&#10003;</span>
-                    CSV import for bulk trade entry
+                    CSV and broker import for bulk trade entry
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-1">&#10003;</span>

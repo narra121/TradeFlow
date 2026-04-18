@@ -706,8 +706,8 @@ export function GuidePage() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="TradeQut User Guide - Trading Journal Tutorial"
-        description="Step-by-step guide to using TradeQut. Learn how to log trades, analyze performance, set goals, and track your progress."
+        title="TradeQut User Guide - Free Trading Journal App Tutorial"
+        description="Learn how to use TradeQut, a free trading journal for stocks, forex, crypto, and options. Track trades, analyze win rate and profit factor, and improve your trading strategy."
         path="/guide"
         type="article"
         jsonLd={GUIDE_ARTICLE_SCHEMA}
@@ -753,8 +753,8 @@ export function GuidePage() {
                 How to Use TradeQut
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Everything you need to know to track, analyze, and improve your trading performance.
-                From your first login to advanced analytics.
+                Your complete guide to this free trading journal app. Learn how to log trades, use trading analytics,
+                import from your broker, and improve your day trading or swing trading strategy.
               </p>
             </div>
           </section>

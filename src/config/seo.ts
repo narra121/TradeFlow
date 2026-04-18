@@ -5,7 +5,7 @@ export const ORGANIZATION_SCHEMA = {
   url: 'https://tradequt.com',
   logo: 'https://tradequt.com/favicon.svg',
   description:
-    'Professional trading journal for tracking and analyzing trades',
+    'Free trading journal app for stocks, forex, crypto, and options — track trades, analyze performance, and improve your trading strategy',
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'Customer Service',
@@ -22,7 +22,7 @@ export const SOFTWARE_APP_SCHEMA = {
   operatingSystem: 'Web',
   url: 'https://tradequt.com',
   description:
-    'Professional trading journal for tracking, analyzing, and improving trading performance',
+    'Free trading journal software for day traders and swing traders. Track trades, analyze win rate and profit factor, import from brokers, and get AI-powered insights.',
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -35,17 +35,17 @@ export const FAQ_ITEMS = [
   {
     question: 'What is TradeQut?',
     answer:
-      'TradeQut is a professional trading journal that helps traders track, analyze, and improve their trading performance. It supports manual trade entry and broker statement imports with detailed analytics and AI-powered insights.',
+      'TradeQut is a free trading journal app that helps day traders, swing traders, and investors track, analyze, and improve their trading performance. It works as a trade tracker and trading log with support for manual trade entry, CSV import, and AI-powered broker statement extraction.',
   },
   {
     question: 'Is TradeQut free to use?',
     answer:
-      'Yes, TradeQut offers a free tier that includes core features like trade logging, basic analytics, and performance tracking. Premium plans unlock advanced features like AI insights and unlimited trade history.',
+      'Yes, TradeQut offers a free trading journal with core features like trade logging, basic trading analytics, and performance tracking. Premium plans unlock advanced features like AI-powered insights, detailed win rate and profit factor analysis, and unlimited trade history.',
   },
   {
     question: 'What markets does TradeQut support?',
     answer:
-      'TradeQut supports all major markets including stocks, forex, futures, options, and cryptocurrency. You can track trades across multiple accounts and asset classes.',
+      'TradeQut works as a stock trading journal, forex trading journal, crypto trading journal, options trading journal, and futures trading journal. You can track trades across multiple accounts and asset classes in one place.',
   },
   {
     question: 'Can I import trades from my broker?',
@@ -55,7 +55,7 @@ export const FAQ_ITEMS = [
   {
     question: 'How does TradeQut help improve trading performance?',
     answer:
-      'TradeQut provides detailed analytics including win rate, profit factor, risk-reward ratios, and performance by time of day. Set goals, define trading rules, and get AI-generated insights to identify patterns in your trading.',
+      'TradeQut provides detailed trading analytics including win rate, profit factor, risk-reward ratios, drawdown tracking, and performance by time of day. Set goals, define trading rules, review your trading strategy, and get AI-generated insights to identify patterns in your day trading or swing trading.',
   },
   {
     question: 'Is my trading data secure?',
