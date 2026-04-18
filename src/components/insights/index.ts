@@ -4,3 +4,8 @@ export { InsightCard } from './InsightCard';
 export { TradeSpotlight } from './TradeSpotlight';
 export { InsightsSummary } from './InsightsSummary';
 export { AuroraBackground } from './AuroraBackground';
+export { CostOfEmotionCard } from './CostOfEmotionCard';
+export { StreakTimeline } from './StreakTimeline';
+export { TimeEdgeHeatmap } from './TimeEdgeHeatmap';
+export { RevengeTradesTable } from './RevengeTradesTable';
+export { InsightsChat } from './InsightsChat';

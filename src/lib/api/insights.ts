@@ -24,4 +24,14 @@ export const insightsApi = {
     // Fallback: API Gateway route (30s limit)
     return apiClient.post('/insights', payload, { timeout: 90_000 });
   },
+
+  chat: async (payload: {
+    message: string;
+    accountId?: string;
+    startDate: string;
+    endDate: string;
+    history?: Array<{ role: string; content: string }>;
+  }): Promise<{ data: { reply: string; suggestedQuestions?: string[] } }> => {
+    return apiClient.post('/insights/chat', payload, { timeout: 30_000 });
+  },
 };
