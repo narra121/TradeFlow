@@ -171,7 +171,7 @@ export function TermsOfServicePage() {
               <div className="space-y-2 text-muted-foreground">
                 <p><span className="text-foreground font-medium">Business:</span> TradeQutJournal</p>
                 <p><span className="text-foreground font-medium">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348</p>
-                <p><span className="text-foreground font-medium">Email:</span> Narra77888@gmail.com</p>
+                <p><span className="text-foreground font-medium">Email:</span> support@tradequt.com</p>
                 <p><span className="text-foreground font-medium">Phone:</span> +91 8501018125</p>
               </div>
             </section>

@@ -16,7 +16,7 @@ export const ORGANIZATION_SCHEMA = {
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'Customer Service',
-    email: 'Narra77888@gmail.com',
+    email: 'support@tradequt.com',
     telephone: '+91-8501018125',
   },
 };
@@ -112,7 +112,7 @@ export const CONTACT_SCHEMA = {
   mainEntity: {
     '@type': 'Organization',
     name: 'TradeQut',
-    email: 'Narra77888@gmail.com',
+    email: 'support@tradequt.com',
     telephone: '+91-8501018125',
     address: {
       '@type': 'PostalAddress',

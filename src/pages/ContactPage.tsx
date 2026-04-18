@@ -53,10 +53,10 @@ export function ContactPage() {
               <h3 className="text-xl font-semibold text-foreground mb-2">Email</h3>
               <p className="text-muted-foreground mb-4">For general inquiries and support</p>
               <a
-                href="mailto:Narra77888@gmail.com"
+                href="mailto:support@tradequt.com"
                 className="text-primary hover:text-primary/80 transition-colors font-medium"
               >
-                Narra77888@gmail.com
+                support@tradequt.com
               </a>
             </div>
 

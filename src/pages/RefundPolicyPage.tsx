@@ -103,7 +103,7 @@ export function RefundPolicyPage() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-foreground font-medium mb-1">Submit Request</h3>
-                    <p className="text-muted-foreground text-sm break-words">Email us at Narra77888@gmail.com with your refund details</p>
+                    <p className="text-muted-foreground text-sm break-words">Email us at support@tradequt.com with your refund details</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 sm:gap-4 bg-card rounded-xl border border-border/50 p-4 sm:p-6">
@@ -144,7 +144,7 @@ export function RefundPolicyPage() {
               <div className="space-y-2 text-muted-foreground">
                 <p><span className="text-foreground font-medium">Business:</span> TradeQutJournal</p>
                 <p><span className="text-foreground font-medium">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348</p>
-                <p><span className="text-foreground font-medium">Email:</span> Narra77888@gmail.com</p>
+                <p><span className="text-foreground font-medium">Email:</span> support@tradequt.com</p>
                 <p><span className="text-foreground font-medium">Phone:</span> +91 8501018125</p>
               </div>
             </section>
