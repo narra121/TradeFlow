@@ -18,7 +18,6 @@ export const insightsApi = {
         },
       });
       const body = res.data;
-      if (body?.data !== undefined) return body;
       return body;
     }
     // Fallback: API Gateway route (30s limit)

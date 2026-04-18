@@ -42,7 +42,7 @@ const severityConfig = {
 export function InsightCard({ insight }: InsightCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { severity, title, detail, evidence, tradeIds } = insight;
-  const config = severityConfig[severity];
+  const config = severityConfig[severity] ?? severityConfig.info;
   const Icon = config.icon;
 
   return (

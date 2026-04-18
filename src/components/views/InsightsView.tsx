@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -179,25 +179,19 @@ export function InsightsView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await insightsApi.generateInsights({
-        accountId: filters.accountId,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-      });
-      setInsights(response.data);
-      setMeta(response.meta);
-    } catch (err: any) {
-      setError(handleApiError(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [filters.accountId, filters.startDate, filters.endDate]);
+  const abortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
-  const handleRefresh = useCallback(async () => {
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
+  const handleGenerate = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const requestId = ++requestIdRef.current;
+
     setLoading(true);
     setError(null);
     try {
@@ -206,12 +200,15 @@ export function InsightsView() {
         startDate: filters.startDate,
         endDate: filters.endDate,
       });
+      if (requestIdRef.current !== requestId) return;
       setInsights(response.data);
       setMeta(response.meta);
     } catch (err: any) {
+      if (requestIdRef.current !== requestId) return;
+      if (err?.name === 'CanceledError' || controller.signal.aborted) return;
       setError(handleApiError(err));
     } finally {
-      setLoading(false);
+      if (requestIdRef.current === requestId) setLoading(false);
     }
   }, [filters.accountId, filters.startDate, filters.endDate]);
 
@@ -297,7 +294,7 @@ export function InsightsView() {
                   variant="ghost"
                   size="sm"
                   className="gap-1.5 text-xs shrink-0 h-7"
-                  onClick={handleRefresh}
+                  onClick={handleGenerate}
                 >
                   <RefreshCw className="w-3 h-3" />
                   Refresh
