@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
 import { useAppSelector } from '@/store/hooks';
 
 export function RequireAuth({ children }: { children: JSX.Element }) {
@@ -12,5 +13,10 @@ export function RequireAuth({ children }: { children: JSX.Element }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children;
+  return (
+    <>
+      <SEO title="TradeQut" description="TradeQut trading journal application." path="/app" noindex />
+      {children}
+    </>
+  );
 }

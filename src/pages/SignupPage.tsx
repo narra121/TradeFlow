@@ -1,5 +1,6 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AuthPage } from '@/components/auth/AuthPage';
+import { SEO } from '@/components/SEO';
 import { useAppSelector } from '@/store/hooks';
 
 export function SignupPage() {
@@ -14,5 +15,10 @@ export function SignupPage() {
     navigate('/app');
   };
 
-  return <AuthPage initialView="signup" onLogin={handleAuthSuccess} />;
+  return (
+    <>
+      <SEO title="Sign Up for TradeQut - Free Trading Journal" description="Create your free TradeQut account." path="/signup" noindex />
+      <AuthPage initialView="signup" onLogin={handleAuthSuccess} />
+    </>
+  );
 }

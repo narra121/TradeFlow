@@ -1,5 +1,6 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AuthPage } from '@/components/auth/AuthPage';
+import { SEO } from '@/components/SEO';
 import { useAppSelector } from '@/store/hooks';
 
 export function LoginPage() {
@@ -15,5 +16,10 @@ export function LoginPage() {
     navigate('/app');
   };
 
-  return <AuthPage initialView="login" onLogin={handleAuthSuccess} />;
+  return (
+    <>
+      <SEO title="Login - TradeQut" description="Sign in to your TradeQut trading journal." path="/login" noindex />
+      <AuthPage initialView="login" onLogin={handleAuthSuccess} />
+    </>
+  );
 }
