@@ -4,6 +4,7 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { HelmetProvider } from 'react-helmet-async';
 import authReducer from '@/store/slices/authSlice';
 import accountsReducer from '@/store/slices/accountsSlice';
 import tradesReducer from '@/store/slices/tradesSlice';
@@ -42,13 +43,15 @@ export function renderWithProviders(
 ) {
   function Wrapper({ children }: PropsWithChildren) {
     return (
-      <Provider store={store}>
-        <MemoryRouter initialEntries={[route]}>
-          <TooltipProvider>
-            {children}
-          </TooltipProvider>
-        </MemoryRouter>
-      </Provider>
+      <HelmetProvider>
+        <Provider store={store}>
+          <MemoryRouter initialEntries={[route]}>
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
+          </MemoryRouter>
+        </Provider>
+      </HelmetProvider>
     );
   }
 
