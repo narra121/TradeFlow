@@ -66,6 +66,12 @@ jobs:
       - name: Deploy to S3
         run: |
           aws s3 sync ./dist s3://tradequt.com-prod --delete
+          # Copy pre-rendered route HTML as flat S3 objects (CloudFront serves /about not /about/index.html)
+          for route in about guide contact privacy terms refund login signup; do
+            aws s3 cp "s3://tradequt.com-prod/${route}/index.html" "s3://tradequt.com-prod/${route}" \
+              --content-type "text/html" \
+              --cache-control "no-cache, no-store, must-revalidate"
+          done
           # Set no-cache on ALL HTML files (root + pre-rendered routes)
           aws s3 cp s3://tradequt.com-prod/ s3://tradequt.com-prod/ \
             --recursive \
