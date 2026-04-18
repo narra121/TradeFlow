@@ -23,7 +23,9 @@ export function SEO({
   jsonLd,
 }: SEOProps) {
   const canonicalUrl = `${BASE_URL}${path === '/' ? '' : path}`;
-  const robotsContent = noindex ? 'noindex, nofollow' : 'index, follow';
+  const robotsContent = noindex
+    ? 'noindex, nofollow'
+    : 'index, follow, max-image-preview:large';
 
   return (
     <Helmet>

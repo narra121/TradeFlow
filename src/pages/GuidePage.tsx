@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
-import { GUIDE_ARTICLE_SCHEMA } from '@/config/seo';
+import { GUIDE_ARTICLE_SCHEMA, breadcrumbSchema } from '@/config/seo';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
@@ -754,7 +754,16 @@ export function GuidePage() {
         description="Learn how to use TradeQut, a free trading journal for stocks, forex, crypto, and options. Track trades, analyze win rate and profit factor, and improve your trading strategy."
         path="/guide"
         type="article"
-        jsonLd={GUIDE_ARTICLE_SCHEMA}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@graph': [
+            GUIDE_ARTICLE_SCHEMA,
+            breadcrumbSchema([
+              { name: 'Home', url: 'https://tradequt.com' },
+              { name: 'User Guide', url: 'https://tradequt.com/guide' },
+            ]),
+          ],
+        }}
       />
 
       {/* Navigation */}

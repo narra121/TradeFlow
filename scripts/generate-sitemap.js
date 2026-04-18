@@ -4,25 +4,22 @@ import { join } from 'path';
 const BASE_URL = 'https://tradequt.com';
 const distDir = join(process.cwd(), 'dist');
 
+// Use real content-change dates, not build date
 const routes = [
-  { path: '/', changefreq: 'weekly', priority: '1.0' },
-  { path: '/guide', changefreq: 'monthly', priority: '0.9' },
-  { path: '/about', changefreq: 'monthly', priority: '0.7' },
-  { path: '/contact', changefreq: 'monthly', priority: '0.6' },
-  { path: '/privacy', changefreq: 'yearly', priority: '0.4' },
-  { path: '/terms', changefreq: 'yearly', priority: '0.4' },
-  { path: '/refund', changefreq: 'yearly', priority: '0.4' },
+  { path: '/', lastmod: '2026-04-18' },
+  { path: '/guide', lastmod: '2026-04-18' },
+  { path: '/about', lastmod: '2026-04-18' },
+  { path: '/contact', lastmod: '2026-04-09' },
+  { path: '/privacy', lastmod: '2026-04-09' },
+  { path: '/terms', lastmod: '2026-04-09' },
+  { path: '/refund', lastmod: '2026-04-09' },
 ];
-
-const today = new Date().toISOString().split('T')[0];
 
 const urls = routes
   .map(
     (r) => `  <url>
     <loc>${BASE_URL}${r.path === '/' ? '' : r.path}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>${r.changefreq}</changefreq>
-    <priority>${r.priority}</priority>
+    <lastmod>${r.lastmod}</lastmod>
   </url>`
   )
   .join('\n');

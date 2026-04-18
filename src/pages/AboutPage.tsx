@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
+import { breadcrumbSchema } from '@/config/seo';
 import { Zap, ArrowLeft, Target, Heart, Shield, BarChart3 } from 'lucide-react';
 
 export function AboutPage() {
@@ -10,6 +11,10 @@ export function AboutPage() {
         title="About TradeQut - Built by Traders, for Traders"
         description="TradeQut is a free trading journal app for stocks, forex, crypto, and options. Track trades, analyze performance, and improve your trading strategy."
         path="/about"
+        jsonLd={breadcrumbSchema([
+          { name: 'Home', url: 'https://tradequt.com' },
+          { name: 'About', url: 'https://tradequt.com/about' },
+        ])}
       />
       <div className="min-h-screen bg-background">
       {/* Navigation */}
