@@ -32,7 +32,7 @@ describe('GuidePage', () => {
     renderWithProviders(<GuidePage />);
     expect(screen.getByText('How to Use TradeQut')).toBeInTheDocument();
     expect(
-      screen.getByText(/Everything you need to know to track, analyze, and improve/),
+      screen.getByText(/Your complete guide to this free trading journal app/),
     ).toBeInTheDocument();
     expect(screen.getByText('Complete User Guide')).toBeInTheDocument();
   });
