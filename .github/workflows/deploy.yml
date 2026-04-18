@@ -43,6 +43,9 @@ jobs:
           echo "VITE_EXTRACT_TRADES_URL=${{ secrets.VITE_EXTRACT_TRADES_URL_DEV }}" >> .env.development
           echo "VITE_GENERATE_INSIGHTS_URL=${{ secrets.VITE_GENERATE_INSIGHTS_URL_DEV }}" >> .env.development
 
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
       - name: Build for dev
         run: bun run build:dev
 
@@ -56,9 +59,12 @@ jobs:
       - name: Deploy to S3
         run: |
           aws s3 sync ./dist s3://tradequt.com-dev --delete
-          aws s3 cp s3://tradequt.com-dev/index.html s3://tradequt.com-dev/index.html \
+          # Set no-cache on ALL HTML files (root + pre-rendered routes)
+          aws s3 cp s3://tradequt.com-dev/ s3://tradequt.com-dev/ \
+            --recursive \
             --metadata-directive REPLACE \
             --cache-control "no-cache, no-store, must-revalidate" \
+            --exclude "*" --include "*.html" \
             --content-type "text/html"
           aws s3 cp s3://tradequt.com-dev/assets/ s3://tradequt.com-dev/assets/ \
             --recursive \

@@ -48,6 +48,9 @@ jobs:
           echo "VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN_PROD }}" >> .env.production
           echo "VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID_PROD }}" >> .env.production
 
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
       - name: Build for production
         run: bun run build
         env:
@@ -63,9 +66,12 @@ jobs:
       - name: Deploy to S3
         run: |
           aws s3 sync ./dist s3://tradequt.com-prod --delete
-          aws s3 cp s3://tradequt.com-prod/index.html s3://tradequt.com-prod/index.html \
+          # Set no-cache on ALL HTML files (root + pre-rendered routes)
+          aws s3 cp s3://tradequt.com-prod/ s3://tradequt.com-prod/ \
+            --recursive \
             --metadata-directive REPLACE \
             --cache-control "no-cache, no-store, must-revalidate" \
+            --exclude "*" --include "*.html" \
             --content-type "text/html"
           aws s3 cp s3://tradequt.com-prod/assets/ s3://tradequt.com-prod/assets/ \
             --recursive \
