@@ -12,7 +12,7 @@ vi.mock('sonner', () => ({
   },
 }));
 
-import { toastMiddleware } from '../toastMiddleware';
+import { toastMiddleware, _resetToastDebounce } from '../toastMiddleware';
 
 describe('toastMiddleware', () => {
   let next: ReturnType<typeof vi.fn>;
@@ -20,6 +20,7 @@ describe('toastMiddleware', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    _resetToastDebounce();
     next = vi.fn((action) => action);
     // toastMiddleware is: () => (next) => (action) => ...
     const middlewareWithStore = toastMiddleware({} as any);
@@ -92,6 +93,7 @@ describe('toastMiddleware', () => {
       ];
       for (const ep of skipEndpoints) {
         vi.clearAllMocks();
+        _resetToastDebounce();
         invoke({
           type: 'api/executeQuery/fulfilled',
           meta: { arg: { endpointName: ep }, requestId: 'test-id', requestStatus: 'fulfilled' },
@@ -200,6 +202,7 @@ describe('toastMiddleware', () => {
 
       for (const [endpoint, message] of Object.entries(knownEndpoints)) {
         vi.clearAllMocks();
+        _resetToastDebounce();
         invoke({
           type: 'api/executeMutation/fulfilled',
           meta: { arg: { endpointName: endpoint }, requestId: 'test-id', requestStatus: 'fulfilled' },
@@ -487,6 +490,7 @@ describe('toastMiddleware', () => {
       expect(toastErrorMock).not.toHaveBeenCalled();
 
       vi.clearAllMocks();
+      _resetToastDebounce();
 
       invoke({
         type: 'api/executeMutation/rejected',
@@ -508,6 +512,7 @@ describe('toastMiddleware', () => {
       expect(toastErrorMock).toHaveBeenCalledWith('Duplicate account');
 
       vi.clearAllMocks();
+      _resetToastDebounce();
 
       invoke({
         type: 'api/executeMutation/fulfilled',
@@ -518,7 +523,7 @@ describe('toastMiddleware', () => {
       expect(toastErrorMock).not.toHaveBeenCalled();
     });
 
-    it('handles multiple fulfilled actions in sequence without interference', () => {
+    it('debounces simultaneous toasts — only the first fires', () => {
       invoke({
         type: 'api/executeMutation/fulfilled',
         meta: { arg: { endpointName: 'createTrade' }, requestId: 'req-1', requestStatus: 'fulfilled' },
@@ -529,9 +534,8 @@ describe('toastMiddleware', () => {
         meta: { arg: { endpointName: 'updateProfile' }, requestId: 'req-2', requestStatus: 'fulfilled' },
         payload: {},
       });
-      expect(toastSuccessMock).toHaveBeenCalledTimes(2);
-      expect(toastSuccessMock).toHaveBeenNthCalledWith(1, 'Trade created successfully');
-      expect(toastSuccessMock).toHaveBeenNthCalledWith(2, 'Profile updated successfully');
+      expect(toastSuccessMock).toHaveBeenCalledTimes(1);
+      expect(toastSuccessMock).toHaveBeenCalledWith('Trade created successfully');
     });
   });
 

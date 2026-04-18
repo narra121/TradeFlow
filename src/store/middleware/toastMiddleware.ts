@@ -13,6 +13,20 @@ interface ReduxAction {
   };
 }
 
+let lastToastTime = 0;
+const TOAST_DEBOUNCE_MS = 300;
+
+function showToast(type: 'success' | 'error', message: string) {
+  const now = Date.now();
+  if (now - lastToastTime < TOAST_DEBOUNCE_MS) return;
+  lastToastTime = now;
+  toast[type](message);
+}
+
+export function _resetToastDebounce() {
+  lastToastTime = 0;
+}
+
 // RTK Query endpoints to skip toast notifications (queries only, not mutations)
 const skipToastEndpoints = [
   'getProfile',
@@ -97,8 +111,7 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
         }
         
         if (message) {
-          toast.dismiss();
-          toast.success(message);
+          showToast('success', message);
         }
       }
       
@@ -143,11 +156,10 @@ export const toastMiddleware: Middleware = () => (next) => (action: ReduxAction)
 
         // Skip auth errors - handled in auth component
         if (endpointName !== 'login' && endpointName !== 'signup') {
-          toast.dismiss();
           if (errorDetails.length > 0) {
-            toast.error(`${errorMessage}: ${errorDetails.join(', ')}`);
+            showToast('error', `${errorMessage}: ${errorDetails.join(', ')}`);
           } else {
-            toast.error(errorMessage);
+            showToast('error', errorMessage);
           }
         }
       }
