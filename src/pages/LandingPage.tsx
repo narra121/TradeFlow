@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
+import { LANDING_PAGE_SCHEMA, FAQ_ITEMS } from '@/config/seo';
 import { Button } from '@/components/ui/button';
 import {
   Zap,
@@ -130,9 +132,22 @@ export function LandingPage() {
   ];
 
   return (
+    <>
+      <SEO
+        title="TradeQut - Professional Trading Journal"
+        description="Track, analyze, and improve your trading performance with TradeQut. The modern trading journal for serious traders."
+        path="/"
+        jsonLd={LANDING_PAGE_SCHEMA}
+      />
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+      >
+        Skip to content
+      </a>
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -229,6 +244,7 @@ export function LandingPage() {
         )}
       </nav>
 
+      <main id="main-content">
       {/* Hero Section */}
       <section className="relative pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         {/* Background effects */}
@@ -538,6 +554,24 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section id="faq" className="py-16 sm:py-20 bg-muted/30">
+        <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <h2 className="mb-10 text-center text-2xl font-bold sm:text-3xl">
+            Frequently Asked Questions
+          </h2>
+          <div className="space-y-6">
+            {FAQ_ITEMS.map((item) => (
+              <div key={item.question} className="rounded-lg border bg-card p-6">
+                <h3 className="mb-2 text-lg font-semibold">{item.question}</h3>
+                <p className="text-muted-foreground">{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      </main>
+
       {/* Footer */}
       <footer className="border-t border-border/50 bg-card/50 py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
@@ -626,5 +660,6 @@ export function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
