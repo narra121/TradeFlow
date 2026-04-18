@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
+import { GUIDE_ARTICLE_SCHEMA } from '@/config/seo';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
@@ -85,7 +87,18 @@ function GuideScreenshot({ src, alt, caption }: { src: string; alt: string; capt
           className="rounded-xl border border-border/50 overflow-hidden cursor-zoom-in hover:border-primary/30 transition-colors"
           onClick={() => setOpen(true)}
         >
-          <img src={src} alt={alt} loading="lazy" decoding="async" className="w-full h-auto" />
+          <picture>
+            <source srcSet={src.replace('.png', '.webp')} type="image/webp" />
+            <img
+              src={src}
+              alt={alt}
+              loading="lazy"
+              decoding="async"
+              className="w-full h-auto"
+              width={1440}
+              height={900}
+            />
+          </picture>
         </div>
         {caption && (
           <figcaption className="mt-2 text-sm text-muted-foreground text-center italic">{caption}</figcaption>
@@ -100,7 +113,7 @@ function GuideScreenshot({ src, alt, caption }: { src: string; alt: string; capt
           >
             <X className="w-5 h-5" />
           </button>
-          <img src={src} alt={alt} className="w-full h-auto" />
+          <img src={src} alt={alt} className="w-full h-auto" width={1440} height={900} />
         </DialogContent>
       </Dialog>
     </>
@@ -692,8 +705,16 @@ export function GuidePage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="TradeQut User Guide - Trading Journal Tutorial"
+        description="Step-by-step guide to using TradeQut. Learn how to log trades, analyze performance, set goals, and track your progress."
+        path="/guide"
+        type="article"
+        jsonLd={GUIDE_ARTICLE_SCHEMA}
+      />
+
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <nav aria-label="Guide navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
@@ -719,62 +740,66 @@ export function GuidePage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative pt-28 sm:pt-32 pb-10 sm:pb-14 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <BookOpen className="w-4 h-4" />
-            Complete User Guide
+      <main id="main-content">
+        <article>
+          {/* Hero */}
+          <section className="relative pt-28 sm:pt-32 pb-10 sm:pb-14 px-4 sm:px-6">
+            <div className="max-w-7xl mx-auto text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+                <BookOpen className="w-4 h-4" />
+                Complete User Guide
+              </div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+                How to Use TradeQut
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Everything you need to know to track, analyze, and improve your trading performance.
+                From your first login to advanced analytics.
+              </p>
+            </div>
+          </section>
+
+          {/* Mobile TOC */}
+          <div className="lg:hidden sticky top-16 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+            <GuideTOC variant="horizontal" active={active} />
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            How to Use TradeQut
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to know to track, analyze, and improve your trading performance.
-            From your first login to advanced analytics.
-          </p>
-        </div>
-      </section>
 
-      {/* Mobile TOC */}
-      <div className="lg:hidden sticky top-16 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <GuideTOC variant="horizontal" active={active} />
-      </div>
+          {/* Main content */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
+            <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-12">
+              {/* Desktop sidebar TOC */}
+              <aside className="hidden lg:block self-start sticky top-24">
+                <GuideTOC variant="vertical" active={active} />
+              </aside>
 
-      {/* Main content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
-        <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-12">
-          {/* Desktop sidebar TOC */}
-          <aside className="hidden lg:block self-start sticky top-24">
-            <GuideTOC variant="vertical" active={active} />
-          </aside>
+              {/* Content */}
+              <div className="space-y-16 lg:space-y-20 pt-6 lg:pt-0">
+                <GettingStartedSection />
+                <DashboardSection />
+                <AddingTradesSection />
+                <ImportingTradesSection />
+                <TradeLogSection />
+                <AnalyticsSection />
+                <GoalsRulesSection />
+                <SettingsSection />
+                <ProfileSection />
 
-          {/* Content */}
-          <div className="space-y-16 lg:space-y-20 pt-6 lg:pt-0">
-            <GettingStartedSection />
-            <DashboardSection />
-            <AddingTradesSection />
-            <ImportingTradesSection />
-            <TradeLogSection />
-            <AnalyticsSection />
-            <GoalsRulesSection />
-            <SettingsSection />
-            <ProfileSection />
-
-            {/* CTA */}
-            <div className="text-center py-12 border-t border-border/50">
-              <h2 className="text-2xl font-semibold text-foreground mb-3">Ready to start?</h2>
-              <p className="text-muted-foreground mb-6">Start your free trial and begin journaling your trades today. No credit card required.</p>
-              <Button asChild size="lg" className="gap-2">
-                <Link to="/signup">
-                  Start Free Trial
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-              </Button>
+                {/* CTA */}
+                <div className="text-center py-12 border-t border-border/50">
+                  <h2 className="text-2xl font-semibold text-foreground mb-3">Ready to start?</h2>
+                  <p className="text-muted-foreground mb-6">Start your free trial and begin journaling your trades today. No credit card required.</p>
+                  <Button asChild size="lg" className="gap-2">
+                    <Link to="/signup">
+                      Start Free Trial
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </article>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-border/50 bg-card/30 py-8 px-4 sm:px-6">
