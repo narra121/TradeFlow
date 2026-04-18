@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -21,11 +20,6 @@ import {
   TradeSpotlight,
   InsightsSummary,
   AuroraBackground,
-  CostOfEmotionCard,
-  StreakTimeline,
-  TimeEdgeHeatmap,
-  RevengeTradesTable,
-  InsightsChat,
 } from '@/components/insights';
 import {
   Sparkles,
@@ -179,9 +173,6 @@ export function InsightsView() {
     setDatePreset(preset);
   };
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<string>('report');
-
   // Insights state — direct API call, not RTK Query
   const [insights, setInsights] = useState<InsightsResponse | null>(null);
   const [meta, setMeta] = useState<InsightsApiResponse['meta'] | null>(null);
@@ -279,17 +270,6 @@ export function InsightsView() {
         </div>
       </div>
 
-      {/* Tab navigation — only show when insights exist or loading */}
-      {(insights || loading) && isPremium && (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="report">AI Report</TabsTrigger>
-            <TabsTrigger value="patterns">Patterns</TabsTrigger>
-            <TabsTrigger value="chat">Ask AI</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
-
       {/* Subscription gate */}
       {!isPremium ? (
         <PremiumGate />
@@ -297,42 +277,31 @@ export function InsightsView() {
         <InsightsLoadingSkeleton />
       ) : (
         <>
-          {/* Cache status */}
+          {/* Cache freshness banner */}
           {meta?.cached && insights && (
-            <div className={cn(
-              'flex items-start gap-3 px-4 py-3 rounded-lg animate-fade-in',
-              meta.upToDate
-                ? 'bg-success/8 border-l-2 border-success'
-                : 'bg-yellow-400/8 border-l-2 border-yellow-400'
-            )}>
-              <Clock className={cn('w-4 h-4 mt-0.5 shrink-0', meta.upToDate ? 'text-success' : 'text-yellow-400')} />
+            <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-blue-400/8 border-l-2 border-blue-400 animate-fade-in">
+              <Clock className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
               <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                {meta.upToDate ? (
-                  <p className="text-sm text-muted-foreground">
-                    Up to date &mdash; generated{' '}
-                    <span className="text-foreground font-medium">
-                      {formatDistanceToNow(new Date(meta.generatedAt), { addSuffix: true })}
-                    </span>
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      Your trades have changed since this analysis was generated{' '}
-                      <span className="text-foreground font-medium">
-                        {formatDistanceToNow(new Date(meta.generatedAt), { addSuffix: true })}
-                      </span>
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-1.5 text-xs shrink-0 h-7"
-                      onClick={handleRefresh}
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      Regenerate
-                    </Button>
-                  </>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  Based on data as of{' '}
+                  <span className="text-foreground font-medium">
+                    {formatDistanceToNow(new Date(meta.generatedAt), { addSuffix: true })}
+                  </span>
+                  {meta.newTradesSince > 0 && (
+                    <>
+                      {' '}&mdash; {meta.newTradesSince} new trade{meta.newTradesSince > 1 ? 's' : ''} since
+                    </>
+                  )}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-xs shrink-0 h-7"
+                  onClick={handleRefresh}
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Refresh
+                </Button>
               </div>
             </div>
           )}
@@ -392,8 +361,8 @@ export function InsightsView() {
             </div>
           )}
 
-          {/* Report tab — existing insights results */}
-          {activeTab === 'report' && insights && (
+          {/* Results */}
+          {insights && (
             <AuroraBackground>
               <div className="space-y-6 animate-in fade-in-0 duration-500 p-1">
                 {/* Summary */}
@@ -408,11 +377,6 @@ export function InsightsView() {
                     <BehavioralScores scores={insights.scores} />
                   )}
                 </div>
-
-                {/* Cost of Emotion — only show if there's a cost */}
-                {insights.patterns?.costOfEmotion && insights.patterns.costOfEmotion.totalEmotionalCost !== 0 && (
-                  <CostOfEmotionCard costOfEmotion={insights.patterns.costOfEmotion} />
-                )}
 
                 {/* Insights */}
                 {sortedInsights.length > 0 && (
@@ -454,38 +418,6 @@ export function InsightsView() {
                 )}
               </div>
             </AuroraBackground>
-          )}
-
-          {/* Patterns tab */}
-          {activeTab === 'patterns' && insights?.patterns && (
-            <AuroraBackground>
-              <div className="space-y-6 animate-in fade-in-0 duration-500 p-1">
-                <CostOfEmotionCard costOfEmotion={insights.patterns.costOfEmotion} />
-                <RevengeTradesTable revengeTrades={insights.patterns.revengeTrades} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                  <StreakTimeline
-                    streaks={insights.patterns.streaks}
-                    longestWinStreak={insights.patterns.longestWinStreak}
-                    longestLossStreak={insights.patterns.longestLossStreak}
-                    currentStreak={insights.patterns.currentStreak}
-                  />
-                  <TimeEdgeHeatmap
-                    hourlyEdges={insights.patterns.hourlyEdges}
-                    dayOfWeekEdges={insights.patterns.dayOfWeekEdges}
-                  />
-                </div>
-              </div>
-            </AuroraBackground>
-          )}
-
-          {/* Ask AI tab */}
-          {activeTab === 'chat' && isPremium && (
-            <InsightsChat
-              accountId={filters.accountId}
-              startDate={filters.startDate}
-              endDate={filters.endDate}
-              totalTrades={totalTrades}
-            />
           )}
         </>
       )}

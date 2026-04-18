@@ -29,77 +29,12 @@ export interface TradeSpotlight {
   reason: string;
 }
 
-export interface RevengeTradeSignal {
-  tradeId: string;
-  triggerTradeId: string;
-  gapMinutes: number;
-  triggerPnl: number;
-  revengePnl: number;
-}
-
-export interface OvertradeDay {
-  date: string;
-  tradeCount: number;
-  pnl: number;
-  avgTradesPerDay: number;
-}
-
-export interface StreakInfo {
-  type: 'win' | 'loss';
-  length: number;
-  totalPnl: number;
-  startDate: string;
-  endDate: string;
-  tradeIds: string[];
-}
-
-export interface HourlyEdge {
-  hour: number;
-  tradeCount: number;
-  winRate: number;
-  avgPnl: number;
-  totalPnl: number;
-  label: 'green_zone' | 'red_zone' | 'neutral';
-}
-
-export interface DayOfWeekEdge {
-  day: number;
-  dayName: string;
-  tradeCount: number;
-  winRate: number;
-  avgPnl: number;
-  totalPnl: number;
-  label: 'green_zone' | 'red_zone' | 'neutral';
-}
-
-export interface CostOfEmotion {
-  revengeTrading: { count: number; totalPnl: number; avgPnl: number };
-  overtrading: { daysCount: number; excessTradePnl: number };
-  rulesViolations: { count: number; totalPnl: number };
-  totalEmotionalCost: number;
-}
-
-export interface PatternDetectionResult {
-  revengeTrades: RevengeTradeSignal[];
-  overtradeDays: OvertradeDay[];
-  streaks: StreakInfo[];
-  longestWinStreak: StreakInfo | null;
-  longestLossStreak: StreakInfo | null;
-  currentStreak: StreakInfo | null;
-  hourlyEdges: HourlyEdge[];
-  dayOfWeekEdges: DayOfWeekEdge[];
-  costOfEmotion: CostOfEmotion;
-  tradeCount: number;
-  dateRange: { start: string; end: string };
-}
-
 export interface InsightsResponse {
   profile: TraderProfile;
   scores: BehavioralScore[];
   insights: Insight[];
   tradeSpotlights: TradeSpotlight[];
   summary: string;
-  patterns?: PatternDetectionResult;
 }
 
 export interface InsightsApiResponse {
@@ -109,7 +44,6 @@ export interface InsightsApiResponse {
     generatedAt: string;
     newTradesSince: number;
     elapsedMs: number;
-    upToDate?: boolean;
   };
 }
 

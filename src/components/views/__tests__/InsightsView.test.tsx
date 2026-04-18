@@ -45,24 +45,7 @@ vi.mock('@/components/insights', () => ({
   TradeSpotlight: ({ spotlight }: any) => <div data-testid="trade-spotlight">{spotlight.symbol}</div>,
   InsightsSummary: ({ summary }: any) => <div data-testid="insights-summary">{summary}</div>,
   AuroraBackground: ({ children }: any) => <div data-testid="aurora-background">{children}</div>,
-  CostOfEmotionCard: ({ costOfEmotion }: any) => <div data-testid="cost-of-emotion">{costOfEmotion.totalEmotionalCost}</div>,
-  StreakTimeline: () => <div data-testid="streak-timeline" />,
-  TimeEdgeHeatmap: () => <div data-testid="time-edge-heatmap" />,
-  RevengeTradesTable: () => <div data-testid="revenge-trades-table" />,
 }));
-
-// Mock Tabs UI component
-vi.mock('@/components/ui/tabs', async () => {
-  const React = await import('react');
-  return {
-    Tabs: ({ children, value, onValueChange }: any) => <div data-testid="tabs" data-value={value}>{children}</div>,
-    TabsList: ({ children }: any) => <div data-testid="tabs-list" role="tablist">{children}</div>,
-    TabsTrigger: ({ children, value, disabled, ...props }: any) => (
-      <button role="tab" data-value={value} disabled={disabled} {...props}>{children}</button>
-    ),
-    TabsContent: ({ children }: any) => <div>{children}</div>,
-  };
-});
 
 // Mock insights API
 vi.mock('@/lib/api/insights', () => ({
@@ -304,7 +287,7 @@ describe('InsightsView', () => {
     });
   });
 
-  it('shows cache banner with Regenerate when not up to date', async () => {
+  it('shows cache banner when cached', async () => {
     const cachedResponse = {
       ...sampleInsightsResponse,
       meta: { ...sampleInsightsResponse.meta, cached: true, newTradesSince: 3 },
@@ -318,26 +301,7 @@ describe('InsightsView', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/5 minutes ago/)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Regenerate/ })).toBeInTheDocument();
-    });
-  });
-
-  it('shows up-to-date cache banner without Regenerate button', async () => {
-    const cachedResponse = {
-      ...sampleInsightsResponse,
-      meta: { ...sampleInsightsResponse.meta, cached: true, newTradesSince: 0, upToDate: true },
-    };
-    vi.mocked(insightsApi.generateInsights).mockResolvedValue(cachedResponse as any);
-
-    const user = userEvent.setup();
-    render(<InsightsView />);
-
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Up to date/)).toBeInTheDocument();
-      expect(screen.getByText(/5 minutes ago/)).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Regenerate/ })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Refresh/ })).toBeInTheDocument();
     });
   });
 
