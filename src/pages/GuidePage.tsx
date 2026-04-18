@@ -28,6 +28,7 @@ import {
   Camera,
   ChevronRight,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,7 @@ const sections = [
   { id: 'importing-trades', label: 'Importing Trades', icon: Upload },
   { id: 'trade-log', label: 'Trade Log', icon: BookOpen },
   { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+  { id: 'ai-insights', label: 'AI Insights', icon: Sparkles },
   { id: 'goals-rules', label: 'Goals & Rules', icon: Target },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'profile', label: 'Profile', icon: User },
@@ -575,6 +577,48 @@ function AnalyticsSection() {
   );
 }
 
+function AIInsightsSection() {
+  return (
+    <SectionWrapper id="ai-insights" title="AI Insights" subtitle="AI-powered analysis of your trading performance" icon={Sparkles}>
+      <p className="text-muted-foreground leading-relaxed">
+        The AI Insights page uses artificial intelligence to analyze your trading data and generate a comprehensive
+        assessment of your trading style, strengths, and areas for improvement. It's like having a personal trading
+        coach reviewing your journal.
+      </p>
+
+      <GuideScreenshot src="/guide/ai-insights.png" alt="AI Insights page with trader profile and behavioral scores" />
+
+      <h3 className="text-xl font-semibold text-foreground mt-8 mb-4">What AI Insights Provides</h3>
+      <FeatureGrid items={[
+        { icon: FileText, title: 'Overall Assessment', desc: 'A detailed written analysis of your trading patterns, consistency, risk management, and profitability across all your trades.' },
+        { icon: User, title: 'Trader Profile', desc: 'AI classifies your trading style (e.g., Day Trader, Swing Trader) and assigns a profile score from 1-5 based on discipline and consistency.' },
+        { icon: BarChart3, title: 'Behavioral Scores', desc: 'Scored metrics for discipline, consistency, patience, risk management, and emotional control — each rated out of 100.' },
+        { icon: Lightbulb, title: 'Key Insights', desc: 'Specific, actionable observations about your trading — from undefined risk parameters to overtrading patterns and win rate trends.' },
+      ]} />
+
+      <h3 className="text-xl font-semibold text-foreground mt-8 mb-4">How to Use AI Insights</h3>
+      <ol className="list-decimal list-inside space-y-3 my-6 text-muted-foreground leading-relaxed">
+        <li>Navigate to the <strong className="text-foreground">Insights</strong> page from the sidebar.</li>
+        <li>Select your account and date range (or choose "All Time" for a complete analysis).</li>
+        <li>Click <strong className="text-foreground">"Generate Insights"</strong> — the AI will analyze your trades and produce a report.</li>
+        <li>Review your Trader Profile score, behavioral scores, and key insights.</li>
+        <li>Use the actionable recommendations to adjust your trading strategy and set new goals.</li>
+      </ol>
+
+      <TipBox type="tip">
+        AI Insights work best with at least 10-20 trades. The more data the AI has, the more accurate and detailed
+        your trader profile and behavioral analysis will be. Regenerate insights periodically to track how your
+        trading discipline evolves over time.
+      </TipBox>
+
+      <TipBox type="info">
+        AI Insights are generated using advanced language models and are based entirely on your trade data. They are
+        for educational purposes only and do not constitute financial advice.
+      </TipBox>
+    </SectionWrapper>
+  );
+}
+
 function GoalsRulesSection() {
   return (
     <SectionWrapper id="goals-rules" title="Goals & Rules" subtitle="Set targets and maintain discipline" icon={Target}>
@@ -780,6 +824,7 @@ export function GuidePage() {
                 <ImportingTradesSection />
                 <TradeLogSection />
                 <AnalyticsSection />
+                <AIInsightsSection />
                 <GoalsRulesSection />
                 <SettingsSection />
                 <ProfileSection />
