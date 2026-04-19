@@ -27,14 +27,26 @@ vi.mock('@/hooks/useAccounts', () => ({
   useAccounts: vi.fn(),
 }));
 
+// Mock useTradeCache
+vi.mock('@/hooks/useTradeCache', () => ({
+  useTradeCache: vi.fn(),
+}));
+
+// Mock useVertexAI
+vi.mock('@/hooks/useVertexAI', () => ({
+  useVertexReport: vi.fn(),
+}));
+
 // Mock child components
 vi.mock('@/components/account/AccountFilter', () => ({
   AccountFilter: () => <div data-testid="account-filter">Account Filter</div>,
 }));
 
 vi.mock('@/components/filters/DateRangeFilter', () => ({
-  DateRangeFilter: () => <div data-testid="date-range-filter">Date Range Filter</div>,
-  getDateRangeFromPreset: vi.fn().mockReturnValue({ from: new Date('2026-03-01'), to: new Date('2026-04-17') }),
+  DateRangeFilter: ({ insightsMode }: any) => (
+    <div data-testid="date-range-filter" data-insights-mode={insightsMode}>Date Range Filter</div>
+  ),
+  getDateRangeFromPreset: vi.fn().mockReturnValue({ from: new Date('2026-03-01'), to: new Date('2026-04-19') }),
 }));
 
 // Mock insights child components
@@ -45,30 +57,18 @@ vi.mock('@/components/insights', () => ({
   TradeSpotlight: ({ spotlight }: any) => <div data-testid="trade-spotlight">{spotlight.symbol}</div>,
   InsightsSummary: ({ summary }: any) => <div data-testid="insights-summary">{summary}</div>,
   AuroraBackground: ({ children }: any) => <div data-testid="aurora-background">{children}</div>,
-}));
-
-// Mock insights API
-vi.mock('@/lib/api/insights', () => ({
-  insightsApi: {
-    generateInsights: vi.fn(),
-  },
-}));
-
-// Mock handleApiError
-vi.mock('@/lib/api/api', () => ({
-  default: { post: vi.fn(), get: vi.fn() },
-  handleApiError: vi.fn().mockReturnValue('Something went wrong'),
-}));
-
-// Mock formatDistanceToNow
-vi.mock('date-fns/formatDistanceToNow', () => ({
-  formatDistanceToNow: vi.fn().mockReturnValue('5 minutes ago'),
+  CostOfEmotionCard: ({ costOfEmotion }: any) => <div data-testid="cost-of-emotion">{costOfEmotion.totalEmotionalCost}</div>,
+  StreakTimeline: () => <div data-testid="streak-timeline">Streak Timeline</div>,
+  TimeEdgeHeatmap: () => <div data-testid="time-edge-heatmap">Time Edge Heatmap</div>,
+  RevengeTradesTable: () => <div data-testid="revenge-trades-table">Revenge Trades Table</div>,
+  InsightsChat: () => <div data-testid="insights-chat">Insights Chat</div>,
 }));
 
 // Import mocked modules for per-test overrides
 import { useGetStatsQuery, useGetSubscriptionQuery } from '@/store/api';
 import { useAccounts } from '@/hooks/useAccounts';
-import { insightsApi } from '@/lib/api/insights';
+import { useTradeCache } from '@/hooks/useTradeCache';
+import { useVertexReport } from '@/hooks/useVertexAI';
 
 // ── Default mock return values ──────────────────────────────────────
 
@@ -83,53 +83,96 @@ const defaultStatsData = {
   dailyWinRate: [], dailyPnl: [],
 };
 
-// ── Sample data ──────────────────────────────────────────────────────
+const sampleTrades = [
+  { tradeId: 't1', symbol: 'EURUSD', pnl: 100 },
+  { tradeId: 't2', symbol: 'GBPUSD', pnl: -50 },
+];
 
-const sampleInsightsResponse = {
-  data: {
-    profile: { type: 'day_trader', typeLabel: 'Day Trader', aggressivenessScore: 6, aggressivenessLabel: 'Aggressive', trend: null, summary: 'Active day trader' },
-    scores: [
-      { dimension: 'discipline', value: 75, label: 'Discipline' },
-      { dimension: 'risk_management', value: 42, label: 'Risk Management' },
-    ],
-    insights: [
-      { severity: 'critical', title: 'Revenge trading detected', detail: 'Detail text', evidence: 'Evidence text' },
-      { severity: 'strength', title: 'Consistent EURUSD strategy', detail: 'Detail text', evidence: 'Evidence text' },
-    ],
-    tradeSpotlights: [
-      { tradeId: 't1', symbol: 'EURUSD', date: '2026-04-10', pnl: -420, reason: 'Oversized position' },
-    ],
-    summary: 'Overall assessment text',
+const sampleInsightsData = {
+  profile: { type: 'day_trader', typeLabel: 'Day Trader', aggressivenessScore: 6, aggressivenessLabel: 'Aggressive', trend: null, summary: 'Active day trader' },
+  scores: [
+    { dimension: 'discipline', value: 75, label: 'Discipline' },
+    { dimension: 'risk_management', value: 42, label: 'Risk Management' },
+  ],
+  insights: [
+    { severity: 'critical', title: 'Revenge trading detected', detail: 'Detail text', evidence: 'Evidence text' },
+    { severity: 'strength', title: 'Consistent EURUSD strategy', detail: 'Detail text', evidence: 'Evidence text' },
+  ],
+  tradeSpotlights: [
+    { tradeId: 't1', symbol: 'EURUSD', date: '2026-04-10', pnl: -420, reason: 'Oversized position' },
+  ],
+  summary: 'Overall assessment text',
+  patterns: {
+    revengeTrades: [],
+    overtradeDays: [],
+    streaks: [],
+    longestWinStreak: null,
+    longestLossStreak: null,
+    currentStreak: null,
+    hourlyEdges: [],
+    dayOfWeekEdges: [],
+    costOfEmotion: { revengeTrading: { count: 0, totalPnl: 0, avgPnl: 0 }, overtrading: { daysCount: 0, excessTradePnl: 0 }, rulesViolations: { count: 0, totalPnl: 0 }, totalEmotionalCost: -150 },
+    tradeCount: 25,
+    dateRange: { start: '2026-03-01', end: '2026-04-19' },
   },
-  meta: { cached: false, generatedAt: '2026-04-17T08:30:00Z', newTradesSince: 0, elapsedMs: 5000 },
 };
+
+// ── Helper: set up default mocks ────────────────────────────────────
+
+function setupDefaultMocks(overrides: {
+  subscription?: any;
+  subLoading?: boolean;
+  statsData?: any;
+  trades?: any[];
+  cacheLoading?: boolean;
+  cacheSyncing?: boolean;
+  cacheError?: string | null;
+  insights?: any;
+  streaming?: boolean;
+  aiError?: string | null;
+} = {}) {
+  vi.mocked(useGetStatsQuery).mockReturnValue({
+    data: overrides.statsData ?? defaultStatsData,
+    isLoading: false,
+    isFetching: false,
+    refetch: vi.fn(),
+  } as any);
+
+  vi.mocked(useGetSubscriptionQuery).mockReturnValue({
+    data: overrides.subscription ?? { status: 'active' },
+    isLoading: overrides.subLoading ?? false,
+  } as any);
+
+  vi.mocked(useAccounts).mockReturnValue({
+    accounts: [{ id: 'acc1', name: 'Main Account', initialBalance: 10000 }],
+    selectedAccountId: null,
+    selectedAccount: null,
+    setSelectedAccountId: vi.fn(),
+  } as any);
+
+  vi.mocked(useTradeCache).mockReturnValue({
+    trades: overrides.trades ?? sampleTrades,
+    loading: overrides.cacheLoading ?? false,
+    syncing: overrides.cacheSyncing ?? false,
+    error: overrides.cacheError ?? null,
+    refresh: vi.fn(),
+  } as any);
+
+  vi.mocked(useVertexReport).mockReturnValue({
+    data: overrides.insights ?? null,
+    streaming: overrides.streaming ?? false,
+    error: overrides.aiError ?? null,
+    generate: vi.fn(),
+    abort: vi.fn(),
+  });
+}
 
 // ── Tests ────────────────────────────────────────────────────────────
 
 describe('InsightsView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: defaultStatsData,
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-
-    vi.mocked(useGetSubscriptionQuery).mockReturnValue({
-      data: { status: 'active' },
-      isLoading: false,
-    } as any);
-
-    vi.mocked(useAccounts).mockReturnValue({
-      accounts: [
-        { id: 'acc1', name: 'Main Account', initialBalance: 10000 },
-      ],
-      selectedAccountId: null,
-      selectedAccount: null,
-      setSelectedAccountId: vi.fn(),
-    } as any);
+    setupDefaultMocks();
   });
 
   it('renders page header', () => {
@@ -144,25 +187,32 @@ describe('InsightsView', () => {
     expect(screen.getByTestId('date-range-filter')).toBeInTheDocument();
   });
 
-  it('shows premium gate for free users', () => {
-    vi.mocked(useGetSubscriptionQuery).mockReturnValue({
-      data: { status: 'free' },
-      isLoading: false,
-    } as any);
+  it('renders date filter with insightsMode enabled', () => {
+    render(<InsightsView />);
+    const dateFilter = screen.getByTestId('date-range-filter');
+    expect(dateFilter).toHaveAttribute('data-insights-mode', 'true');
+  });
 
+  it('shows spinner while subscription loads', () => {
+    setupDefaultMocks({ subLoading: true });
+    render(<InsightsView />);
+    expect(screen.getByText('AI Insights')).toBeInTheDocument();
+    // Should NOT show premium gate or generate button while loading
+    expect(screen.queryByText('AI Insights is a Premium Feature')).not.toBeInTheDocument();
+    expect(screen.queryByText('Generate Insights')).not.toBeInTheDocument();
+  });
+
+  it('shows premium gate for free users', () => {
+    setupDefaultMocks({ subscription: { status: 'free' } });
     render(<InsightsView />);
     expect(screen.getByText('AI Insights is a Premium Feature')).toBeInTheDocument();
     expect(screen.getByText('Upgrade to Premium')).toBeInTheDocument();
   });
 
   it('shows "Not Enough Trades" when below threshold', () => {
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: { ...defaultStatsData, totalTrades: 5 },
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-
+    setupDefaultMocks({
+      statsData: { ...defaultStatsData, totalTrades: 5 },
+    });
     render(<InsightsView />);
     expect(screen.getByText('Not Enough Trades')).toBeInTheDocument();
     expect(screen.getByText(/AI Insights needs at least/)).toBeInTheDocument();
@@ -174,170 +224,230 @@ describe('InsightsView', () => {
     expect(screen.getByRole('button', { name: /Generate Insights/ })).toBeInTheDocument();
   });
 
-  it('calls API on Generate button click', async () => {
-    vi.mocked(insightsApi.generateInsights).mockResolvedValue(sampleInsightsResponse as any);
-
-    const user = userEvent.setup();
+  it('disables Generate button while cache is syncing', () => {
+    setupDefaultMocks({ cacheLoading: true, cacheSyncing: true });
     render(<InsightsView />);
-
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-
-    expect(insightsApi.generateInsights).toHaveBeenCalledTimes(1);
+    const btn = screen.getByRole('button', { name: /Syncing data/ });
+    expect(btn).toBeDisabled();
   });
 
-  it('shows loading state after clicking generate', async () => {
-    // Never resolve so loading stays visible
-    vi.mocked(insightsApi.generateInsights).mockReturnValue(new Promise(() => {}) as any);
-
-    const user = userEvent.setup();
-    render(<InsightsView />);
-
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Analyzing your trades...')).toBeInTheDocument();
+  it('calls generate with trades on Generate button click', async () => {
+    const generateFn = vi.fn();
+    vi.mocked(useVertexReport).mockReturnValue({
+      data: null,
+      streaming: false,
+      error: null,
+      generate: generateFn,
+      abort: vi.fn(),
     });
-  });
-
-  it('renders results after successful API call', async () => {
-    vi.mocked(insightsApi.generateInsights).mockResolvedValue(sampleInsightsResponse as any);
 
     const user = userEvent.setup();
     render(<InsightsView />);
 
     await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
+    expect(generateFn).toHaveBeenCalledWith(sampleTrades);
+  });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('insights-summary')).toBeInTheDocument();
-      expect(screen.getByTestId('profile-score-card')).toBeInTheDocument();
-      expect(screen.getByTestId('behavioral-scores')).toBeInTheDocument();
+  it('shows loading skeleton while streaming without data', () => {
+    setupDefaultMocks({ streaming: true, insights: null });
+    render(<InsightsView />);
+    expect(screen.getByText('Analyzing your trades...')).toBeInTheDocument();
+  });
+
+  it('shows syncing indicator when cache is syncing', () => {
+    setupDefaultMocks({ cacheSyncing: true, cacheLoading: true });
+    render(<InsightsView />);
+    expect(screen.getByText('Syncing trade data...')).toBeInTheDocument();
+  });
+
+  it('shows cache error', () => {
+    setupDefaultMocks({ cacheError: 'Failed to sync trades' });
+    render(<InsightsView />);
+    expect(screen.getByText('Failed to generate insights')).toBeInTheDocument();
+    expect(screen.getByText('Failed to sync trades')).toBeInTheDocument();
+  });
+
+  it('shows AI error', () => {
+    setupDefaultMocks({ aiError: 'Vertex AI unavailable' });
+    render(<InsightsView />);
+    expect(screen.getByText('Failed to generate insights')).toBeInTheDocument();
+    expect(screen.getByText('Vertex AI unavailable')).toBeInTheDocument();
+  });
+
+  describe('tabs and results', () => {
+    beforeEach(() => {
+      setupDefaultMocks({ insights: sampleInsightsData });
     });
-  });
 
-  it('renders summary', async () => {
-    vi.mocked(insightsApi.generateInsights).mockResolvedValue(sampleInsightsResponse as any);
+    it('renders 3 tabs when insights are available', () => {
+      render(<InsightsView />);
+      expect(screen.getByRole('tab', { name: 'Report' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Patterns' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Ask AI' })).toBeInTheDocument();
+    });
 
-    const user = userEvent.setup();
-    render(<InsightsView />);
+    it('defaults to Report tab', () => {
+      render(<InsightsView />);
+      expect(screen.getByRole('tab', { name: 'Report' })).toHaveAttribute('data-state', 'active');
+    });
 
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-
-    await waitFor(() => {
+    it('renders summary in Report tab', () => {
+      render(<InsightsView />);
       expect(screen.getByTestId('insights-summary')).toBeInTheDocument();
       expect(screen.getByText('Overall assessment text')).toBeInTheDocument();
     });
-  });
 
-  it('renders profile card', async () => {
-    vi.mocked(insightsApi.generateInsights).mockResolvedValue(sampleInsightsResponse as any);
-
-    const user = userEvent.setup();
-    render(<InsightsView />);
-
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-
-    await waitFor(() => {
+    it('renders profile card in Report tab', () => {
+      render(<InsightsView />);
       expect(screen.getByTestId('profile-score-card')).toBeInTheDocument();
       expect(screen.getByText('Day Trader')).toBeInTheDocument();
     });
-  });
 
-  it('renders behavioral scores', async () => {
-    vi.mocked(insightsApi.generateInsights).mockResolvedValue(sampleInsightsResponse as any);
-
-    const user = userEvent.setup();
-    render(<InsightsView />);
-
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-
-    await waitFor(() => {
+    it('renders behavioral scores in Report tab', () => {
+      render(<InsightsView />);
       expect(screen.getByTestId('behavioral-scores')).toBeInTheDocument();
       expect(screen.getByText('2 scores')).toBeInTheDocument();
     });
-  });
 
-  it('renders insight cards', async () => {
-    vi.mocked(insightsApi.generateInsights).mockResolvedValue(sampleInsightsResponse as any);
-
-    const user = userEvent.setup();
-    render(<InsightsView />);
-
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-
-    await waitFor(() => {
+    it('renders insight cards in Report tab', () => {
+      render(<InsightsView />);
       const insightCards = screen.getAllByTestId('insight-card');
       expect(insightCards).toHaveLength(2);
       expect(screen.getByText('Revenge trading detected')).toBeInTheDocument();
       expect(screen.getByText('Consistent EURUSD strategy')).toBeInTheDocument();
     });
-  });
 
-  it('renders trade spotlights', async () => {
-    vi.mocked(insightsApi.generateInsights).mockResolvedValue(sampleInsightsResponse as any);
-
-    const user = userEvent.setup();
-    render(<InsightsView />);
-
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-
-    await waitFor(() => {
+    it('renders trade spotlights in Report tab', () => {
+      render(<InsightsView />);
       const spotlights = screen.getAllByTestId('trade-spotlight');
       expect(spotlights).toHaveLength(1);
       expect(screen.getByText('EURUSD')).toBeInTheDocument();
     });
-  });
 
-  it('shows cache banner when cached', async () => {
-    const cachedResponse = {
-      ...sampleInsightsResponse,
-      meta: { ...sampleInsightsResponse.meta, cached: true, newTradesSince: 3 },
-    };
-    vi.mocked(insightsApi.generateInsights).mockResolvedValue(cachedResponse as any);
+    it('renders cost of emotion in Report tab when totalEmotionalCost is non-zero', () => {
+      render(<InsightsView />);
+      expect(screen.getByTestId('cost-of-emotion')).toBeInTheDocument();
+    });
 
-    const user = userEvent.setup();
-    render(<InsightsView />);
+    it('switches to Patterns tab', async () => {
+      const user = userEvent.setup();
+      render(<InsightsView />);
 
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
+      await user.click(screen.getByRole('tab', { name: 'Patterns' }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/5 minutes ago/)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Refresh/ })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId('revenge-trades-table')).toBeInTheDocument();
+        expect(screen.getByTestId('streak-timeline')).toBeInTheDocument();
+        expect(screen.getByTestId('time-edge-heatmap')).toBeInTheDocument();
+      });
+    });
+
+    it('switches to Ask AI tab', async () => {
+      const user = userEvent.setup();
+      render(<InsightsView />);
+
+      await user.click(screen.getByRole('tab', { name: 'Ask AI' }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('insights-chat')).toBeInTheDocument();
+      });
     });
   });
 
-  it('shows error state', async () => {
-    vi.mocked(insightsApi.generateInsights).mockRejectedValue(new Error('Network error'));
+  describe('streaming state', () => {
+    it('shows skeleton sections in Report tab during streaming', () => {
+      setupDefaultMocks({
+        streaming: true,
+        insights: { summary: 'Partial summary' },
+      });
+      render(<InsightsView />);
 
-    const user = userEvent.setup();
-    render(<InsightsView />);
+      // Summary should be rendered (it's available)
+      expect(screen.getByTestId('insights-summary')).toBeInTheDocument();
+      // Skeletons should appear for sections not yet received
+      expect(screen.getByText('Loading profile...')).toBeInTheDocument();
+      expect(screen.getByText('Loading scores...')).toBeInTheDocument();
+    });
 
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
+    it('shows Stop button during streaming', () => {
+      setupDefaultMocks({
+        streaming: true,
+        insights: { summary: 'Partial summary' },
+      });
+      render(<InsightsView />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Failed to generate insights')).toBeInTheDocument();
-      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Retry/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Stop/ })).toBeInTheDocument();
+    });
+
+    it('calls abort when Stop is clicked', async () => {
+      const abortFn = vi.fn();
+      vi.mocked(useVertexReport).mockReturnValue({
+        data: { summary: 'Partial summary' } as any,
+        streaming: true,
+        error: null,
+        generate: vi.fn(),
+        abort: abortFn,
+      });
+      setupDefaultMocks();
+      // Re-mock useVertexReport since setupDefaultMocks overrides it
+      vi.mocked(useVertexReport).mockReturnValue({
+        data: { summary: 'Partial summary' } as any,
+        streaming: true,
+        error: null,
+        generate: vi.fn(),
+        abort: abortFn,
+      });
+
+      const user = userEvent.setup();
+      render(<InsightsView />);
+
+      await user.click(screen.getByRole('button', { name: /Stop/ }));
+      expect(abortFn).toHaveBeenCalled();
+    });
+
+    it('renders sections progressively as they arrive', () => {
+      // First just summary
+      setupDefaultMocks({
+        streaming: true,
+        insights: { summary: 'Summary text' },
+      });
+      const { rerender } = render(<InsightsView />);
+      expect(screen.getByTestId('insights-summary')).toBeInTheDocument();
+      expect(screen.getByText('Loading profile...')).toBeInTheDocument();
+
+      // Now profile arrives too
+      vi.mocked(useVertexReport).mockReturnValue({
+        data: {
+          summary: 'Summary text',
+          profile: sampleInsightsData.profile,
+        } as any,
+        streaming: true,
+        error: null,
+        generate: vi.fn(),
+        abort: vi.fn(),
+      });
+      rerender(<InsightsView />);
+      expect(screen.getByTestId('profile-score-card')).toBeInTheDocument();
     });
   });
 
-  it('retry button calls API again', async () => {
-    vi.mocked(insightsApi.generateInsights)
-      .mockRejectedValueOnce(new Error('Network error'))
-      .mockResolvedValueOnce(sampleInsightsResponse as any);
+  describe('retry on error', () => {
+    it('retry button calls generate again', async () => {
+      const generateFn = vi.fn();
+      setupDefaultMocks({ aiError: 'Network error' });
+      vi.mocked(useVertexReport).mockReturnValue({
+        data: null,
+        streaming: false,
+        error: 'Network error',
+        generate: generateFn,
+        abort: vi.fn(),
+      });
 
-    const user = userEvent.setup();
-    render(<InsightsView />);
+      const user = userEvent.setup();
+      render(<InsightsView />);
 
-    // First click triggers error
-    await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Failed to generate insights')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /Retry/ }));
+      expect(generateFn).toHaveBeenCalledWith(sampleTrades);
     });
-
-    // Click retry
-    await user.click(screen.getByRole('button', { name: /Retry/ }));
-
-    expect(insightsApi.generateInsights).toHaveBeenCalledTimes(2);
   });
 });

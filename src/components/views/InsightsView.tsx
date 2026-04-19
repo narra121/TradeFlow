@@ -1,8 +1,9 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -10,9 +11,9 @@ import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { useGetStatsQuery, useGetSubscriptionQuery } from '@/store/api';
 import { useAccounts } from '@/hooks/useAccounts';
-import { insightsApi } from '@/lib/api/insights';
-import { handleApiError } from '@/lib/api/api';
-import type { InsightsResponse, InsightsApiResponse } from '@/types/insights';
+import { useTradeCache } from '@/hooks/useTradeCache';
+import { useVertexReport } from '@/hooks/useVertexAI';
+import type { InsightsResponse } from '@/types/insights';
 import {
   ProfileScoreCard,
   BehavioralScores,
@@ -20,16 +21,20 @@ import {
   TradeSpotlight,
   InsightsSummary,
   AuroraBackground,
+  CostOfEmotionCard,
+  StreakTimeline,
+  TimeEdgeHeatmap,
+  RevengeTradesTable,
+  InsightsChat,
 } from '@/components/insights';
 import {
   Sparkles,
   Lock,
-  RefreshCw,
-  Clock,
   AlertTriangle,
   Brain,
+  Loader2,
+  Square,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -92,6 +97,24 @@ function InsightsLoadingSkeleton() {
   );
 }
 
+// ── Streaming skeleton for partial sections ─────────────────────────
+
+function SectionSkeleton({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-border/50 bg-card/50 p-6 animate-pulse">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-4 h-4 rounded bg-primary/20" />
+        <span className="text-sm text-muted-foreground">{label}</span>
+      </div>
+      <div className="space-y-2">
+        <div className="h-4 bg-muted/50 rounded w-3/4" />
+        <div className="h-4 bg-muted/50 rounded w-1/2" />
+        <div className="h-4 bg-muted/50 rounded w-2/3" />
+      </div>
+    </div>
+  );
+}
+
 // ── Premium gate ─────────────────────────────────────────────────────
 
 function PremiumGate() {
@@ -120,10 +143,6 @@ function PremiumGate() {
 export function InsightsView() {
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.trades.filters);
-  const [customRange, setCustomRange] = useState<{ from: Date; to: Date }>({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    to: new Date(),
-  });
 
   // Subscription check
   const { data: subscription, isLoading: subLoading } = useGetSubscriptionQuery();
@@ -159,7 +178,7 @@ export function InsightsView() {
   const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 'thisMonth');
 
   const handleDatePresetChange = (preset: DatePreset) => {
-    const range = getDateRangeFromPreset(preset, customRange);
+    const range = getDateRangeFromPreset(preset);
     dispatch(
       setDateRangeFilter({
         startDate: formatLocalDateOnly(range.from),
@@ -167,50 +186,36 @@ export function InsightsView() {
         datePreset: preset,
       })
     );
-    if (preset === 'custom') {
-      setCustomRange(range);
-    }
     setDatePreset(preset);
   };
 
-  // Insights state — direct API call, not RTK Query
-  const [insights, setInsights] = useState<InsightsResponse | null>(null);
-  const [meta, setMeta] = useState<InsightsApiResponse['meta'] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Trade cache — IndexedDB-backed hash-based sync
+  const {
+    trades,
+    loading: cacheSyncing,
+    syncing,
+    error: cacheError,
+    refresh,
+  } = useTradeCache({
+    accountId: filters.accountId,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+  });
 
-  const abortRef = useRef<AbortController | null>(null);
-  const requestIdRef = useRef(0);
+  // Vertex AI streaming report
+  const {
+    data: insights,
+    streaming,
+    error: aiError,
+    generate,
+    abort,
+  } = useVertexReport();
 
-  useEffect(() => {
-    return () => { abortRef.current?.abort(); };
-  }, []);
+  // Combined error
+  const error = cacheError || aiError;
 
-  const handleGenerate = useCallback(async () => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    const requestId = ++requestIdRef.current;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await insightsApi.generateInsights({
-        accountId: filters.accountId,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-      });
-      if (requestIdRef.current !== requestId) return;
-      setInsights(response.data);
-      setMeta(response.meta);
-    } catch (err: any) {
-      if (requestIdRef.current !== requestId) return;
-      if (err?.name === 'CanceledError' || controller.signal.aborted) return;
-      setError(handleApiError(err));
-    } finally {
-      if (requestIdRef.current === requestId) setLoading(false);
-    }
-  }, [filters.accountId, filters.startDate, filters.endDate]);
+  // Tab state
+  const [activeTab, setActiveTab] = useState<string>('report');
 
   // Sort insights: critical first, then warning, info, strength
   const sortedInsights = useMemo(() => {
@@ -220,6 +225,14 @@ export function InsightsView() {
       (a, b) => (order[a.severity] ?? 4) - (order[b.severity] ?? 4)
     );
   }, [insights?.insights]);
+
+  // Cast partial to full for rendering — sections check existence
+  const insightsData = insights as InsightsResponse | null;
+
+  // Handler: generate insights from cached trades
+  const handleGenerate = () => {
+    generate(trades);
+  };
 
   // Don't show the gate flash while subscription loads
   if (subLoading) {
@@ -260,9 +273,7 @@ export function InsightsView() {
           <DateRangeFilter
             selectedPreset={datePreset}
             onPresetChange={handleDatePresetChange}
-            customRange={customRange}
-            onCustomRangeChange={setCustomRange}
-            showCustomPicker
+            insightsMode
           />
         </div>
       </div>
@@ -270,36 +281,13 @@ export function InsightsView() {
       {/* Subscription gate */}
       {!isPremium ? (
         <PremiumGate />
-      ) : loading ? (
-        <InsightsLoadingSkeleton />
       ) : (
         <>
-          {/* Cache freshness banner */}
-          {meta?.cached && insights && (
-            <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-blue-400/8 border-l-2 border-blue-400 animate-fade-in">
-              <Clock className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-              <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                <p className="text-sm text-muted-foreground">
-                  Based on data as of{' '}
-                  <span className="text-foreground font-medium">
-                    {formatDistanceToNow(new Date(meta.generatedAt), { addSuffix: true })}
-                  </span>
-                  {meta.newTradesSince > 0 && (
-                    <>
-                      {' '}&mdash; {meta.newTradesSince} new trade{meta.newTradesSince > 1 ? 's' : ''} since
-                    </>
-                  )}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 text-xs shrink-0 h-7"
-                  onClick={handleGenerate}
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  Refresh
-                </Button>
-              </div>
+          {/* Cache sync status */}
+          {syncing && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-400/8 border-l-2 border-blue-400 animate-fade-in">
+              <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+              <p className="text-sm text-muted-foreground">Syncing trade data...</p>
             </div>
           )}
 
@@ -316,6 +304,7 @@ export function InsightsView() {
                 size="sm"
                 className="gap-1.5 text-xs shrink-0 h-7"
                 onClick={handleGenerate}
+                disabled={cacheSyncing || streaming}
               >
                 Retry
               </Button>
@@ -323,7 +312,7 @@ export function InsightsView() {
           )}
 
           {/* Not enough trades */}
-          {!insights && !error && totalTrades < MIN_TRADES_FOR_INSIGHTS && (
+          {!insightsData && !streaming && !error && totalTrades < MIN_TRADES_FOR_INSIGHTS && (
             <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
               <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mb-6">
                 <AlertTriangle className="w-8 h-8 text-warning/60" />
@@ -340,8 +329,8 @@ export function InsightsView() {
             </div>
           )}
 
-          {/* Generate button — shown when enough trades but no insights yet */}
-          {!insights && !error && totalTrades >= MIN_TRADES_FOR_INSIGHTS && (
+          {/* Generate button — shown when enough trades but no insights yet and not streaming */}
+          {!insightsData && !streaming && !error && totalTrades >= MIN_TRADES_FOR_INSIGHTS && (
             <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
                 <Sparkles className="w-8 h-8 text-primary/60" />
@@ -351,70 +340,168 @@ export function InsightsView() {
                 {totalTrades} trade{totalTrades !== 1 ? 's' : ''} in this period. Generate AI-powered insights
                 to understand your trading patterns, strengths, and areas to improve.
               </p>
-              <Button onClick={handleGenerate} size="lg" className="gap-2">
+              <Button
+                onClick={handleGenerate}
+                size="lg"
+                className="gap-2"
+                disabled={cacheSyncing}
+              >
                 <Sparkles className="w-4 h-4" />
-                Generate Insights
+                {cacheSyncing ? 'Syncing data...' : 'Generate Insights'}
               </Button>
             </div>
           )}
 
-          {/* Results */}
-          {insights && (
-            <AuroraBackground>
-              <div className="space-y-6 animate-in fade-in-0 duration-500 p-1">
-                {/* Summary */}
-                {insights.summary && <InsightsSummary summary={insights.summary} />}
+          {/* Streaming initial state — skeleton while waiting for first data */}
+          {streaming && !insightsData && (
+            <InsightsLoadingSkeleton />
+          )}
 
-                {/* Profile + Behavioral Scores */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                  {insights.profile && (
-                    <ProfileScoreCard profile={insights.profile} />
-                  )}
-                  {insights.scores && insights.scores.length > 0 && (
-                    <BehavioralScores scores={insights.scores} />
-                  )}
-                </div>
-
-                {/* Insights */}
-                {sortedInsights.length > 0 && (
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                      Key Insights
-                      <span className="text-xs text-muted-foreground font-normal">
-                        ({sortedInsights.length})
-                      </span>
-                    </h2>
-                    <div className="space-y-3">
-                      {sortedInsights.map((insight, index) => (
-                        <InsightCard
-                          key={`${insight.severity}-${insight.title}-${index}`}
-                          insight={insight}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Trade Spotlights */}
-                {insights.tradeSpotlights && insights.tradeSpotlights.length > 0 && (
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                      Trade Spotlights
-                      <span className="text-xs text-muted-foreground font-normal">
-                        ({insights.tradeSpotlights.length})
-                      </span>
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {insights.tradeSpotlights.map((spotlight) => (
-                        <TradeSpotlight key={spotlight.tradeId} spotlight={spotlight} />
-                      ))}
-                    </div>
-                  </div>
+          {/* Tab layout — shown when insights data exists (including partial during streaming) */}
+          {(insightsData || (streaming && insights)) && (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <div className="flex items-center justify-between gap-4">
+                <TabsList>
+                  <TabsTrigger value="report">Report</TabsTrigger>
+                  <TabsTrigger value="patterns">Patterns</TabsTrigger>
+                  <TabsTrigger value="chat">Ask AI</TabsTrigger>
+                </TabsList>
+                {streaming && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs h-7"
+                    onClick={abort}
+                  >
+                    <Square className="w-3 h-3" />
+                    Stop
+                  </Button>
                 )}
               </div>
-            </AuroraBackground>
+
+              {/* Report tab */}
+              <TabsContent value="report">
+                <AuroraBackground>
+                  <div className="space-y-6 animate-in fade-in-0 duration-500 p-1">
+                    {/* Summary */}
+                    {insights?.summary ? (
+                      <InsightsSummary summary={insights.summary} />
+                    ) : streaming ? (
+                      <SectionSkeleton label="Loading summary..." />
+                    ) : null}
+
+                    {/* Profile + Behavioral Scores */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                      {insights?.profile ? (
+                        <ProfileScoreCard profile={insights.profile} />
+                      ) : streaming ? (
+                        <SectionSkeleton label="Loading profile..." />
+                      ) : null}
+                      {insights?.scores && insights.scores.length > 0 ? (
+                        <BehavioralScores scores={insights.scores} />
+                      ) : streaming ? (
+                        <SectionSkeleton label="Loading scores..." />
+                      ) : null}
+                    </div>
+
+                    {/* Cost of Emotion — only show if there's a cost */}
+                    {insights?.patterns?.costOfEmotion && insights.patterns.costOfEmotion.totalEmotionalCost !== 0 && (
+                      <CostOfEmotionCard costOfEmotion={insights.patterns.costOfEmotion} />
+                    )}
+
+                    {/* Insights */}
+                    {sortedInsights.length > 0 ? (
+                      <div>
+                        <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                          Key Insights
+                          <span className="text-xs text-muted-foreground font-normal">
+                            ({sortedInsights.length})
+                          </span>
+                        </h2>
+                        <div className="space-y-3">
+                          {sortedInsights.map((insight, index) => (
+                            <InsightCard
+                              key={`${insight.severity}-${insight.title}-${index}`}
+                              insight={insight}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : streaming ? (
+                      <SectionSkeleton label="Loading insights..." />
+                    ) : null}
+
+                    {/* Trade Spotlights */}
+                    {insights?.tradeSpotlights && insights.tradeSpotlights.length > 0 ? (
+                      <div>
+                        <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                          Trade Spotlights
+                          <span className="text-xs text-muted-foreground font-normal">
+                            ({insights.tradeSpotlights.length})
+                          </span>
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {insights.tradeSpotlights.map((spotlight) => (
+                            <TradeSpotlight key={spotlight.tradeId} spotlight={spotlight} />
+                          ))}
+                        </div>
+                      </div>
+                    ) : streaming ? (
+                      <SectionSkeleton label="Loading trade spotlights..." />
+                    ) : null}
+                  </div>
+                </AuroraBackground>
+              </TabsContent>
+
+              {/* Patterns tab */}
+              <TabsContent value="patterns">
+                <AuroraBackground>
+                  <div className="space-y-6 animate-in fade-in-0 duration-500 p-1">
+                    {insights?.patterns ? (
+                      <>
+                        <CostOfEmotionCard costOfEmotion={insights.patterns.costOfEmotion} />
+                        <RevengeTradesTable revengeTrades={insights.patterns.revengeTrades} />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                          <StreakTimeline
+                            streaks={insights.patterns.streaks}
+                            longestWinStreak={insights.patterns.longestWinStreak}
+                            longestLossStreak={insights.patterns.longestLossStreak}
+                            currentStreak={insights.patterns.currentStreak}
+                          />
+                          <TimeEdgeHeatmap
+                            hourlyEdges={insights.patterns.hourlyEdges}
+                            dayOfWeekEdges={insights.patterns.dayOfWeekEdges}
+                          />
+                        </div>
+                      </>
+                    ) : streaming ? (
+                      <div className="space-y-4">
+                        <SectionSkeleton label="Loading pattern analysis..." />
+                        <SectionSkeleton label="Loading streak data..." />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          No pattern data available. Generate insights to see trading patterns.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </AuroraBackground>
+              </TabsContent>
+
+              {/* Ask AI tab */}
+              <TabsContent value="chat">
+                <InsightsChat
+                  accountId={filters.accountId}
+                  startDate={filters.startDate}
+                  endDate={filters.endDate}
+                  trades={trades}
+                />
+              </TabsContent>
+            </Tabs>
           )}
         </>
       )}

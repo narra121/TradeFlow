@@ -5,11 +5,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns/format';
 import { subDays } from 'date-fns/subDays';
+import { subMonths } from 'date-fns/subMonths';
 import { startOfWeek } from 'date-fns/startOfWeek';
 import { startOfMonth } from 'date-fns/startOfMonth';
 import { CalendarIcon } from 'lucide-react';
 
-export type DatePreset = 'thisWeek' | 'thisMonth' | 7 | 30 | 60 | 90 | 365 | 'all' | 'custom';
+export type DatePreset = 'thisWeek' | 'thisMonth' | 'last2Months' | 'last3Months' | 'last6Months' | 'last1Year' | 7 | 30 | 60 | 90 | 365 | 'all' | 'custom';
 
 interface DateRangeFilterProps {
   selectedPreset: DatePreset;
@@ -17,6 +18,7 @@ interface DateRangeFilterProps {
   customRange?: { from: Date; to: Date };
   onCustomRangeChange?: (range: { from: Date; to: Date }) => void;
   showCustomPicker?: boolean;
+  insightsMode?: boolean;
 }
 
 export function DateRangeFilter({
@@ -25,9 +27,18 @@ export function DateRangeFilter({
   customRange,
   onCustomRangeChange,
   showCustomPicker = false,
+  insightsMode = false,
 }: DateRangeFilterProps) {
   const [fromOpen, setFromOpen] = useState(false);
   const [toOpen, setToOpen] = useState(false);
+
+  const insightsPresets: { value: DatePreset; label: string }[] = [
+    { value: 'thisMonth', label: 'This Month' },
+    { value: 'last2Months', label: 'Last 2 Months' },
+    { value: 'last3Months', label: 'Last 3 Months' },
+    { value: 'last6Months', label: 'Last 6 Months' },
+    { value: 'last1Year', label: 'Last 1 Year' },
+  ];
 
   const daysPresets: { value: DatePreset; label: string }[] = [
     { value: 7, label: '7 days' },
@@ -56,6 +67,27 @@ export function DateRangeFilter({
       setToOpen(false);
     }
   };
+
+  if (insightsMode) {
+    return (
+      <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg overflow-x-auto scrollbar-none max-w-full">
+        {insightsPresets.map((preset) => (
+          <button
+            key={preset.value}
+            onClick={() => onPresetChange(preset.value)}
+            className={cn(
+              "shrink-0 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
+              selectedPreset === preset.value
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -184,6 +216,18 @@ export function getDateRangeFromPreset(preset: DatePreset, customRange?: { from:
   if (preset === 'thisMonth') {
     // Start from the beginning of this month
     return { from: startOfMonth(now), to: now };
+  }
+  if (preset === 'last2Months') {
+    return { from: startOfMonth(subMonths(now, 1)), to: now };
+  }
+  if (preset === 'last3Months') {
+    return { from: startOfMonth(subMonths(now, 2)), to: now };
+  }
+  if (preset === 'last6Months') {
+    return { from: startOfMonth(subMonths(now, 5)), to: now };
+  }
+  if (preset === 'last1Year') {
+    return { from: startOfMonth(subMonths(now, 11)), to: now };
   }
   const days = typeof preset === 'number' ? preset : 30;
   return { from: subDays(now, days), to: now };

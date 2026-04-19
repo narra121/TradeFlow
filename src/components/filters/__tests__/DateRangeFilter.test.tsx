@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DateRangeFilter, getDateRangeFromPreset } from '../DateRangeFilter';
-import { startOfWeek, startOfMonth, subDays } from 'date-fns';
+import { startOfWeek, startOfMonth, subDays, subMonths } from 'date-fns';
 
 describe('DateRangeFilter', () => {
   const defaultProps = {
@@ -291,5 +291,107 @@ describe('getDateRangeFromPreset - additional coverage', () => {
     const result = getDateRangeFromPreset('custom');
     const expected = subDays(new Date(), 30);
     expect(result.from.toDateString()).toBe(expected.toDateString());
+  });
+
+  it('returns correct range for last2Months', () => {
+    const result = getDateRangeFromPreset('last2Months');
+    const expected = startOfMonth(subMonths(new Date(), 1));
+    expect(result.from.toDateString()).toBe(expected.toDateString());
+    expect(result.to.toDateString()).toBe(new Date().toDateString());
+  });
+
+  it('returns correct range for last3Months', () => {
+    const result = getDateRangeFromPreset('last3Months');
+    const expected = startOfMonth(subMonths(new Date(), 2));
+    expect(result.from.toDateString()).toBe(expected.toDateString());
+  });
+
+  it('returns correct range for last6Months', () => {
+    const result = getDateRangeFromPreset('last6Months');
+    const expected = startOfMonth(subMonths(new Date(), 5));
+    expect(result.from.toDateString()).toBe(expected.toDateString());
+  });
+
+  it('returns correct range for last1Year', () => {
+    const result = getDateRangeFromPreset('last1Year');
+    const expected = startOfMonth(subMonths(new Date(), 11));
+    expect(result.from.toDateString()).toBe(expected.toDateString());
+  });
+});
+
+describe('DateRangeFilter - insightsMode', () => {
+  const defaultProps = {
+    selectedPreset: 'thisMonth' as const,
+    onPresetChange: vi.fn(),
+  };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders only insights presets when insightsMode is true', () => {
+    render(<DateRangeFilter {...defaultProps} insightsMode />);
+
+    expect(screen.getByText('This Month')).toBeInTheDocument();
+    expect(screen.getByText('Last 2 Months')).toBeInTheDocument();
+    expect(screen.getByText('Last 3 Months')).toBeInTheDocument();
+    expect(screen.getByText('Last 6 Months')).toBeInTheDocument();
+    expect(screen.getByText('Last 1 Year')).toBeInTheDocument();
+
+    // Standard presets should NOT be present
+    expect(screen.queryByText('7 days')).not.toBeInTheDocument();
+    expect(screen.queryByText('30 days')).not.toBeInTheDocument();
+    expect(screen.queryByText('All time')).not.toBeInTheDocument();
+    expect(screen.queryByText('This week')).not.toBeInTheDocument();
+  });
+
+  it('does not show "Last" prefix label in insightsMode', () => {
+    render(<DateRangeFilter {...defaultProps} insightsMode />);
+    // The "Last" prefix from the standard daysPresets row should not appear
+    const lastLabels = screen.queryAllByText('Last');
+    // "Last" only appears as part of preset labels, not as standalone
+    expect(screen.queryByText(/^Last$/)).not.toBeInTheDocument();
+  });
+
+  it('calls onPresetChange with insights presets', async () => {
+    const user = userEvent.setup();
+    const onPresetChange = vi.fn();
+    render(<DateRangeFilter {...defaultProps} onPresetChange={onPresetChange} insightsMode />);
+
+    await user.click(screen.getByText('Last 3 Months'));
+    expect(onPresetChange).toHaveBeenCalledWith('last3Months');
+
+    await user.click(screen.getByText('Last 1 Year'));
+    expect(onPresetChange).toHaveBeenCalledWith('last1Year');
+  });
+
+  it('highlights selected preset in insightsMode', () => {
+    render(
+      <DateRangeFilter
+        selectedPreset="last6Months"
+        onPresetChange={vi.fn()}
+        insightsMode
+      />
+    );
+
+    const btn = screen.getByText('Last 6 Months');
+    expect(btn).toHaveClass('bg-background');
+
+    const otherBtn = screen.getByText('Last 2 Months');
+    expect(otherBtn).not.toHaveClass('bg-background');
+  });
+
+  it('does not show custom date picker in insightsMode', () => {
+    render(
+      <DateRangeFilter
+        {...defaultProps}
+        insightsMode
+        showCustomPicker
+        customRange={{ from: new Date('2024-01-01'), to: new Date('2024-06-01') }}
+      />
+    );
+
+    expect(screen.queryByText('Custom')).not.toBeInTheDocument();
+    expect(screen.queryByText('to')).not.toBeInTheDocument();
   });
 });
