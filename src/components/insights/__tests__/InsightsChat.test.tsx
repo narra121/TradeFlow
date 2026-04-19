@@ -15,8 +15,8 @@ let mockReturn: {
   abort: ReturnType<typeof vi.fn>;
 };
 
-vi.mock('@/hooks/useVertexAI', () => ({
-  useVertexChat: () => mockReturn,
+vi.mock('@/hooks/useFirebaseAI', () => ({
+  useFirebaseChat: () => mockReturn,
 }));
 
 describe('InsightsChat', () => {

@@ -18,7 +18,6 @@ vi.mock('@radix-ui/react-tooltip', async () => {
 
 // Mock RTK Query hooks
 vi.mock('@/store/api', () => ({
-  useGetStatsQuery: vi.fn(),
   useGetSubscriptionQuery: vi.fn(),
 }));
 
@@ -32,9 +31,9 @@ vi.mock('@/hooks/useTradeCache', () => ({
   useTradeCache: vi.fn(),
 }));
 
-// Mock useVertexAI
-vi.mock('@/hooks/useVertexAI', () => ({
-  useVertexReport: vi.fn(),
+// Mock useFirebaseAI
+vi.mock('@/hooks/useFirebaseAI', () => ({
+  useFirebaseReport: vi.fn(),
 }));
 
 // Mock child components
@@ -65,25 +64,20 @@ vi.mock('@/components/insights', () => ({
 }));
 
 // Import mocked modules for per-test overrides
-import { useGetStatsQuery, useGetSubscriptionQuery } from '@/store/api';
+import { useGetSubscriptionQuery } from '@/store/api';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useTradeCache } from '@/hooks/useTradeCache';
-import { useVertexReport } from '@/hooks/useVertexAI';
+import { useFirebaseReport } from '@/hooks/useFirebaseAI';
 
 // ── Default mock return values ──────────────────────────────────────
 
-const defaultStatsData = {
-  totalPnl: 500, winRate: 60, totalTrades: 25, wins: 15, losses: 10, breakeven: 0,
-  avgWin: 100, avgLoss: -50, profitFactor: 2.0, bestTrade: 300, worstTrade: -100,
-  maxDrawdown: 5, avgRiskReward: 1.5, consecutiveWins: 3, consecutiveLosses: 2,
-  grossProfit: 1500, grossLoss: -500, expectancy: 40, sharpeRatio: 1.0, avgHoldingTime: 7200,
-  totalVolume: 25, minDuration: 3600, maxDuration: 14400,
-  durationBuckets: [], symbolDistribution: {}, strategyDistribution: {},
-  sessionDistribution: {}, outcomeDistribution: {}, hourlyStats: [],
-  dailyWinRate: [], dailyPnl: [],
-};
+const sampleTrades = Array.from({ length: 25 }, (_, i) => ({
+  tradeId: `t${i + 1}`,
+  symbol: i % 2 === 0 ? 'EURUSD' : 'GBPUSD',
+  pnl: i % 3 === 0 ? -50 : 100,
+}));
 
-const sampleTrades = [
+const fewTrades = [
   { tradeId: 't1', symbol: 'EURUSD', pnl: 100 },
   { tradeId: 't2', symbol: 'GBPUSD', pnl: -50 },
 ];
@@ -122,7 +116,6 @@ const sampleInsightsData = {
 function setupDefaultMocks(overrides: {
   subscription?: any;
   subLoading?: boolean;
-  statsData?: any;
   trades?: any[];
   cacheLoading?: boolean;
   cacheSyncing?: boolean;
@@ -131,13 +124,6 @@ function setupDefaultMocks(overrides: {
   streaming?: boolean;
   aiError?: string | null;
 } = {}) {
-  vi.mocked(useGetStatsQuery).mockReturnValue({
-    data: overrides.statsData ?? defaultStatsData,
-    isLoading: false,
-    isFetching: false,
-    refetch: vi.fn(),
-  } as any);
-
   vi.mocked(useGetSubscriptionQuery).mockReturnValue({
     data: overrides.subscription ?? { status: 'active' },
     isLoading: overrides.subLoading ?? false,
@@ -158,7 +144,7 @@ function setupDefaultMocks(overrides: {
     refresh: vi.fn(),
   } as any);
 
-  vi.mocked(useVertexReport).mockReturnValue({
+  vi.mocked(useFirebaseReport).mockReturnValue({
     data: overrides.insights ?? null,
     streaming: overrides.streaming ?? false,
     error: overrides.aiError ?? null,
@@ -210,9 +196,7 @@ describe('InsightsView', () => {
   });
 
   it('shows "Not Enough Trades" when below threshold', () => {
-    setupDefaultMocks({
-      statsData: { ...defaultStatsData, totalTrades: 5 },
-    });
+    setupDefaultMocks({ trades: fewTrades });
     render(<InsightsView />);
     expect(screen.getByText('Not Enough Trades')).toBeInTheDocument();
     expect(screen.getByText(/AI Insights needs at least/)).toBeInTheDocument();
@@ -233,7 +217,7 @@ describe('InsightsView', () => {
 
   it('calls generate with trades on Generate button click', async () => {
     const generateFn = vi.fn();
-    vi.mocked(useVertexReport).mockReturnValue({
+    vi.mocked(useFirebaseReport).mockReturnValue({
       data: null,
       streaming: false,
       error: null,
@@ -381,7 +365,7 @@ describe('InsightsView', () => {
 
     it('calls abort when Stop is clicked', async () => {
       const abortFn = vi.fn();
-      vi.mocked(useVertexReport).mockReturnValue({
+      vi.mocked(useFirebaseReport).mockReturnValue({
         data: { summary: 'Partial summary' } as any,
         streaming: true,
         error: null,
@@ -389,8 +373,8 @@ describe('InsightsView', () => {
         abort: abortFn,
       });
       setupDefaultMocks();
-      // Re-mock useVertexReport since setupDefaultMocks overrides it
-      vi.mocked(useVertexReport).mockReturnValue({
+      // Re-mock useFirebaseReport since setupDefaultMocks overrides it
+      vi.mocked(useFirebaseReport).mockReturnValue({
         data: { summary: 'Partial summary' } as any,
         streaming: true,
         error: null,
@@ -416,7 +400,7 @@ describe('InsightsView', () => {
       expect(screen.getByText('Loading profile...')).toBeInTheDocument();
 
       // Now profile arrives too
-      vi.mocked(useVertexReport).mockReturnValue({
+      vi.mocked(useFirebaseReport).mockReturnValue({
         data: {
           summary: 'Summary text',
           profile: sampleInsightsData.profile,
@@ -435,7 +419,7 @@ describe('InsightsView', () => {
     it('retry button calls generate again', async () => {
       const generateFn = vi.fn();
       setupDefaultMocks({ aiError: 'Network error' });
-      vi.mocked(useVertexReport).mockReturnValue({
+      vi.mocked(useFirebaseReport).mockReturnValue({
         data: null,
         streaming: false,
         error: 'Network error',

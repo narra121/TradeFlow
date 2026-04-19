@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Sparkles, User, Bot, Square } from 'lucide-react';
-import { useVertexChat } from '@/hooks/useVertexAI';
+import { useFirebaseChat } from '@/hooks/useFirebaseAI';
 import type { ChatMessage } from '@/types/insights';
 
 interface InsightsChatProps {
@@ -27,7 +27,7 @@ export function InsightsChat({ accountId, startDate, endDate, trades }: Insights
   const inputRef = useRef<HTMLInputElement>(null);
 
   const context = JSON.stringify({ accountId, startDate, endDate, tradeCount: trades.length });
-  const { messages, streaming, error, send, abort } = useVertexChat(context);
+  const { messages, streaming, error, send, abort } = useFirebaseChat(context);
 
   useEffect(() => {
     if (typeof messagesEndRef.current?.scrollIntoView === 'function') {

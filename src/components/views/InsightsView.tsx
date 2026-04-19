@@ -6,13 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { AccountFilter } from '@/components/account/AccountFilter';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { useGetStatsQuery, useGetSubscriptionQuery } from '@/store/api';
+import { useGetSubscriptionQuery } from '@/store/api';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useTradeCache } from '@/hooks/useTradeCache';
-import { useVertexReport } from '@/hooks/useVertexAI';
+import { useFirebaseReport } from '@/hooks/useFirebaseAI';
 import type { InsightsResponse } from '@/types/insights';
 import {
   ProfileScoreCard,
@@ -141,17 +139,27 @@ function PremiumGate() {
 // ── Main View ────────────────────────────────────────────────────────
 
 export function InsightsView() {
-  const dispatch = useAppDispatch();
-  const filters = useAppSelector((state) => state.trades.filters);
+  // Local filter state — independent from global Redux filters
+  const [datePreset, setDatePreset] = useState<DatePreset>('thisMonth');
+  const [localAccountId, setLocalAccountId] = useState<string | null>(null);
+
+  const localDates = useMemo(() => {
+    const range = getDateRangeFromPreset(datePreset);
+    return {
+      startDate: formatLocalDateOnly(range.from),
+      endDate: formatLocalDateOnly(range.to),
+    };
+  }, [datePreset]);
+
+  const accountId = localAccountId || 'ALL';
 
   // Subscription check
   const { data: subscription, isLoading: subLoading } = useGetSubscriptionQuery();
   const isPremium = isSubscriptionActive(subscription);
 
-  // Account info
-  const { selectedAccountId, accounts } = useAccounts();
+  // Account info (read-only, no dispatch)
+  const { accounts } = useAccounts();
   const totalCapital = useMemo(() => {
-    const accountId = selectedAccountId || 'ALL';
     if (accountId === 'ALL') {
       return accounts
         .filter((acc) => acc.id && acc.id !== '-1')
@@ -159,33 +167,10 @@ export function InsightsView() {
     }
     const account = accounts.find((acc) => acc.id === accountId);
     return account?.initialBalance || 0;
-  }, [selectedAccountId, accounts]);
+  }, [accountId, accounts]);
 
-  // Fetch stats to know trade count
-  const statsQueryParams = useMemo(
-    () => ({
-      accountId: filters.accountId,
-      startDate: filters.startDate,
-      endDate: filters.endDate,
-      totalCapital,
-    }),
-    [filters.accountId, filters.startDate, filters.endDate, totalCapital]
-  );
-  const { data: statsData } = useGetStatsQuery(statsQueryParams);
-  const totalTrades = statsData?.totalTrades ?? 0;
-
-  // Date preset handling
-  const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 'thisMonth');
-
+  // Trade count from cache (no stats API call needed)
   const handleDatePresetChange = (preset: DatePreset) => {
-    const range = getDateRangeFromPreset(preset);
-    dispatch(
-      setDateRangeFilter({
-        startDate: formatLocalDateOnly(range.from),
-        endDate: formatLocalDateOnly(range.to),
-        datePreset: preset,
-      })
-    );
     setDatePreset(preset);
   };
 
@@ -197,19 +182,21 @@ export function InsightsView() {
     error: cacheError,
     refresh,
   } = useTradeCache({
-    accountId: filters.accountId,
-    startDate: filters.startDate,
-    endDate: filters.endDate,
+    accountId,
+    startDate: localDates.startDate,
+    endDate: localDates.endDate,
   });
 
-  // Vertex AI streaming report
+  const totalTrades = trades.length;
+
+  // Firebase AI streaming report
   const {
     data: insights,
     streaming,
     error: aiError,
     generate,
     abort,
-  } = useVertexReport();
+  } = useFirebaseReport();
 
   // Combined error
   const error = cacheError || aiError;
@@ -269,7 +256,7 @@ export function InsightsView() {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-          <AccountFilter />
+          <AccountFilter value={localAccountId} onValueChange={setLocalAccountId} />
           <DateRangeFilter
             selectedPreset={datePreset}
             onPresetChange={handleDatePresetChange}
@@ -495,9 +482,9 @@ export function InsightsView() {
               {/* Ask AI tab */}
               <TabsContent value="chat">
                 <InsightsChat
-                  accountId={filters.accountId}
-                  startDate={filters.startDate}
-                  endDate={filters.endDate}
+                  accountId={accountId}
+                  startDate={localDates.startDate}
+                  endDate={localDates.endDate}
                   trades={trades}
                 />
               </TabsContent>
