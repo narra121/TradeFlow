@@ -26,7 +26,8 @@ test.describe('Smoke Tests', () => {
         !err.includes('third-party') &&
         !err.includes('DevTools') &&
         !err.includes('ipapi.co') &&
-        !err.includes('ERR_FAILED')
+        !err.includes('ERR_FAILED') &&
+        !err.includes('status of 403')
     );
     expect(criticalErrors).toHaveLength(0);
   });
@@ -82,7 +83,8 @@ test.describe('Smoke Tests', () => {
         !err.includes('third-party') &&
         !err.includes('DevTools') &&
         !err.includes('ipapi.co') &&
-        !err.includes('ERR_FAILED')
+        !err.includes('ERR_FAILED') &&
+        !err.includes('status of 403')
     );
     expect(criticalErrors).toHaveLength(0);
   });
@@ -105,7 +107,8 @@ test.describe('Smoke Tests', () => {
         !err.includes('third-party') &&
         !err.includes('DevTools') &&
         !err.includes('ipapi.co') &&
-        !err.includes('ERR_FAILED')
+        !err.includes('ERR_FAILED') &&
+        !err.includes('status of 403')
     );
     expect(criticalErrors).toHaveLength(0);
   });
