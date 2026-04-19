@@ -13,7 +13,6 @@ import {
   BookOpen,
   Camera,
   Users,
-  CheckCircle2,
   ArrowRight,
   Star,
   ChevronRight,
@@ -22,20 +21,15 @@ import {
   PieChart,
   Clock,
   Award,
-  Heart,
   Menu,
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCurrency } from '@/hooks/useCurrency';
+import { PricingCards } from '@/components/subscription/PricingCards';
 
 export function LandingPage() {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { currency } = useCurrency();
-  const currencySymbol = currency === 'INR' ? '₹' : '$';
-  const monthlyPrice = currency === 'INR' ? 99 : 1.99;
-  const annualPrice = currency === 'INR' ? 999 : 19.99;
 
   const features = [
     {
@@ -273,7 +267,7 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Button size="lg" asChild className="gap-2 h-14 px-8 text-lg">
               <Link to="/signup">
-                Start Free Trial
+                Get Started Free
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
@@ -444,88 +438,17 @@ export function LandingPage() {
 
       {/* Pricing Section */}
       <section id="pricing" className="py-16 sm:py-24 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               Simple,
               <span className="text-primary"> Transparent Pricing</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Start with a 1-month free trial — no credit card required. Then choose a plan that fits your trading.
+              All core features are free forever. Upgrade for AI-powered insights and an ad-free experience.
             </p>
           </div>
-
-          {/* Free Trial */}
-          <div className="bg-card rounded-3xl border border-border/50 overflow-hidden mb-8">
-            <div className="p-8 md:p-12">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 text-success text-sm font-medium mb-4">
-                    <CheckCircle2 className="w-4 h-4" />
-                    1-Month Free Trial
-                  </div>
-                  <h3 className="text-3xl font-bold text-foreground mb-2">
-                    Try Everything — <span className="text-success">No Card Required</span>
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Get full access to every feature for 30 days. No credit card needed to start.
-                  </p>
-                </div>
-                <Button size="lg" asChild className="shrink-0 gap-2">
-                  <Link to="/signup">
-                    Start Free Trial
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </Button>
-              </div>
-
-              <div className="mt-10 pt-10 border-t border-border/50">
-                <div className="text-sm font-medium text-muted-foreground mb-4">Everything included in your trial:</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                  {[
-                    'Unlimited trades',
-                    'Full analytics',
-                    'Calendar view',
-                    'Trade import',
-                    'Multiple accounts',
-                    'Goal tracking',
-                    'Trading rules',
-                    'All future features',
-                  ].map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
-                      <span className="text-sm text-foreground">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Paid Plans */}
-          <div className="bg-card/50 rounded-2xl border border-primary/20 p-6 sm:p-8 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
-              <Heart className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">After Your Trial</h3>
-            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              Choose a plan to keep access to all features. Built by an independent developer — your subscription directly supports hosting and development.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <div className="px-6 py-3 rounded-xl bg-background/50 border border-border/50">
-                <span className="text-2xl font-bold text-primary">{currencySymbol}{monthlyPrice}</span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
-              <span className="text-muted-foreground">or</span>
-              <div className="px-6 py-3 rounded-xl bg-background/50 border border-border/50">
-                <span className="text-2xl font-bold text-primary">{currencySymbol}{annualPrice}</span>
-                <span className="text-muted-foreground">/year</span>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-4">
-              Cancel anytime — no long-term commitment
-            </p>
-          </div>
+          <PricingCards context="landing" />
         </div>
       </section>
 
@@ -545,11 +468,11 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="lg" asChild className="gap-2 h-14 px-8 text-lg">
               <Link to="/signup">
-                Start Free Trial
+                Get Started Free
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
-            <p className="text-sm text-muted-foreground">1-month free trial • No credit card required</p>
+            <p className="text-sm text-muted-foreground">Free forever • No credit card required</p>
           </div>
         </div>
       </section>

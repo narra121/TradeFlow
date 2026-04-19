@@ -70,18 +70,18 @@ describe('LandingPage', () => {
     expect(screen.getByText('500K+')).toBeInTheDocument();
   });
 
-  it('displays pricing section with free trial', () => {
+  it('displays pricing section', () => {
     renderWithProviders(<LandingPage />);
     expect(screen.getByText(/Transparent Pricing/)).toBeInTheDocument();
-    expect(screen.getByText('1-Month Free Trial')).toBeInTheDocument();
+    expect(screen.getByText(/All core features are free forever/)).toBeInTheDocument();
   });
 
   it('has CTA button linking to signup', () => {
     renderWithProviders(<LandingPage />);
     const ctaLinks = screen.getAllByRole('link', {
-      name: /Start Free Trial/i,
+      name: /Get Started Free/i,
     });
-    // All "Start Free Trial" links should point to /signup
+    // All "Get Started Free" links should point to /signup
     ctaLinks.forEach((link) => {
       expect(link).toHaveAttribute('href', '/signup');
     });
