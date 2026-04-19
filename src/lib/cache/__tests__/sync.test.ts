@@ -3,17 +3,24 @@ import 'fake-indexeddb/auto';
 import type { Trade } from '@/types/trade';
 import { syncTrades } from '../sync';
 import { deriveKey } from '../crypto';
-import { openDatabase, storeTrades, clearDatabase } from '../trade-cache';
+import {
+  openDatabase,
+  storeTrades,
+  putMonthHash,
+  clearDatabase,
+} from '../trade-cache';
 
 // Mock the apiClient module
 vi.mock('@/lib/api/api', () => ({
   default: {
     get: vi.fn(),
+    post: vi.fn(),
   },
 }));
 
 import apiClient from '@/lib/api/api';
 const mockGet = vi.mocked(apiClient.get);
+const mockPost = vi.mocked(apiClient.post);
 
 function makeTrade(overrides: Partial<Trade> = {}): Trade {
   return {
@@ -46,129 +53,260 @@ describe('cache/sync', () => {
     await clearDatabase(userId);
   });
 
-  it('fetches all trades from server when cache is empty', async () => {
-    const serverTrades = [
-      makeTrade({ id: 't1', exitDate: '2026-04-10T15:00:00Z' }),
-      makeTrade({ id: 't2', exitDate: '2026-04-10T16:00:00Z' }),
-    ];
-
-    mockGet.mockResolvedValueOnce(serverTrades as any);
-
-    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10', {
-      '2026-04-10': 'server-hash-1',
-    });
-
-    expect(mockGet).toHaveBeenCalledWith('/trades', {
-      params: { accountId, startDate: '2026-04-10', endDate: '2026-04-10' },
-    });
-    expect(result).toHaveLength(2);
-    expect(result.map((t) => t.id).sort()).toEqual(['t1', 't2']);
-  });
-
-  it('uses cached trades when hashes match', async () => {
-    // Pre-populate the cache
+  it('reads from IndexedDB only when batchMatch is true (no GET /trades call)', async () => {
+    // Pre-populate cache with trades
     const db = await openDatabase(userId);
     const key = await deriveKey(userId);
     const cachedTrades = [makeTrade({ id: 'cached-1', pnl: 100 })];
-    await storeTrades(db, accountId, '2026-04-10', cachedTrades, 'matching-hash', key);
+    await storeTrades(db, accountId, '2026-04-10', cachedTrades, 'day-hash-1', key);
+    await putMonthHash(db, accountId, '2026-04', 'month-hash-1');
     db.close();
 
-    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10', {
-      '2026-04-10': 'matching-hash',
-    });
+    // Server says everything matches
+    mockPost.mockResolvedValueOnce({
+      batchMatch: true,
+      staleDays: [],
+      serverMonthHashes: {},
+      serverDayHashes: {},
+    } as any);
 
-    // Should not have called the server
+    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10');
+
+    // verify-hashes was called
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(mockPost).toHaveBeenCalledWith('/trades/verify-hashes', expect.objectContaining({
+      accountId,
+      startDate: '2026-04-10',
+      endDate: '2026-04-10',
+    }));
+
+    // GET /trades was NOT called
     expect(mockGet).not.toHaveBeenCalled();
+
+    // Trades read from IndexedDB
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('cached-1');
     expect(result[0].pnl).toBe(100);
   });
 
-  it('fetches from server when hashes differ', async () => {
-    // Pre-populate cache with old data
+  it('fetches stale days from server when verify-hashes returns stale days', async () => {
+    // Pre-populate cache with day 10 (fresh) but not day 11 (stale)
     const db = await openDatabase(userId);
     const key = await deriveKey(userId);
-    const oldTrades = [makeTrade({ id: 'old-1', pnl: 50 })];
-    await storeTrades(db, accountId, '2026-04-10', oldTrades, 'old-hash', key);
+    await storeTrades(db, accountId, '2026-04-10', [makeTrade({ id: 'cached-d10' })], 'hash-d10', key);
     db.close();
 
-    const newTrades = [makeTrade({ id: 'new-1', pnl: 200 })];
-    mockGet.mockResolvedValueOnce(newTrades as any);
-
-    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10', {
-      '2026-04-10': 'new-hash',
-    });
-
-    expect(mockGet).toHaveBeenCalledTimes(1);
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('new-1');
-    expect(result[0].pnl).toBe(200);
-  });
-
-  it('handles multi-day range with mixed cache states', async () => {
-    // Day 1: cached and matching
-    // Day 2: cached but stale
-    // Day 3: not in server at all (no hash)
-    const db = await openDatabase(userId);
-    const key = await deriveKey(userId);
-    await storeTrades(db, accountId, '2026-04-10', [makeTrade({ id: 'cached-d1' })], 'hash-d1', key);
-    await storeTrades(db, accountId, '2026-04-11', [makeTrade({ id: 'old-d2' })], 'old-hash-d2', key);
-    db.close();
+    // Server says day 11 is stale
+    mockPost.mockResolvedValueOnce({
+      batchMatch: false,
+      staleDays: ['acc-1#2026-04-11'],
+      serverMonthHashes: { 'acc-1#2026-04': 'new-month-hash' },
+      serverDayHashes: { 'acc-1#2026-04-11': 'new-hash-d11' },
+    } as any);
 
     const serverTrades = [
-      makeTrade({ id: 'fresh-d2', exitDate: '2026-04-11T15:00:00Z' }),
+      makeTrade({ id: 'fresh-d11', exitDate: '2026-04-11T15:00:00Z' }),
     ];
     mockGet.mockResolvedValueOnce(serverTrades as any);
 
-    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-12', {
-      '2026-04-10': 'hash-d1',       // matches cache
-      '2026-04-11': 'new-hash-d2',    // stale - will fetch
-      // '2026-04-12' not in server hashes -> no trades
+    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-11');
+
+    // verify-hashes was called
+    expect(mockPost).toHaveBeenCalledTimes(1);
+
+    // GET /trades was called for stale day
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(mockGet).toHaveBeenCalledWith('/trades', {
+      params: { accountId, startDate: '2026-04-11', endDate: '2026-04-11' },
     });
 
-    // Day 1 from cache + Day 2 from server
+    // Both cached day 10 and fetched day 11 in result
     expect(result).toHaveLength(2);
-    expect(result.find((t) => t.id === 'cached-d1')).toBeDefined();
-    expect(result.find((t) => t.id === 'fresh-d2')).toBeDefined();
-    // Server was called only for stale day
-    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(result.find(t => t.id === 'cached-d10')).toBeDefined();
+    expect(result.find(t => t.id === 'fresh-d11')).toBeDefined();
   });
 
-  it('returns empty array when server has no hashes and cache is empty', async () => {
-    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10', {});
-    expect(result).toEqual([]);
+  it('handles mixed months: some match, some stale', async () => {
+    // March is cached and matches, April has stale days
+    const db = await openDatabase(userId);
+    const key = await deriveKey(userId);
+    await storeTrades(db, accountId, '2026-03-31', [makeTrade({ id: 'march-trade' })], 'hash-march', key);
+    await putMonthHash(db, accountId, '2026-03', 'month-hash-march');
+    db.close();
+
+    mockPost.mockResolvedValueOnce({
+      batchMatch: false,
+      staleDays: ['acc-1#2026-04-01'],
+      serverMonthHashes: {
+        'acc-1#2026-04': 'new-april-month-hash',
+      },
+      serverDayHashes: {
+        'acc-1#2026-04-01': 'hash-april-1',
+      },
+    } as any);
+
+    const aprilTrades = [
+      makeTrade({ id: 'april-trade', exitDate: '2026-04-01T15:00:00Z' }),
+    ];
+    mockGet.mockResolvedValueOnce(aprilTrades as any);
+
+    const result = await syncTrades(userId, accountId, '2026-03-31', '2026-04-01');
+
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(result).toHaveLength(2);
+    expect(result.find(t => t.id === 'march-trade')).toBeDefined();
+    expect(result.find(t => t.id === 'april-trade')).toBeDefined();
+  });
+
+  it('fetches everything when cache is empty (all stale)', async () => {
+    mockPost.mockResolvedValueOnce({
+      batchMatch: false,
+      staleDays: ['acc-1#2026-04-10'],
+      serverMonthHashes: { 'acc-1#2026-04': 'month-hash-new' },
+      serverDayHashes: { 'acc-1#2026-04-10': 'day-hash-new' },
+    } as any);
+
+    const serverTrades = [
+      makeTrade({ id: 'new-1', exitDate: '2026-04-10T15:00:00Z' }),
+    ];
+    mockGet.mockResolvedValueOnce(serverTrades as any);
+
+    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10');
+
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('new-1');
+  });
+
+  it('propagates verify-hashes failure', async () => {
+    mockPost.mockRejectedValueOnce(new Error('Network error'));
+
+    await expect(
+      syncTrades(userId, accountId, '2026-04-10', '2026-04-10'),
+    ).rejects.toThrow('Network error');
+
     expect(mockGet).not.toHaveBeenCalled();
   });
 
+  it('updates local month hashes after sync', async () => {
+    mockPost.mockResolvedValueOnce({
+      batchMatch: false,
+      staleDays: ['acc-1#2026-04-10'],
+      serverMonthHashes: { 'acc-1#2026-04': 'updated-month-hash' },
+      serverDayHashes: { 'acc-1#2026-04-10': 'updated-day-hash' },
+    } as any);
+
+    mockGet.mockResolvedValueOnce([
+      makeTrade({ id: 'trade-1', exitDate: '2026-04-10T15:00:00Z' }),
+    ] as any);
+
+    await syncTrades(userId, accountId, '2026-04-10', '2026-04-10');
+
+    // Verify month hash was stored locally
+    const db = await openDatabase(userId);
+    const monthHashes = await import('../trade-cache').then(m =>
+      m.getMonthHashes(db, accountId, ['2026-04'])
+    );
+    db.close();
+
+    expect(monthHashes.get('2026-04')).toBe('updated-month-hash');
+  });
+
+  it('sends local month and day hashes to verify-hashes endpoint', async () => {
+    // Pre-populate cache
+    const db = await openDatabase(userId);
+    const key = await deriveKey(userId);
+    await storeTrades(db, accountId, '2026-04-10', [makeTrade({ id: 'cached' })], 'local-day-hash', key);
+    await putMonthHash(db, accountId, '2026-04', 'local-month-hash');
+    db.close();
+
+    mockPost.mockResolvedValueOnce({
+      batchMatch: true,
+      staleDays: [],
+      serverMonthHashes: {},
+      serverDayHashes: {},
+    } as any);
+
+    await syncTrades(userId, accountId, '2026-04-10', '2026-04-10');
+
+    expect(mockPost).toHaveBeenCalledWith('/trades/verify-hashes', {
+      accountId,
+      startDate: '2026-04-10',
+      endDate: '2026-04-10',
+      clientMonthHashes: { 'acc-1#2026-04': 'local-month-hash' },
+      clientDayHashes: { 'acc-1#2026-04-10': 'local-day-hash' },
+    });
+  });
+
   it('handles server returning trades wrapped in a trades property', async () => {
+    mockPost.mockResolvedValueOnce({
+      batchMatch: false,
+      staleDays: ['acc-1#2026-04-10'],
+      serverMonthHashes: { 'acc-1#2026-04': 'mh' },
+      serverDayHashes: { 'acc-1#2026-04-10': 'dh' },
+    } as any);
+
     mockGet.mockResolvedValueOnce({ trades: [makeTrade({ id: 'wrapped' })] } as any);
 
-    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10', {
-      '2026-04-10': 'hash-x',
-    });
+    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10');
 
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('wrapped');
   });
 
   it('persists fetched trades to cache for future sync', async () => {
-    const serverTrades = [makeTrade({ id: 'persist-1', exitDate: '2026-04-10T15:00:00Z' })];
-    mockGet.mockResolvedValueOnce(serverTrades as any);
+    // First sync: empty cache, fetches from server
+    mockPost.mockResolvedValueOnce({
+      batchMatch: false,
+      staleDays: ['acc-1#2026-04-10'],
+      serverMonthHashes: { 'acc-1#2026-04': 'persist-mh' },
+      serverDayHashes: { 'acc-1#2026-04-10': 'persist-dh' },
+    } as any);
 
-    // First sync: fetches from server
-    await syncTrades(userId, accountId, '2026-04-10', '2026-04-10', {
-      '2026-04-10': 'persist-hash',
-    });
+    mockGet.mockResolvedValueOnce([
+      makeTrade({ id: 'persist-1', exitDate: '2026-04-10T15:00:00Z' }),
+    ] as any);
+
+    await syncTrades(userId, accountId, '2026-04-10', '2026-04-10');
     expect(mockGet).toHaveBeenCalledTimes(1);
 
-    // Second sync with same hash: should use cache
+    // Second sync: batchMatch because month hash was stored
+    mockPost.mockResolvedValueOnce({
+      batchMatch: true,
+      staleDays: [],
+      serverMonthHashes: {},
+      serverDayHashes: {},
+    } as any);
+
     mockGet.mockClear();
-    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10', {
-      '2026-04-10': 'persist-hash',
-    });
+    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10');
 
     expect(mockGet).not.toHaveBeenCalled();
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('persist-1');
+  });
+
+  it('filters out MONTH entries from staleDays', async () => {
+    // In case server returns MONTH keys in staleDays (shouldn't, but defensive)
+    mockPost.mockResolvedValueOnce({
+      batchMatch: false,
+      staleDays: ['acc-1#MONTH#2026-04', 'acc-1#2026-04-10'],
+      serverMonthHashes: { 'acc-1#2026-04': 'mh' },
+      serverDayHashes: { 'acc-1#2026-04-10': 'dh' },
+    } as any);
+
+    mockGet.mockResolvedValueOnce([
+      makeTrade({ id: 'trade-1', exitDate: '2026-04-10T15:00:00Z' }),
+    ] as any);
+
+    const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-10');
+
+    // Only day 2026-04-10 was fetched, MONTH entry was filtered
+    expect(mockGet).toHaveBeenCalledWith('/trades', {
+      params: { accountId, startDate: '2026-04-10', endDate: '2026-04-10' },
+    });
+    expect(result).toHaveLength(1);
   });
 });
