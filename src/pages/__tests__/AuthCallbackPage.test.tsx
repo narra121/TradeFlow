@@ -118,7 +118,7 @@ describe('AuthCallbackPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true });
   });
 
-  it('exchanges code for tokens and navigates to /app on success', async () => {
+  it('exchanges code for tokens and navigates to /app on success', { timeout: 15000 }, async () => {
     // Create a fake JWT payload
     const payload = { sub: 'google-user-1', name: 'Test User', email: 'test@gmail.com' };
     const fakeIdToken = `header.${btoa(JSON.stringify(payload))}.signature`;

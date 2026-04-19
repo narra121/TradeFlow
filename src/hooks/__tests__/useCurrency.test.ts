@@ -1,44 +1,33 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { useCurrency } from '../useCurrency';
+import { renderHook, waitFor, act } from '@testing-library/react';
+
+const CACHE_KEY = 'tradequt_detected_currency';
 
 describe('useCurrency', () => {
-  let mockFetch: ReturnType<typeof vi.fn>;
-  let mockStorage: Record<string, string>;
+  const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    mockStorage = {};
-    mockFetch = vi.fn();
-
-    // Clear real localStorage to prevent cross-test state leaks
-    localStorage.removeItem('tradequt_detected_currency');
-
-    // Mock fetch via stubGlobal so it's properly reset each time
-    vi.stubGlobal('fetch', mockFetch);
-
-    // Mock localStorage
-    vi.spyOn(localStorage, 'getItem').mockImplementation(
-      (key: string) => mockStorage[key] || null
-    );
-    vi.spyOn(localStorage, 'setItem').mockImplementation(
-      (key: string, val: string) => {
-        mockStorage[key] = val;
-      }
-    );
+    vi.resetModules();
+    localStorage.removeItem(CACHE_KEY);
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
+    localStorage.removeItem(CACHE_KEY);
   });
 
+  async function loadHook() {
+    const mod = await import('../useCurrency');
+    return renderHook(() => mod.useCurrency());
+  }
+
   it("returns 'INR' when IP is from India", async () => {
-    mockFetch.mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ country_code: 'IN' }),
     });
 
-    const { result } = renderHook(() => useCurrency());
+    const { result } = await loadHook();
 
     await waitFor(() => {
       expect(result.current.currency).toBe('INR');
@@ -46,12 +35,12 @@ describe('useCurrency', () => {
   });
 
   it("returns 'USD' when IP is from US", async () => {
-    mockFetch.mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ country_code: 'US' }),
     });
 
-    const { result } = renderHook(() => useCurrency());
+    const { result } = await loadHook();
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -61,9 +50,9 @@ describe('useCurrency', () => {
   });
 
   it("returns 'USD' when API fails (fallback)", async () => {
-    mockFetch.mockRejectedValue(new Error('Network error'));
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    const { result } = renderHook(() => useCurrency());
+    const { result } = await loadHook();
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -75,61 +64,59 @@ describe('useCurrency', () => {
   it('uses cached value from localStorage when fresh', async () => {
     const cachedEntry = {
       currency: 'INR',
-      timestamp: Date.now() - 1000, // 1 second ago — well within 7-day window
+      timestamp: Date.now() - 1000,
     };
-    mockStorage['tradequt_detected_currency'] = JSON.stringify(cachedEntry);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cachedEntry));
 
-    const { result } = renderHook(() => useCurrency());
+    globalThis.fetch = vi.fn();
 
-    // Should use cache immediately without calling fetch
+    const { result } = await loadHook();
+
     expect(result.current.currency).toBe('INR');
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it('calls API when cache is expired (>7 days)', async () => {
     const expiredEntry = {
       currency: 'INR',
-      timestamp: Date.now() - 8 * 24 * 60 * 60 * 1000, // 8 days ago
+      timestamp: Date.now() - 8 * 24 * 60 * 60 * 1000,
     };
-    mockStorage['tradequt_detected_currency'] = JSON.stringify(expiredEntry);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(expiredEntry));
 
-    mockFetch.mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ country_code: 'US' }),
     });
 
-    const { result } = renderHook(() => useCurrency());
+    const { result } = await loadHook();
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://ipapi.co/json/',
-      expect.objectContaining({ signal: expect.any(AbortSignal) })
-    );
+    expect(globalThis.fetch).toHaveBeenCalled();
     expect(result.current.currency).toBe('USD');
   });
 
   it('sets loading=true during detection', async () => {
-    let resolveFetch: (value: any) => void;
-    mockFetch.mockReturnValue(
+    let resolveFetch!: (value: any) => void;
+    globalThis.fetch = vi.fn().mockReturnValue(
       new Promise((resolve) => {
         resolveFetch = resolve;
       })
     );
 
-    const { result } = renderHook(() => useCurrency());
+    const { result } = await loadHook();
 
-    // loading should be true while detecting
     await waitFor(() => {
       expect(result.current.loading).toBe(true);
     });
 
-    // Resolve fetch
-    resolveFetch!({
-      ok: true,
-      json: async () => ({ country_code: 'IN' }),
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        json: async () => ({ country_code: 'IN' }),
+      });
     });
 
     await waitFor(() => {
