@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+// Mock Firebase auth (imported dynamically by authSlice on setGoogleAuth)
+vi.mock('@/lib/firebase/auth', () => ({
+  initFirebaseAuth: vi.fn().mockResolvedValue(undefined),
+  signOutFirebase: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock authApi endpoints
 vi.mock('@/store/api/authApi', () => {
   const createMatcher = (type: string) => {

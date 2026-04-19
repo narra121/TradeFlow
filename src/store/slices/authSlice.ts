@@ -48,6 +48,11 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
       state.isAuthenticated = true;
+
+      // Fire-and-forget Firebase auth after Google OAuth login
+      import('@/lib/firebase/auth').then(({ initFirebaseAuth }) => {
+        initFirebaseAuth().catch(() => {});
+      });
     },
     clearAuth: (state) => {
       state.user = null;
@@ -70,6 +75,11 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.isAuthenticated = true;
+
+        // Fire-and-forget Firebase auth after login
+        import('@/lib/firebase/auth').then(({ initFirebaseAuth }) => {
+          initFirebaseAuth().catch(() => {});
+        });
       });
 
     // Logout

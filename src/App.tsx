@@ -167,10 +167,22 @@ function AppRoutes() {
       const isExpired = payload.exp * 1000 < Date.now();
       if (isExpired) {
         import('@/lib/api/tokenRefresh').then(({ refreshToken }) => {
-          refreshToken().catch(() => {
-            dispatch(clearAuth());
-            navigate('/login', { replace: true });
-          });
+          refreshToken()
+            .then(() => {
+              // Firebase auth after successful token refresh
+              import('@/lib/firebase/auth').then(({ initFirebaseAuth }) => {
+                initFirebaseAuth().catch(() => {});
+              });
+            })
+            .catch(() => {
+              dispatch(clearAuth());
+              navigate('/login', { replace: true });
+            });
+        });
+      } else {
+        // Token is still valid — init Firebase auth
+        import('@/lib/firebase/auth').then(({ initFirebaseAuth }) => {
+          initFirebaseAuth().catch(() => {});
         });
       }
     } catch {

@@ -83,6 +83,8 @@ export const authApi = api.injectEndpoints({
         // Clear persisted image cache so another user doesn't see stale images
         const { clearImageCache } = await import('./imageCache');
         await clearImageCache();
+        const { signOutFirebase } = await import('@/lib/firebase/auth');
+        await signOutFirebase();
         return { data: undefined };
       },
     }),
