@@ -66,7 +66,8 @@ interface ImportTradesModalProps {
   onImportTrades: (trades: Omit<Trade, 'id'>[]) => Promise<{ success: boolean; error?: any }>;
 }
 
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+const MAX_FILE_SIZE = 10 * 1024; // 10KB
+const MAX_IMAGE_SIZE = 1 * 1024 * 1024; // 1MB per image
 const SPREADSHEET_EXTENSIONS = ['.csv', '.txt', '.xls', '.xlsx'];
 const isSpreadsheetFile = (file: File) => {
   const ext = '.' + file.name.toLowerCase().split('.').pop();
@@ -142,6 +143,10 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
   }, [open, importMode, uploadedImages.length]);
 
   const processImageFile = (file: File) => {
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error(`Image size (${(file.size / 1024 / 1024).toFixed(1)} MB) exceeds 1 MB limit`);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       const url = e.target?.result as string;
@@ -156,7 +161,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
 
   const processSpreadsheetFile = async (file: File) => {
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(`File size (${(file.size / 1024).toFixed(1)} KB) exceeds 1 MB limit`);
+      toast.error(`File size (${(file.size / 1024).toFixed(1)} KB) exceeds 10 KB limit`);
       return;
     }
 
@@ -574,7 +579,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
                 </div>
 
                 <p className="text-[10px] sm:text-xs text-muted-foreground/60">
-                  Supports: PNG, JPG, CSV, TXT, XLS, XLSX · Paste text directly · Max 1 MB for files
+                  Supports: PNG, JPG, CSV, TXT, XLS, XLSX · Paste text directly · Max 1 MB per image, 10 KB for files
                 </p>
               </div>
             </div>

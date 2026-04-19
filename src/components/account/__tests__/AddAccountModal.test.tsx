@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AddAccountModal } from '../AddAccountModal';
 import { TradingAccount } from '@/types/trade';
@@ -133,14 +133,14 @@ describe('AddAccountModal', () => {
 
     render(<AddAccountModal {...defaultProps} onAddAccount={onAddAccount} />);
 
-    // Fill in the form
+    // Fill in the form using fireEvent for speed (userEvent.type is too slow)
     const nameInput = screen.getByPlaceholderText('e.g., FTMO $100k Challenge');
     const brokerInput = screen.getByPlaceholderText('e.g., FTMO, MyForexFunds');
     const initialBalanceInput = screen.getByPlaceholderText('100000');
 
-    await user.type(nameInput, 'My Test Account');
-    await user.type(brokerInput, 'TestBroker');
-    await user.type(initialBalanceInput, '50000');
+    fireEvent.change(nameInput, { target: { value: 'My Test Account' } });
+    fireEvent.change(brokerInput, { target: { value: 'TestBroker' } });
+    fireEvent.change(initialBalanceInput, { target: { value: '50000' } });
 
     // Submit the form
     const submitButton = screen.getByRole('button', { name: /add account/i });
