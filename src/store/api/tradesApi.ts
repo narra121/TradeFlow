@@ -5,6 +5,7 @@ import type {
   BulkImportPayload,
 } from '@/lib/api';
 import type { Trade } from '@/types/trade';
+import { backgroundCacheStoreTrades, backgroundCacheDeleteTrades } from '@/lib/cache/proactive-cache';
 
 // --- Paginated trades types ---
 
@@ -119,6 +120,12 @@ export const tradesApi = api.injectEndpoints({
               { type: 'Trades', id: 'LIST' },
             ]
           : [{ type: 'Trades', id: 'LIST' }],
+      async onQueryStarted(_params, { queryFulfilled }) {
+        try {
+          const { data: trades } = await queryFulfilled;
+          backgroundCacheStoreTrades(trades).catch(() => {});
+        } catch {}
+      },
     }),
 
     getTradesPaginated: builder.query<PaginatedTradesResponse, PaginatedTradesQueryParams | void>({
@@ -162,6 +169,12 @@ export const tradesApi = api.injectEndpoints({
               { type: 'Trades', id: 'PAGINATED_LIST' },
             ]
           : [{ type: 'Trades', id: 'PAGINATED_LIST' }],
+      async onQueryStarted(_params, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          backgroundCacheStoreTrades(data.trades).catch(() => {});
+        } catch {}
+      },
     }),
 
     createTrade: builder.mutation<Trade, CreateTradePayload>({
@@ -217,10 +230,11 @@ export const tradesApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats'],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
-          await queryFulfilled;
+          const { data } = await queryFulfilled;
           // Refetch accounts after a delay to allow the DynamoDB Stream
           // handler to recalculate the account balance
           debouncedInvalidateStreamDeps(dispatch);
+          backgroundCacheStoreTrades([data]).catch(() => {});
         } catch { /* handled elsewhere */ }
       },
     }),
@@ -314,12 +328,13 @@ export const tradesApi = api.injectEndpoints({
 
           // Delayed refetch for account balance (DynamoDB Stream needs time)
           debouncedInvalidateStreamDeps(dispatch);
+          backgroundCacheStoreTrades([updatedTrade, ...createdTrades]).catch(() => {});
         } catch {
           // No-op: if update/refetch fails, leave cache as-is.
         }
       },
     }),
-    
+
     deleteTrade: builder.mutation<{ message: string; trade?: Trade }, string>({
       query: (id) => ({
         url: `/trades/${id}`,
@@ -371,6 +386,7 @@ export const tradesApi = api.injectEndpoints({
           await queryFulfilled;
           // Delayed refetch for account balance (DynamoDB Stream needs time)
           debouncedInvalidateStreamDeps(dispatch);
+          backgroundCacheDeleteTrades([id]).catch(() => {});
         } catch {
           // Revert optimistic updates on error
           patchResults.forEach(patchResult => patchResult.undo());
@@ -417,8 +433,9 @@ export const tradesApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats'],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
-          await queryFulfilled;
+          const { data } = await queryFulfilled;
           debouncedInvalidateStreamDeps(dispatch);
+          backgroundCacheStoreTrades(data?.trades || []).catch(() => {});
         } catch { /* handled elsewhere */ }
       },
     }),
@@ -450,6 +467,7 @@ export const tradesApi = api.injectEndpoints({
         try {
           await queryFulfilled;
           debouncedInvalidateStreamDeps(dispatch);
+          backgroundCacheDeleteTrades(tradeIds).catch(() => {});
         } catch {
           patchResults.forEach(p => p.undo());
         }
