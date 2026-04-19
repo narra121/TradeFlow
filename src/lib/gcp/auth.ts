@@ -12,7 +12,8 @@ const GCP_WIF_POOL_ID = import.meta.env.VITE_GCP_WIF_POOL_ID;
 const GCP_WIF_PROVIDER_ID = import.meta.env.VITE_GCP_WIF_PROVIDER_ID;
 
 const STS_URL = 'https://sts.googleapis.com/v1/token';
-const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes before expiry
+const TOKEN_LIFETIME_SECONDS = 900; // 15 minutes
+const REFRESH_BUFFER_MS = 2 * 60 * 1000; // 2 minutes before expiry
 
 // In-memory cache (never stored in localStorage)
 let cachedToken: string | null = null;
@@ -91,9 +92,11 @@ async function doExchange(): Promise<string> {
     throw new Error('No access_token in STS response');
   }
 
-  // Cache in memory with expiry tracking
+  // Cache with shorter of server TTL or our configured lifetime
   cachedToken = accessToken;
-  tokenExpiresAt = Date.now() + (expiresIn ?? 3600) * 1000;
+  const serverTtlMs = (expiresIn ?? 3600) * 1000;
+  const configuredTtlMs = TOKEN_LIFETIME_SECONDS * 1000;
+  tokenExpiresAt = Date.now() + Math.min(serverTtlMs, configuredTtlMs);
 
   return accessToken;
 }

@@ -154,18 +154,18 @@ describe('GCP auth — getGoogleAccessToken()', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
-    it('refetches when token is near expiry (within 5 min buffer)', async () => {
+    it('refetches when token is near expiry (within 2 min buffer)', async () => {
       storage.set('idToken', 'cognito-jwt');
 
-      // First call: token expires in 4 minutes (240s) — already within the 5-min buffer on next call
-      mockFetch.mockResolvedValueOnce(makeStsResponse('short-lived-token', 240));
+      // First call: token expires in 90s — within the 2-min (120s) buffer on next call
+      mockFetch.mockResolvedValueOnce(makeStsResponse('short-lived-token', 90));
 
       const first = await getGoogleAccessToken();
       expect(first).toBe('short-lived-token');
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
-      // Second call should refetch because 240s < 300s buffer
-      mockFetch.mockResolvedValueOnce(makeStsResponse('refreshed-token', 3600));
+      // Second call should refetch because 90s < 120s buffer
+      mockFetch.mockResolvedValueOnce(makeStsResponse('refreshed-token', 900));
       const second = await getGoogleAccessToken();
       expect(second).toBe('refreshed-token');
       expect(mockFetch).toHaveBeenCalledTimes(2);
