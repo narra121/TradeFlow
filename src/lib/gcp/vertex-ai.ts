@@ -19,8 +19,9 @@ export interface ChatMessage {
 
 const MAX_TRADES = 2000;
 
-const REPORT_MODEL = 'gemini-2.5-flash';
-const CHAT_MODEL = 'gemini-2.5-pro';
+const REPORT_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+const CHAT_MODELS = ['gemini-2.5-pro', 'gemini-2.5-flash'];
+const RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504];
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -111,16 +112,48 @@ Trade data:
 `;
 
 // -------------------------------------------------------------------------
-// streamReport — Gemini Flash for structured report generation
+// Shared: fetch with model fallback chain
 // -------------------------------------------------------------------------
 
-/**
- * Stream a trading performance report from Gemini Flash.
- * Yields partial InsightsResponse objects as sections complete.
- *
- * @param trades Array of trades to analyze (trimmed to max 2000)
- * @param signal AbortSignal for cancellation
- */
+async function fetchWithFallback(
+  models: string[],
+  body: Record<string, unknown>,
+  accessToken: string,
+  signal: AbortSignal,
+): Promise<Response> {
+  const errors: string[] = [];
+
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+    const isLast = i === models.length - 1;
+
+    const res = await fetch(getModelUrl(model), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+
+    if (res.ok) return res;
+
+    const errText = await res.text().catch(() => '');
+    errors.push(`${model}: ${res.status}`);
+
+    if (isLast || !RETRYABLE_STATUS_CODES.includes(res.status)) {
+      throw new Error(`Gemini API request failed (${res.status}): ${errText}`);
+    }
+  }
+
+  throw new Error(`All models failed: ${errors.join(', ')}`);
+}
+
+// -------------------------------------------------------------------------
+// streamReport — Gemini Flash with Pro fallback
+// -------------------------------------------------------------------------
+
 export async function* streamReport(
   trades: Trade[],
   signal: AbortSignal,
@@ -140,25 +173,10 @@ export async function* streamReport(
     },
   };
 
-  const res = await fetch(getModelUrl(REPORT_MODEL), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-    signal,
-  });
+  const res = await fetchWithFallback(REPORT_MODELS, body, accessToken, signal);
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Gemini API request failed (${res.status}): ${text}`);
-  }
-
-  // Vertex AI streamGenerateContent returns a JSON array of response chunks.
-  // We read the entire response text and parse incrementally.
   const responseText = await res.text();
-  const chunks = parseVertexStreamResponse(responseText);
+  const chunks = parseStreamResponse(responseText);
 
   let accumulated = '';
 
@@ -168,20 +186,16 @@ export async function* streamReport(
 
     accumulated += textPart;
 
-    // Try to parse accumulated JSON so far for progressive yields
     const partial = tryParsePartialInsights(accumulated);
     if (partial) {
       yield partial;
     }
   }
 
-  // Final parse of complete response
   try {
     const final = JSON.parse(accumulated) as InsightsResponse;
     yield final;
   } catch {
-    // If we already yielded partial results, that's acceptable
-    // If accumulated is truly empty, throw
     if (!accumulated.trim()) {
       throw new Error('Empty response from Gemini API');
     }
@@ -189,17 +203,9 @@ export async function* streamReport(
 }
 
 // -------------------------------------------------------------------------
-// streamChat — Gemini Pro for multi-turn conversation
+// streamChat — Gemini Pro with Flash fallback
 // -------------------------------------------------------------------------
 
-/**
- * Stream a chat response from Gemini Pro.
- * Yields text chunks for real-time rendering.
- *
- * @param messages Conversation history
- * @param context Additional context (e.g., trade summary) injected as system instruction
- * @param signal AbortSignal for cancellation
- */
 export async function* streamChat(
   messages: ChatMessage[],
   context: string,
@@ -212,13 +218,11 @@ export async function* streamChat(
     parts: [{ text: msg.text }],
   }));
 
-  // Prepend context as a system-level user message if provided
   if (context) {
     contents.unshift({
       role: 'user',
       parts: [{ text: `Context for this conversation:\n${context}\n\nPlease acknowledge and be ready to answer questions about my trading performance.` }],
     });
-    // Add a model acknowledgment to maintain proper turn structure
     contents.splice(1, 0, {
       role: 'model',
       parts: [{ text: 'I\'ve reviewed your trading data and I\'m ready to help analyze your performance. What would you like to know?' }],
@@ -233,23 +237,10 @@ export async function* streamChat(
     },
   };
 
-  const res = await fetch(getModelUrl(CHAT_MODEL), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-    signal,
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Gemini API chat request failed (${res.status}): ${text}`);
-  }
+  const res = await fetchWithFallback(CHAT_MODELS, body, accessToken, signal);
 
   const responseText = await res.text();
-  const chunks = parseVertexStreamResponse(responseText);
+  const chunks = parseStreamResponse(responseText);
 
   for (const chunk of chunks) {
     const textPart = chunk?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -275,7 +266,7 @@ interface VertexChunk {
  * Parse the Vertex AI streamGenerateContent response.
  * The response is a JSON array of chunk objects: [{...}, {...}, ...]
  */
-function parseVertexStreamResponse(text: string): VertexChunk[] {
+function parseStreamResponse(text: string): VertexChunk[] {
   const trimmed = text.trim();
   if (!trimmed) return [];
 

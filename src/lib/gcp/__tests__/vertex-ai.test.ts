@@ -428,11 +428,12 @@ describe('Vertex AI streaming client', () => {
 
     it('throws on Vertex AI error response', async () => {
       mockFetch.mockResolvedValueOnce(makeErrorResponse(500, 'Internal error'));
+      mockFetch.mockResolvedValueOnce(makeErrorResponse(500, 'Internal error'));
 
       const controller = new AbortController();
       const gen = streamChat([{ role: 'user', text: 'Hi' }], '', controller.signal);
 
-      await expect(gen.next()).rejects.toThrow('Gemini API chat request failed (500)');
+      await expect(gen.next()).rejects.toThrow('Gemini API request failed (500)');
     });
 
     it('calls getGoogleAccessToken before making request', async () => {
