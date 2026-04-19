@@ -84,7 +84,7 @@ function getMessage(reason: SubscriptionBannerProps['reason'], trialEnd?: string
     case 'subscription_ended':
       return 'Your subscription has ended. Renew to continue.';
     case 'no_subscription':
-      return 'Subscribe to access all TradeQut features.';
+      return 'Subscribe to unlock AI Insights and go ad-free.';
     case 'free_with_ads':
       return 'Enjoying TradeQut? Subscribe to remove ads and support development.';
   }

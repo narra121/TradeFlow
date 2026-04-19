@@ -159,7 +159,7 @@ describe('SubscriptionBanner', () => {
     );
 
     expect(
-      screen.getByText(/subscribe to access all tradeQut features/i)
+      screen.getByText(/subscribe to unlock ai insights and go ad-free/i)
     ).toBeInTheDocument();
   });
 

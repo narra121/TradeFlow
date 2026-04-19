@@ -3,10 +3,13 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SubscriptionGate } from '../SubscriptionGate';
 
-function renderGate(subscription: { status: string; trialEnd?: string } | null) {
+function renderGate(
+  subscription: { status: string; trialEnd?: string } | null,
+  isLoading?: boolean
+) {
   return render(
     <MemoryRouter>
-      <SubscriptionGate subscription={subscription}>
+      <SubscriptionGate subscription={subscription} isLoading={isLoading}>
         <div data-testid="child-content">Protected Content</div>
       </SubscriptionGate>
     </MemoryRouter>
@@ -20,7 +23,7 @@ describe('SubscriptionGate', () => {
     const child = screen.getByTestId('child-content');
     expect(child).toBeInTheDocument();
     // Should not show overlay
-    expect(screen.queryByText('Subscription Required')).not.toBeInTheDocument();
+    expect(screen.queryByText('Premium Feature')).not.toBeInTheDocument();
   });
 
   it('renders children normally when status is trialing with future trialEnd', () => {
@@ -29,15 +32,15 @@ describe('SubscriptionGate', () => {
 
     const child = screen.getByTestId('child-content');
     expect(child).toBeInTheDocument();
-    expect(screen.queryByText('Subscription Required')).not.toBeInTheDocument();
+    expect(screen.queryByText('Premium Feature')).not.toBeInTheDocument();
   });
 
   it('shows overlay when status is cancelled', () => {
     renderGate({ status: 'cancelled' });
 
-    expect(screen.getByText('Subscription Required')).toBeInTheDocument();
+    expect(screen.getByText('Premium Feature')).toBeInTheDocument();
     expect(
-      screen.getByText(/your subscription was cancelled/i)
+      screen.getByText(/subscribe to unlock ai-powered insights/i)
     ).toBeInTheDocument();
   });
 
@@ -45,36 +48,34 @@ describe('SubscriptionGate', () => {
     const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     renderGate({ status: 'trialing', trialEnd: pastDate });
 
-    expect(screen.getByText('Subscription Required')).toBeInTheDocument();
+    expect(screen.getByText('Premium Feature')).toBeInTheDocument();
     expect(
-      screen.getByText(/your free trial has expired/i)
+      screen.getByText(/subscribe to unlock ai-powered insights/i)
     ).toBeInTheDocument();
   });
 
   it('shows overlay when subscription is null', () => {
     renderGate(null);
 
-    expect(screen.getByText('Subscription Required')).toBeInTheDocument();
+    expect(screen.getByText('Premium Feature')).toBeInTheDocument();
     expect(
-      screen.getByText(/a subscription is required/i)
+      screen.getByText(/subscribe to unlock ai-powered insights/i)
     ).toBeInTheDocument();
   });
 
-  it('shows "Subscribe Now" button in overlay', () => {
+  it('shows "View Plans" link in overlay', () => {
     renderGate({ status: 'cancelled' });
 
-    const subscribeLink = screen.getByRole('link', { name: /subscribe now/i });
-    expect(subscribeLink).toBeInTheDocument();
-    expect(subscribeLink).toHaveAttribute('href', '/app/profile');
+    const viewPlansLink = screen.getByRole('link', { name: /view plans/i });
+    expect(viewPlansLink).toBeInTheDocument();
+    expect(viewPlansLink).toHaveAttribute('href', '/app/profile');
   });
 
-  it('shows plan cards in overlay', () => {
-    renderGate(null);
+  it('renders children when isLoading is true even without active subscription', () => {
+    renderGate(null, true);
 
-    expect(screen.getByText('Monthly')).toBeInTheDocument();
-    expect(screen.getByText('Annual')).toBeInTheDocument();
-    expect(screen.getByText('$1.99')).toBeInTheDocument();
-    expect(screen.getByText('$19.99')).toBeInTheDocument();
-    expect(screen.getByText('Save 17%')).toBeInTheDocument();
+    const child = screen.getByTestId('child-content');
+    expect(child).toBeInTheDocument();
+    expect(screen.queryByText('Premium Feature')).not.toBeInTheDocument();
   });
 });
