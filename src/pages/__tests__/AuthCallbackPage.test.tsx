@@ -2,14 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// Mock tokenRefreshScheduler
-vi.mock('@/lib/tokenRefreshScheduler', () => ({
-  tokenRefreshScheduler: {
-    start: vi.fn(),
-    stop: vi.fn(),
-  },
-}));
-
 // Mock authApi endpoints
 vi.mock('@/store/api/authApi', () => {
   const createMatcher = (type: string) => {

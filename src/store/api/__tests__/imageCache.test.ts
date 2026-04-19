@@ -198,15 +198,16 @@ describe('imageCache — fetchImage with token refresh', () => {
 
     // 401 on image
     mockFetch.mockResolvedValueOnce(mockImageResponse(401));
-    // Refresh returns 401
+    // Refresh returns 401 (doRefresh retries transient errors: 2 attempts)
+    mockFetch.mockResolvedValueOnce(mockJsonResponse({}, 401));
     mockFetch.mockResolvedValueOnce(mockJsonResponse({}, 401));
 
     const result = await getImageQueryFn('account1/trade1/img.jpg', fakeQueryApi);
 
     expect(result.error).toBeDefined();
     expect(result.error.error).toContain('Unauthorized');
-    // Image + refresh, no retry
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    // Image + 2 refresh attempts (retry)
+    expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 
   it('returns error when retry after refresh still returns 401', async () => {

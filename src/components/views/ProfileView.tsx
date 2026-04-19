@@ -44,7 +44,6 @@ import { useCurrency } from '@/hooks/useCurrency';
 import { SubscriptionDetails } from '@/lib/api';
 import { toast } from 'sonner';
 import { ProfileCardSkeleton, SubscriptionCardSkeleton, SubscriptionPlansCardSkeleton } from '@/components/ui/loading-skeleton';
-import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
 
 export function ProfileView() {
   const dispatch = useAppDispatch();

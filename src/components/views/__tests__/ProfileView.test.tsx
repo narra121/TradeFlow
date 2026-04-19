@@ -99,14 +99,6 @@ vi.mock('@/hooks/useAccounts', () => ({
   }),
 }));
 
-vi.mock('@/lib/tokenRefreshScheduler', () => ({
-  tokenRefreshScheduler: {
-    start: vi.fn(),
-    stop: vi.fn(),
-    schedule: vi.fn(),
-  },
-}));
-
 import { useGetProfileQuery, useGetSubscriptionQuery, useGetPlansQuery } from '@/store/api';
 
 describe('ProfileView', () => {

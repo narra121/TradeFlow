@@ -33,23 +33,36 @@ async function doRefresh(): Promise<string> {
   const rt = localStorage.getItem('refreshToken');
   if (!rt) throw new Error('No refresh token');
 
-  const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken: rt }),
-  });
+  const maxAttempts = 2;
+  let lastError: Error | null = null;
 
-  if (!res.ok) throw new Error('Refresh failed');
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt }),
+      });
 
-  const json = await res.json();
-  // Backend envelope: { data: { IdToken, ... }, error: null }
-  // Also handle flat format: { IdToken } or { token }
-  const data = json?.data ?? json;
-  const newToken: string | undefined =
-    data?.IdToken ?? data?.token;
+      if (!res.ok) throw new Error('Refresh failed');
 
-  if (!newToken) throw new Error('No token in response');
+      const json = await res.json();
+      const data = json?.data ?? json;
+      const newToken: string | undefined = data?.IdToken ?? data?.token;
 
-  localStorage.setItem('idToken', newToken);
-  return newToken;
+      if (!newToken) throw new Error('No token in response');
+
+      localStorage.setItem('idToken', newToken);
+      return newToken;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      const isTransient = lastError instanceof TypeError || lastError.message === 'Refresh failed';
+      if (!isTransient) throw lastError;
+      if (attempt < maxAttempts - 1) {
+        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
+    }
+  }
+
+  throw lastError ?? new Error('Refresh failed after retries');
 }

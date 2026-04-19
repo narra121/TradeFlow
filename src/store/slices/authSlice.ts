@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { tokenRefreshScheduler } from '@/lib/tokenRefreshScheduler';
 import { authApi } from '../api/authApi';
 
 export interface AuthState {
@@ -41,7 +40,6 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
       state.isAuthenticated = true;
-      tokenRefreshScheduler.start();
     },
     clearAuth: (state) => {
       state.user = null;
@@ -64,9 +62,6 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.isAuthenticated = true;
-        
-        // Start token refresh scheduler
-        tokenRefreshScheduler.start();
       });
 
     // Logout
@@ -76,9 +71,6 @@ const authSlice = createSlice({
         state.token = null;
         state.refreshToken = null;
         state.isAuthenticated = false;
-
-        // Stop token refresh scheduler
-        tokenRefreshScheduler.stop();
       });
   },
 });

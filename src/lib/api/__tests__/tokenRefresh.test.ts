@@ -132,11 +132,12 @@ describe('tokenRefresh — refreshToken()', () => {
   describe('failed refresh', () => {
     it('throws when the refresh endpoint returns a non-OK status', async () => {
       storage.set('refreshToken', 'rt-valid');
-      mockFetch.mockResolvedValueOnce(
-        mockJsonResponse({}, 401),
-      );
+      // doRefresh retries transient errors (2 attempts total)
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({}, 401));
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({}, 401));
 
       await expect(refreshToken()).rejects.toThrow('Refresh failed');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it('throws when the response contains no token', async () => {
@@ -150,15 +151,32 @@ describe('tokenRefresh — refreshToken()', () => {
 
     it('throws when fetch itself rejects (network error)', async () => {
       storage.set('refreshToken', 'rt-valid');
-      mockFetch.mockRejectedValueOnce(new Error('Network failure'));
+      // TypeError (network error) is transient, so doRefresh retries (2 attempts)
+      mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
-      await expect(refreshToken()).rejects.toThrow('Network failure');
+      await expect(refreshToken()).rejects.toThrow('Failed to fetch');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('retries once on transient failure then succeeds', async () => {
+      storage.set('refreshToken', 'rt-valid');
+      // First attempt fails, second succeeds
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({}, 503));
+      mockFetch.mockResolvedValueOnce(
+        mockJsonResponse({ data: { IdToken: 'retried-token' } }),
+      );
+
+      const token = await refreshToken();
+      expect(token).toBe('retried-token');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it('clears the singleton promise so the next call retries', async () => {
       storage.set('refreshToken', 'rt-valid');
 
-      // First call fails
+      // First call fails (2 attempts due to retry)
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({}, 500));
       mockFetch.mockResolvedValueOnce(mockJsonResponse({}, 500));
       await expect(refreshToken()).rejects.toThrow('Refresh failed');
 
@@ -168,7 +186,7 @@ describe('tokenRefresh — refreshToken()', () => {
       );
       const token = await refreshToken();
       expect(token).toBe('recovered-token');
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -245,7 +263,8 @@ describe('tokenRefresh — refreshToken()', () => {
     it('allows a new request after a shared failure settles', async () => {
       storage.set('refreshToken', 'rt-valid');
 
-      // First call fails
+      // First call fails (2 attempts due to retry)
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({}, 500));
       mockFetch.mockResolvedValueOnce(mockJsonResponse({}, 500));
       await expect(refreshToken()).rejects.toThrow('Refresh failed');
 
@@ -255,7 +274,7 @@ describe('tokenRefresh — refreshToken()', () => {
       );
       const token = await refreshToken();
       expect(token).toBe('retry-token');
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
   });
 });

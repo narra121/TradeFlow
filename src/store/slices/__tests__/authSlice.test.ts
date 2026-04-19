@@ -12,14 +12,6 @@ const localStorageMock = (() => {
 })();
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
 
-// Mock tokenRefreshScheduler
-vi.mock('@/lib/tokenRefreshScheduler', () => ({
-  tokenRefreshScheduler: {
-    start: vi.fn(),
-    stop: vi.fn(),
-  },
-}));
-
 // Mock the authApi endpoints with matchers
 // RTK's addMatcher expects matchFulfilled to be an action matcher (a function with a .match property)
 vi.mock('../../api/authApi', () => {
@@ -315,18 +307,6 @@ describe('authSlice', () => {
       expect(state.token).toBe('google-id-token');
       expect(state.refreshToken).toBe('google-refresh-token');
       expect(state.isAuthenticated).toBe(true);
-    });
-
-    it('starts token refresh scheduler', async () => {
-      const { tokenRefreshScheduler } = await import('@/lib/tokenRefreshScheduler');
-      vi.mocked(tokenRefreshScheduler.start).mockClear();
-      const action = setGoogleAuth({
-        user: { id: 'u1', name: 'Test', email: 'test@test.com' },
-        token: 'tok',
-        refreshToken: 'ref',
-      });
-      authReducer(baseInitialState, action);
-      expect(tokenRefreshScheduler.start).toHaveBeenCalled();
     });
 
     it('handles null refreshToken', () => {

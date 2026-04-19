@@ -12,15 +12,6 @@ vi.mock('sonner', () => ({
   },
 }));
 
-// Mock the tokenRefreshScheduler to prevent side effects
-vi.mock('@/lib/tokenRefreshScheduler', () => ({
-  tokenRefreshScheduler: {
-    start: vi.fn(),
-    stop: vi.fn(),
-    isRunning: vi.fn(() => false),
-  },
-}));
-
 // Create mock mutation trigger functions
 const mockLogin = vi.fn();
 const mockSignup = vi.fn();

@@ -8,7 +8,6 @@ import type { ReactNode, ErrorInfo } from "react";
 import { Loader2 } from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
 import { clearAuth } from "@/store/slices/authSlice";
-import { tokenRefreshScheduler } from "./lib/tokenRefreshScheduler";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { HelmetProvider } from 'react-helmet-async';
 
@@ -142,7 +141,6 @@ function AppRoutes() {
       }
       
       isHandlingUnauthorized.current = true;
-      tokenRefreshScheduler.stop();
       dispatch(clearAuth());
       navigate('/login', { replace: true });
       
@@ -159,19 +157,27 @@ function AppRoutes() {
     };
   }, [dispatch, navigate, location.pathname]);
 
-  // Separate effect to start scheduler only once on mount
+  // Check token expiry on mount and silently refresh if expired
   useEffect(() => {
     const token = localStorage.getItem('idToken');
-    if (token && !tokenRefreshScheduler.isRunning()) {
-      console.log('[App] Starting token refresh scheduler on mount');
-      tokenRefreshScheduler.start();
+    if (!token) return;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const isExpired = payload.exp * 1000 < Date.now();
+      if (isExpired) {
+        import('@/lib/api/tokenRefresh').then(({ refreshToken }) => {
+          refreshToken().catch(() => {
+            dispatch(clearAuth());
+            navigate('/login', { replace: true });
+          });
+        });
+      }
+    } catch {
+      dispatch(clearAuth());
+      navigate('/login', { replace: true });
     }
-    
-    // Cleanup on unmount
-    return () => {
-      tokenRefreshScheduler.stop();
-    };
-  }, []); // Empty dependency array - run only once on mount
+  }, []);
 
   return (
     <ChunkErrorBoundary>
