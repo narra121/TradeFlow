@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { lazy, Suspense, useEffect, useRef, Component } from "react";
+import { lazy, Suspense, useState, useEffect, useRef, Component } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import { Loader2 } from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
@@ -157,7 +157,18 @@ function AppRoutes() {
     };
   }, [dispatch, navigate, location.pathname]);
 
-  // Check token expiry on mount and silently refresh if expired
+  // Gate protected routes until token is confirmed valid or refreshed
+  const [authReady, setAuthReady] = useState(() => {
+    const token = localStorage.getItem('idToken');
+    if (!token) return true;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 > Date.now();
+    } catch {
+      return true;
+    }
+  });
+
   useEffect(() => {
     const token = localStorage.getItem('idToken');
     if (!token) return;
@@ -169,7 +180,7 @@ function AppRoutes() {
         import('@/lib/api/tokenRefresh').then(({ refreshToken }) => {
           refreshToken()
             .then(() => {
-              // Firebase auth after successful token refresh
+              setAuthReady(true);
               import('@/lib/firebase/auth').then(({ initFirebaseAuth }) => {
                 initFirebaseAuth().catch(() => {});
               });
@@ -180,7 +191,6 @@ function AppRoutes() {
             });
         });
       } else {
-        // Token is still valid — init Firebase auth
         import('@/lib/firebase/auth').then(({ initFirebaseAuth }) => {
           initFirebaseAuth().catch(() => {});
         });
@@ -200,9 +210,13 @@ function AppRoutes() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/app/*" element={
-          <RequireAuth>
-            <AppPage />
-          </RequireAuth>
+          authReady ? (
+            <RequireAuth>
+              <AppPage />
+            </RequireAuth>
+          ) : (
+            <PageLoadingFallback />
+          )
         } />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />

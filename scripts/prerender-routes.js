@@ -20,8 +20,12 @@ const distDir = join(process.cwd(), 'dist');
 async function prerender() {
   console.log('Starting pre-render...');
 
-  // Pre-seed route directories with index.html so the preview server can serve them
+  // Preserve the original SPA shell — it's the fallback for all non-pre-rendered routes.
+  // Without this, /app/* routes flash the pre-rendered landing page before React hydrates.
   const indexFile = join(distDir, 'index.html');
+  const spaShell = readFileSync(indexFile, 'utf-8');
+
+  // Pre-seed route directories with index.html so the preview server can serve them
   for (const route of ROUTES) {
     if (route === '/') continue;
     const routeDir = join(distDir, route.slice(1));
@@ -74,6 +78,10 @@ async function prerender() {
 
   await browser.close();
   server.httpServer.close();
+
+  // Save the SPA shell as _spa.html — CloudFront error responses use this as the
+  // fallback for non-pre-rendered routes, preventing /app/* from flashing the landing page.
+  writeFileSync(join(distDir, '_spa.html'), spaShell, 'utf-8');
 
   console.log(`\nPre-rendered ${ROUTES.length} routes.`);
 }
