@@ -3,18 +3,18 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useCurrency } from '../useCurrency';
 
 describe('useCurrency', () => {
-  const mockFetch = vi.fn();
+  let mockFetch: ReturnType<typeof vi.fn>;
   let mockStorage: Record<string, string>;
 
   beforeEach(() => {
-    vi.clearAllMocks();
     mockStorage = {};
+    mockFetch = vi.fn();
 
-    // Mock fetch
-    global.fetch = mockFetch;
+    // Clear real localStorage to prevent cross-test state leaks
+    localStorage.removeItem('tradequt_detected_currency');
 
-    // Mock AbortSignal.timeout — not available in all test environments (e.g. older jsdom/Node)
-    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(new AbortController().signal);
+    // Mock fetch via stubGlobal so it's properly reset each time
+    vi.stubGlobal('fetch', mockFetch);
 
     // Mock localStorage
     vi.spyOn(localStorage, 'getItem').mockImplementation(
@@ -29,6 +29,7 @@ describe('useCurrency', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("returns 'INR' when IP is from India", async () => {
