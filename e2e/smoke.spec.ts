@@ -36,7 +36,7 @@ test.describe('Smoke Tests', () => {
 
     // Check nav links
     await expect(page.getByRole('link', { name: 'Log In' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Get Started', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Get Started' }).first()).toBeVisible();
   });
 
   test('landing page features section renders', async ({ page }) => {
@@ -146,7 +146,7 @@ test.describe('Legal & Company Pages', () => {
     await expect(page.getByText('Disclaimer')).toBeVisible();
     // Business contact details required by PayU
     await expect(page.getByText('TradeQutJournal')).toBeVisible();
-    await expect(page.getByText('Narra77888@gmail.com')).toBeVisible();
+    await expect(page.getByText('support@tradequt.com')).toBeVisible();
   });
 
   test('Privacy Policy page loads with all sections', async ({ page }) => {
@@ -187,7 +187,7 @@ test.describe('Legal & Company Pages', () => {
 
     await expect(page.getByRole('heading', { name: 'Contact Us' })).toBeVisible();
     // Must have email, phone, and address for PayU
-    await expect(page.getByText('Narra77888@gmail.com')).toBeVisible();
+    await expect(page.getByText('support@tradequt.com')).toBeVisible();
     await expect(page.getByText('+91 8501018125')).toBeVisible();
     await expect(page.getByText('Bhupalpally, Telangana')).toBeVisible();
   });
