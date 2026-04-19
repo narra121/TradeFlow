@@ -178,10 +178,13 @@ export async function syncTrades(
     }
 
     // 4. Fetch stale days from server
-    const staleDayDates = result.staleDays.map(sk => {
-      const idx = sk.indexOf('#');
-      return sk.slice(idx + 1);
-    }).filter(d => !d.includes('MONTH'));
+    const staleDayDates = [
+      ...new Set(
+        result.staleDays
+          .map(sk => sk.slice(sk.indexOf('#') + 1))
+          .filter(d => !d.includes('MONTH')),
+      ),
+    ];
 
     if (staleDayDates.length > 0) {
       staleDayDates.sort();
@@ -192,10 +195,15 @@ export async function syncTrades(
 
       for (const date of staleDayDates) {
         const dayTrades = grouped.get(date) || [];
-        const hash = result.serverDayHashes[`${accountId}#${date}`];
-        if (hash) {
-          await storeTrades(db, accountId, date, dayTrades, hash, cryptoKey);
+        // When accountId='ALL', server returns hashes keyed by real account IDs,
+        // so find any hash matching this date as a fallback
+        let hash = result.serverDayHashes[`${accountId}#${date}`];
+        if (!hash) {
+          const suffix = `#${date}`;
+          hash = Object.entries(result.serverDayHashes)
+            .find(([k]) => k.endsWith(suffix))?.[1] ?? '';
         }
+        await storeTrades(db, accountId, date, dayTrades, hash, cryptoKey);
       }
     }
 
