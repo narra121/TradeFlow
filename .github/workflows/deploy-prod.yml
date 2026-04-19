@@ -44,11 +44,9 @@ jobs:
           echo "VITE_API_URL=${{ secrets.VITE_API_URL_PROD }}" > .env.production
           echo "VITE_RAZORPAY_KEY_ID=${{ secrets.VITE_RAZORPAY_KEY_ID_PROD }}" >> .env.production
           echo "VITE_EXTRACT_TRADES_URL=${{ secrets.VITE_EXTRACT_TRADES_URL_PROD }}" >> .env.production
-          echo "VITE_GCP_PROJECT_ID=${{ secrets.VITE_GCP_PROJECT_ID_PROD }}" >> .env.production
-          echo "VITE_GCP_PROJECT_NUMBER=${{ secrets.VITE_GCP_PROJECT_NUMBER_PROD }}" >> .env.production
-          echo "VITE_GCP_WIF_POOL_ID=${{ secrets.VITE_GCP_WIF_POOL_ID_PROD }}" >> .env.production
-          echo "VITE_GCP_WIF_PROVIDER_ID=${{ secrets.VITE_GCP_WIF_PROVIDER_ID_PROD }}" >> .env.production
-          echo "VITE_GCP_REGION=${{ secrets.VITE_GCP_REGION_PROD }}" >> .env.production
+          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY_PROD }}" >> .env.production
+          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" >> .env.production
+          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID_PROD }}" >> .env.production
           echo "VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN_PROD }}" >> .env.production
           echo "VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID_PROD }}" >> .env.production
 
