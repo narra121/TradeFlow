@@ -1,9 +1,11 @@
 /**
- * Vertex AI streaming client for Gemini Flash (reports) and Pro (chat).
+ * Gemini AI streaming client for reports (Flash) and chat (Pro).
  *
- * Uses async generators to progressively yield partial results as the
- * streaming response arrives from the Vertex AI endpoint. Auth tokens
- * are obtained via the GCP WIF module (auth.ts).
+ * Uses the Gemini API endpoint (generativelanguage.googleapis.com) which
+ * supports CORS for browser requests. Auth via WIF access token from auth.ts.
+ *
+ * Note: The Vertex AI endpoint (aiplatform.googleapis.com) does NOT support
+ * CORS, so we use the Gemini API which accepts the same OAuth2 bearer tokens.
  */
 
 import type { Trade } from '@/types/trade';
@@ -15,16 +17,15 @@ export interface ChatMessage {
   text: string;
 }
 
-const GCP_PROJECT_ID = import.meta.env.VITE_GCP_PROJECT_ID;
-const GCP_REGION = import.meta.env.VITE_GCP_REGION;
-
 const MAX_TRADES = 2000;
 
 const REPORT_MODEL = 'gemini-2.5-flash';
 const CHAT_MODEL = 'gemini-2.5-pro';
 
-function getVertexUrl(model: string): string {
-  return `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/${model}:streamGenerateContent`;
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+
+function getModelUrl(model: string): string {
+  return `${GEMINI_API_BASE}/models/${model}:streamGenerateContent`;
 }
 
 // -------------------------------------------------------------------------
@@ -139,7 +140,7 @@ export async function* streamReport(
     },
   };
 
-  const res = await fetch(getVertexUrl(REPORT_MODEL), {
+  const res = await fetch(getModelUrl(REPORT_MODEL), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -151,7 +152,7 @@ export async function* streamReport(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`Vertex AI request failed (${res.status}): ${text}`);
+    throw new Error(`Gemini API request failed (${res.status}): ${text}`);
   }
 
   // Vertex AI streamGenerateContent returns a JSON array of response chunks.
@@ -182,7 +183,7 @@ export async function* streamReport(
     // If we already yielded partial results, that's acceptable
     // If accumulated is truly empty, throw
     if (!accumulated.trim()) {
-      throw new Error('Empty response from Vertex AI');
+      throw new Error('Empty response from Gemini API');
     }
   }
 }
@@ -232,7 +233,7 @@ export async function* streamChat(
     },
   };
 
-  const res = await fetch(getVertexUrl(CHAT_MODEL), {
+  const res = await fetch(getModelUrl(CHAT_MODEL), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -244,7 +245,7 @@ export async function* streamChat(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`Vertex AI chat request failed (${res.status}): ${text}`);
+    throw new Error(`Gemini API chat request failed (${res.status}): ${text}`);
   }
 
   const responseText = await res.text();

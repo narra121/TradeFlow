@@ -263,7 +263,7 @@ describe('Vertex AI streaming client', () => {
       const controller = new AbortController();
       const gen = streamReport([makeTrade()], controller.signal);
 
-      await expect(gen.next()).rejects.toThrow('Vertex AI request failed (403)');
+      await expect(gen.next()).rejects.toThrow('Gemini API request failed (403)');
     });
 
     it('calls getGoogleAccessToken before making request', async () => {
@@ -432,7 +432,7 @@ describe('Vertex AI streaming client', () => {
       const controller = new AbortController();
       const gen = streamChat([{ role: 'user', text: 'Hi' }], '', controller.signal);
 
-      await expect(gen.next()).rejects.toThrow('Vertex AI chat request failed (500)');
+      await expect(gen.next()).rejects.toThrow('Gemini API chat request failed (500)');
     });
 
     it('calls getGoogleAccessToken before making request', async () => {
