@@ -13,6 +13,9 @@ describe('useCurrency', () => {
     // Mock fetch
     global.fetch = mockFetch;
 
+    // Mock AbortSignal.timeout — not available in all test environments (e.g. older jsdom/Node)
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(new AbortController().signal);
+
     // Mock localStorage
     vi.spyOn(localStorage, 'getItem').mockImplementation(
       (key: string) => mockStorage[key] || null

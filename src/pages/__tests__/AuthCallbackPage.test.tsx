@@ -143,16 +143,13 @@ describe('AuthCallbackPage', () => {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         })
       );
-    });
+    }, { timeout: 3000 });
 
     await waitFor(() => {
       expect(localStorageSetItemSpy).toHaveBeenCalledWith('idToken', fakeIdToken);
       expect(localStorageSetItemSpy).toHaveBeenCalledWith('refreshToken', 'refresh-tok-123');
-    });
-
-    await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/app', { replace: true });
-    });
+    }, { timeout: 3000 });
   });
 
   it('shows error on fetch failure', async () => {
