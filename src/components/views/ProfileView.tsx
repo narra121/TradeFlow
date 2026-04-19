@@ -34,6 +34,7 @@ import {
   AlertTriangle,
   Heart
 } from 'lucide-react';
+import { PricingCards } from '@/components/subscription/PricingCards';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -120,21 +121,10 @@ export function ProfileView() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-  const [selectedAmount, setSelectedAmount] = useState(currency === 'INR' ? 99 : 1.99);
-  const [selectedAnnualAmount, setSelectedAnnualAmount] = useState(currency === 'INR' ? 999 : 19.99);
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
   const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
   const [managingSubscription, setManagingSubscription] = useState(false);
 
-  // Get plan ID based on selected amount and billing cycle
-  const getSelectedPlanId = () => {
-    const amount = billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount;
-    const periodKey = billingCycle === 'annual' ? 'yearly' : billingCycle;
-    const plan = availablePlans.find(p => p.period === periodKey && p.amount === amount);
-    return plan?.planId || '';
-  };
-  
   // Local state for editing
   const [user, setUser] = useState({
     name: profile?.name || '',
@@ -182,30 +172,8 @@ export function ProfileView() {
     }
   }, [subscription]);
 
-  // Sync selected amounts when plans or currency change
-  const monthlyPlan = availablePlans.find(p => p.period === 'monthly');
-  const yearlyPlan = availablePlans.find(p => p.period === 'yearly');
-
-  useEffect(() => {
-    if (monthlyPlan) setSelectedAmount(monthlyPlan.amount);
-    else setSelectedAmount(currency === 'INR' ? 99 : 1.99);
-  }, [monthlyPlan?.amount, currency]);
-
-  useEffect(() => {
-    if (yearlyPlan) setSelectedAnnualAmount(yearlyPlan.amount);
-    else setSelectedAnnualAmount(currency === 'INR' ? 999 : 19.99);
-  }, [yearlyPlan?.amount, currency]);
-
-  // Derive tiers from API plans
+  // Derive currency symbol from user preference
   const currencySymbol = currency === 'INR' ? '₹' : '$';
-
-  const supportTiers = monthlyPlan
-    ? [{ amount: monthlyPlan.amount, label: 'Monthly', description: 'Most flexible', recommended: false }]
-    : [{ amount: currency === 'INR' ? 99 : 1.99, label: 'Monthly', description: 'Most flexible', recommended: false }];
-
-  const annualTiers = yearlyPlan
-    ? [{ amount: yearlyPlan.amount, label: 'Annual', description: yearlyPlan.savings ? `Save ${yearlyPlan.savings}!` : 'Best value', monthly: yearlyPlan.monthlyEquivalent, recommended: true }]
-    : [{ amount: currency === 'INR' ? 999 : 19.99, label: 'Annual', description: 'Save 17%!', monthly: currency === 'INR' ? 83 : 1.67, recommended: true }];
 
   const handleSaveProfile = async () => {
     if (!user.name.trim()) {
@@ -754,189 +722,34 @@ export function ProfileView() {
       </div>
 
       {/* Subscription Plans - Only show if user doesn't have an active/valid subscription */}
-      {!subscriptionDetails || 
+      {!subscriptionDetails ||
        (!['active', 'authenticated', 'paused', 'cancellation_requested'].includes(subscriptionDetails.status)) ? (
         (loading && !profile) || plansLoading ? (
           <SubscriptionPlansCardSkeleton />
         ) : (
-        <Card className="bg-card/50 backdrop-blur border-border/50">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
-            <Heart className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <CardTitle className="text-xl sm:text-2xl">Subscription Plans</CardTitle>
-          <CardDescription className="max-w-xl mx-auto mt-2 text-sm sm:text-base">
-            Choose a plan to continue using TradeQut.
-            <span className="block mt-2 text-foreground/80">
-              Your subscription directly supports hosting and development:
-            </span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Billing Cycle Toggle */}
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex rounded-lg bg-muted/50 p-1">
-              <button
-                onClick={() => setBillingCycle('monthly')}
-                className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
-                  billingCycle === 'monthly'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle('annual')}
-                className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
-                  billingCycle === 'annual'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Annual
-              </button>
-            </div>
-          </div>
-
-          {/* Monthly Tiers */}
-          {billingCycle === 'monthly' && (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
-                {supportTiers
-                  .filter(tier => availablePlans.some(p => p.period === 'monthly' && p.amount === tier.amount))
-                  .map((tier) => (
-                  <button
-                    key={tier.amount}
-                    onClick={() => setSelectedAmount(tier.amount)}
-                    className={`relative p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 text-left ${
-                      selectedAmount === tier.amount
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border/50 hover:border-primary/50 bg-background/30'
-                    }`}
-                  >
-                    {tier.recommended && (
-                      <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground text-xs px-2 py-0.5">Recommended</Badge>
-                    )}
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-bold text-foreground">{currencySymbol}{tier.amount}</span>
-                      <span className="text-sm text-muted-foreground">/month</span>
-                    </div>
-                    <h3 className="font-semibold text-foreground mb-1">{tier.label}</h3>
-                    <p className="text-sm text-muted-foreground">{tier.description}</p>
-                    {selectedAmount === tier.amount && (
-                      <div className="mt-3 flex items-center gap-1 text-primary text-sm">
-                        <Check className="w-4 h-4" />
-                        Selected
-                      </div>
-                    )}
-                  </button>
-                ))}
+          <Card className="bg-card/50 backdrop-blur border-border/50">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
+                <Heart className="w-6 h-6 text-primary-foreground" />
               </div>
-            </>
-          )}
-
-          {/* Annual Tiers */}
-          {billingCycle === 'annual' && (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
-                {annualTiers
-                  .filter(tier => availablePlans.some(p => p.period === 'yearly' && p.amount === tier.amount))
-                  .map((tier) => (
-                  <button
-                    key={tier.amount}
-                    onClick={() => setSelectedAnnualAmount(tier.amount)}
-                    className={`relative p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 text-left ${
-                      selectedAnnualAmount === tier.amount
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border/50 hover:border-primary/50 bg-background/30'
-                    }`}
-                  >
-                    {tier.recommended && (
-                      <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground text-xs px-2 py-0.5">Recommended</Badge>
-                    )}
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-bold text-foreground">{currencySymbol}{tier.amount}</span>
-                      <span className="text-sm text-muted-foreground">/year</span>
-                    </div>
-                    <h3 className="font-semibold text-foreground mb-1">{tier.label}</h3>
-                    <p className="text-sm text-muted-foreground">{tier.description}</p>
-                    <p className="text-xs text-primary mt-1">({currencySymbol}{tier.monthly}/month)</p>
-                    {selectedAnnualAmount === tier.amount && (
-                      <div className="mt-3 flex items-center gap-1 text-primary text-sm">
-                        <Check className="w-4 h-4" />
-                        Selected
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Info Box */}
-          <div className="p-4 rounded-lg bg-muted/30 border border-border/50 mb-6">
-            <p className="text-sm text-muted-foreground text-center">
-              Your subscription helps cover server hosting, database costs, and ongoing development.
-              Cancel anytime — no long-term commitment.
-            </p>
-          </div>
-
-          {/* Subscribe Button */}
-          <div className="flex justify-center">
-            <Button 
-              size="lg" 
-              className="px-8 bg-gradient-primary hover:opacity-90 text-primary-foreground"
-              onClick={() => handleSubscribe(
-                billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount,
-                billingCycle
-              )}
-              disabled={isSubscribing}
-            >
-              {isSubscribing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing Payment...
-                </>
-              ) : (
-                <>
-                  <Heart className="w-4 h-4 mr-2" />
-                  Subscribe for {currency === 'INR' ? '₹' : '$'}{billingCycle === 'monthly' ? selectedAmount : selectedAnnualAmount}/{billingCycle === 'monthly' ? 'month' : 'year'}
-                </>
-              )}
-            </Button>
-          </div>
-          
-          {isSubscribing && (
-            <p className="text-center text-sm text-muted-foreground mt-2 animate-pulse">
-              Please complete the payment in the popup window...
-            </p>
-          )}
-
-          {/* Features included */}
-          <div className="mt-8 pt-6 border-t border-border/50">
-            <p className="text-center text-sm text-muted-foreground mb-4">All supporters get access to:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                'Unlimited trades',
-                'Full analytics',
-                'Calendar view',
-                'Trade import',
-                'Goal tracking',
-                'All future features',
-                'Priority support',
-                'Community access'
-              ].map((feature) => (
-                <div key={feature} className="flex items-center gap-2 text-sm">
-                  <Check className="w-4 h-4 text-green-400 shrink-0" />
-                  <span className="text-muted-foreground">{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      )
+              <CardTitle className="text-xl sm:text-2xl">Choose Your Plan</CardTitle>
+              <CardDescription className="max-w-xl mx-auto mt-2 text-sm sm:text-base">
+                All core features are free with ads. Upgrade for AI insights and an ad-free experience.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PricingCards
+                context="profile"
+                currentStatus={subscriptionDetails?.status}
+                onSelectPlan={(period) => {
+                  const plan = availablePlans.find(p => p.period === (period === 'yearly' ? 'yearly' : 'monthly'));
+                  if (plan) handleSubscribe(plan.amount, period === 'yearly' ? 'annual' : 'monthly');
+                }}
+                isProcessing={isSubscribing}
+              />
+            </CardContent>
+          </Card>
+        )
       ) : null}
     </div>
   );

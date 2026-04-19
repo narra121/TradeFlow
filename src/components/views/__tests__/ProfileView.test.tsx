@@ -159,7 +159,7 @@ describe('ProfileView', () => {
 
   it('shows subscription plans section when no active subscription', () => {
     render(<ProfileView />);
-    expect(screen.getByRole('heading', { name: /subscription plans/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /choose your plan/i })).toBeInTheDocument();
   });
 
   it('shows loading skeletons when loading', () => {
@@ -346,7 +346,7 @@ describe('ProfileView - Subscription Status', () => {
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByRole('heading', { name: /subscription plans/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /choose your plan/i })).toBeInTheDocument();
   });
 });
 
@@ -722,7 +722,7 @@ describe('ProfileView - Trial Subscription Status', () => {
   });
 });
 
-describe('ProfileView - Price Sync with Plans API', () => {
+describe('ProfileView - PricingCards Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useGetProfileQuery).mockReturnValue({
@@ -738,97 +738,27 @@ describe('ProfileView - Price Sync with Plans API', () => {
     } as any);
   });
 
-  it('shows INR price from plans API when currency is INR', () => {
-    mockUseCurrency.mockReturnValue({ currency: 'INR', loading: false });
-    vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [
-        { planId: 'plan_inr_monthly', name: 'Monthly INR', amount: 99, period: 'monthly', description: 'Monthly INR plan' },
-        { planId: 'plan_inr_yearly', name: 'Annual INR', amount: 999, period: 'yearly', description: 'Annual INR plan', savings: '17%', monthlyEquivalent: 83 },
-      ],
-      isLoading: false,
-    } as any);
-
-    render(<ProfileView />);
-    // Button should display INR price from plans API
-    expect(screen.getByRole('button', { name: /Subscribe for ₹99\/month/ })).toBeInTheDocument();
-  });
-
-  it('shows USD price from plans API when currency is USD', () => {
+  it('renders PricingCards with Subscribe Monthly and Subscribe Yearly buttons', () => {
     mockUseCurrency.mockReturnValue({ currency: 'USD', loading: false });
     vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [
-        { planId: 'plan_usd_monthly', name: 'Monthly USD', amount: 1.99, period: 'monthly', description: 'Monthly USD plan' },
-        { planId: 'plan_usd_yearly', name: 'Annual USD', amount: 19.99, period: 'yearly', description: 'Annual USD plan', savings: '17%', monthlyEquivalent: 1.67 },
-      ],
+      data: mockPlans,
       isLoading: false,
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /Subscribe for \$1\.99\/month/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /subscribe monthly/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /subscribe yearly/i })).toBeInTheDocument();
   });
 
-  it('syncs annual amount from plans API for INR currency', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event');
-    const user = userEvent.setup();
-    mockUseCurrency.mockReturnValue({ currency: 'INR', loading: false });
-    vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [
-        { planId: 'plan_inr_monthly', name: 'Monthly INR', amount: 99, period: 'monthly', description: 'Monthly INR plan' },
-        { planId: 'plan_inr_yearly', name: 'Annual INR', amount: 999, period: 'yearly', description: 'Annual INR plan', savings: '17%', monthlyEquivalent: 83 },
-      ],
-      isLoading: false,
-    } as any);
-
-    render(<ProfileView />);
-
-    // Switch to annual billing
-    const annualButton = screen.getByRole('button', { name: /^annual$/i });
-    await user.click(annualButton);
-
-    // Button should show INR annual price
-    expect(screen.getByRole('button', { name: /Subscribe for ₹999\/year/ })).toBeInTheDocument();
-  });
-
-  it('falls back to default amounts when plans are empty', () => {
+  it('renders Free tier as Current Plan', () => {
     mockUseCurrency.mockReturnValue({ currency: 'USD', loading: false });
     vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [],
+      data: mockPlans,
       isLoading: false,
     } as any);
 
     render(<ProfileView />);
-    // When no plans available from API, the subscribe button should use default USD amounts
-    // But no plan tiers will be rendered (they are filtered by availablePlans)
-    // The button still shows the fallback price
-    expect(screen.getByRole('button', { name: /Subscribe for \$1\.99\/month/ })).toBeInTheDocument();
-  });
-
-  it('falls back to default INR amounts when plans are empty', () => {
-    mockUseCurrency.mockReturnValue({ currency: 'INR', loading: false });
-    vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [],
-      isLoading: false,
-    } as any);
-
-    render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /Subscribe for ₹99\/month/ })).toBeInTheDocument();
-  });
-});
-
-describe('ProfileView - Currency Display', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(useGetProfileQuery).mockReturnValue({
-      data: mockProfile,
-      isLoading: false,
-      isFetching: false,
-    } as any);
-    vi.mocked(useGetSubscriptionQuery).mockReturnValue({
-      data: null,
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn().mockResolvedValue({ data: null }),
-    } as any);
+    expect(screen.getByRole('button', { name: /current plan/i })).toBeInTheDocument();
   });
 
   it('passes currency to useGetPlansQuery', () => {
@@ -844,55 +774,25 @@ describe('ProfileView - Currency Display', () => {
     expect(useGetPlansQuery).toHaveBeenCalledWith('INR');
   });
 
-  it('displays ₹ currency symbol for INR', () => {
-    mockUseCurrency.mockReturnValue({ currency: 'INR', loading: false });
-    vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [
-        { planId: 'plan_inr_monthly', name: 'Monthly INR', amount: 99, period: 'monthly', description: 'Monthly INR plan' },
-      ],
-      isLoading: false,
-    } as any);
-
-    render(<ProfileView />);
-    expect(screen.getByText('₹99')).toBeInTheDocument();
-  });
-
-  it('displays $ currency symbol for USD', () => {
+  it('shows "Choose Your Plan" heading when no active subscription', () => {
     mockUseCurrency.mockReturnValue({ currency: 'USD', loading: false });
     vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [
-        { planId: 'plan_usd_monthly', name: 'Monthly USD', amount: 1.99, period: 'monthly', description: 'Monthly USD plan' },
-      ],
+      data: mockPlans,
       isLoading: false,
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByText('$1.99')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /choose your plan/i })).toBeInTheDocument();
   });
 
-  it('displays INR subscribe button text', () => {
-    mockUseCurrency.mockReturnValue({ currency: 'INR', loading: false });
-    vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [
-        { planId: 'plan_inr_monthly', name: 'Monthly INR', amount: 99, period: 'monthly', description: 'Monthly INR plan' },
-      ],
-      isLoading: false,
-    } as any);
-
-    render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /Subscribe for ₹99\/month/ })).toBeInTheDocument();
-  });
-
-  it('displays USD subscribe button text', () => {
+  it('shows PricingCards description text', () => {
     mockUseCurrency.mockReturnValue({ currency: 'USD', loading: false });
     vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [
-        { planId: 'plan_usd_monthly', name: 'Monthly USD', amount: 1.99, period: 'monthly', description: 'Monthly USD plan' },
-      ],
+      data: mockPlans,
       isLoading: false,
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /Subscribe for \$1\.99\/month/ })).toBeInTheDocument();
+    expect(screen.getByText(/All core features are free with ads/)).toBeInTheDocument();
   });
 });
