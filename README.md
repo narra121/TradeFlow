@@ -1,6 +1,6 @@
 # TradeQut Frontend
 
-React + TypeScript trading journal frontend. Deployed to GitHub Pages.
+React + TypeScript trading journal frontend. Deployed to CloudFront + S3.
 
 ## Tech Stack
 
@@ -50,7 +50,9 @@ aws cloudformation describe-stacks --stack-name tradequt-dev \
 | `VITE_AWS_REGION` | AWS region (e.g. `us-east-1`) |
 | `VITE_COGNITO_USER_POOL_ID` | Backend stack output `UserPoolId` |
 | `VITE_COGNITO_CLIENT_ID` | Backend stack output `UserPoolClientId` |
-| `VITE_RAZORPAY_KEY_ID` | [Razorpay Dashboard](https://dashboard.razorpay.com/app/keys) - Test or Live key |
+| `VITE_COGNITO_DOMAIN` | Cognito hosted UI domain (e.g. `auth-tradequt-dev.tradequt.com`) |
+| `VITE_EXTRACT_TRADES_URL` | Lambda Function URL for AI trade extraction |
+| `VITE_GENERATE_INSIGHTS_URL` | Lambda Function URL for AI insights |
 
 ## Build
 
@@ -59,27 +61,39 @@ bun run build     # production build -> dist/
 bun run preview   # preview production build locally
 ```
 
-## Deploy to GitHub Pages
+## Deploy to CloudFront + S3
 
-Deployment is automated via GitHub Actions on push to `main`.
+Deployment is automated via GitHub Actions on push to `main` (dev) or manual dispatch (prod).
 
-### Setup (one-time)
+### Dev (automatic on push to main)
 
-1. **Enable GitHub Pages**: Repository Settings -> Pages -> Source: `gh-pages` branch
-2. **Add secrets** in Repository Settings -> Secrets and variables -> Actions:
-   - `VITE_API_URL_PROD`
-   - `VITE_AWS_REGION`
-   - `VITE_COGNITO_USER_POOL_ID_PROD`
-   - `VITE_COGNITO_CLIENT_ID_PROD`
-   - `VITE_RAZORPAY_KEY_ID_PROD`
+```bash
+bun run build:dev
+aws s3 sync dist/ s3://tradequt.com-dev --delete
+aws cloudfront create-invalidation --distribution-id $CF_DISTRIBUTION_ID_DEV --paths "/*"
+```
 
-3. Push to `main` -> GitHub Actions builds and deploys automatically.
+### Prod (manual trigger in GitHub Actions)
 
-### Custom Domain (optional)
+Go to Actions -> "Deploy to Production" -> Run workflow.
 
-1. Add CNAME DNS record pointing to `your-username.github.io`
-2. Uncomment the `cname` line in `.github/workflows/deploy.yml`
-3. Enable HTTPS in Repository Settings -> Pages
+### GitHub Secrets
+
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+- `VITE_API_URL_DEV` / `_PROD`, `VITE_COGNITO_DOMAIN_DEV` / `_PROD`
+- `VITE_COGNITO_CLIENT_ID_DEV` / `_PROD`
+- `VITE_EXTRACT_TRADES_URL_DEV` / `_PROD`, `VITE_GENERATE_INSIGHTS_URL_DEV` / `_PROD`
+- `CF_DISTRIBUTION_ID_DEV` / `_PROD`
+
+### Build Pipeline
+
+```bash
+bun run build          # vite build
+node scripts/prerender-routes.js   # SEO pre-rendering (8 public routes)
+node scripts/generate-sitemap.js   # sitemap.xml
+node scripts/generate-og-image.js  # OG images (1200x630)
+node scripts/convert-images.js     # WebP conversion
+```
 
 ## Project Structure
 
@@ -97,6 +111,25 @@ src/
   lib/
     api/         # Type definitions + extractTrades API
     api.ts       # Axios client with token refresh
+    cache/       # IndexedDB trade cache (sync, crypto, proactive)
   hooks/         # Custom React hooks
   types/         # TypeScript interfaces
 ```
+
+## Trade Cache (IndexedDB)
+
+Encrypted per-user cache for the Insights page. Uses `POST /v1/trades/sync` for efficient sync:
+
+1. Sends local day hashes to server, server compares and returns only stale trades
+2. Stores in IndexedDB with AES-GCM encryption (per-user key derived from userId)
+3. Always reads from IndexedDB (single source of truth for Insights/Chat)
+
+Key files in `src/lib/cache/`:
+
+| File | Purpose |
+|------|---------|
+| `sync.ts` | Orchestrates hash-based sync with `/v1/trades/sync` endpoint |
+| `trade-cache.ts` | IndexedDB read/write operations |
+| `crypto.ts` | AES-GCM encryption/decryption for cached trades |
+| `proactive-cache.ts` | Background sync triggered after trade mutations |
+| `hash.ts` | Day-level hash computation for change detection |
