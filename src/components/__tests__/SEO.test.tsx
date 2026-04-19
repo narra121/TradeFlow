@@ -82,7 +82,7 @@ describe('SEO', () => {
     renderSEO({ title: 'Public', description: 'Desc', path: '/test' });
 
     await waitFor(() => {
-      expect(getMeta('robots')).toBe('index, follow');
+      expect(getMeta('robots')).toBe('index, follow, max-image-preview:large');
     });
   });
 

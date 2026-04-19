@@ -50,7 +50,7 @@ describe('AuthCallbackPage', () => {
     delete window.location;
     window.location = { ...originalLocation, href: '', origin: 'https://tradequt.com' };
 
-    localStorageSetItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+    localStorageSetItemSpy = vi.spyOn(localStorage, 'setItem');
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 

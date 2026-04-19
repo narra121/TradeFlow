@@ -14,10 +14,10 @@ describe('useCurrency', () => {
     global.fetch = mockFetch;
 
     // Mock localStorage
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(
+    vi.spyOn(localStorage, 'getItem').mockImplementation(
       (key: string) => mockStorage[key] || null
     );
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
       (key: string, val: string) => {
         mockStorage[key] = val;
       }
