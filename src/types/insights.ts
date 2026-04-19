@@ -123,3 +123,18 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
 }
+
+export interface TrimmedTrade {
+  tradeId: string;
+  symbol: string;
+  side: string;
+  openDate: string;
+  closeDate: string;
+  pnl: number;
+  volume: number;
+  accountId?: string;
+  tags?: string[];
+  brokenRules?: string[];
+  mistakes?: string[];
+  lessons?: string[];
+}

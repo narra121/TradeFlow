@@ -11,6 +11,7 @@ import { useGetSubscriptionQuery } from '@/store/api';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useTradeCache } from '@/hooks/useTradeCache';
 import { useFirebaseReport } from '@/hooks/useFirebaseAI';
+import { useRateLimits } from '@/hooks/useRateLimits';
 import type { InsightsResponse } from '@/types/insights';
 import {
   ProfileScoreCard,
@@ -198,6 +199,9 @@ export function InsightsView() {
     abort,
   } = useFirebaseReport();
 
+  // Rate limits
+  const rateLimits = useRateLimits();
+
   // Combined error
   const error = cacheError || aiError;
 
@@ -218,7 +222,7 @@ export function InsightsView() {
 
   // Handler: generate insights from cached trades
   const handleGenerate = () => {
-    generate(trades);
+    generate(trades, accountId, datePreset);
   };
 
   // Don't show the gate flash while subscription loads
@@ -331,11 +335,16 @@ export function InsightsView() {
                 onClick={handleGenerate}
                 size="lg"
                 className="gap-2"
-                disabled={cacheSyncing}
+                disabled={cacheSyncing || (rateLimits !== null && rateLimits.insights.remaining <= 0)}
               >
                 <Sparkles className="w-4 h-4" />
                 {cacheSyncing ? 'Syncing data...' : 'Generate Insights'}
               </Button>
+              {rateLimits && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {rateLimits.insights.remaining}/{rateLimits.insights.limit} insights remaining
+                </p>
+              )}
             </div>
           )}
 
@@ -483,6 +492,7 @@ export function InsightsView() {
               <TabsContent value="chat">
                 <InsightsChat
                   accountId={accountId}
+                  period={datePreset}
                   startDate={localDates.startDate}
                   endDate={localDates.endDate}
                   trades={trades}

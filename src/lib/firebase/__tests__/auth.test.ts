@@ -15,10 +15,14 @@ vi.mock('firebase/app', () => ({
   getApps: vi.fn(() => []),
 }));
 
-// Mock firebase/ai
-vi.mock('firebase/ai', () => ({
-  getAI: vi.fn(() => ({ name: 'mock-ai' })),
-  GoogleAIBackend: vi.fn(),
+// Mock firebase/firestore
+vi.mock('firebase/firestore', () => ({
+  getFirestore: vi.fn(() => ({ type: 'mock-firestore' })),
+}));
+
+// Mock firebase/functions
+vi.mock('firebase/functions', () => ({
+  getFunctions: vi.fn(() => ({ type: 'mock-functions' })),
 }));
 
 // Mock apiClient

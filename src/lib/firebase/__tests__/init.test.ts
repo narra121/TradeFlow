@@ -6,8 +6,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockInitializeApp = vi.fn().mockReturnValue({ name: 'test-app' });
 const mockGetApps = vi.fn().mockReturnValue([]);
 const mockGetAuth = vi.fn().mockReturnValue({ currentUser: null });
-const mockGetAI = vi.fn().mockReturnValue({ app: { name: 'test-app' } });
-const mockGoogleAIBackend = vi.fn();
+const mockGetFirestore = vi.fn().mockReturnValue({ type: 'firestore' });
+const mockGetFunctions = vi.fn().mockReturnValue({ type: 'functions' });
+const mockInitializeAppCheck = vi.fn();
+const mockReCaptchaEnterpriseProvider = vi.fn();
 
 vi.mock('firebase/app', () => ({
   initializeApp: (...args: any[]) => mockInitializeApp(...args),
@@ -18,9 +20,17 @@ vi.mock('firebase/auth', () => ({
   getAuth: (...args: any[]) => mockGetAuth(...args),
 }));
 
-vi.mock('firebase/ai', () => ({
-  getAI: (...args: any[]) => mockGetAI(...args),
-  GoogleAIBackend: mockGoogleAIBackend,
+vi.mock('firebase/firestore', () => ({
+  getFirestore: (...args: any[]) => mockGetFirestore(...args),
+}));
+
+vi.mock('firebase/functions', () => ({
+  getFunctions: (...args: any[]) => mockGetFunctions(...args),
+}));
+
+vi.mock('firebase/app-check', () => ({
+  initializeAppCheck: (...args: any[]) => mockInitializeAppCheck(...args),
+  ReCaptchaEnterpriseProvider: mockReCaptchaEnterpriseProvider,
 }));
 
 describe('Firebase init', () => {
@@ -59,24 +69,30 @@ describe('Firebase init', () => {
     expect(mod.auth).toBeDefined();
   });
 
-  it('initializes Firebase AI with GoogleAIBackend', async () => {
+  it('initializes Firestore', async () => {
     mockGetApps.mockReturnValue([]);
     const mod = await import('../init');
 
-    expect(mockGetAI).toHaveBeenCalledTimes(1);
-    expect(mockGetAI).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ backend: expect.any(mockGoogleAIBackend) }),
-    );
-    expect(mod.ai).toBeDefined();
+    expect(mockGetFirestore).toHaveBeenCalledTimes(1);
+    expect(mod.db).toBeDefined();
   });
 
-  it('exports app, auth, and ai', async () => {
+  it('initializes Cloud Functions with us-central1 region', async () => {
+    mockGetApps.mockReturnValue([]);
+    const mod = await import('../init');
+
+    expect(mockGetFunctions).toHaveBeenCalledTimes(1);
+    expect(mockGetFunctions).toHaveBeenCalledWith(expect.anything(), 'us-central1');
+    expect(mod.functions).toBeDefined();
+  });
+
+  it('exports app, auth, db, and functions', async () => {
     mockGetApps.mockReturnValue([]);
     const mod = await import('../init');
 
     expect(mod).toHaveProperty('app');
     expect(mod).toHaveProperty('auth');
-    expect(mod).toHaveProperty('ai');
+    expect(mod).toHaveProperty('db');
+    expect(mod).toHaveProperty('functions');
   });
 });

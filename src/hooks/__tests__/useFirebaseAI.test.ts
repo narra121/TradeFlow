@@ -1,20 +1,43 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useFirebaseReport, useFirebaseChat } from '../useFirebaseAI';
 import type { Trade } from '@/types/trade';
-import type { InsightsResponse } from '@/types/insights';
 
-// Mock firebase/ai module
-const mockStreamReport = vi.fn();
-const mockCreateChat = vi.fn();
-const mockStreamChatMessage = vi.fn();
+// ---------------------------------------------------------------------------
+// Mocks
+// ---------------------------------------------------------------------------
+const mockGenerateInsightFn = vi.fn();
+const mockListenToInsight = vi.fn();
+const mockTrimTrades = vi.fn();
+const mockSha256Hex = vi.fn();
 
-vi.mock('@/lib/firebase/ai', () => ({
-  streamReport: (...args: any[]) => mockStreamReport(...args),
-  createChat: (...args: any[]) => mockCreateChat(...args),
-  streamChatMessage: (...args: any[]) => mockStreamChatMessage(...args),
+vi.mock('@/lib/firebase/functions', () => ({
+  generateInsightFn: (...args: any[]) => mockGenerateInsightFn(...args),
 }));
 
+vi.mock('@/lib/firebase/firestore', () => ({
+  listenToInsight: (...args: any[]) => mockListenToInsight(...args),
+}));
+
+vi.mock('@/lib/firebase/trades', () => ({
+  trimTrades: (...args: any[]) => mockTrimTrades(...args),
+}));
+
+vi.mock('@/lib/cache/hash', () => ({
+  sha256Hex: (...args: any[]) => mockSha256Hex(...args),
+}));
+
+vi.mock('@/lib/firebase/init', () => ({
+  app: { name: 'mock-app' },
+}));
+
+const mockGetAuth = vi.fn();
+vi.mock('firebase/auth', () => ({
+  getAuth: (...args: any[]) => mockGetAuth(...args),
+}));
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 const makeTrade = (overrides: Partial<Trade> = {}): Trade => ({
   id: 'trade-1',
   symbol: 'AAPL',
@@ -32,28 +55,22 @@ const makeTrade = (overrides: Partial<Trade> = {}): Trade => ({
   ...overrides,
 });
 
-/**
- * Helper to create an async generator from an array of values.
- */
-async function* asyncGen<T>(values: T[]): AsyncGenerator<T> {
-  for (const value of values) {
-    yield value;
-  }
-}
-
-/**
- * Helper to create an async generator that throws after yielding some values.
- */
-async function* asyncGenError<T>(values: T[], error: Error): AsyncGenerator<T> {
-  for (const value of values) {
-    yield value;
-  }
-  throw error;
-}
-
 describe('useFirebaseReport', () => {
-  beforeEach(() => {
+  let useFirebaseReport: typeof import('../useFirebaseAI').useFirebaseReport;
+  const mockUnsubscribe = vi.fn();
+
+  beforeEach(async () => {
     vi.clearAllMocks();
+    vi.resetModules();
+
+    mockGetAuth.mockReturnValue({ currentUser: { uid: 'user-123' } });
+    mockTrimTrades.mockImplementation((trades: Trade[]) => trades.map((t) => ({ tradeId: t.id })));
+    mockSha256Hex.mockResolvedValue('abc123hash');
+    mockGenerateInsightFn.mockResolvedValue({ data: { cached: false, insightId: 'ALL_thisMonth' } });
+    mockListenToInsight.mockReturnValue(mockUnsubscribe);
+
+    const mod = await import('../useFirebaseAI');
+    useFirebaseReport = mod.useFirebaseReport;
   });
 
   it('returns initial state with null data and streaming=false', () => {
@@ -67,15 +84,8 @@ describe('useFirebaseReport', () => {
   });
 
   it('sets streaming=true when generate is called', async () => {
-    // Create a generator that will never resolve (for testing streaming state)
-    let resolveGen: (() => void) | undefined;
-    const blockingPromise = new Promise<void>((resolve) => {
-      resolveGen = resolve;
-    });
-
-    mockStreamReport.mockImplementation(async function* () {
-      await blockingPromise;
-    });
+    // Make the Cloud Function call hang
+    mockGenerateInsightFn.mockReturnValue(new Promise(() => {}));
 
     const { result } = renderHook(() => useFirebaseReport());
 
@@ -85,37 +95,44 @@ describe('useFirebaseReport', () => {
 
     expect(result.current.streaming).toBe(true);
     expect(result.current.data).toBeNull();
-
-    // Cleanup
-    resolveGen!();
   });
 
-  it('progressively updates data as stream yields partial results', async () => {
-    const partial1: Partial<InsightsResponse> = {
-      profile: {
-        type: 'day_trader',
-        typeLabel: 'Day Trader',
-        aggressivenessScore: 65,
-        aggressivenessLabel: 'Medium',
-        trend: 'improving',
-        summary: 'Active day trader',
-      },
-    };
+  it('calls Cloud Function with trimmed trades, accountId, period, and hash', async () => {
+    const trades = [makeTrade()];
+    const { result } = renderHook(() => useFirebaseReport());
 
-    const partial2: Partial<InsightsResponse> = {
-      ...partial1,
-      scores: [
-        { dimension: 'Risk Management', value: 75, label: 'Good' },
-      ],
-    };
+    act(() => {
+      result.current.generate(trades, 'acc-1', 'thisWeek');
+    });
 
-    const finalResult: Partial<InsightsResponse> = {
-      ...partial2,
-      summary: 'Complete analysis',
-    };
+    await waitFor(() => {
+      expect(mockGenerateInsightFn).toHaveBeenCalledWith({
+        trades: [{ tradeId: 'trade-1' }],
+        accountId: 'acc-1',
+        period: 'thisWeek',
+        tradesHash: 'abc123hash',
+      });
+    });
+  });
 
-    mockStreamReport.mockReturnValue(asyncGen([partial1, partial2, finalResult]));
+  it('sets up Firestore listener after Cloud Function resolves', async () => {
+    const { result } = renderHook(() => useFirebaseReport());
 
+    act(() => {
+      result.current.generate([makeTrade()], 'ALL', 'thisMonth');
+    });
+
+    await waitFor(() => {
+      expect(mockListenToInsight).toHaveBeenCalledWith(
+        'user-123',
+        'ALL_thisMonth',
+        expect.any(Function),
+        expect.any(Function),
+      );
+    });
+  });
+
+  it('updates data progressively from Firestore listener', async () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
@@ -123,138 +140,94 @@ describe('useFirebaseReport', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
+      expect(mockListenToInsight).toHaveBeenCalled();
     });
 
-    // Final data should be set
-    expect(result.current.data).toEqual(finalResult);
-    expect(result.current.error).toBeNull();
-  });
+    // Get the callback passed to listenToInsight
+    const dataCallback = mockListenToInsight.mock.calls[0][2];
 
-  it('sets error when stream throws', async () => {
-    mockStreamReport.mockReturnValue(
-      asyncGenError([], new Error('Firebase AI request failed')),
-    );
-
-    const { result } = renderHook(() => useFirebaseReport());
-
+    // Simulate partial data
     act(() => {
-      result.current.generate([makeTrade()]);
+      dataCallback({ status: 'generating', summary: 'Partial summary' });
     });
 
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(result.current.error).toBe('Firebase AI request failed');
-  });
-
-  it('sets generic error message for non-Error throws', async () => {
-    mockStreamReport.mockImplementation(async function* () {
-      throw 'string error';
-    });
-
-    const { result } = renderHook(() => useFirebaseReport());
-
-    act(() => {
-      result.current.generate([makeTrade()]);
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(result.current.error).toBe('Report generation failed');
-  });
-
-  it('abort cancels the current stream', async () => {
-    let capturedSignal: AbortSignal | undefined;
-    let resolveGen: (() => void) | undefined;
-    const blockingPromise = new Promise<void>((resolve) => {
-      resolveGen = resolve;
-    });
-
-    mockStreamReport.mockImplementation(async function* (_trades: Trade[], signal: AbortSignal) {
-      capturedSignal = signal;
-      await blockingPromise;
-    });
-
-    const { result } = renderHook(() => useFirebaseReport());
-
-    act(() => {
-      result.current.generate([makeTrade()]);
-    });
-
+    expect(result.current.data).toEqual({ summary: 'Partial summary' });
     expect(result.current.streaming).toBe(true);
+  });
+
+  it('stops streaming when status is complete', async () => {
+    const { result } = renderHook(() => useFirebaseReport());
+
+    act(() => {
+      result.current.generate([makeTrade()]);
+    });
+
+    await waitFor(() => {
+      expect(mockListenToInsight).toHaveBeenCalled();
+    });
+
+    const dataCallback = mockListenToInsight.mock.calls[0][2];
+
+    act(() => {
+      dataCallback({
+        status: 'complete',
+        summary: 'Full report',
+        profile: { type: 'day_trader' },
+      });
+    });
+
+    expect(result.current.streaming).toBe(false);
+    expect(result.current.data).toEqual({
+      summary: 'Full report',
+      profile: { type: 'day_trader' },
+    });
+  });
+
+  it('sets error when status is error', async () => {
+    const { result } = renderHook(() => useFirebaseReport());
+
+    act(() => {
+      result.current.generate([makeTrade()]);
+    });
+
+    await waitFor(() => {
+      expect(mockListenToInsight).toHaveBeenCalled();
+    });
+
+    const dataCallback = mockListenToInsight.mock.calls[0][2];
+
+    act(() => {
+      dataCallback({ status: 'error', error: 'Model overloaded' });
+    });
+
+    expect(result.current.error).toBe('Model overloaded');
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('abort unsubscribes the Firestore listener', async () => {
+    const { result } = renderHook(() => useFirebaseReport());
+
+    act(() => {
+      result.current.generate([makeTrade()]);
+    });
+
+    await waitFor(() => {
+      expect(mockListenToInsight).toHaveBeenCalled();
+    });
 
     act(() => {
       result.current.abort();
     });
 
+    expect(mockUnsubscribe).toHaveBeenCalled();
     expect(result.current.streaming).toBe(false);
-    expect(capturedSignal?.aborted).toBe(true);
-
-    // Cleanup
-    resolveGen!();
   });
 
-  it('passes trades and AbortSignal to streamReport', async () => {
-    mockStreamReport.mockReturnValue(asyncGen([]));
-
-    const trades = [makeTrade({ id: 'trade-1' }), makeTrade({ id: 'trade-2' })];
-
-    const { result } = renderHook(() => useFirebaseReport());
-
-    act(() => {
-      result.current.generate(trades);
+  it('sets rate limit error message for resource-exhausted code', async () => {
+    mockGenerateInsightFn.mockRejectedValue({
+      code: 'functions/resource-exhausted',
+      message: 'Too many requests',
     });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(mockStreamReport).toHaveBeenCalledTimes(1);
-    expect(mockStreamReport).toHaveBeenCalledWith(trades, expect.any(AbortSignal));
-  });
-
-  it('aborts previous stream when generate is called again', async () => {
-    let firstSignal: AbortSignal | undefined;
-    let secondSignal: AbortSignal | undefined;
-
-    let callCount = 0;
-    mockStreamReport.mockImplementation(async function* (_trades: Trade[], signal: AbortSignal) {
-      callCount++;
-      if (callCount === 1) {
-        firstSignal = signal;
-      } else {
-        secondSignal = signal;
-      }
-      // Yield empty to complete
-    });
-
-    const { result } = renderHook(() => useFirebaseReport());
-
-    act(() => {
-      result.current.generate([makeTrade({ id: 'trade-1' })]);
-    });
-
-    act(() => {
-      result.current.generate([makeTrade({ id: 'trade-2' })]);
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(firstSignal?.aborted).toBe(true);
-    expect(secondSignal?.aborted).toBe(false);
-  });
-
-  it('clears previous data and error when generate is called', async () => {
-    // First call: succeed
-    mockStreamReport.mockReturnValueOnce(
-      asyncGen([{ summary: 'First report' } as Partial<InsightsResponse>]),
-    );
 
     const { result } = renderHook(() => useFirebaseReport());
 
@@ -263,290 +236,95 @@ describe('useFirebaseReport', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.data).toEqual({ summary: 'First report' });
+      expect(result.current.error).toBe('Rate limit exceeded. Please try again later.');
     });
 
-    // Second call: will clear data
-    mockStreamReport.mockReturnValueOnce(asyncGen([]));
+    expect(result.current.streaming).toBe(false);
+  });
 
+  it('sets error for non-Error throws from Cloud Function', async () => {
+    mockGenerateInsightFn.mockRejectedValue({
+      code: 'functions/internal',
+      message: 'Server error',
+    });
+
+    const { result } = renderHook(() => useFirebaseReport());
+
+    act(() => {
+      result.current.generate([makeTrade()]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toBe('Server error');
+    });
+
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('sets error when user is not authenticated', async () => {
+    mockGetAuth.mockReturnValue({ currentUser: null });
+
+    const { result } = renderHook(() => useFirebaseReport());
+
+    act(() => {
+      result.current.generate([makeTrade()]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toBe('Not authenticated with Firebase');
+    });
+
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('handles Firestore listener error callback', async () => {
+    const { result } = renderHook(() => useFirebaseReport());
+
+    act(() => {
+      result.current.generate([makeTrade()]);
+    });
+
+    await waitFor(() => {
+      expect(mockListenToInsight).toHaveBeenCalled();
+    });
+
+    const errorCallback = mockListenToInsight.mock.calls[0][3];
+
+    act(() => {
+      errorCallback(new Error('Permission denied'));
+    });
+
+    expect(result.current.error).toBe('Permission denied');
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('clears previous data and error when generate is called again', async () => {
+    const { result } = renderHook(() => useFirebaseReport());
+
+    // First generate
+    act(() => {
+      result.current.generate([makeTrade()]);
+    });
+
+    await waitFor(() => {
+      expect(mockListenToInsight).toHaveBeenCalled();
+    });
+
+    // Simulate complete
+    const dataCallback = mockListenToInsight.mock.calls[0][2];
+    act(() => {
+      dataCallback({ status: 'complete', summary: 'First report' });
+    });
+
+    expect(result.current.data).toBeTruthy();
+
+    // Second generate should clear state
     act(() => {
       result.current.generate([makeTrade()]);
     });
 
     expect(result.current.data).toBeNull();
     expect(result.current.error).toBeNull();
-  });
-});
-
-describe('useFirebaseChat', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockCreateChat.mockReturnValue({ sendMessageStream: vi.fn() });
-  });
-
-  it('returns initial state with empty messages and streaming=false', () => {
-    const { result } = renderHook(() => useFirebaseChat());
-
-    expect(result.current.messages).toEqual([]);
-    expect(result.current.streaming).toBe(false);
-    expect(result.current.error).toBeNull();
-    expect(typeof result.current.send).toBe('function');
-    expect(typeof result.current.abort).toBe('function');
-  });
-
-  it('appends user message immediately when send is called', async () => {
-    mockStreamChatMessage.mockReturnValue(asyncGen(['Hello', ' there!']));
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('What is my win rate?', 'trade context');
-    });
-
-    // User message should be added immediately
-    expect(result.current.messages[0]).toEqual({
-      role: 'user',
-      text: 'What is my win rate?',
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-  });
-
-  it('progressively updates model response as stream yields chunks', async () => {
-    mockStreamChatMessage.mockReturnValue(asyncGen(['Your ', 'win rate ', 'is 65%.']));
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('What is my win rate?');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(result.current.messages).toHaveLength(2);
-    expect(result.current.messages[0]).toEqual({ role: 'user', text: 'What is my win rate?' });
-    expect(result.current.messages[1]).toEqual({ role: 'model', text: 'Your win rate is 65%.' });
-  });
-
-  it('sets error when chat stream throws', async () => {
-    mockStreamChatMessage.mockReturnValue(
-      asyncGenError([], new Error('Firebase AI chat request failed')),
-    );
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('Hello');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(result.current.error).toBe('Firebase AI chat request failed');
-    // User message should still be present
-    expect(result.current.messages[0]).toEqual({ role: 'user', text: 'Hello' });
-  });
-
-  it('removes empty model placeholder on error', async () => {
-    mockStreamChatMessage.mockReturnValue(
-      asyncGenError([], new Error('Failed')),
-    );
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('Hello');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    // Should have user message but no empty model message
-    const modelMessages = result.current.messages.filter((m) => m.role === 'model');
-    const emptyModelMessages = modelMessages.filter((m) => !m.text);
-    expect(emptyModelMessages).toHaveLength(0);
-  });
-
-  it('abort cancels the current chat stream', async () => {
-    let capturedSignal: AbortSignal | undefined;
-    let resolveGen: (() => void) | undefined;
-    const blockingPromise = new Promise<void>((resolve) => {
-      resolveGen = resolve;
-    });
-
-    mockStreamChatMessage.mockImplementation(async function* (
-      _chat: any,
-      _message: string,
-      signal: AbortSignal,
-    ) {
-      capturedSignal = signal;
-      await blockingPromise;
-    });
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('Hello');
-    });
-
     expect(result.current.streaming).toBe(true);
-
-    act(() => {
-      result.current.abort();
-    });
-
-    expect(result.current.streaming).toBe(false);
-    expect(capturedSignal?.aborted).toBe(true);
-
-    // Cleanup
-    resolveGen!();
-  });
-
-  it('creates chat session with context on first send', async () => {
-    mockStreamChatMessage.mockReturnValue(asyncGen(['response']));
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('Analyze my risk', 'Summary: 100 trades, 65% win rate');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(mockCreateChat).toHaveBeenCalledWith('Summary: 100 trades, 65% win rate');
-  });
-
-  it('defaults context to empty string when not provided', async () => {
-    mockStreamChatMessage.mockReturnValue(asyncGen(['response']));
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('Hello');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(mockCreateChat).toHaveBeenCalledWith('');
-  });
-
-  it('maintains conversation history across multiple sends', async () => {
-    mockStreamChatMessage
-      .mockReturnValueOnce(asyncGen(['First response']))
-      .mockReturnValueOnce(asyncGen(['Second response']));
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    // First message
-    act(() => {
-      result.current.send('First question');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    // Second message
-    act(() => {
-      result.current.send('Follow up');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(result.current.messages).toHaveLength(4);
-    expect(result.current.messages[0]).toEqual({ role: 'user', text: 'First question' });
-    expect(result.current.messages[1]).toEqual({ role: 'model', text: 'First response' });
-    expect(result.current.messages[2]).toEqual({ role: 'user', text: 'Follow up' });
-    expect(result.current.messages[3]).toEqual({ role: 'model', text: 'Second response' });
-  });
-
-  it('sets generic error message for non-Error throws', async () => {
-    mockStreamChatMessage.mockImplementation(async function* () {
-      throw 42;
-    });
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('Hello');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(result.current.error).toBe('Chat request failed');
-  });
-
-  it('aborts previous stream when send is called again', async () => {
-    let firstSignal: AbortSignal | undefined;
-    let callCount = 0;
-
-    mockStreamChatMessage.mockImplementation(async function* (
-      _chat: any,
-      _msg: string,
-      signal: AbortSignal,
-    ) {
-      callCount++;
-      if (callCount === 1) {
-        firstSignal = signal;
-        // First call blocks
-        await new Promise<void>((resolve) => {
-          signal.addEventListener('abort', () => resolve());
-        });
-      } else {
-        yield 'Second response';
-      }
-    });
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('First');
-    });
-
-    act(() => {
-      result.current.send('Second');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(firstSignal?.aborted).toBe(true);
-  });
-
-  it('passes the chat session and message to streamChatMessage', async () => {
-    const mockSession = { sendMessageStream: vi.fn() };
-    mockCreateChat.mockReturnValue(mockSession);
-    mockStreamChatMessage.mockReturnValue(asyncGen(['response']));
-
-    const { result } = renderHook(() => useFirebaseChat());
-
-    act(() => {
-      result.current.send('Test message', 'context');
-    });
-
-    await waitFor(() => {
-      expect(result.current.streaming).toBe(false);
-    });
-
-    expect(mockStreamChatMessage).toHaveBeenCalledWith(
-      mockSession,
-      'Test message',
-      expect.any(AbortSignal),
-    );
   });
 });

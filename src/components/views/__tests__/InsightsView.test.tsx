@@ -36,6 +36,11 @@ vi.mock('@/hooks/useFirebaseAI', () => ({
   useFirebaseReport: vi.fn(),
 }));
 
+// Mock useRateLimits
+vi.mock('@/hooks/useRateLimits', () => ({
+  useRateLimits: vi.fn(),
+}));
+
 // Mock child components
 vi.mock('@/components/account/AccountFilter', () => ({
   AccountFilter: () => <div data-testid="account-filter">Account Filter</div>,
@@ -68,6 +73,7 @@ import { useGetSubscriptionQuery } from '@/store/api';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useTradeCache } from '@/hooks/useTradeCache';
 import { useFirebaseReport } from '@/hooks/useFirebaseAI';
+import { useRateLimits } from '@/hooks/useRateLimits';
 
 // ── Default mock return values ──────────────────────────────────────
 
@@ -123,6 +129,7 @@ function setupDefaultMocks(overrides: {
   insights?: any;
   streaming?: boolean;
   aiError?: string | null;
+  rateLimits?: any;
 } = {}) {
   vi.mocked(useGetSubscriptionQuery).mockReturnValue({
     data: overrides.subscription ?? { status: 'active' },
@@ -151,6 +158,15 @@ function setupDefaultMocks(overrides: {
     generate: vi.fn(),
     abort: vi.fn(),
   });
+
+  vi.mocked(useRateLimits).mockReturnValue(
+    overrides.rateLimits !== undefined
+      ? overrides.rateLimits
+      : {
+          insights: { used: 0, limit: 6, remaining: 6, resetAt: null },
+          sessions: { used: 0, limit: 6, remaining: 6, resetAt: null },
+        },
+  );
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -215,7 +231,7 @@ describe('InsightsView', () => {
     expect(btn).toBeDisabled();
   });
 
-  it('calls generate with trades on Generate button click', async () => {
+  it('calls generate with trades, accountId, and datePreset on Generate button click', async () => {
     const generateFn = vi.fn();
     vi.mocked(useFirebaseReport).mockReturnValue({
       data: null,
@@ -229,7 +245,7 @@ describe('InsightsView', () => {
     render(<InsightsView />);
 
     await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-    expect(generateFn).toHaveBeenCalledWith(sampleTrades);
+    expect(generateFn).toHaveBeenCalledWith(sampleTrades, 'ALL', 'thisMonth');
   });
 
   it('shows loading skeleton while streaming without data', () => {
@@ -415,6 +431,37 @@ describe('InsightsView', () => {
     });
   });
 
+  describe('rate limits', () => {
+    it('shows rate limit remaining text below Generate button', () => {
+      setupDefaultMocks({
+        rateLimits: {
+          insights: { used: 3, limit: 6, remaining: 3, resetAt: null },
+          sessions: { used: 0, limit: 6, remaining: 6, resetAt: null },
+        },
+      });
+      render(<InsightsView />);
+      expect(screen.getByText('3/6 insights remaining')).toBeInTheDocument();
+    });
+
+    it('disables Generate button when rate limited (remaining: 0)', () => {
+      setupDefaultMocks({
+        rateLimits: {
+          insights: { used: 6, limit: 6, remaining: 0, resetAt: new Date() },
+          sessions: { used: 0, limit: 6, remaining: 6, resetAt: null },
+        },
+      });
+      render(<InsightsView />);
+      const btn = screen.getByRole('button', { name: /Generate Insights/ });
+      expect(btn).toBeDisabled();
+    });
+
+    it('does not show rate limit text when rateLimits is null', () => {
+      setupDefaultMocks({ rateLimits: null });
+      render(<InsightsView />);
+      expect(screen.queryByText(/insights remaining/)).not.toBeInTheDocument();
+    });
+  });
+
   describe('retry on error', () => {
     it('retry button calls generate again', async () => {
       const generateFn = vi.fn();
@@ -431,7 +478,7 @@ describe('InsightsView', () => {
       render(<InsightsView />);
 
       await user.click(screen.getByRole('button', { name: /Retry/ }));
-      expect(generateFn).toHaveBeenCalledWith(sampleTrades);
+      expect(generateFn).toHaveBeenCalledWith(sampleTrades, 'ALL', 'thisMonth');
     });
   });
 });
