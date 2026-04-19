@@ -37,20 +37,20 @@ export function RefundPolicyPage() {
 
           <div className="space-y-10 text-foreground/90">
             <section className="bg-card rounded-2xl border border-success/20 p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-success mb-4">TradeQut Free Trial</h2>
+              <h2 className="text-2xl font-semibold text-success mb-4">TradeQut Free Tier</h2>
               <p className="text-muted-foreground leading-relaxed">
-                TradeQut offers a <span className="text-foreground font-medium">1-month free trial</span> with
-                all features included — no credit card required. After the trial, a paid subscription is
-                required to continue using the platform.
+                TradeQut offers <span className="text-foreground font-medium">all core features for free</span> —
+                no credit card required. A paid subscription (starting at &#8377;99/month) unlocks AI-powered
+                insights and removes ads.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">1. Subscription Plans</h2>
               <p className="text-muted-foreground leading-relaxed">
-                After your 1-month free trial, TradeQut requires a paid subscription (starting at &#8377;99/month)
-                to continue using the platform. All features are included in every plan — there are no premium tiers
-                or feature restrictions between plans.
+                TradeQut is free for all core features. A paid subscription (starting at &#8377;99/month or &#8377;999/year)
+                unlocks AI-powered insights and an ad-free experience. All other features are included
+                in the free tier.
               </p>
             </section>
 

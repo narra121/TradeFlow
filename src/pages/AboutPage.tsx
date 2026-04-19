@@ -66,7 +66,7 @@ export function AboutPage() {
               </p>
               <p>
                 TradeQut is independently developed and maintained with a commitment to keeping the
-                product accessible to every trader with a free trial, whether you're just starting out or
+                product accessible to every trader — free forever for core features, whether you're just starting out or
                 managing multiple accounts professionally.
               </p>
             </div>
@@ -91,10 +91,10 @@ export function AboutPage() {
                 <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-4">
                   <Heart className="w-6 h-6 text-success" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Try Before You Pay</h3>
+                <h3 className="text-xl font-semibold text-foreground mb-3">Free Forever</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Start with a 1-month free trial — no credit card required. We believe you should
-                  experience the full product before committing.
+                  All core features are free — no credit card required. Upgrade only if you want
+                  AI-powered insights and an ad-free experience.
                 </p>
               </div>
 

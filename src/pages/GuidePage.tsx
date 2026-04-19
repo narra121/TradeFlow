@@ -719,8 +719,8 @@ function ProfileSection() {
 
       <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Subscription</h3>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Check your current plan status and manage your subscription. Toggle between Monthly and Annual billing
-        to see available plans and pricing. Annual plans save 17% compared to monthly billing.
+        All core features are free with ads. Upgrade to a paid plan for AI-powered insights and an ad-free experience.
+        Choose between Monthly and Yearly billing — the Yearly plan offers the best value.
       </p>
 
       <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Logging Out</h3>
@@ -841,10 +841,10 @@ export function GuidePage() {
                 {/* CTA */}
                 <div className="text-center py-12 border-t border-border/50">
                   <h2 className="text-2xl font-semibold text-foreground mb-3">Ready to start?</h2>
-                  <p className="text-muted-foreground mb-6">Start your free trial and begin journaling your trades today. No credit card required.</p>
+                  <p className="text-muted-foreground mb-6">Start journaling your trades today — free forever, no credit card required.</p>
                   <Button asChild size="lg" className="gap-2">
                     <Link to="/signup">
-                      Start Free Trial
+                      Get Started Free
                       <ChevronRight className="w-4 h-4" />
                     </Link>
                   </Button>
