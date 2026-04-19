@@ -17,7 +17,7 @@ export function SignupPage() {
 
   return (
     <>
-      <SEO title="Sign Up for TradeQut - Free Trading Journal" description="Create your free TradeQut account." path="/signup" noindex />
+      <SEO title="Sign Up for TradeQut - Free Trading Journal" description="Create your free TradeQut account." path="/signup" />
       <AuthPage initialView="signup" onLogin={handleAuthSuccess} />
     </>
   );

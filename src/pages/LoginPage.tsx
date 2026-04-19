@@ -18,7 +18,7 @@ export function LoginPage() {
 
   return (
     <>
-      <SEO title="Login - TradeQut" description="Sign in to your TradeQut trading journal." path="/login" noindex />
+      <SEO title="Login - TradeQut" description="Sign in to your TradeQut trading journal." path="/login" />
       <AuthPage initialView="login" onLogin={handleAuthSuccess} />
     </>
   );
