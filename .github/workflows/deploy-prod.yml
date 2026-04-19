@@ -47,7 +47,6 @@ jobs:
           echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY_PROD }}" >> .env.production
           echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" >> .env.production
           echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID_PROD }}" >> .env.production
-          echo "VITE_FIREBASE_RECAPTCHA_KEY=${{ secrets.VITE_FIREBASE_RECAPTCHA_KEY_PROD }}" >> .env.production
           echo "VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN_PROD }}" >> .env.production
           echo "VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID_PROD }}" >> .env.production
 

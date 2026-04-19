@@ -8,8 +8,6 @@ const mockGetApps = vi.fn().mockReturnValue([]);
 const mockGetAuth = vi.fn().mockReturnValue({ currentUser: null });
 const mockGetFirestore = vi.fn().mockReturnValue({ type: 'firestore' });
 const mockGetFunctions = vi.fn().mockReturnValue({ type: 'functions' });
-const mockInitializeAppCheck = vi.fn();
-const mockReCaptchaEnterpriseProvider = vi.fn();
 
 vi.mock('firebase/app', () => ({
   initializeApp: (...args: any[]) => mockInitializeApp(...args),
@@ -26,11 +24,6 @@ vi.mock('firebase/firestore', () => ({
 
 vi.mock('firebase/functions', () => ({
   getFunctions: (...args: any[]) => mockGetFunctions(...args),
-}));
-
-vi.mock('firebase/app-check', () => ({
-  initializeAppCheck: (...args: any[]) => mockInitializeAppCheck(...args),
-  ReCaptchaEnterpriseProvider: mockReCaptchaEnterpriseProvider,
 }));
 
 describe('Firebase init', () => {
