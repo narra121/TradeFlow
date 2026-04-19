@@ -287,7 +287,7 @@ describe('useFirebaseChat', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.error).toBe('Session limit exceeded. Please try again later.');
+      expect(result.current.error).toBe('Rate limit exceeded. Please try again later.');
     });
   });
 
@@ -336,7 +336,7 @@ describe('useFirebaseChat', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.error).toBe('Message limit reached for this session.');
+      expect(result.current.error).toBe('Rate limit exceeded. Please try again later.');
     });
   });
 

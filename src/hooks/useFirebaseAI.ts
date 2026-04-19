@@ -7,10 +7,7 @@ import { generateInsightFn } from '@/lib/firebase/functions';
 import { listenToInsight, type FirestoreInsight } from '@/lib/firebase/firestore';
 import { sha256Hex } from '@/lib/cache/hash';
 import { app } from '@/lib/firebase/init';
-
-// -------------------------------------------------------------------------
-// useFirebaseReport -- structured report generation via Cloud Functions
-// -------------------------------------------------------------------------
+import { parseFirebaseError } from '@/lib/firebase/errors';
 
 interface UseFirebaseReportResult {
   data: Partial<InsightsResponse> | null;
@@ -91,17 +88,7 @@ export function useFirebaseReport(): UseFirebaseReportResult {
 
         unsubRef.current = unsub;
       } catch (err: unknown) {
-        // Parse Firebase callable error
-        if (typeof err === 'object' && err !== null && 'code' in err) {
-          const fbErr = err as { code: string; message: string };
-          if (fbErr.code === 'functions/resource-exhausted') {
-            setError('Rate limit exceeded. Please try again later.');
-          } else {
-            setError(fbErr.message || 'Report generation failed');
-          }
-        } else {
-          setError(err instanceof Error ? err.message : 'Report generation failed');
-        }
+        setError(parseFirebaseError(err, 'Report generation failed'));
         setStreaming(false);
       }
     };

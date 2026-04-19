@@ -7,10 +7,7 @@ import { startChatSessionFn, sendChatMessageFn } from '@/lib/firebase/functions'
 import { listenToMessages, listenToChatSession, type FirestoreChatMessage } from '@/lib/firebase/firestore';
 import { sha256Hex } from '@/lib/cache/hash';
 import { app } from '@/lib/firebase/init';
-
-// -------------------------------------------------------------------------
-// useFirebaseChat -- session-based chat via Cloud Functions + Firestore
-// -------------------------------------------------------------------------
+import { parseFirebaseError } from '@/lib/firebase/errors';
 
 interface UseFirebaseChatResult {
   messages: ChatMessage[];
@@ -90,16 +87,7 @@ export function useFirebaseChat(): UseFirebaseChatResult {
         });
         unsubSessionRef.current = unsubSession;
       } catch (err: unknown) {
-        if (typeof err === 'object' && err !== null && 'code' in err) {
-          const fbErr = err as { code: string; message: string };
-          if (fbErr.code === 'functions/resource-exhausted') {
-            setError('Session limit exceeded. Please try again later.');
-          } else {
-            setError(fbErr.message || 'Failed to start chat session');
-          }
-        } else {
-          setError(err instanceof Error ? err.message : 'Failed to start chat session');
-        }
+        setError(parseFirebaseError(err, 'Failed to start chat session'));
       }
     };
 
@@ -116,16 +104,7 @@ export function useFirebaseChat(): UseFirebaseChatResult {
         await sendChatMessageFn({ sessionId, message: text });
         // Firestore listeners will pick up the new messages automatically
       } catch (err: unknown) {
-        if (typeof err === 'object' && err !== null && 'code' in err) {
-          const fbErr = err as { code: string; message: string };
-          if (fbErr.code === 'functions/resource-exhausted') {
-            setError('Message limit reached for this session.');
-          } else {
-            setError(fbErr.message || 'Failed to send message');
-          }
-        } else {
-          setError(err instanceof Error ? err.message : 'Failed to send message');
-        }
+        setError(parseFirebaseError(err, 'Failed to send message'));
         setStreaming(false);
       }
     };

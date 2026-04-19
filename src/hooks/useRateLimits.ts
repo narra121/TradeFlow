@@ -3,10 +3,6 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { listenToRateLimits, type RateLimitData } from '@/lib/firebase/firestore';
 import { app } from '@/lib/firebase/init';
 
-// -------------------------------------------------------------------------
-// useRateLimits -- real-time rate limit display via Firestore listener
-// -------------------------------------------------------------------------
-
 interface RateLimitInfo {
   insights: { used: number; limit: number; remaining: number; resetAt: Date | null };
   sessions: { used: number; limit: number; remaining: number; resetAt: Date | null };

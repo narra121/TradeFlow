@@ -83,7 +83,5 @@ export function useTradeCache({
     setRefreshCounter((c) => c + 1);
   }, []);
 
-  const loading = syncing;
-
-  return { trades, loading, syncing, error, refresh };
+  return { trades, loading: syncing, syncing, error, refresh };
 }

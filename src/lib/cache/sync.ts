@@ -73,13 +73,12 @@ export async function syncTrades(
       }
     }
 
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     const dates = dateRange(startDate, endDate);
-    const allTrades: Trade[] = [];
-    for (const date of dates) {
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-      const dayTrades = await getTrades(db, accountId, date, cryptoKey);
-      allTrades.push(...dayTrades);
-    }
+    const allTradesPerDay = await Promise.all(
+      dates.map(date => getTrades(db, accountId, date, cryptoKey))
+    );
+    const allTrades = allTradesPerDay.flat();
 
     await evictOldDays(db, accountId);
     return allTrades;
