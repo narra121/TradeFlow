@@ -7,10 +7,19 @@ import { Building2, Filter } from 'lucide-react';
 interface AccountFilterProps {
   className?: string;
   showLabel?: boolean;
+  value?: string | null;
+  onValueChange?: (id: string | null) => void;
 }
 
-export function AccountFilter({ className, showLabel = true }: AccountFilterProps) {
-  const { accounts, selectedAccountId, setSelectedAccountId, selectedAccount } = useAccounts();
+export function AccountFilter({ className, showLabel = true, value, onValueChange }: AccountFilterProps) {
+  const { accounts, selectedAccountId: reduxAccountId, setSelectedAccountId: reduxSetId, selectedAccount: reduxSelectedAccount } = useAccounts();
+
+  const controlled = value !== undefined;
+  const selectedAccountId = controlled ? value : reduxAccountId;
+  const setSelectedAccountId = controlled ? (onValueChange ?? (() => {})) : reduxSetId;
+  const selectedAccount = controlled
+    ? accounts.find(acc => acc.id === value) || null
+    : reduxSelectedAccount;
 
   const triggerContent = (
     <SelectTrigger className="w-[200px] h-9">

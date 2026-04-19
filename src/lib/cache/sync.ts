@@ -144,6 +144,24 @@ export async function syncTrades(
       }
     }
 
+    const hasLocalHashes =
+      Object.keys(clientMonthHashes).length > 0 ||
+      Object.keys(clientDayHashes).length > 0;
+
+    // No local cache — skip verify-hashes and fetch trades directly
+    if (!hasLocalHashes) {
+      const fetchedTrades = await fetchTradesFromServer(accountId, startDate, endDate);
+      const grouped = groupByDate(fetchedTrades);
+
+      // Store in IndexedDB for future cache reads
+      for (const [date, dayTrades] of grouped) {
+        await storeTrades(db, accountId, date, dayTrades, '', cryptoKey);
+      }
+
+      await evictOldDays(db, accountId);
+      return fetchedTrades;
+    }
+
     // 2. Verify with server (direct POST, no RTK Query cache)
     const result = await verifyHashesWithServer(
       accountId, startDate, endDate, clientMonthHashes, clientDayHashes,

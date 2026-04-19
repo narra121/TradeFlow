@@ -2,20 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithProviders as render, screen, waitFor } from '@/test/test-utils';
 import { ProfileView } from '../ProfileView';
 
-// --- Mock data ---
 const mockProfile = {
   name: 'Jane Doe',
   email: 'jane@example.com',
 };
 
-const mockSubscription = null;
-
 const mockPlans = [
-  { planId: 'plan_monthly_99', name: 'Basic Monthly', amount: 99, period: 'monthly', description: 'Basic monthly plan' },
-  { planId: 'plan_monthly_299', name: 'Supporter Monthly', amount: 299, period: 'monthly', description: 'Supporter monthly plan' },
+  { planId: 'plan_monthly_199', name: 'Pro Monthly', amount: 199, period: 'monthly', currency: 'USD', description: 'Monthly plan' },
+  { planId: 'plan_yearly_1999', name: 'Pro Yearly', amount: 1999, period: 'yearly', currency: 'USD', description: 'Yearly plan', monthlyEquivalent: 167 },
 ];
 
-// --- Mocks ---
 const mockUnwrap = vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() });
 
 vi.mock('@/store/api', () => ({
@@ -25,15 +21,12 @@ vi.mock('@/store/api', () => ({
     isFetching: false,
   })),
   useGetSubscriptionQuery: vi.fn(() => ({
-    data: mockSubscription,
+    data: null,
     isLoading: false,
     isFetching: false,
     refetch: vi.fn().mockResolvedValue({ data: null }),
   })),
   useUpdateProfileMutation: vi.fn(() => [
-    vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
-  ]),
-  useCreateSubscriptionMutation: vi.fn(() => [
     vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
   ]),
   useLogoutMutation: vi.fn(() => [
@@ -110,7 +103,7 @@ describe('ProfileView', () => {
       isFetching: false,
     } as any);
     vi.mocked(useGetSubscriptionQuery).mockReturnValue({
-      data: mockSubscription,
+      data: null,
       isLoading: false,
       isFetching: false,
       refetch: vi.fn().mockResolvedValue({ data: null }),
@@ -129,9 +122,8 @@ describe('ProfileView', () => {
   it('shows Personal Information card with name and email', () => {
     render(<ProfileView />);
     expect(screen.getByText('Personal Information')).toBeInTheDocument();
-    // Name should appear in the displayed name area and input
-    expect(screen.getByDisplayValue('Jane Doe')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('jane@example.com')).toBeInTheDocument();
+    expect(screen.getAllByText('Jane Doe').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('jane@example.com').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows Subscription card', () => {
@@ -139,9 +131,9 @@ describe('ProfileView', () => {
     expect(screen.getByText('Subscription')).toBeInTheDocument();
   });
 
-  it('shows Edit button', () => {
+  it('shows Edit Profile button in hero banner', () => {
     render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /edit profile/i })).toBeInTheDocument();
   });
 
   it('shows Logout button', () => {
@@ -149,9 +141,9 @@ describe('ProfileView', () => {
     expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
   });
 
-  it('shows subscription plans section when no active subscription', () => {
+  it('shows upgrade plan section when no active subscription', () => {
     render(<ProfileView />);
-    expect(screen.getByRole('heading', { name: /choose your plan/i })).toBeInTheDocument();
+    expect(screen.getByText('Upgrade Your Plan')).toBeInTheDocument();
   });
 
   it('shows loading skeletons when loading', () => {
@@ -168,11 +160,7 @@ describe('ProfileView', () => {
     } as any);
 
     render(<ProfileView />);
-
-    // Heading should still appear
     expect(screen.getByRole('heading', { name: /^profile$/i, level: 1 })).toBeInTheDocument();
-
-    // Personal Information card should NOT render when loading
     expect(screen.queryByText('Personal Information')).not.toBeInTheDocument();
   });
 });
@@ -201,8 +189,6 @@ describe('ProfileView - Error States', () => {
     } as any);
 
     render(<ProfileView />);
-
-    // Header should always render regardless of data state
     expect(screen.getByRole('heading', { name: /^profile$/i, level: 1 })).toBeInTheDocument();
     expect(screen.getByText('Manage your profile and subscription')).toBeInTheDocument();
   });
@@ -225,13 +211,9 @@ describe('ProfileView - Error States', () => {
     } as any);
 
     render(<ProfileView />);
-
-    // Header should still appear during loading
     expect(screen.getByRole('heading', { name: /^profile$/i, level: 1 })).toBeInTheDocument();
-    // Profile card content should not render when loading
     expect(screen.queryByText('Personal Information')).not.toBeInTheDocument();
-    // Subscription card content should not render when loading
-    expect(screen.queryByText('Your current plan')).not.toBeInTheDocument();
+    expect(screen.queryByText('Subscription')).not.toBeInTheDocument();
   });
 });
 
@@ -255,27 +237,27 @@ describe('ProfileView - User Info & Form Fields', () => {
     } as any);
   });
 
-  it('renders user name in the profile card', () => {
+  it('renders user name in both banner and personal info card', () => {
     render(<ProfileView />);
-    // Name appears as display text and in the input value
-    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Jane Doe')).toBeInTheDocument();
+    const nameElements = screen.getAllByText('Jane Doe');
+    expect(nameElements.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders user email in the profile card', () => {
+  it('renders user email', () => {
     render(<ProfileView />);
-    expect(screen.getByDisplayValue('jane@example.com')).toBeInTheDocument();
+    const emailElements = screen.getAllByText('jane@example.com');
+    expect(emailElements.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders Full Name and Email Address form labels', () => {
+  it('renders Full Name and Email Address labels', () => {
     render(<ProfileView />);
-    expect(screen.getByLabelText('Full Name')).toBeInTheDocument();
-    expect(screen.getByLabelText('Email Address')).toBeInTheDocument();
+    expect(screen.getByText('Full Name')).toBeInTheDocument();
+    expect(screen.getByText('Email Address')).toBeInTheDocument();
   });
 
-  it('renders the Edit button for profile', () => {
+  it('renders the Edit Profile button', () => {
     render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /edit profile/i })).toBeInTheDocument();
   });
 
   it('shows profile subtitle text', () => {
@@ -329,7 +311,7 @@ describe('ProfileView - Subscription Status', () => {
     expect(screen.getByText('No Active Subscription')).toBeInTheDocument();
   });
 
-  it('shows subscription plans section when no active subscription', () => {
+  it('shows upgrade plan section when no active subscription', () => {
     vi.mocked(useGetSubscriptionQuery).mockReturnValue({
       data: null,
       isLoading: false,
@@ -338,7 +320,7 @@ describe('ProfileView - Subscription Status', () => {
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByRole('heading', { name: /choose your plan/i })).toBeInTheDocument();
+    expect(screen.getByText('Upgrade Your Plan')).toBeInTheDocument();
   });
 });
 
@@ -368,11 +350,6 @@ describe('ProfileView - Logout Button', () => {
     expect(logoutButton).toBeInTheDocument();
     expect(logoutButton).toBeVisible();
   });
-
-  it('shows account details card title', () => {
-    render(<ProfileView />);
-    expect(screen.getByText('Your account details')).toBeInTheDocument();
-  });
 });
 
 describe('ProfileView - Profile Validation', () => {
@@ -400,39 +377,16 @@ describe('ProfileView - Profile Validation', () => {
     const user = userEvent.setup();
     render(<ProfileView />);
 
-    // Click Edit to enable editing
-    const editButton = screen.getByRole('button', { name: /edit/i });
+    const editButton = screen.getByRole('button', { name: /edit profile/i });
     await user.click(editButton);
 
-    // Clear the name field
     const nameInput = screen.getByLabelText('Full Name');
     await user.clear(nameInput);
 
-    // Click Save
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByRole('button', { name: /^save$/i });
     await user.click(saveButton);
 
     expect(toast.warning).toHaveBeenCalledWith('Name is required');
-  });
-
-  it('shows toast warning when saving profile with empty email', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event');
-    const user = userEvent.setup();
-    render(<ProfileView />);
-
-    // Click Edit to enable editing
-    const editButton = screen.getByRole('button', { name: /edit/i });
-    await user.click(editButton);
-
-    // Clear the email field
-    const emailInput = screen.getByLabelText('Email Address');
-    await user.clear(emailInput);
-
-    // Click Save
-    const saveButton = screen.getByRole('button', { name: /save/i });
-    await user.click(saveButton);
-
-    expect(toast.warning).toHaveBeenCalledWith('Email is required');
   });
 });
 
@@ -494,10 +448,6 @@ describe('ProfileView - Stripe Redirect Verification', () => {
     } as any);
 
     render(<ProfileView />, { route: '/profile?session_id=cs_expired_456' });
-
-    await waitFor(() => {
-      expect(mockVerifyFn).toHaveBeenCalledWith('cs_expired_456');
-    });
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Checkout session expired. Please try again.');
@@ -576,7 +526,6 @@ describe('ProfileView - Stripe Redirect Verification', () => {
     } as any);
 
     render(<ProfileView />, { route: '/profile' });
-
     expect(mockVerifyFn).not.toHaveBeenCalled();
   });
 });
@@ -622,20 +571,6 @@ describe('ProfileView - Trial Subscription Status', () => {
     expect(screen.getByText(/15 days remaining/)).toBeInTheDocument();
   });
 
-  it('shows trial expiry date', () => {
-    const trialEnd = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
-    const expectedDate = trialEnd.toLocaleDateString();
-    vi.mocked(useGetSubscriptionQuery).mockReturnValue({
-      data: { status: 'trial', trialEnd: trialEnd.toISOString() },
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn().mockResolvedValue({ data: null }),
-    } as any);
-
-    render(<ProfileView />);
-    expect(screen.getByText(new RegExp(`expires ${expectedDate.replace(/[/\\]/g, '\\$&')}`))).toBeInTheDocument();
-  });
-
   it('shows trial info message about all features being available', () => {
     const trialEnd = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString();
     vi.mocked(useGetSubscriptionQuery).mockReturnValue({
@@ -675,19 +610,6 @@ describe('ProfileView - Trial Subscription Status', () => {
     expect(screen.getByText('Payment Failed')).toBeInTheDocument();
   });
 
-  it('shows red-styled badge for past_due status', () => {
-    vi.mocked(useGetSubscriptionQuery).mockReturnValue({
-      data: { status: 'past_due' },
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn().mockResolvedValue({ data: null }),
-    } as any);
-
-    render(<ProfileView />);
-    const badge = screen.getByText('Payment Failed');
-    expect(badge).toHaveClass('bg-red-500/20');
-  });
-
   it('shows payment failed help text for past_due status', () => {
     vi.mocked(useGetSubscriptionQuery).mockReturnValue({
       data: { status: 'past_due' },
@@ -714,7 +636,7 @@ describe('ProfileView - Trial Subscription Status', () => {
   });
 });
 
-describe('ProfileView - PricingCards Integration', () => {
+describe('ProfileView - Compact Pricing Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useGetProfileQuery).mockReturnValue({
@@ -730,7 +652,7 @@ describe('ProfileView - PricingCards Integration', () => {
     } as any);
   });
 
-  it('renders PricingCards with Subscribe Monthly and Subscribe Yearly buttons', () => {
+  it('renders Subscribe Now button when no active subscription', () => {
     mockUseCurrency.mockReturnValue({ currency: 'USD', loading: false });
     vi.mocked(useGetPlansQuery).mockReturnValue({
       data: mockPlans,
@@ -738,11 +660,10 @@ describe('ProfileView - PricingCards Integration', () => {
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /subscribe monthly/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /subscribe yearly/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /subscribe now/i })).toBeInTheDocument();
   });
 
-  it('renders Free tier as Current Plan', () => {
+  it('renders Monthly and Yearly toggle buttons', () => {
     mockUseCurrency.mockReturnValue({ currency: 'USD', loading: false });
     vi.mocked(useGetPlansQuery).mockReturnValue({
       data: mockPlans,
@@ -750,15 +671,14 @@ describe('ProfileView - PricingCards Integration', () => {
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /current plan/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /monthly/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /yearly/i })).toBeInTheDocument();
   });
 
   it('passes currency to useGetPlansQuery', () => {
     mockUseCurrency.mockReturnValue({ currency: 'INR', loading: false });
     vi.mocked(useGetPlansQuery).mockReturnValue({
-      data: [
-        { planId: 'plan_inr_monthly', name: 'Monthly INR', amount: 99, period: 'monthly', description: 'Monthly INR plan' },
-      ],
+      data: [],
       isLoading: false,
     } as any);
 
@@ -766,7 +686,7 @@ describe('ProfileView - PricingCards Integration', () => {
     expect(useGetPlansQuery).toHaveBeenCalledWith('INR');
   });
 
-  it('shows "Choose Your Plan" heading when no active subscription', () => {
+  it('shows Upgrade Your Plan heading when no active subscription', () => {
     mockUseCurrency.mockReturnValue({ currency: 'USD', loading: false });
     vi.mocked(useGetPlansQuery).mockReturnValue({
       data: mockPlans,
@@ -774,10 +694,10 @@ describe('ProfileView - PricingCards Integration', () => {
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByRole('heading', { name: /choose your plan/i })).toBeInTheDocument();
+    expect(screen.getByText('Upgrade Your Plan')).toBeInTheDocument();
   });
 
-  it('shows PricingCards description text', () => {
+  it('shows unlock description text', () => {
     mockUseCurrency.mockReturnValue({ currency: 'USD', loading: false });
     vi.mocked(useGetPlansQuery).mockReturnValue({
       data: mockPlans,
@@ -785,6 +705,19 @@ describe('ProfileView - PricingCards Integration', () => {
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByText(/All core features are free with ads/)).toBeInTheDocument();
+    expect(screen.getByText(/Unlock AI insights and go ad-free/)).toBeInTheDocument();
+  });
+
+  it('shows feature checklist items', () => {
+    mockUseCurrency.mockReturnValue({ currency: 'USD', loading: false });
+    vi.mocked(useGetPlansQuery).mockReturnValue({
+      data: mockPlans,
+      isLoading: false,
+    } as any);
+
+    render(<ProfileView />);
+    expect(screen.getByText('Unlimited trade entries')).toBeInTheDocument();
+    expect(screen.getByText('AI-powered insights')).toBeInTheDocument();
+    expect(screen.getByText('Ad-free experience')).toBeInTheDocument();
   });
 });

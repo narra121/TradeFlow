@@ -12,12 +12,12 @@ interface PricingCardsProps {
   isProcessing?: boolean;
 }
 
-interface Feature {
+export interface Feature {
   label: string;
   free: boolean;
 }
 
-const FEATURES: Feature[] = [
+export const FEATURES: Feature[] = [
   { label: 'Unlimited trade entries', free: true },
   { label: 'Full analytics & charts', free: true },
   { label: 'Calendar view', free: true },
