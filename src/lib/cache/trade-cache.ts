@@ -1,10 +1,9 @@
 import type { Trade } from '@/types/trade';
 import { encrypt, decrypt } from './crypto';
 
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const TRADES_STORE = 'trades';
 const SYNC_KEYS_STORE = 'sync-keys';
-const MONTH_HASHES_STORE = 'month-hashes';
 
 function dbName(userId: string): string {
   return `tradequt-cache-${userId}`;
@@ -29,10 +28,9 @@ export function openDatabase(userId: string): Promise<IDBDatabase> {
           keyPath: ['accountId', 'date'],
         });
       }
-      if (!db.objectStoreNames.contains(MONTH_HASHES_STORE)) {
-        db.createObjectStore(MONTH_HASHES_STORE, {
-          keyPath: ['accountId', 'month'],
-        });
+      // Remove legacy month-hashes store if it exists from v2
+      if (db.objectStoreNames.contains('month-hashes')) {
+        db.deleteObjectStore('month-hashes');
       }
     };
 
@@ -231,50 +229,6 @@ export function evictOldDays(
       }
     };
 
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-/**
- * Read month hashes for an account across multiple months.
- * Returns a Map of month -> monthHash.
- */
-export function getMonthHashes(
-  db: IDBDatabase,
-  accountId: string,
-  months: string[]
-): Promise<Map<string, string>> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(MONTH_HASHES_STORE, 'readonly');
-    const store = tx.objectStore(MONTH_HASHES_STORE);
-    const map = new Map<string, string>();
-    let pending = months.length;
-    if (pending === 0) { resolve(map); return; }
-    for (const month of months) {
-      const req = store.get([accountId, month]);
-      req.onsuccess = () => {
-        if (req.result?.monthHash) map.set(month, req.result.monthHash);
-        if (--pending === 0) resolve(map);
-      };
-      req.onerror = () => { if (--pending === 0) resolve(map); };
-    }
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-/**
- * Write a month hash for a given account + month.
- */
-export function putMonthHash(
-  db: IDBDatabase,
-  accountId: string,
-  month: string,
-  monthHash: string
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(MONTH_HASHES_STORE, 'readwrite');
-    tx.objectStore(MONTH_HASHES_STORE).put({ accountId, month, monthHash });
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

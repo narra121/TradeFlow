@@ -4,8 +4,6 @@ import {
   openDatabase,
   storeTrades,
   getTrades,
-  getMonthHashes,
-  putMonthHash,
   getAllSyncKeysForAccount,
   evictOldDays,
 } from './trade-cache';
@@ -23,16 +21,6 @@ function dateRange(startDate: string, endDate: string): string[] {
     current.setUTCDate(current.getUTCDate() + 1);
   }
   return dates;
-}
-
-/**
- * Get unique YYYY-MM months that fall within a date range.
- */
-function getMonthsInRange(startDate: string, endDate: string): string[] {
-  const months = new Set<string>();
-  const dates = dateRange(startDate, endDate);
-  for (const d of dates) months.add(d.slice(0, 7));
-  return [...months].sort();
 }
 
 /**
@@ -56,6 +44,21 @@ async function fetchTradesFromServer(
 }
 
 /**
+ * Fetch server day hashes for an account and date range.
+ * Returns a map of date (YYYY-MM-DD) -> tradeHash.
+ */
+async function fetchServerDayHashes(
+  accountId: string,
+  startDate: string,
+  endDate: string
+): Promise<Record<string, string>> {
+  const response = await apiClient.get('/trades/day-hashes', {
+    params: { accountId, startDate, endDate },
+  });
+  return (response as any) ?? {};
+}
+
+/**
  * Group trades by their exit date (YYYY-MM-DD).
  */
 function groupByDate(trades: Trade[]): Map<string, Trade[]> {
@@ -72,42 +75,16 @@ function groupByDate(trades: Trade[]): Map<string, Trade[]> {
 }
 
 /**
- * POST to /trades/verify-hashes with local month + day hashes.
- * Returns diff: which days are stale and updated server hashes.
- * Uses apiClient directly (NOT RTK Query) to avoid stale cache.
- */
-async function verifyHashesWithServer(
-  accountId: string,
-  startDate: string,
-  endDate: string,
-  clientMonthHashes: Record<string, string>,
-  clientDayHashes: Record<string, string>,
-): Promise<{
-  batchMatch: boolean;
-  staleDays: string[];
-  serverMonthHashes: Record<string, string>;
-  serverDayHashes: Record<string, string>;
-}> {
-  const response = await apiClient.post('/trades/verify-hashes', {
-    accountId,
-    startDate,
-    endDate,
-    clientMonthHashes,
-    clientDayHashes,
-  });
-  return response as any;
-}
-
-/**
- * Sync trades between local IndexedDB cache and server using two-level
- * hash verification.
+ * Sync trades between local IndexedDB cache and server using direct
+ * day-level hash comparison.
  *
  * Flow:
- * 1. Collect local month hashes + day hashes from IndexedDB
- * 2. POST to /trades/verify-hashes with client hashes
- * 3. If batchMatch=true -> read everything from IndexedDB (no server fetch!)
- * 4. If stale days -> fetch only those days from server
- * 5. Update local month hashes from server response
+ * 1. Collect local day hashes from IndexedDB
+ * 2. Fetch server day hashes
+ * 3. Compare day-by-day to find stale days
+ * 4. If no stale days -> read all from IndexedDB
+ * 5. If stale days -> fetch only those days from server, store in cache
+ * 6. Read all trades from cache
  *
  * @param userId - Current user ID (for per-user DB isolation)
  * @param accountId - Trading account to sync
@@ -125,50 +102,67 @@ export async function syncTrades(
   const cryptoKey = await deriveKey(userId);
 
   try {
-    // 1. Collect local hashes
-    const months = getMonthsInRange(startDate, endDate);
-    const localMonthHashes = await getMonthHashes(db, accountId, months);
-    const allLocalDayHashes = await getAllSyncKeysForAccount(db, accountId);
-
-    // Filter day hashes to the requested range
     const dates = dateRange(startDate, endDate);
+
+    // 1. Collect local day hashes
+    const allLocalDayHashes = await getAllSyncKeysForAccount(db, accountId);
     const dateSet = new Set(dates);
-    const clientMonthHashes: Record<string, string> = {};
-    for (const [month, hash] of localMonthHashes) {
-      clientMonthHashes[`${accountId}#${month}`] = hash;
-    }
-    const clientDayHashes: Record<string, string> = {};
+    const localDayHashes: Record<string, string> = {};
     for (const [date, hash] of allLocalDayHashes) {
       if (dateSet.has(date)) {
-        clientDayHashes[`${accountId}#${date}`] = hash;
+        localDayHashes[date] = hash;
       }
     }
 
-    const hasLocalHashes =
-      Object.keys(clientMonthHashes).length > 0 ||
-      Object.keys(clientDayHashes).length > 0;
+    const hasLocalHashes = Object.keys(localDayHashes).length > 0;
 
-    // No local cache — skip verify-hashes and fetch trades directly
+    // No local cache — fetch trades directly
     if (!hasLocalHashes) {
       const fetchedTrades = await fetchTradesFromServer(accountId, startDate, endDate);
       const grouped = groupByDate(fetchedTrades);
 
-      // Store in IndexedDB for future cache reads
+      // Also fetch server hashes to store alongside trades
+      let serverHashes: Record<string, string> = {};
+      try {
+        serverHashes = await fetchServerDayHashes(accountId, startDate, endDate);
+      } catch {
+        // If day-hashes endpoint fails, store with empty hash
+      }
+
       for (const [date, dayTrades] of grouped) {
-        await storeTrades(db, accountId, date, dayTrades, '', cryptoKey);
+        const hash = serverHashes[`${accountId}#${date}`] ?? serverHashes[date] ?? '';
+        await storeTrades(db, accountId, date, dayTrades, hash, cryptoKey);
       }
 
       await evictOldDays(db, accountId);
       return fetchedTrades;
     }
 
-    // 2. Verify with server (direct POST, no RTK Query cache)
-    const result = await verifyHashesWithServer(
-      accountId, startDate, endDate, clientMonthHashes, clientDayHashes,
-    );
+    // 2. Fetch server day hashes
+    const serverHashesRaw = await fetchServerDayHashes(accountId, startDate, endDate);
 
-    // 3. If everything matches, read all from IndexedDB
-    if (result.batchMatch) {
+    // Normalize server hashes: strip accountId# prefix if present
+    const serverDayHashes: Record<string, string> = {};
+    for (const [key, hash] of Object.entries(serverHashesRaw)) {
+      const idx = key.indexOf('#');
+      const date = idx >= 0 ? key.slice(idx + 1) : key;
+      if (dateSet.has(date)) {
+        serverDayHashes[date] = hash;
+      }
+    }
+
+    // 3. Compare day-by-day: find days where hashes differ
+    const staleDays: string[] = [];
+    for (const date of dates) {
+      const localHash = localDayHashes[date];
+      const serverHash = serverDayHashes[date];
+      if (localHash !== serverHash) {
+        staleDays.push(date);
+      }
+    }
+
+    // 4. If everything matches, read all from IndexedDB
+    if (staleDays.length === 0) {
       const allTrades: Trade[] = [];
       for (const date of dates) {
         const dayTrades = await getTrades(db, accountId, date, cryptoKey);
@@ -177,41 +171,17 @@ export async function syncTrades(
       return allTrades;
     }
 
-    // 4. Fetch stale days from server
-    const staleDayDates = [
-      ...new Set(
-        result.staleDays
-          .map(sk => sk.slice(sk.indexOf('#') + 1))
-          .filter(d => !d.includes('MONTH')),
-      ),
-    ];
+    // 5. Fetch stale days from server
+    staleDays.sort();
+    const fetchedTrades = await fetchTradesFromServer(
+      accountId, staleDays[0], staleDays[staleDays.length - 1],
+    );
+    const grouped = groupByDate(fetchedTrades);
 
-    if (staleDayDates.length > 0) {
-      staleDayDates.sort();
-      const fetchedTrades = await fetchTradesFromServer(
-        accountId, staleDayDates[0], staleDayDates[staleDayDates.length - 1],
-      );
-      const grouped = groupByDate(fetchedTrades);
-
-      for (const date of staleDayDates) {
-        const dayTrades = grouped.get(date) || [];
-        // When accountId='ALL', server returns hashes keyed by real account IDs,
-        // so find any hash matching this date as a fallback
-        let hash = result.serverDayHashes[`${accountId}#${date}`];
-        if (!hash) {
-          const suffix = `#${date}`;
-          hash = Object.entries(result.serverDayHashes)
-            .find(([k]) => k.endsWith(suffix))?.[1] ?? '';
-        }
-        await storeTrades(db, accountId, date, dayTrades, hash, cryptoKey);
-      }
-    }
-
-    // 5. Update local month hashes from server
-    for (const [key, hash] of Object.entries(result.serverMonthHashes)) {
-      const idx = key.indexOf('#');
-      const month = key.slice(idx + 1);
-      await putMonthHash(db, accountId, month, hash);
+    for (const date of staleDays) {
+      const dayTrades = grouped.get(date) || [];
+      const hash = serverDayHashes[date] ?? '';
+      await storeTrades(db, accountId, date, dayTrades, hash, cryptoKey);
     }
 
     // 6. Read all trades from cache (now updated)

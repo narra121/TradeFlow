@@ -8,8 +8,6 @@ import {
   getSyncKeys,
   evictOldDays,
   clearDatabase,
-  getMonthHashes,
-  putMonthHash,
   getAllSyncKeysForAccount,
   storeTradesOnly,
 } from '../trade-cache';
@@ -53,6 +51,10 @@ describe('cache/trade-cache', () => {
     it('creates a database with trades and sync-keys stores', () => {
       expect(db.objectStoreNames.contains('trades')).toBe(true);
       expect(db.objectStoreNames.contains('sync-keys')).toBe(true);
+    });
+
+    it('does not contain month-hashes store', () => {
+      expect(db.objectStoreNames.contains('month-hashes')).toBe(false);
     });
 
     it('uses the correct database name', () => {
@@ -208,55 +210,6 @@ describe('cache/trade-cache', () => {
 
       const hashes = await getSyncKeys(db, 'acc-1', ['2026-04-01', '2026-04-02']);
       expect(hashes.size).toBe(2);
-    });
-  });
-
-  describe('DB version upgrade', () => {
-    it('creates month-hashes store in v2', () => {
-      expect(db.objectStoreNames.contains('month-hashes')).toBe(true);
-    });
-
-    it('still has trades and sync-keys stores after upgrade', () => {
-      expect(db.objectStoreNames.contains('trades')).toBe(true);
-      expect(db.objectStoreNames.contains('sync-keys')).toBe(true);
-    });
-  });
-
-  describe('getMonthHashes / putMonthHash', () => {
-    it('stores and retrieves month hashes', async () => {
-      await putMonthHash(db, 'acc-1', '2026-04', 'month-hash-april');
-      await putMonthHash(db, 'acc-1', '2026-05', 'month-hash-may');
-
-      const hashes = await getMonthHashes(db, 'acc-1', ['2026-04', '2026-05', '2026-06']);
-
-      expect(hashes.size).toBe(2);
-      expect(hashes.get('2026-04')).toBe('month-hash-april');
-      expect(hashes.get('2026-05')).toBe('month-hash-may');
-      expect(hashes.has('2026-06')).toBe(false);
-    });
-
-    it('returns empty map for empty months array', async () => {
-      const hashes = await getMonthHashes(db, 'acc-1', []);
-      expect(hashes.size).toBe(0);
-    });
-
-    it('overwrites existing month hash', async () => {
-      await putMonthHash(db, 'acc-1', '2026-04', 'hash-v1');
-      await putMonthHash(db, 'acc-1', '2026-04', 'hash-v2');
-
-      const hashes = await getMonthHashes(db, 'acc-1', ['2026-04']);
-      expect(hashes.get('2026-04')).toBe('hash-v2');
-    });
-
-    it('does not mix accounts', async () => {
-      await putMonthHash(db, 'acc-1', '2026-04', 'hash-acc1');
-      await putMonthHash(db, 'acc-2', '2026-04', 'hash-acc2');
-
-      const h1 = await getMonthHashes(db, 'acc-1', ['2026-04']);
-      const h2 = await getMonthHashes(db, 'acc-2', ['2026-04']);
-
-      expect(h1.get('2026-04')).toBe('hash-acc1');
-      expect(h2.get('2026-04')).toBe('hash-acc2');
     });
   });
 

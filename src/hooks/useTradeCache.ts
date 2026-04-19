@@ -33,9 +33,8 @@ function getUserIdFromToken(): string | null {
 /**
  * Hook that orchestrates IndexedDB cache sync for the AI Insights page.
  *
- * Uses two-level hash verification: POSTs local month+day hashes to
- * /v1/trades/verify-hashes and only fetches stale days from server.
- * No longer depends on useGetStatsQuery for cache sync.
+ * Uses direct day-level hash comparison: fetches server day hashes and
+ * compares against local IndexedDB hashes, then only fetches stale days.
  */
 export function useTradeCache({
   accountId,
