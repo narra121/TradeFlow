@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Trade } from '@/types/trade';
 import { syncTrades } from '@/lib/cache/sync';
 
@@ -48,46 +48,35 @@ export function useTradeCache({
   // Track refresh trigger
   const [refreshCounter, setRefreshCounter] = useState(0);
 
-  // Abort controller ref for cleanup
-  const abortRef = useRef(false);
-
   // Run sync directly — no stats dependency needed
   useEffect(() => {
     const userId = getUserIdFromToken();
     if (!userId) return;
 
-    abortRef.current = false;
+    const controller = new AbortController();
     setSyncing(true);
     setError(null);
 
     const doSync = async () => {
       try {
         const result = await syncTrades(
-          userId,
-          accountId,
-          startDate,
-          endDate,
+          userId, accountId, startDate, endDate, controller.signal,
         );
 
-        if (!abortRef.current) {
+        if (!controller.signal.aborted) {
           setTrades(result);
           setSyncing(false);
         }
       } catch (err) {
-        if (!abortRef.current) {
-          setError(
-            err instanceof Error ? err.message : 'Failed to sync trades',
-          );
-          setSyncing(false);
-        }
+        if (controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : 'Failed to sync trades');
+        setSyncing(false);
       }
     };
 
     doSync();
 
-    return () => {
-      abortRef.current = true;
-    };
+    return () => { controller.abort(); };
   }, [accountId, startDate, endDate, refreshCounter]);
 
   const refresh = useCallback(() => {

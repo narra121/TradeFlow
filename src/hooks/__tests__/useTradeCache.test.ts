@@ -66,12 +66,13 @@ describe('useTradeCache', () => {
       expect(result.current.syncing).toBe(false);
     });
 
-    // syncTrades called with 4 args only (no serverHashes)
+    // syncTrades called with userId, accountId, startDate, endDate, AbortSignal
     expect(mockSyncTrades).toHaveBeenCalledWith(
       mockUserId,
       'acc-1',
       '2026-04-01',
       '2026-04-30',
+      expect.any(AbortSignal),
     );
 
     expect(result.current.trades).toEqual(mockTrades);
@@ -212,6 +213,7 @@ describe('useTradeCache', () => {
       'acc-2',
       '2026-04-01',
       '2026-04-30',
+      expect.any(AbortSignal),
     );
   });
 

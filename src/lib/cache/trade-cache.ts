@@ -69,14 +69,12 @@ export async function storeTrades(
 
     // Clear existing trades for this account+date first, then write new ones
     // Use a cursor to delete matching records
-    const cursorReq = tradesStore.openCursor();
+    const range = IDBKeyRange.bound([accountId, date], [accountId, date, []]);
+    const cursorReq = tradesStore.openCursor(range);
     cursorReq.onsuccess = () => {
       const cursor = cursorReq.result;
       if (cursor) {
-        const key = cursor.key as [string, string, string];
-        if (key[0] === accountId && key[1] === date) {
-          cursor.delete();
-        }
+        cursor.delete();
         cursor.continue();
       } else {
         // All old records deleted, now insert new ones
@@ -113,14 +111,12 @@ export async function getTrades(
     const store = tx.objectStore(TRADES_STORE);
     const results: any[] = [];
 
-    const cursorReq = store.openCursor();
+    const range = IDBKeyRange.bound([accountId, date], [accountId, date, []]);
+    const cursorReq = store.openCursor(range);
     cursorReq.onsuccess = () => {
       const cursor = cursorReq.result;
       if (cursor) {
-        const key = cursor.key as [string, string, string];
-        if (key[0] === accountId && key[1] === date) {
-          results.push(cursor.value);
-        }
+        results.push(cursor.value);
         cursor.continue();
       } else {
         resolve(results);
@@ -159,7 +155,7 @@ export function getSyncKeys(
     for (const date of dates) {
       const req = store.get([accountId, date]);
       req.onsuccess = () => {
-        if (req.result?.tradeHash) {
+        if (req.result?.tradeHash != null) {
           map.set(date, req.result.tradeHash);
         }
         pending--;
@@ -214,14 +210,12 @@ export function evictOldDays(
           syncStore.delete([accountId, date]);
 
           // Delete all trades for this account+date
-          const tradeCursor = tradesStore.openCursor();
+          const evictRange = IDBKeyRange.bound([accountId, date], [accountId, date, []]);
+          const tradeCursor = tradesStore.openCursor(evictRange);
           tradeCursor.onsuccess = () => {
             const tc = tradeCursor.result;
             if (tc) {
-              const tKey = tc.key as [string, string, string];
-              if (tKey[0] === accountId && tKey[1] === date) {
-                tc.delete();
-              }
+              tc.delete();
               tc.continue();
             }
           };
@@ -251,7 +245,7 @@ export function getAllSyncKeysForAccount(
       const cursor = cursorReq.result;
       if (cursor) {
         const key = cursor.key as [string, string];
-        if (key[0] === accountId && cursor.value?.tradeHash) {
+        if (key[0] === accountId && cursor.value?.tradeHash != null) {
           map.set(key[1], cursor.value.tradeHash);
         }
         cursor.continue();
@@ -286,12 +280,12 @@ export async function storeTradesOnly(
   return new Promise((resolve, reject) => {
     const tx = db.transaction(TRADES_STORE, 'readwrite');
     const store = tx.objectStore(TRADES_STORE);
-    const cursorReq = store.openCursor();
+    const range = IDBKeyRange.bound([accountId, date], [accountId, date, []]);
+    const cursorReq = store.openCursor(range);
     cursorReq.onsuccess = () => {
       const cursor = cursorReq.result;
       if (cursor) {
-        const key = cursor.key as [string, string, string];
-        if (key[0] === accountId && key[1] === date) cursor.delete();
+        cursor.delete();
         cursor.continue();
       } else {
         for (const record of encrypted) store.put(record);
