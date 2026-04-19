@@ -13,11 +13,19 @@ export interface AuthState {
   signupSuccess: boolean;
 }
 
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('idToken'),
-  refreshToken: localStorage.getItem('refreshToken'),
-  isAuthenticated: !!localStorage.getItem('idToken'),
+  token: safeGetItem('idToken'),
+  refreshToken: safeGetItem('refreshToken'),
+  isAuthenticated: !!safeGetItem('idToken'),
   signupSuccess: false,
 };
 
