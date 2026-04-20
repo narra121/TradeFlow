@@ -551,12 +551,8 @@ describe('AddTradeModal - UX Enhancements', () => {
   it('shows section description for Core Details', () => {
     render(<AddTradeModal {...defaultProps} />);
 
-    expect(
-      screen.getByText((_content, element) =>
-        element?.textContent?.includes('Required fields are marked with') === true &&
-        element?.tagName === 'P'
-      )
-    ).toBeInTheDocument();
+    const coreDetailsSection = screen.getByText('Core Details').closest('div')!;
+    expect(coreDetailsSection.textContent).toContain('required fields marked with');
   });
 
   it('shows optional section labels', () => {

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { TextEnhancerButton } from '@/components/ui/text-enhancer-button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -356,15 +355,15 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
         <ScrollArea className="flex-1 min-h-0">
           <form onSubmit={handleSubmit} className="px-4 sm:px-6 pb-4 sm:pb-6">
-            <div className="space-y-6">
+            <div className="space-y-3">
               {/* Account Selection - New trade or unmapped trade */}
               {accounts.length > 0 && isUnmapped && (
-                <section className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Building2 className="w-4 h-4" />
+                <section className="bg-card/50 border border-border/50 rounded-xl p-3.5 space-y-3">
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-primary flex items-center gap-2">
+                    <Building2 className="w-3.5 h-3.5" />
                     Account
                     {selectedAccountIds.length > 0 && (
-                      <span className="text-xs text-primary">({selectedAccountIds.length} selected)</span>
+                      <span className="text-xs normal-case tracking-normal">({selectedAccountIds.length} selected)</span>
                     )}
                   </div>
                   <AccountSelect
@@ -383,9 +382,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
               {/* Current account info when editing mapped trade */}
               {accounts.length > 0 && editMode && !isUnmapped && (
-                <section className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Building2 className="w-4 h-4" />
+                <section className="bg-card/50 border border-border/50 rounded-xl p-3.5 space-y-3">
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-primary flex items-center gap-2">
+                    <Building2 className="w-3.5 h-3.5" />
                     Accounts
                   </div>
                   <div className="space-y-2">
@@ -426,15 +425,13 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                 </section>
               )}
 
-              {accounts.length > 0 && <Separator className="bg-border" />}
-
               {/* Section A: Core Trade Details */}
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <TrendingUp className="w-4 h-4" />
+              <section className="bg-card/50 border border-border/50 rounded-xl p-3.5 space-y-4">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-primary flex items-center gap-2">
+                  <TrendingUp className="w-3.5 h-3.5" />
                   Core Details
+                  <span className="text-[9px] font-normal normal-case tracking-normal text-muted-foreground ml-1">— required fields marked with <span className="text-destructive">*</span></span>
                 </div>
-                <p className="text-xs text-muted-foreground -mt-2">Required fields are marked with <span className="text-destructive">*</span></p>
 
                 {/* Direction Toggle */}
                 <div className="flex gap-2 w-full sm:max-w-xs">
@@ -591,17 +588,15 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                 </div>
               </section>
 
-              <Separator className="bg-border" />
-
               {/* Section B: Trade Context (Collapsible) */}
-              <Collapsible defaultOpen={false}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group">
-                  <Clock className="w-4 h-4" />
+              <Collapsible defaultOpen={false} className="bg-card/50 border border-border/50 rounded-xl">
+                <CollapsibleTrigger className="flex items-center gap-2 w-full px-3.5 py-3 text-[11px] font-medium uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group">
+                  <Clock className="w-3.5 h-3.5" />
                   <span>Trade Context</span>
-                  <span className="text-xs text-muted-foreground ml-auto mr-2">Optional</span>
-                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                  <span className="text-[10px] text-muted-foreground normal-case tracking-normal ml-auto mr-2">Optional</span>
+                  <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 pt-2">
+                <CollapsibleContent className="space-y-4 px-3.5 pb-3.5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                     <div className="space-y-1.5">
                       <Label className="text-xs">Strategy / Setup</Label>
@@ -640,17 +635,15 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                 </CollapsibleContent>
               </Collapsible>
 
-              <Separator className="bg-border" />
-
               {/* Section C: Analysis (Collapsible) */}
-              <Collapsible defaultOpen={false}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group">
-                  <BarChart3 className="w-4 h-4" />
+              <Collapsible defaultOpen={false} className="bg-card/50 border border-border/50 rounded-xl">
+                <CollapsibleTrigger className="flex items-center gap-2 w-full px-3.5 py-3 text-[11px] font-medium uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group">
+                  <BarChart3 className="w-3.5 h-3.5" />
                   <span>Analysis</span>
-                  <span className="text-xs text-muted-foreground ml-auto mr-2">Optional</span>
-                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                  <span className="text-[10px] text-muted-foreground normal-case tracking-normal ml-auto mr-2">Optional</span>
+                  <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 pt-2">
+                <CollapsibleContent className="space-y-4 px-3.5 pb-3.5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 h-6">
@@ -722,17 +715,15 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                 </CollapsibleContent>
               </Collapsible>
 
-              <Separator className="bg-border" />
-
               {/* Section D: Trade Notes (Collapsible) */}
-              <Collapsible defaultOpen={false}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group">
-                  <FileText className="w-4 h-4" />
+              <Collapsible defaultOpen={false} className="bg-card/50 border border-border/50 rounded-xl">
+                <CollapsibleTrigger className="flex items-center gap-2 w-full px-3.5 py-3 text-[11px] font-medium uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group">
+                  <FileText className="w-3.5 h-3.5" />
                   <span>Trade Notes</span>
-                  <span className="text-xs text-muted-foreground ml-auto mr-2">Optional</span>
-                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                  <span className="text-[10px] text-muted-foreground normal-case tracking-normal ml-auto mr-2">Optional</span>
+                  <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 pt-2">
+                <CollapsibleContent className="space-y-4 px-3.5 pb-3.5">
                   <div className="space-y-1.5 relative">
                     <div className="relative">
                       <Textarea
@@ -754,17 +745,15 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                 </CollapsibleContent>
               </Collapsible>
 
-              <Separator className="bg-border" />
-
               {/* Section E: Visual Evidence (Collapsible) */}
-              <Collapsible defaultOpen={false}>
-                <CollapsibleTrigger className="flex items-center gap-2 w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group">
-                  <Camera className="w-4 h-4" />
+              <Collapsible defaultOpen={false} className="bg-card/50 border border-border/50 rounded-xl">
+                <CollapsibleTrigger className="flex items-center gap-2 w-full px-3.5 py-3 text-[11px] font-medium uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group">
+                  <Camera className="w-3.5 h-3.5" />
                   <span>Visual Evidence</span>
-                  <span className="text-xs text-muted-foreground ml-auto mr-2">Optional</span>
-                  <ChevronDown className="w-4 h-4 transition-transform group-data-[state=open]:rotate-180" />
+                  <span className="text-[10px] text-muted-foreground normal-case tracking-normal ml-auto mr-2">Optional</span>
+                  <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 pt-2">
+                <CollapsibleContent className="space-y-4 px-3.5 pb-3.5">
                   <ImageUploader
                     images={images}
                     onChange={setImages}
