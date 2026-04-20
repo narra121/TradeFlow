@@ -80,29 +80,6 @@ export async function syncTrades(
     );
     const allTrades = allTradesPerDay.flat();
 
-    // Safety net: if server has hashes but IndexedDB returned 0 trades,
-    // the cache is inconsistent (sync-keys exist but trade records don't).
-    // Clear stale sync-keys and force a full re-sync.
-    if (allTrades.length === 0 && Object.keys(serverHashes).length > 0 && staleDays.length === 0) {
-      const { clearSyncKeys } = await import('./trade-cache');
-      await clearSyncKeys(db, accountId);
-      const retryResponse = await apiClient.post('/trades/sync', {
-        accountId, startDate, endDate, clientHashes: {},
-      });
-      const retry = retryResponse as SyncResponse;
-      const grouped = groupByDate(retry.trades);
-      for (const day of retry.staleDays) {
-        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-        const dayTrades = grouped.get(day) || [];
-        const hash = retry.serverHashes[day] ?? '';
-        await storeTrades(db, accountId, day, dayTrades, hash, cryptoKey);
-      }
-      const retryTradesPerDay = await Promise.all(
-        dates.map(date => getTrades(db, accountId, date, cryptoKey))
-      );
-      return retryTradesPerDay.flat();
-    }
-
     await evictOldDays(db, accountId);
     return allTrades;
   } finally {
