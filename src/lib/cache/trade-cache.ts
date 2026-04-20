@@ -57,7 +57,7 @@ export async function storeTrades(
     trades.map(async (trade) => ({
       accountId,
       date,
-      tradeId: trade.id,
+      tradeId: (trade as any).tradeId || trade.id,
       data: await encrypt(cryptoKey, trade),
     }))
   );
@@ -272,7 +272,7 @@ export async function storeTradesOnly(
     trades.map(async (trade) => ({
       accountId,
       date,
-      tradeId: trade.id,
+      tradeId: (trade as any).tradeId || trade.id,
       data: await encrypt(cryptoKey, trade),
     }))
   );
