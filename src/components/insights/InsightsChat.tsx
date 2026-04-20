@@ -125,6 +125,15 @@ export function InsightsChat({
   const isRateLimited = rateLimits !== null && rateLimits.sessions.remaining <= 0;
   const inputDisabled = streaming || isSessionFull;
 
+  // Auto-focus the chat session linked to the current insightId
+  useEffect(() => {
+    if (sessionsLoading || !insightId || activeSessionId || isNewChat) return;
+    const matchingSession = sessions.find(s => s.insightId === insightId);
+    if (matchingSession) {
+      switchSession(matchingSession.id);
+    }
+  }, [sessionsLoading, sessions, insightId, activeSessionId, isNewChat, switchSession]);
+
   // When sessionId appears after startSession, send the pending message
   useEffect(() => {
     if (sessionId && pendingMessage) {

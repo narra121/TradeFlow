@@ -26,13 +26,11 @@ export function TradeDetailModal({
   onClose,
   ...contentProps
 }: TradeDetailModalProps) {
-  if (!trade) return null;
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen && !!trade} onOpenChange={onClose}>
       <DialogContent className="max-w-[90vw] w-[90vw] max-h-[90vh] p-0 overflow-hidden flex flex-col">
         <DialogTitle className="sr-only">Trade Details</DialogTitle>
-        <TradeDetailContent trade={trade} {...contentProps} />
+        {trade && <TradeDetailContent trade={trade} {...contentProps} />}
       </DialogContent>
     </Dialog>
   );

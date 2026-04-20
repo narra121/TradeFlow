@@ -193,7 +193,7 @@ export function InsightsView() {
 
   useEffect(() => {
     if (!syncing && trades.length >= MIN_TRADES_FOR_INSIGHTS && isPremium) {
-      checkCache(trades, accountId, datePreset);
+      checkCache(trades, accountId, String(datePreset));
     }
   }, [syncing, trades.length, accountId, datePreset, isPremium]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -211,7 +211,7 @@ export function InsightsView() {
   const insightsData = insights as InsightsResponse | null;
 
   const handleGenerate = () => {
-    generate(trades, accountId, datePreset);
+    generate(trades, accountId, String(datePreset));
   };
 
   // Trade reference handlers
@@ -227,10 +227,10 @@ export function InsightsView() {
     setTradeModalOpen(true);
   }, []);
 
-  // Resolve trade IDs to Trade objects
+  // Resolve trade IDs to Trade objects (check both id and tradeId for IndexedDB compatibility)
   const selectedTrades = useMemo(() => {
     return selectedTradeIds
-      .map(id => trades.find(t => t.id === id))
+      .map(id => trades.find(t => t.id === id || (t as any).tradeId === id))
       .filter((t): t is Trade => t != null);
   }, [selectedTradeIds, trades]);
 
@@ -252,7 +252,7 @@ export function InsightsView() {
       <div className="h-[calc(100vh-2rem)] flex flex-col animate-fade-in" data-testid="fullscreen-chat-container">
         <InsightsChat
           accountId={accountId}
-          period={datePreset}
+          period={String(datePreset)}
           startDate={localDates.startDate}
           endDate={localDates.endDate}
           trades={trades}
@@ -579,7 +579,7 @@ export function InsightsView() {
               <TabsContent value="ask-ai">
                 <InsightsChat
                   accountId={accountId}
-                  period={datePreset}
+                  period={String(datePreset)}
                   startDate={localDates.startDate}
                   endDate={localDates.endDate}
                   trades={trades}
@@ -597,23 +597,21 @@ export function InsightsView() {
       )}
 
       {/* Trade Detail Modal — for trade references in insights */}
-      {selectedTrades.length > 0 && (
-        <TradeDetailModal
-          trade={currentSelectedTrade}
-          isOpen={tradeModalOpen}
-          onClose={() => {
-            setTradeModalOpen(false);
-            setSelectedTradeIds([]);
-            setSelectedTradeIndex(0);
-          }}
-          onPrevious={selectedTrades.length > 1 ? () => setSelectedTradeIndex(i => Math.max(0, i - 1)) : undefined}
-          onNext={selectedTrades.length > 1 ? () => setSelectedTradeIndex(i => Math.min(selectedTrades.length - 1, i + 1)) : undefined}
-          hasPrevious={selectedTradeIndex > 0}
-          hasNext={selectedTradeIndex < selectedTrades.length - 1}
-          currentIndex={selectedTradeIndex}
-          totalCount={selectedTrades.length}
-        />
-      )}
+      <TradeDetailModal
+        trade={currentSelectedTrade}
+        isOpen={tradeModalOpen}
+        onClose={() => {
+          setTradeModalOpen(false);
+          setSelectedTradeIds([]);
+          setSelectedTradeIndex(0);
+        }}
+        onPrevious={selectedTrades.length > 1 ? () => setSelectedTradeIndex(i => Math.max(0, i - 1)) : undefined}
+        onNext={selectedTrades.length > 1 ? () => setSelectedTradeIndex(i => Math.min(selectedTrades.length - 1, i + 1)) : undefined}
+        hasPrevious={selectedTradeIndex > 0}
+        hasNext={selectedTradeIndex < selectedTrades.length - 1}
+        currentIndex={selectedTradeIndex}
+        totalCount={selectedTrades.length}
+      />
     </div>
   );
 }
