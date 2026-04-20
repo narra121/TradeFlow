@@ -5,12 +5,12 @@ const MAX_TRADES = 2000;
 
 export function trimTrades(trades: Trade[]): TrimmedTrade[] {
   const subset = trades.slice(0, MAX_TRADES);
-  return subset.map((t) => ({
-    tradeId: t.id,
+  return subset.map((t: any) => ({
+    tradeId: t.tradeId || t.id,
     symbol: t.symbol,
-    side: t.direction,
-    openDate: t.entryDate,
-    closeDate: t.exitDate,
+    side: t.side || t.direction,
+    openDate: t.openDate || t.entryDate,
+    closeDate: t.closeDate || t.exitDate,
     pnl: t.pnl,
     volume: t.size,
     accountId: t.accountId,
