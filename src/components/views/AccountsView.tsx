@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { AccountCard } from '@/components/account/AccountCard';
 import { AddAccountModal } from '@/components/account/AddAccountModal';
 import { Button } from '@/components/ui/button';
 import { TradingAccount, AccountStatus } from '@/types/trade';
 import { Plus, Building2, AlertTriangle, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { AdSlot } from '@/components/ads/AdSlot';
 import {
@@ -25,7 +26,8 @@ export function AccountsView() {
   const dispatch = useAppDispatch();
   const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
   const { data: accountsData, isLoading, isFetching, refetch } = useGetAccountsQuery();
-  const loading = isLoading || isFetching;
+  const showSkeleton = isLoading;
+  const isRefreshing = isFetching && !isLoading;
   const [createAccount] = useCreateAccountMutation();
   const [updateAccount] = useUpdateAccountMutation();
   const [deleteAccount] = useDeleteAccountMutation();
@@ -45,6 +47,9 @@ export function AccountsView() {
       setIsDeleting(true);
       try {
         await deleteAccount(deletingAccountId).unwrap();
+        if (selectedAccountId === deletingAccountId) {
+          dispatch(setSelectedAccount(null));
+        }
         setDeletingAccountId(null);
       } catch (error: any) {
         // Toast middleware handles error display
@@ -83,8 +88,14 @@ export function AccountsView() {
     try { await updateAccountStatus({ id, status }).unwrap(); } catch { /* toast middleware handles */ }
   };
 
-  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-  const totalPnl = accounts.reduce((sum, acc) => sum + (acc.balance - acc.initialBalance), 0);
+  const totalBalance = useMemo(
+    () => accountsData?.totalBalance ?? accounts.reduce((sum, acc) => sum + acc.balance, 0),
+    [accountsData?.totalBalance, accounts]
+  );
+  const totalPnl = useMemo(
+    () => accountsData?.totalPnl ?? accounts.reduce((sum, acc) => sum + (acc.balance - acc.initialBalance), 0),
+    [accountsData?.totalPnl, accounts]
+  );
 
   return (
     <div className="space-y-6">
@@ -105,14 +116,14 @@ export function AccountsView() {
       </div>
 
       {/* Summary Stats */}
-      {loading ? (
+      {showSkeleton ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 transition-opacity duration-200", isRefreshing && "opacity-60")}>
           <div className="glass-card p-4 sm:p-5">
             <div className="flex items-center gap-3 mb-2">
               <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
@@ -142,7 +153,7 @@ export function AccountsView() {
       )}
 
       {/* Accounts Grid */}
-      {loading ? (
+      {showSkeleton ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <AccountCardSkeleton key={i} />

@@ -480,7 +480,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
       }
     });
     return days.sort((a, b) => a.getTime() - b.getTime());
-  }, [dateFilteredTrades]);
+  }, [eligibleTrades]);
 
   const handleDayClick = (date: Date) => {
     const dayTrades = getTradesForDay(date);
@@ -1047,7 +1047,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
       {/* Trades Tab Content */}
       {activeTab === 'trades' && (
-        <>
+        <div className={cn('transition-opacity duration-200', isRefreshing && 'opacity-60')}>
           {/* Bulk Actions Toolbar */}
           {selectedTradeIds.size > 0 && (
             <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg animate-fade-in flex-wrap">
@@ -1081,9 +1081,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           /* Mobile card layout */
           <div className="space-y-2">
             <div className="space-y-3 px-2">
-              {paginatedTrades.map((trade, idx) => {
-                const account = accounts.find(a => a.id === trade.accountId);
-                return (
+              {paginatedTrades.map((trade, idx) => (
                 <div
                   key={trade.id}
                   className="glass-card p-4 cursor-pointer active:bg-secondary/30"
@@ -1114,12 +1112,12 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>{account?.name || '—'}</span>
+                    <span>{accountNameMap.get(trade.accountId) || '—'}</span>
                     <span>{format(new Date(trade.entryDate), "MMM d, HH:mm")}</span>
                     <Badge variant="outline" className="text-xs">{trade.outcome}</Badge>
                   </div>
                 </div>
-              )})}
+              ))}
             </div>
 
             {filteredTrades.length === 0 && (
@@ -1470,7 +1468,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             )}
           </div>
           )}
-        </>
+        </div>
       )}
 
       {activeTab === 'trades' && (
@@ -1479,7 +1477,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
       {/* Calendar Tab Content */}
       {activeTab === 'calendar' && (
-        <>
+        <div className={cn('transition-opacity duration-200', isRefreshing && 'opacity-60')}>
           {showSkeleton ? (
             <CalendarSkeleton />
           ) : (
@@ -1673,7 +1671,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
               </div>
             </>
           )}
-        </>
+        </div>
       )}
 
       {/* Trade Detail Modal */}

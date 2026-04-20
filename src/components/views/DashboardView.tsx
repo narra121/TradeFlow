@@ -16,8 +16,8 @@ import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
 import { AdSlot } from '@/components/ads/AdSlot';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
-import { useAccounts } from '@/hooks/useAccounts';
-import { useGetTradesQuery, useGetStatsQuery } from '@/store/api';
+import { useGetTradesPaginatedQuery, useGetStatsQuery, useGetAccountsQuery } from '@/store/api';
+import { skipToken } from '@reduxjs/toolkit/query/react';
 import { 
   DashboardStatsSkeleton, 
   ChartSkeleton, 
@@ -25,6 +25,14 @@ import {
   RecentTradesListSkeleton, 
   QuickStatsSkeleton 
 } from '@/components/ui/loading-skeleton';
+
+const EMPTY_STATS = {
+  totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
+  avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
+  maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
+  grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
+  totalVolume: 0, dailyPnl: [] as Array<{ date: string; pnl: number; cumulativePnl: number }>,
+};
 
 interface DashboardViewProps {
   onAddTrade: () => void;
@@ -39,8 +47,10 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() }
   );
   
-  // Get accounts for balance calculations
-  const { selectedAccountId, accounts } = useAccounts();
+  // Get accounts for balance calculations (direct query, avoids unused CRUD mutations)
+  const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
+  const { data: accountsData, isLoading: accountsLoading } = useGetAccountsQuery();
+  const accounts = accountsData?.accounts || [];
 
   // Debounce filter changes to avoid firing multiple API calls during rapid changes
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
@@ -56,7 +66,11 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     endDate: debouncedFilters.endDate,
   }), [debouncedFilters.accountId, debouncedFilters.startDate, debouncedFilters.endDate]);
 
-  const { data: trades = [], isLoading, isFetching, refetch } = useGetTradesQuery(queryParams);
+  const { data: paginatedData, isLoading, isFetching, refetch } = useGetTradesPaginatedQuery({
+    ...queryParams,
+    limit: 5,
+  });
+  const trades = paginatedData?.trades ?? [];
 
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
@@ -71,7 +85,6 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
   };
 
   const filteredTrades = useMemo(() => getEligibleTrades(trades), [trades]);
-  const unmappedCount = useMemo(() => trades.length - filteredTrades.length, [trades.length, filteredTrades.length]);
 
   // Calculate total capital based on selected accounts
   const totalCapital = useMemo(() => {
@@ -88,7 +101,8 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     }
   }, [selectedAccountId, accounts]);
 
-  // Fetch aggregated stats from backend using debounced filters
+  // Fetch aggregated stats from backend — skip until accounts are loaded to avoid
+  // a wasted first request with totalCapital=0 that returns incorrect percentages
   const statsQueryParams = useMemo(() => ({
     accountId: debouncedFilters.accountId,
     startDate: debouncedFilters.startDate,
@@ -96,17 +110,13 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
     totalCapital,
   }), [debouncedFilters.accountId, debouncedFilters.startDate, debouncedFilters.endDate, totalCapital]);
 
-  const { data: statsData, isLoading: statsLoading, isFetching: statsFetching } = useGetStatsQuery(statsQueryParams);
+  const { data: statsData, isLoading: statsLoading, isFetching: statsFetching } =
+    useGetStatsQuery(accountsLoading ? skipToken : statsQueryParams);
 
-  const emptyStats = {
-    totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
-    avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
-    maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
-    grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
-    totalVolume: 0, dailyPnl: [] as Array<{ date: string; pnl: number; cumulativePnl: number }>,
-  };
+  const stats = { ...EMPTY_STATS, ...statsData };
 
-  const stats = { ...emptyStats, ...statsData };
+  const hasUnmappedTrades = trades.length > filteredTrades.length ||
+    (stats.totalTrades > 0 && filteredTrades.length === 0);
 
   const totalPnlTrend = useMemo(() => ({
     value: totalCapital > 0 ? Math.abs((stats.totalPnl / totalCapital) * 100) : 0,
@@ -114,7 +124,10 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
   }), [stats.totalPnl, totalCapital]);
   const showSkeleton = isLoading || statsLoading;           // first-time load only
   const isRefreshing = isFetching || statsFetching;          // background refetch, keep stale data visible
-  const isFilterPending = debouncedFilters !== filters;      // filter change not yet applied
+  const isFilterPending =
+    debouncedFilters.accountId !== filters.accountId ||
+    debouncedFilters.startDate !== filters.startDate ||
+    debouncedFilters.endDate !== filters.endDate;
 
   // All trades are closed - no open trades section needed
 
@@ -154,20 +167,16 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
       {/* Empty State - shown when not loading and no trades */}
       {!showSkeleton && filteredTrades.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
-          {unmappedCount > 0 ? (
+          {hasUnmappedTrades ? (
             <>
               <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mb-6">
                 <AlertTriangle className="w-8 h-8 text-warning/60" />
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                {unmappedCount === 1
-                  ? '1 unmapped trade'
-                  : `${unmappedCount} unmapped trades`}
+                Unmapped trades found
               </h3>
               <p className="text-muted-foreground max-w-md mb-8">
-                {unmappedCount === 1
-                  ? 'You have a trade that isn\'t assigned to any account. Map it to an account so it shows up in your stats.'
-                  : `You have ${unmappedCount} trades that aren't assigned to any account. Map them to accounts so they show up in your stats.`}
+                You have trades that aren't assigned to any account. Map them to accounts in the Trade Log so they show up in your stats.
               </p>
               <div className="flex items-center gap-3">
                 <Button onClick={() => navigate('/app/tradelog')} size="default" className="gap-2">
@@ -270,14 +279,12 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           )}
 
           {/* Unmapped Trades Banner */}
-          {!showSkeleton && unmappedCount > 0 && (
+          {!showSkeleton && hasUnmappedTrades && (
             <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-warning/8 border-l-2 border-warning animate-fade-in">
               <Info className="w-4 h-4 text-warning mt-0.5 shrink-0" />
               <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <p className="text-sm text-muted-foreground">
-                  {unmappedCount === 1
-                    ? '1 trade is not mapped to any account and is excluded from stats.'
-                    : `${unmappedCount} trades are not mapped to any account and are excluded from stats.`}
+                  Some trades are not mapped to any account and are excluded from stats.
                 </p>
               </div>
             </div>

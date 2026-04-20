@@ -29,12 +29,28 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { useGetStatsQuery, useGetRulesAndGoalsQuery } from '@/store/api';
+import { useGetStatsQuery, useGetRulesAndGoalsQuery, useGetAccountsQuery } from '@/store/api';
+import { skipToken } from '@reduxjs/toolkit/query/react';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
-import { useAccounts } from '@/hooks/useAccounts';
 import { formatDuration } from '@/lib/tradeCalculations';
 
 const MIN_TRADES_FOR_CHARTS = 3;
+
+const COLORS = ['hsl(160, 84%, 39%)', 'hsl(265, 89%, 62%)', 'hsl(45, 93%, 47%)', 'hsl(200, 95%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(320, 70%, 50%)'];
+
+const EMPTY_STATS = {
+  totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
+  avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
+  maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
+  grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
+  totalVolume: 0, minDuration: 0, maxDuration: 0,
+  durationBuckets: [] as any[], symbolDistribution: {} as Record<string, any>, strategyDistribution: {} as Record<string, any>,
+  sessionDistribution: {} as Record<string, any>, outcomeDistribution: {} as Record<string, any>, hourlyStats: [] as any[],
+  dailyWinRate: [] as any[], dailyPnl: [] as any[],
+  mistakesDistribution: {} as Record<string, { count: number; totalPnl: number }>,
+  brokenRulesDistribution: {} as Record<string, { count: number; totalPnl: number }>,
+  lessonsDistribution: {} as Record<string, number>,
+} as const;
 
 const ChartEmptyState = () => (
   <div className="flex flex-col items-center justify-center h-[280px] text-center">
@@ -55,10 +71,10 @@ export function AnalyticsView() {
   // Get saved options for sessions
   const { options } = useSavedOptions();
 
-  // Get accounts for balance calculations
-  const { selectedAccountId, accounts } = useAccounts();
+  const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
+  const { data: accountsData, isLoading: accountsLoading } = useGetAccountsQuery();
+  const accounts = accountsData?.accounts || [];
 
-  // Calculate total capital based on selected accounts
   const totalCapital = useMemo(() => {
     const accountId = selectedAccountId || 'ALL';
     if (accountId === 'ALL') {
@@ -71,7 +87,6 @@ export function AnalyticsView() {
     }
   }, [selectedAccountId, accounts]);
 
-  // Fetch aggregated stats from backend
   const statsQueryParams = useMemo(() => ({
     accountId: filters.accountId,
     startDate: filters.startDate,
@@ -79,24 +94,13 @@ export function AnalyticsView() {
     totalCapital,
   }), [filters.accountId, filters.startDate, filters.endDate, totalCapital]);
 
-  const { data: statsData, isLoading: statsLoading, isFetching: statsFetching, refetch } = useGetStatsQuery(statsQueryParams);
-  const showSkeleton = statsLoading;                         // first-time load only
-  const isRefreshing = statsFetching;                        // background refetch, keep stale data visible
+  const { data: statsData, isLoading: statsLoading, isFetching: statsFetching, refetch } = useGetStatsQuery(
+    accountsLoading ? skipToken : statsQueryParams
+  );
+  const showSkeleton = statsLoading || accountsLoading;
+  const isRefreshing = statsFetching && !showSkeleton;
 
-  const defaultStats = {
-    totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
-    avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
-    maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
-    grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
-    totalVolume: 0, minDuration: 0, maxDuration: 0,
-    durationBuckets: [] as any[], symbolDistribution: {} as Record<string, any>, strategyDistribution: {} as Record<string, any>,
-    sessionDistribution: {} as Record<string, any>, outcomeDistribution: {} as Record<string, any>, hourlyStats: [] as any[],
-    dailyWinRate: [] as any[], dailyPnl: [] as any[],
-    mistakesDistribution: {} as Record<string, { count: number; totalPnl: number }>,
-    brokenRulesDistribution: {} as Record<string, { count: number; totalPnl: number }>,
-    lessonsDistribution: {} as Record<string, number>,
-  };
-  const stats = { ...defaultStats, ...statsData };
+  const stats = { ...EMPTY_STATS, ...statsData };
 
   const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 'thisWeek');
 
@@ -130,8 +134,6 @@ export function AnalyticsView() {
     })),
     [stats.strategyDistribution]
   );
-
-  const COLORS = ['hsl(160, 84%, 39%)', 'hsl(265, 89%, 62%)', 'hsl(45, 93%, 47%)', 'hsl(200, 95%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(320, 70%, 50%)'];
 
   // Use stats.hourlyStats directly
   const localHourlyStats = stats.hourlyStats || [];

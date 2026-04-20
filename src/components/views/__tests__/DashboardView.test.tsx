@@ -61,8 +61,8 @@ vi.mock('@/components/filters/DateRangeFilter', () => ({
 
 // Mock API hooks
 vi.mock('@/store/api', () => ({
-  useGetTradesQuery: vi.fn(() => ({
-    data: [],
+  useGetTradesPaginatedQuery: vi.fn(() => ({
+    data: { trades: [], pagination: { nextCursor: null, hasMore: false, limit: 5 } },
     isLoading: false,
     isFetching: false,
     refetch: vi.fn(),
@@ -78,45 +78,50 @@ vi.mock('@/store/api', () => ({
     isLoading: false,
     isFetching: false,
   })),
-}));
-
-// Mock the useAccounts hook
-vi.mock('@/hooks/useAccounts', () => ({
-  useAccounts: vi.fn(() => ({
-    selectedAccountId: null,
-    accounts: [
-      { id: '1', name: 'Account 1', initialBalance: 10000, balance: 10500 },
-    ],
-    selectedAccount: null,
-    setSelectedAccountId: vi.fn(),
-    addAccount: vi.fn(),
-    updateAccount: vi.fn(),
-    deleteAccount: vi.fn(),
-    updateAccountStatus: vi.fn(),
+  useGetAccountsQuery: vi.fn(() => ({
+    data: {
+      accounts: [
+        { id: '1', name: 'Account 1', initialBalance: 10000, balance: 10500 },
+      ],
+    },
+    isLoading: false,
   })),
 }));
 
-import { useGetTradesQuery, useGetStatsQuery } from '@/store/api';
+// Mock skipToken
+vi.mock('@reduxjs/toolkit/query/react', async () => {
+  const actual = await vi.importActual('@reduxjs/toolkit/query/react');
+  return { ...actual, skipToken: Symbol('skipToken') };
+});
+
+import { useGetTradesPaginatedQuery, useGetStatsQuery } from '@/store/api';
 
 const mockOnAddTrade = vi.fn();
 const mockOnImportTrades = vi.fn();
 
+const pagination = { nextCursor: null, hasMore: false, limit: 5 };
+
+function mockPaginatedTrades(trades: any[], overrides: any = {}) {
+  return {
+    data: { trades, pagination },
+    isLoading: false,
+    isFetching: false,
+    refetch: vi.fn(),
+    ...overrides,
+  } as any;
+}
+
 describe('DashboardView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        {
-          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
-          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
-          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
-          outcome: 'TP', pnl: 200, riskRewardRatio: 2.0, accountId: 'acc1',
-        },
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([
+      {
+        id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+        exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+        entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+        outcome: 'TP', pnl: 200, riskRewardRatio: 2.0, accountId: 'acc1',
+      },
+    ]));
     vi.mocked(useGetStatsQuery).mockReturnValue({
       data: {
         totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
@@ -145,7 +150,6 @@ describe('DashboardView', () => {
     render(<DashboardView onAddTrade={mockOnAddTrade} onImportTrades={mockOnImportTrades} />);
     const statCards = screen.getAllByTestId('stat-card');
     expect(statCards.length).toBe(4);
-    // Verify key stat titles
     expect(screen.getByText('Total P&L')).toBeInTheDocument();
     expect(screen.getByText('Win Rate')).toBeInTheDocument();
     expect(screen.getByText('Total Trades')).toBeInTheDocument();
@@ -167,18 +171,11 @@ describe('DashboardView', () => {
   });
 
   it('shows loading skeletons when trades are loading', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [],
-      isLoading: true,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([], { isLoading: true }));
 
     render(<DashboardView onAddTrade={mockOnAddTrade} onImportTrades={mockOnImportTrades} />);
 
-    // When loading, stat cards should not render (skeletons shown instead)
     expect(screen.queryAllByTestId('stat-card')).toHaveLength(0);
-    // Heading should still appear
     expect(screen.getByRole('heading', { name: /dashboard/i, level: 1 })).toBeInTheDocument();
   });
 });
@@ -186,12 +183,7 @@ describe('DashboardView', () => {
 describe('DashboardView - Refresh & Filters', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([]));
     vi.mocked(useGetStatsQuery).mockReturnValue({
       data: {
         totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
@@ -207,9 +199,7 @@ describe('DashboardView - Refresh & Filters', () => {
 
   it('renders the refresh button', () => {
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
-    // RefreshButton renders a button inside the header area
     const buttons = screen.getAllByRole('button');
-    // At least the refresh button, Import, and Add Trade should exist
     expect(buttons.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -227,19 +217,14 @@ describe('DashboardView - Refresh & Filters', () => {
 describe('DashboardView - Stat Cards With Data', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        {
-          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
-          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
-          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
-          outcome: 'TP', pnl: 200, riskRewardRatio: 2.0, accountId: 'acc1',
-        },
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([
+      {
+        id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+        exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+        entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+        outcome: 'TP', pnl: 200, riskRewardRatio: 2.0, accountId: 'acc1',
+      },
+    ]));
     vi.mocked(useGetStatsQuery).mockReturnValue({
       data: {
         totalPnl: 1250.50, winRate: 72.5, totalTrades: 40, wins: 29, losses: 11, breakeven: 0,
@@ -296,12 +281,7 @@ describe('DashboardView - Loading Skeletons', () => {
   });
 
   it('hides performance chart and quick stats during fetch', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [],
-      isLoading: true,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([], { isLoading: true }));
     vi.mocked(useGetStatsQuery).mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -310,23 +290,14 @@ describe('DashboardView - Loading Skeletons', () => {
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    // Stat cards should not be present when loading
     expect(screen.queryAllByTestId('stat-card')).toHaveLength(0);
-    // Performance chart should not render while loading
     expect(screen.queryByTestId('performance-chart')).not.toBeInTheDocument();
-    // Quick stats should not render while loading
     expect(screen.queryByTestId('quick-stats')).not.toBeInTheDocument();
-    // Trade list should not render while loading
     expect(screen.queryByTestId('trade-list')).not.toBeInTheDocument();
   });
 
   it('shows skeletons when isFetching is true', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isFetching: true,
-      refetch: vi.fn(),
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([], { isLoading: false, isFetching: true }));
     vi.mocked(useGetStatsQuery).mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -335,9 +306,7 @@ describe('DashboardView - Loading Skeletons', () => {
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    // When isFetching, loading skeletons should be shown (stat cards hidden)
     expect(screen.queryAllByTestId('stat-card')).toHaveLength(0);
-    // Heading should still appear
     expect(screen.getByRole('heading', { name: /dashboard/i, level: 1 })).toBeInTheDocument();
   });
 });
@@ -347,26 +316,18 @@ describe('DashboardView - Empty State', () => {
     vi.clearAllMocks();
   });
 
-  it('shows welcome empty state when no trades with default all filter', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: {
-        totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
-        avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
-        maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
-        grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
-        totalVolume: 0, dailyPnl: [],
-      },
-      isLoading: false,
-      isFetching: false,
-    } as any);
+  const emptyStatsData = {
+    totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
+    avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
+    maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
+    grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
+    totalVolume: 0, dailyPnl: [],
+  };
 
-    // Default filter is 'all', so shows welcome empty state
+  it('shows welcome empty state when no trades with default all filter', () => {
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([]));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: emptyStatsData, isLoading: false, isFetching: false } as any);
+
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
     expect(screen.getByText('Welcome to TradeQut!')).toBeInTheDocument();
@@ -375,51 +336,20 @@ describe('DashboardView - Empty State', () => {
   });
 
   it('calls onAddTrade from period empty state Add Trade button', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: {
-        totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
-        avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
-        maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
-        grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
-        totalVolume: 0, dailyPnl: [],
-      },
-      isLoading: false,
-      isFetching: false,
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([]));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: emptyStatsData, isLoading: false, isFetching: false } as any);
 
     const onAddTrade = vi.fn();
     render(<DashboardView onAddTrade={onAddTrade} onImportTrades={vi.fn()} />);
 
-    // Period empty state has "Add Trade" button (header also has one)
     const addButtons = screen.getAllByRole('button', { name: /Add Trade/ });
     fireEvent.click(addButtons[addButtons.length - 1]);
     expect(onAddTrade).toHaveBeenCalled();
   });
 
   it('shows Import Trades button in welcome empty state', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: {
-        totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
-        avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
-        maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
-        grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
-        totalVolume: 0, dailyPnl: [],
-      },
-      isLoading: false,
-      isFetching: false,
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([]));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: emptyStatsData, isLoading: false, isFetching: false } as any);
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
@@ -427,19 +357,14 @@ describe('DashboardView - Empty State', () => {
   });
 
   it('does not show empty state when trades exist', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        {
-          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
-          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
-          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
-          outcome: 'TP', pnl: 200, riskRewardRatio: 2.0, accountId: 'acc1',
-        },
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([
+      {
+        id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+        exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+        entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+        outcome: 'TP', pnl: 200, riskRewardRatio: 2.0, accountId: 'acc1',
+      },
+    ]));
     vi.mocked(useGetStatsQuery).mockReturnValue({
       data: {
         totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
@@ -458,17 +383,8 @@ describe('DashboardView - Empty State', () => {
   });
 
   it('does not show empty state while loading', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [],
-      isLoading: true,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      isFetching: false,
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([], { isLoading: true }));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: undefined, isLoading: true, isFetching: false } as any);
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
@@ -480,19 +396,14 @@ describe('DashboardView - Debounced Filters', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        {
-          id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
-          exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
-          entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
-          outcome: 'TP', pnl: 200, riskRewardRatio: 2.0, accountId: 'acc1',
-        },
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([
+      {
+        id: '1', symbol: 'EURUSD', direction: 'LONG', entryPrice: 1.1,
+        exitPrice: 1.12, stopLoss: 1.09, takeProfit: 1.13, size: 1,
+        entryDate: '2025-01-15T10:00:00Z', exitDate: '2025-01-15T14:00:00Z',
+        outcome: 'TP', pnl: 200, riskRewardRatio: 2.0, accountId: 'acc1',
+      },
+    ]));
     vi.mocked(useGetStatsQuery).mockReturnValue({
       data: {
         totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
@@ -513,35 +424,27 @@ describe('DashboardView - Debounced Filters', () => {
   it('debounces filter changes before firing API calls', () => {
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    // On initial render, useGetTradesQuery and useGetStatsQuery are called with default filters
-    const initialTradesCallCount = vi.mocked(useGetTradesQuery).mock.calls.length;
+    const initialTradesCallCount = vi.mocked(useGetTradesPaginatedQuery).mock.calls.length;
     const initialStatsCallCount = vi.mocked(useGetStatsQuery).mock.calls.length;
 
-    // Verify the component rendered successfully with initial data
     expect(screen.getByRole('heading', { name: /dashboard/i, level: 1 })).toBeInTheDocument();
-
-    // Before the debounce timer fires, the hooks should have been called with initial params
     expect(initialTradesCallCount).toBeGreaterThan(0);
     expect(initialStatsCallCount).toBeGreaterThan(0);
 
-    // Advance timers past the 300ms debounce
     act(() => {
       vi.advanceTimersByTime(350);
     });
 
-    // After debounce, the component should still render correctly
     expect(screen.getByRole('heading', { name: /dashboard/i, level: 1 })).toBeInTheDocument();
   });
 
   it('renders correctly after debounce timer completes', () => {
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    // Advance past debounce period
     act(() => {
       vi.advanceTimersByTime(350);
     });
 
-    // Stat cards should be visible after debounce
     expect(screen.getAllByTestId('stat-card')).toHaveLength(4);
     expect(screen.getByTestId('trade-list')).toBeInTheDocument();
     expect(screen.getByTestId('performance-chart')).toBeInTheDocument();
@@ -569,59 +472,23 @@ describe('DashboardView - Unmapped Trades Banner', () => {
   });
 
   it('shows unmapped banner when some trades lack accountId', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        { ...baseTrade, id: '1', accountId: 'acc1' },
-        { ...baseTrade, id: '2', accountId: 'acc1' },
-        { ...baseTrade, id: '3' }, // no accountId -> unmapped
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: baseStats,
-      isLoading: false,
-      isFetching: false,
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([
+      { ...baseTrade, id: '1', accountId: 'acc1' },
+      { ...baseTrade, id: '2', accountId: 'acc1' },
+      { ...baseTrade, id: '3' }, // no accountId -> unmapped
+    ]));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: baseStats, isLoading: false, isFetching: false } as any);
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    expect(screen.getByText('1 trade is not mapped to any account and is excluded from stats.')).toBeInTheDocument();
-  });
-
-  it('shows plural text for multiple unmapped trades', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        { ...baseTrade, id: '1', accountId: 'acc1' },
-        { ...baseTrade, id: '2' }, // unmapped
-        { ...baseTrade, id: '3' }, // unmapped
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: baseStats,
-      isLoading: false,
-      isFetching: false,
-    } as any);
-
-    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
-
-    expect(screen.getByText('2 trades are not mapped to any account and are excluded from stats.')).toBeInTheDocument();
+    expect(screen.getByText('Some trades are not mapped to any account and are excluded from stats.')).toBeInTheDocument();
   });
 
   it('does not show banner when all trades are mapped', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        { ...baseTrade, id: '1', accountId: 'acc1' },
-        { ...baseTrade, id: '2', accountId: 'acc1' },
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([
+      { ...baseTrade, id: '1', accountId: 'acc1' },
+      { ...baseTrade, id: '2', accountId: 'acc1' },
+    ]));
     vi.mocked(useGetStatsQuery).mockReturnValue({
       data: { ...baseStats, totalTrades: 2, totalPnl: 400 },
       isLoading: false,
@@ -634,19 +501,11 @@ describe('DashboardView - Unmapped Trades Banner', () => {
   });
 
   it('does not show banner during loading', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        { ...baseTrade, id: '1' }, // unmapped
-      ],
-      isLoading: true,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      isFetching: false,
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades(
+      [{ ...baseTrade, id: '1' }],
+      { isLoading: true },
+    ));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: undefined, isLoading: true, isFetching: false } as any);
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
@@ -675,63 +534,24 @@ describe('DashboardView - Unmapped Trades Empty State', () => {
   });
 
   it('shows unmapped empty state instead of welcome when all trades are unmapped', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        { ...baseTrade, id: '1' }, // no accountId -> unmapped
-        { ...baseTrade, id: '2' }, // no accountId -> unmapped
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: emptyStats,
-      isLoading: false,
-      isFetching: false,
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([
+      { ...baseTrade, id: '1' }, // no accountId -> unmapped
+      { ...baseTrade, id: '2' }, // no accountId -> unmapped
+    ]));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: emptyStats, isLoading: false, isFetching: false } as any);
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    expect(screen.getByText('2 unmapped trades')).toBeInTheDocument();
+    expect(screen.getByText('Unmapped trades found')).toBeInTheDocument();
     expect(screen.getByText(/aren't assigned to any account/)).toBeInTheDocument();
     expect(screen.queryByText('Welcome to TradeQut!')).not.toBeInTheDocument();
   });
 
-  it('shows singular text for one unmapped trade', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        { ...baseTrade, id: '1' }, // unmapped
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: emptyStats,
-      isLoading: false,
-      isFetching: false,
-    } as any);
-
-    render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
-
-    expect(screen.getByText('1 unmapped trade')).toBeInTheDocument();
-    expect(screen.getByText(/isn't assigned to any account/)).toBeInTheDocument();
-  });
-
   it('shows Go to Trade Log button that navigates correctly', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        { ...baseTrade, id: '1' }, // unmapped
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: emptyStats,
-      isLoading: false,
-      isFetching: false,
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([
+      { ...baseTrade, id: '1' },
+    ]));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: emptyStats, isLoading: false, isFetching: false } as any);
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
@@ -741,43 +561,24 @@ describe('DashboardView - Unmapped Trades Empty State', () => {
   });
 
   it('still shows Add Trade button in unmapped empty state', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [
-        { ...baseTrade, id: '1' }, // unmapped
-      ],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: emptyStats,
-      isLoading: false,
-      isFetching: false,
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([
+      { ...baseTrade, id: '1' },
+    ]));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: emptyStats, isLoading: false, isFetching: false } as any);
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
-    // Should have Add Trade in the empty state area (not just the header)
     const addButtons = screen.getAllByRole('button', { name: /Add Trade/ });
-    expect(addButtons.length).toBeGreaterThanOrEqual(2); // header + empty state
+    expect(addButtons.length).toBeGreaterThanOrEqual(2);
   });
 
   it('shows welcome state when truly no trades exist', () => {
-    vi.mocked(useGetTradesQuery).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
-    } as any);
-    vi.mocked(useGetStatsQuery).mockReturnValue({
-      data: emptyStats,
-      isLoading: false,
-      isFetching: false,
-    } as any);
+    vi.mocked(useGetTradesPaginatedQuery).mockReturnValue(mockPaginatedTrades([]));
+    vi.mocked(useGetStatsQuery).mockReturnValue({ data: emptyStats, isLoading: false, isFetching: false } as any);
 
     render(<DashboardView onAddTrade={vi.fn()} onImportTrades={vi.fn()} />);
 
     expect(screen.getByText('Welcome to TradeQut!')).toBeInTheDocument();
-    expect(screen.queryByText(/unmapped trade/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/unmapped trade/i)).not.toBeInTheDocument();
   });
 });

@@ -1,14 +1,7 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
-  User,
-  Palette,
-  Bell,
   Shield,
-  Moon,
-  Sun,
-  DollarSign,
-  Globe,
   ListChecks,
   RotateCcw,
   Loader2,
@@ -32,7 +25,6 @@ import { useSavedOptions } from '@/hooks/useSavedOptions';
 
 export function SettingsView() {
   const { data: profile, isLoading, isFetching, refetch } = useGetProfileQuery();
-  const loading = isLoading || isFetching;
   const [updateProfile] = useUpdateProfileMutation();
   const [updatePreferences] = useUpdatePreferencesMutation();
   const [updateNotifications] = useUpdateNotificationsMutation();
@@ -143,18 +135,7 @@ export function SettingsView() {
     await updateNotifications({ tradeReminders: checked, weeklyReport: true, goalAlerts: true }).unwrap();
   };
 
-  const settingSections = [
-    {
-      title: 'Profile',
-      icon: User,
-      items: [
-        { label: 'Display Name', type: 'input', value: 'Trader Pro' },
-        { label: 'Email', type: 'input', value: 'trader@example.com' },
-      ],
-    },
-  ];
-
-  if (loading && !profile) {
+  if (isLoading && !profile) {
     return (
       <div className="space-y-6 max-w-3xl mx-auto">
         <div>

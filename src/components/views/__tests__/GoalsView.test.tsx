@@ -1,5 +1,6 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders as render, screen, fireEvent, waitFor } from '@/test/test-utils';
+import { renderWithProviders, screen, fireEvent, waitFor } from '@/test/test-utils';
 import { GoalsView } from '../GoalsView';
 
 // Mock RTK Query hooks
@@ -93,17 +94,12 @@ vi.mock('@/store/api', () => ({
   }),
 }));
 
-// Mock custom hooks
-vi.mock('@/hooks/useAccounts', () => ({
-  useAccounts: vi.fn().mockReturnValue({
-    accounts: [
-      { id: 'acc1', name: 'Main Account', initialBalance: 10000 },
-    ],
-    selectedAccountId: 'acc1',
-    selectedAccount: { id: 'acc1', name: 'Main Account', initialBalance: 10000 },
-    setSelectedAccountId: vi.fn(),
-  }),
-}));
+// GoalsView reads selectedAccountId from Redux store (via useAppSelector)
+const accountsPreloadedState = {
+  accounts: { selectedAccountId: 'acc1' as string | null },
+};
+const render = (ui: React.ReactElement) =>
+  renderWithProviders(ui, { preloadedState: accountsPreloadedState });
 
 // Mock child components
 vi.mock('@/components/account/AccountFilter', () => ({

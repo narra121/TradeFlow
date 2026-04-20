@@ -24,7 +24,7 @@ import { isSameWeek } from 'date-fns/isSameWeek';
 import { isSameMonth } from 'date-fns/isSameMonth';
 import { endOfDay } from 'date-fns/endOfDay';
 import { AccountFilter } from '@/components/account/AccountFilter';
-import { useAccounts } from '@/hooks/useAccounts';
+import { useAppSelector } from '@/store/hooks';
 
 import { GoalCardSkeleton, RulesListSkeleton } from '@/components/ui/loading-skeleton';
 
@@ -37,6 +37,20 @@ interface GoalType {
   color: string;
   isInverse?: boolean; // true for goals where lower is better (e.g., drawdown)
 }
+
+const DEFAULT_RULES = [
+  'Never risk more than 1% per trade',
+  'Always set stop loss before entry',
+  'No trading during high-impact news',
+  'Wait for confirmation before entry',
+  'Review trades weekly',
+  'Stick to my trading plan',
+];
+
+const DEFAULT_TARGETS: Record<string, Record<string, number>> = {
+  weekly:  { profit: 500, winRate: 65, maxDrawdown: 3, maxTrades: 8 },
+  monthly: { profit: 2000, winRate: 70, maxDrawdown: 10, maxTrades: 30 },
+};
 
 // 4 goal types that apply to both weekly and monthly
 const goalTypes: GoalType[] = [
@@ -160,7 +174,7 @@ export function GoalsView() {
     }
   }, [selectedDate, periodFilter]);
 
-  const { selectedAccountId, accounts } = useAccounts();
+  const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
 
   const { data: rulesGoalsData, isLoading: rulesGoalsLoading, isFetching: rulesGoalsFetching, refetch } = useGetRulesAndGoalsQuery({
     periodKey,
@@ -175,7 +189,10 @@ export function GoalsView() {
     periodKey,
     currentPeriod: isCurrentPeriod,
   });
-  
+
+  const showSkeleton = rulesGoalsLoading || progressLoading;
+  const isRefreshing = (rulesGoalsFetching || progressFetching) && !showSkeleton;
+
   const [updateGoal] = useUpdateGoalMutation();
   const [createGoal] = useCreateGoalMutation();
   const [createRule] = useCreateRuleMutation();
@@ -184,19 +201,9 @@ export function GoalsView() {
   const [toggleRule] = useToggleRuleMutation();
 
   const handleRefresh = useCallback(() => { refetch(); refetchProgress(); }, [refetch, refetchProgress]);
-  const loading = rulesGoalsLoading || rulesGoalsFetching;
   
   const reduxRules = rulesGoalsData?.rules || [];
 
-  // Default rules shown when no rules exist for the period
-  const DEFAULT_RULES = [
-    'Never risk more than 1% per trade',
-    'Always set stop loss before entry',
-    'No trading during high-impact news',
-    'Wait for confirmation before entry',
-    'Review trades weekly',
-    'Stick to my trading plan',
-  ];
   const defaultRuleObjects = DEFAULT_RULES.map((rule, i) => ({
     ruleId: `default-${i}`,
     rule,
@@ -241,18 +248,11 @@ export function GoalsView() {
       (selectedAccountId ? g.accountId === selectedAccountId : true)
     );
 
-  // Default targets per goal type and period
-  const defaultTargets: Record<string, Record<string, number>> = {
-    weekly:  { profit: 500, winRate: 65, maxDrawdown: 3, maxTrades: 8 },
-    monthly: { profit: 2000, winRate: 70, maxDrawdown: 10, maxTrades: 30 },
-  };
-
-  // Always provide progress — default to zeros so cards always render
   const zeroProgress = {
-    profit: { current: 0, target: defaultTargets[periodFilter].profit, progress: 0, achieved: false },
-    winRate: { current: 0, target: defaultTargets[periodFilter].winRate, progress: 0, achieved: false },
-    maxDrawdown: { current: 0, target: defaultTargets[periodFilter].maxDrawdown, progress: 0, achieved: false },
-    tradeCount: { current: 0, target: defaultTargets[periodFilter].maxTrades, progress: 0, achieved: false },
+    profit: { current: 0, target: DEFAULT_TARGETS[periodFilter].profit, progress: 0, achieved: false },
+    winRate: { current: 0, target: DEFAULT_TARGETS[periodFilter].winRate, progress: 0, achieved: false },
+    maxDrawdown: { current: 0, target: DEFAULT_TARGETS[periodFilter].maxDrawdown, progress: 0, achieved: false },
+    tradeCount: { current: 0, target: DEFAULT_TARGETS[periodFilter].maxTrades, progress: 0, achieved: false },
   };
   const goalProgress = progressData?.goalProgress ?? zeroProgress;
 
@@ -265,7 +265,7 @@ export function GoalsView() {
       goalId: '',
       goalType,
       period: periodFilter,
-      target: defaultTargets[periodFilter][goalType] ?? 0,
+      target: DEFAULT_TARGETS[periodFilter][goalType] ?? 0,
     };
   };
 
@@ -629,7 +629,7 @@ export function GoalsView() {
       </div>
 
       {/* Past period read-only banner */}
-      {!isCurrentPeriod && !loading && (
+      {!isCurrentPeriod && !showSkeleton && (
         <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 text-sm text-muted-foreground">
           <Info className="w-4 h-4 shrink-0" />
           <span>Viewing a past period — goals and rules are read-only</span>
@@ -637,7 +637,7 @@ export function GoalsView() {
       )}
 
       {/* Carry-forward disabled indicator */}
-      {carryForwardEnabled === false && isCurrentPeriod && !loading && (
+      {carryForwardEnabled === false && isCurrentPeriod && !showSkeleton && (
         <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/10 text-sm text-muted-foreground">
           <Settings className="w-4 h-4 shrink-0 text-accent" />
           <span>Each period starts fresh with defaults.</span>
@@ -646,14 +646,14 @@ export function GoalsView() {
       )}
 
       {/* Goals Grid */}
-      {loading ? (
+      {showSkeleton ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <GoalCardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity duration-200", progressFetching && "opacity-50")}>
+        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity duration-200", isRefreshing && "opacity-60")}>
           {goalTypes.map((goalType, typeIndex) => (
             renderGoalCard(goalType, periodFilter, typeIndex)
           ))}
@@ -661,7 +661,7 @@ export function GoalsView() {
       )}
 
       {/* Trading Rules Checklist */}
-      {loading ? (
+      {showSkeleton ? (
         <RulesListSkeleton />
       ) : (
       <div className="glass-card p-4 sm:p-6">

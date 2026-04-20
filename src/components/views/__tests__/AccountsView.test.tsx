@@ -121,19 +121,31 @@ describe('AccountsView', () => {
     expect(addButtons.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows loading skeletons when data is loading', () => {
+  it('shows loading skeletons only on initial load, not background refetch', () => {
     vi.mocked(useGetAccountsQuery).mockReturnValue({
       data: undefined,
       isLoading: true,
-      isFetching: false,
+      isFetching: true,
     } as any);
 
     render(<AccountsView />);
 
-    // Heading should still appear
     expect(screen.getByRole('heading', { name: /accounts/i, level: 1 })).toBeInTheDocument();
-    // Account cards should not render when loading
     expect(screen.queryAllByTestId('account-card')).toHaveLength(0);
+  });
+
+  it('keeps stale data visible during background refetch', () => {
+    vi.mocked(useGetAccountsQuery).mockReturnValue({
+      data: { accounts: mockAccounts },
+      isLoading: false,
+      isFetching: true,
+    } as any);
+
+    render(<AccountsView />);
+
+    const cards = screen.getAllByTestId('account-card');
+    expect(cards).toHaveLength(2);
+    expect(screen.getByText('FTMO Challenge')).toBeInTheDocument();
   });
 });
 

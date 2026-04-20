@@ -1,19 +1,20 @@
+import { useMemo } from 'react';
 import { PortfolioStats } from '@/types/trade';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Target, BarChart3, Flame, Snowflake } from 'lucide-react';
+
+const formatSignedCurrency0 = (amount: number) => {
+  const abs = Math.abs(amount);
+  const sign = amount >= 0 ? '+' : '-';
+  return `${sign}$${abs.toFixed(0)}`;
+};
 
 interface QuickStatsProps {
   stats: PortfolioStats;
 }
 
 export function QuickStats({ stats }: QuickStatsProps) {
-  const formatSignedCurrency0 = (amount: number) => {
-    const abs = Math.abs(amount);
-    const sign = amount >= 0 ? '+' : '-';
-    return `${sign}$${abs.toFixed(0)}`;
-  };
-
-  const items = [
+  const items = useMemo(() => [
     {
       label: 'Profit Factor',
       value: stats.profitFactor == null || stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2),
@@ -56,7 +57,7 @@ export function QuickStats({ stats }: QuickStatsProps) {
       color: 'text-chart-4',
       bgColor: 'bg-chart-4/10',
     },
-  ];
+  ], [stats.profitFactor, stats.avgRiskReward, stats.bestTrade, stats.worstTrade, stats.consecutiveWins, stats.maxDrawdown]);
 
   return (
     <div className="glass-card p-3 sm:p-5 animate-fade-in">
