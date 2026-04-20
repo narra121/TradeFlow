@@ -27,7 +27,7 @@ export interface UseFirebaseChatResult {
   error: string | null;
   messageCount: number;
   messageLimit: number;
-  startSession: (trades: Trade[], accountId: string, period: string) => void;
+  startSession: (trades: Trade[], accountId: string, period: string, insightId?: string, insightsData?: string) => void;
   switchSession: (sessionId: string) => void;
   send: (text: string) => void;
   abort: () => void;
@@ -139,7 +139,7 @@ export function useFirebaseChat(): UseFirebaseChatResult {
     unsubSessionRef.current = unsubSession;
   }, []);
 
-  const startSession = useCallback((trades: Trade[], accountId: string, period: string) => {
+  const startSession = useCallback((trades: Trade[], accountId: string, period: string, insightId?: string, insightsData?: string) => {
     // Clean up previous session listeners
     unsubMsgsRef.current?.();
     unsubSessionRef.current?.();
@@ -159,7 +159,14 @@ export function useFirebaseChat(): UseFirebaseChatResult {
         const trimmed = trimTrades(trades);
         const tradesHash = await sha256Hex(JSON.stringify(trimmed));
 
-        const result = await startChatSessionFn({ trades: trimmed, accountId, period, tradesHash });
+        const result = await startChatSessionFn({
+          trades: trimmed,
+          accountId,
+          period,
+          tradesHash,
+          insightId,
+          insightsData,
+        });
         const newSessionId = result.data.sessionId;
 
         // Switch to the new session (sets up all listeners)

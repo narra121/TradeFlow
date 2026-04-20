@@ -380,7 +380,7 @@ describe('useFirebaseReport', () => {
       expect(result.current.data).toBeNull();
     });
 
-    it('sets cacheHit=false when doc exists but hash does not match', async () => {
+    it('sets cacheHit=true and isStale=true when doc exists but hash does not match', async () => {
       mockGetInsightOnce.mockResolvedValue({
         status: 'complete',
         tradesHash: 'different-hash',
@@ -397,8 +397,9 @@ describe('useFirebaseReport', () => {
         expect(result.current.cacheChecked).toBe(true);
       });
 
-      expect(result.current.cacheHit).toBe(false);
-      expect(result.current.data).toBeNull();
+      expect(result.current.cacheHit).toBe(true);
+      expect(result.current.isStale).toBe(true);
+      expect(result.current.data).toEqual({ summary: 'Old summary' });
     });
 
     it('starts listening when doc status is generating', async () => {

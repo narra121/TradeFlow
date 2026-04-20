@@ -1701,6 +1701,16 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           hasNextDay={(getCurrentDayIndex() ?? tradingDays.length) < tradingDays.length - 1}
           currentDayIndex={getCurrentDayIndex()}
           totalDays={tradingDays.length}
+          onEdit={(trade) => {
+            setIsCalendarModalOpen(false);
+            setSelectedDate(null);
+            handleEditTrade(trade);
+          }}
+          onDelete={(tradeId) => {
+            setIsCalendarModalOpen(false);
+            setSelectedDate(null);
+            handleDeleteTrade(tradeId);
+          }}
         />
       )}
 

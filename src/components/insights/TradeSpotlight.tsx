@@ -1,20 +1,18 @@
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
 import { Crosshair, Calendar } from 'lucide-react';
 import type { TradeSpotlight as TradeSpotlightType } from '@/types/insights';
 
 interface TradeSpotlightProps {
   spotlight: TradeSpotlightType;
+  onViewTrade?: (tradeId: string) => void;
 }
 
-export function TradeSpotlight({ spotlight }: TradeSpotlightProps) {
-  const navigate = useNavigate();
+export function TradeSpotlight({ spotlight, onViewTrade }: TradeSpotlightProps) {
   const { tradeId, symbol, date, pnl, reason } = spotlight;
   const isPositive = pnl >= 0;
 
   const handleClick = () => {
-    // Navigate to trade log with the trade highlighted
-    navigate(`/app/tradelog?tradeId=${tradeId}`);
+    onViewTrade?.(tradeId);
   };
 
   return (

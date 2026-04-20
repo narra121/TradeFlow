@@ -19,6 +19,8 @@ export interface StartChatSessionRequest {
   accountId: string;
   period: string;
   tradesHash: string;
+  insightId?: string;
+  insightsData?: string;
 }
 
 export interface StartChatSessionResponse {

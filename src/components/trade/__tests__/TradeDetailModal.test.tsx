@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { TradeDetailModal } from '../TradeDetailModal';
 import { Trade } from '@/types/trade';
 
-// Mock RTK Query hooks
+// Mock RTK Query hooks (used by TradeDetailContent internally)
 const mockRulesData = [
   { ruleId: 'rule-1', rule: 'Always use stop loss', userId: 'u1', completed: false, isActive: true, createdAt: '', updatedAt: '' },
   { ruleId: 'rule-2', rule: 'Max 3 trades per day', userId: 'u1', completed: false, isActive: true, createdAt: '', updatedAt: '' },

@@ -39,9 +39,8 @@ const defaultProps: ChatSessionSidebarProps = {
   sessions: [],
   activeSessionId: null,
   onSelectSession: vi.fn(),
-  onNewChat: vi.fn(),
   sessionsLoading: false,
-  isRateLimited: false,
+  currentInsightId: undefined,
 };
 
 function renderSidebar(props: Partial<ChatSessionSidebarProps> = {}) {
@@ -97,21 +96,11 @@ describe('ChatSessionSidebar', () => {
     expect(onSelectSession).toHaveBeenCalledWith('sess-42');
   });
 
-  it('calls onNewChat when clicking New Chat button', async () => {
-    const user = userEvent.setup();
-    const onNewChat = vi.fn();
-
-    renderSidebar({ onNewChat });
-
-    await user.click(screen.getByText('New Chat'));
-    expect(onNewChat).toHaveBeenCalledTimes(1);
-  });
-
   it('shows empty state when no sessions', () => {
     renderSidebar({ sessions: [] });
 
     expect(
-      screen.getByText('No chat sessions yet. Start a new conversation!'),
+      screen.getByText('No chat sessions yet. Ask a question to start a conversation.'),
     ).toBeInTheDocument();
   });
 
@@ -121,15 +110,8 @@ describe('ChatSessionSidebar', () => {
     expect(screen.getByTestId('sessions-loading')).toBeInTheDocument();
     // Should not show empty state while loading
     expect(
-      screen.queryByText('No chat sessions yet. Start a new conversation!'),
+      screen.queryByText('No chat sessions yet. Ask a question to start a conversation.'),
     ).not.toBeInTheDocument();
-  });
-
-  it('disables New Chat when isRateLimited', () => {
-    renderSidebar({ isRateLimited: true });
-
-    const newChatButton = screen.getByRole('button', { name: /New Chat/ });
-    expect(newChatButton).toBeDisabled();
   });
 
   it('shows expired badge for expired sessions', () => {
@@ -193,10 +175,4 @@ describe('ChatSessionSidebar', () => {
     expect(screen.getByText('custom-range')).toBeInTheDocument();
   });
 
-  it('enables New Chat button when not rate limited', () => {
-    renderSidebar({ isRateLimited: false });
-
-    const newChatButton = screen.getByRole('button', { name: /New Chat/ });
-    expect(newChatButton).toBeEnabled();
-  });
 });

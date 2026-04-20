@@ -1,7 +1,22 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CalendarTradeModal } from '../CalendarTradeModal';
 import { Trade } from '@/types/trade';
+
+// Mock RTK Query hooks (used by TradeDetailContent internally)
+const mockRulesData = [
+  { ruleId: 'rule-1', rule: 'Always use stop loss', userId: 'u1', completed: false, isActive: true, createdAt: '', updatedAt: '' },
+];
+const mockAccountsData = {
+  accounts: [
+    { id: 'acc-1', name: 'Test Account', broker: 'FTMO', type: 'prop_challenge' as const, status: 'active' as const, balance: 100000, initialBalance: 100000, currency: 'USD', createdAt: '' },
+  ],
+};
+
+vi.mock('@/store/api', () => ({
+  useGetRulesQuery: () => ({ data: mockRulesData }),
+  useGetAccountsQuery: () => ({ data: mockAccountsData }),
+}));
 
 // Mock Dialog from radix to render inline (no portals)
 vi.mock('@/components/ui/dialog', () => ({
@@ -38,14 +53,18 @@ vi.mock('@/components/trade/ImageViewerModal', () => ({
     isOpen ? <div data-testid="image-viewer-modal">{imageId}</div> : null,
 }));
 
-// Mock lucide-react icons
+// Mock lucide-react icons (includes icons from TradeDetailContent)
 vi.mock('lucide-react', () => ({
   ChevronLeft: () => <span data-testid="icon-chevron-left" />,
   ChevronRight: () => <span data-testid="icon-chevron-right" />,
   TrendingUp: () => <span data-testid="icon-trending-up" />,
   TrendingDown: () => <span data-testid="icon-trending-down" />,
-  ArrowUpRight: () => <span data-testid="icon-arrow-up-right" />,
-  ArrowDownRight: () => <span data-testid="icon-arrow-down-right" />,
+  ArrowUpRight: (props: any) => <span data-testid="icon-arrow-up-right" {...props} />,
+  ArrowDownRight: (props: any) => <span data-testid="icon-arrow-down-right" {...props} />,
+  Pencil: (props: any) => <span data-testid="pencil-icon" {...props} />,
+  Trash2: (props: any) => <span data-testid="trash2-icon" {...props} />,
+  AlertTriangle: (props: any) => <span data-testid="icon-alert-triangle" {...props} />,
+  Check: (props: any) => <span data-testid="icon-check" {...props} />,
 }));
 
 const makeTrade = (overrides: Partial<Trade> = {}): Trade => ({
@@ -70,6 +89,7 @@ const makeTrade = (overrides: Partial<Trade> = {}): Trade => ({
   images: [],
   tags: ['forex', 'breakout'],
   mistakes: [],
+  brokenRuleIds: [],
   ...overrides,
 });
 
@@ -93,15 +113,18 @@ describe('CalendarTradeModal', () => {
     expect(screen.getByTestId('dialog-title')).toHaveTextContent('Trades on March 15th, 2025');
   });
 
-  it('shows trade details for selected trade', () => {
+  it('shows trade details for selected trade via TradeDetailContent', () => {
     render(<CalendarTradeModal {...defaultProps} />);
 
-    // EURUSD appears in both sidebar and detail section
-    expect(screen.getAllByText('EURUSD').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/PnL: \+\$250\.00/)).toBeInTheDocument();
+    // EURUSD appears in both sidebar and detail header
+    expect(screen.getAllByText('EURUSD').length).toBeGreaterThanOrEqual(2);
+    // PnL appears in both sidebar and detail header
+    expect(screen.getAllByText('+$250.00').length).toBeGreaterThanOrEqual(1);
+    // KPI strip shows entry/exit prices
     expect(screen.getByText('1.105')).toBeInTheDocument(); // entry price
     expect(screen.getByText('1.11')).toBeInTheDocument(); // exit price
-    expect(screen.getByText('2.00')).toBeInTheDocument(); // risk/reward
+    // R:R shown in KPI strip
+    expect(screen.getByText('2.00')).toBeInTheDocument();
   });
 
   it('shows trade count in sidebar', () => {
@@ -130,9 +153,10 @@ describe('CalendarTradeModal', () => {
     );
 
     // EURUSD appears in both sidebar and detail (first trade is selected by default)
-    expect(screen.getAllByText('EURUSD').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('EURUSD').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('GBPUSD')).toBeInTheDocument();
-    expect(screen.getByText('+$250.00')).toBeInTheDocument();
+    // PnL appears in sidebar; first trade's PnL also in detail header
+    expect(screen.getAllByText('+$250.00').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('$-100.00')).toBeInTheDocument();
   });
 
@@ -150,7 +174,7 @@ describe('CalendarTradeModal', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('navigates between trades using sidebar buttons', async () => {
+  it('navigates between trades using sidebar click', async () => {
     const user = userEvent.setup();
     const trades = [
       makeTrade({ id: 't1', symbol: 'EURUSD', pnl: 250 }),
@@ -161,15 +185,14 @@ describe('CalendarTradeModal', () => {
       <CalendarTradeModal {...defaultProps} trades={trades} />
     );
 
-    // Initially shows first trade detail
-    // The detail section shows symbol in the header card
-    expect(screen.getByText(/PnL: \+\$250\.00/)).toBeInTheDocument();
+    // Initially shows first trade detail -- TradeDetailContent header shows symbol
+    expect(screen.getAllByText('EURUSD').length).toBeGreaterThanOrEqual(2); // sidebar + detail header
 
     // Click on second trade in sidebar
     await user.click(screen.getByText('GBPUSD'));
 
-    // Now shows second trade's PnL
-    expect(screen.getByText(/PnL: \$-100\.00/)).toBeInTheDocument();
+    // Now shows second trade's symbol in the detail header
+    expect(screen.getAllByText('GBPUSD').length).toBeGreaterThanOrEqual(2);
   });
 
   it('shows day navigation buttons', () => {
@@ -244,11 +267,12 @@ describe('CalendarTradeModal', () => {
       <CalendarTradeModal {...defaultProps} trades={[tradeWithImages]} />
     );
 
+    // TradeDetailContent shows hero image with timeframe overlay
     expect(screen.getByText('1H')).toBeInTheDocument();
-    expect(screen.getByText('4H')).toBeInTheDocument();
     expect(screen.getByText('Entry chart')).toBeInTheDocument();
-    expect(screen.getByText('Higher TF')).toBeInTheDocument();
-    expect(screen.getAllByTestId('cached-image')).toHaveLength(2);
+    // Hero image + 2 thumbnails = 3 CachedImage elements
+    expect(screen.getAllByTestId('cached-image')).toHaveLength(3);
+    expect(screen.getByText('2 screenshots')).toBeInTheDocument();
   });
 
   it('shows "No screenshots attached" when trade has no images', () => {
@@ -261,14 +285,15 @@ describe('CalendarTradeModal', () => {
     expect(screen.getByText('No screenshots attached')).toBeInTheDocument();
   });
 
-  it('shows BUY badge for LONG trades and SELL badge for SHORT trades', () => {
+  it('shows LONG badge for LONG trades and SHORT badge for SHORT trades', () => {
     const longTrade = makeTrade({ direction: 'LONG' });
 
     const { rerender } = render(
       <CalendarTradeModal {...defaultProps} trades={[longTrade]} />
     );
 
-    expect(screen.getByText('BUY')).toBeInTheDocument();
+    // TradeDetailContent shows LONG/SHORT (not BUY/SELL)
+    expect(screen.getByText('LONG')).toBeInTheDocument();
 
     const shortTrade = makeTrade({ id: 't2', direction: 'SHORT', pnl: -50 });
 
@@ -276,7 +301,7 @@ describe('CalendarTradeModal', () => {
       <CalendarTradeModal {...defaultProps} trades={[shortTrade]} />
     );
 
-    expect(screen.getByText('SELL')).toBeInTheDocument();
+    expect(screen.getByText('SHORT')).toBeInTheDocument();
   });
 
   it('shows tags when trade has tags', () => {
@@ -302,14 +327,33 @@ describe('CalendarTradeModal', () => {
     expect(screen.getByText('Entered too early')).toBeInTheDocument();
   });
 
-  it('shows session and market condition', () => {
+  it('shows session and market condition in trade context', () => {
     const trade = makeTrade({ session: 'London', marketCondition: 'Trending' });
 
     render(
       <CalendarTradeModal {...defaultProps} trades={[trade]} />
     );
 
-    expect(screen.getByText('London')).toBeInTheDocument();
+    // TradeDetailContent shows these in the Trade Context card
+    expect(screen.getAllByText('London').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Trending')).toBeInTheDocument();
+  });
+
+  // --- Edit / Delete ---
+
+  it('calls onEdit when edit button clicked', async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    render(<CalendarTradeModal {...defaultProps} onEdit={onEdit} />);
+    await user.click(screen.getByText('Edit').closest('button')!);
+    expect(onEdit).toHaveBeenCalledWith(defaultProps.trades[0]);
+  });
+
+  it('calls onDelete when delete button clicked', async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    render(<CalendarTradeModal {...defaultProps} onDelete={onDelete} />);
+    await user.click(screen.getByText('Delete').closest('button')!);
+    expect(onDelete).toHaveBeenCalledWith('trade-1');
   });
 });

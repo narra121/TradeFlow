@@ -292,10 +292,9 @@ describe('InsightsView', () => {
       setupDefaultMocks({ insights: sampleInsightsData });
     });
 
-    it('renders 3 tabs when insights are available', () => {
+    it('renders 2 tabs when insights are available', () => {
       render(<InsightsView />);
       expect(screen.getByRole('tab', { name: 'Report' })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: 'Patterns' })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: 'Ask AI' })).toBeInTheDocument();
     });
 
@@ -340,19 +339,6 @@ describe('InsightsView', () => {
     it('renders cost of emotion in Report tab when totalEmotionalCost is non-zero', () => {
       render(<InsightsView />);
       expect(screen.getByTestId('cost-of-emotion')).toBeInTheDocument();
-    });
-
-    it('switches to Patterns tab', async () => {
-      const user = userEvent.setup();
-      render(<InsightsView />);
-
-      await user.click(screen.getByRole('tab', { name: 'Patterns' }));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('revenge-trades-table')).toBeInTheDocument();
-        expect(screen.getByTestId('streak-timeline')).toBeInTheDocument();
-        expect(screen.getByTestId('time-edge-heatmap')).toBeInTheDocument();
-      });
     });
 
     it('switches to Ask AI tab', async () => {
@@ -670,7 +656,6 @@ describe('InsightsView', () => {
 
       // Tabs should be visible again
       expect(screen.getByRole('tab', { name: 'Report' })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: 'Patterns' })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: 'Ask AI' })).toBeInTheDocument();
     });
 

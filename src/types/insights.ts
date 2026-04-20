@@ -133,6 +133,7 @@ export interface ChatSessionSummary {
   createdAt: number; // millis
   expiresAt: number; // millis
   status: 'active' | 'generating' | 'expired';
+  insightId?: string;
 }
 
 export interface TrimmedTrade {

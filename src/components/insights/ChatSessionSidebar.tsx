@@ -1,18 +1,22 @@
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MessageSquare, Loader2, Clock } from 'lucide-react';
+import { MessageSquare, Loader2, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { FirestoreChatSessionSummary } from '@/lib/firebase/firestore';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export interface ChatSessionSidebarProps {
   sessions: FirestoreChatSessionSummary[];
   activeSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
-  onNewChat: () => void;
   sessionsLoading: boolean;
-  isRateLimited: boolean;
+  currentInsightId?: string;
 }
 
 function periodLabel(period: string): string {
@@ -43,28 +47,15 @@ export function ChatSessionSidebar({
   sessions,
   activeSessionId,
   onSelectSession,
-  onNewChat,
   sessionsLoading,
-  isRateLimited,
+  currentInsightId,
 }: ChatSessionSidebarProps) {
   return (
     <div className="flex flex-col h-full border-r border-border bg-card">
-      {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-border">
         <h3 className="text-sm font-semibold text-foreground">Chat Sessions</h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onNewChat}
-          disabled={isRateLimited}
-          className="gap-1.5"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          New Chat
-        </Button>
       </div>
 
-      {/* Session list */}
       <ScrollArea className="flex-1">
         {sessionsLoading ? (
           <LoadingSkeleton />
@@ -72,73 +63,99 @@ export function ChatSessionSidebar({
           <div className="flex flex-col items-center justify-center text-center p-6 pt-10">
             <MessageSquare className="w-8 h-8 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">
-              No chat sessions yet. Start a new conversation!
+              No chat sessions yet. Ask a question to start a conversation.
             </p>
           </div>
         ) : (
-          <div className="p-2 space-y-1">
-            {sessions.map((session) => {
-              const isActive = session.id === activeSessionId;
-              const isExpired = session.status === 'expired';
-              const isGenerating = session.status === 'generating';
-              const title = session.title || periodLabel(session.period);
-              const timeAgo = formatDistanceToNow(session.createdAt.toMillis(), {
-                addSuffix: true,
-              });
+          <TooltipProvider>
+            <div className="p-2 space-y-1">
+              {sessions.map((session) => {
+                const isActive = session.id === activeSessionId;
+                const isExpired = session.status === 'expired';
+                const isGenerating = session.status === 'generating';
+                const isOldInsight = currentInsightId != null
+                  && session.insightId != null
+                  && session.insightId !== currentInsightId;
+                const isDisabled = isOldInsight && !isActive;
+                const title = session.title || periodLabel(session.period);
+                const timeAgo = formatDistanceToNow(session.createdAt.toMillis(), {
+                  addSuffix: true,
+                });
 
-              return (
-                <button
-                  key={session.id}
-                  type="button"
-                  onClick={() => onSelectSession(session.id)}
-                  className={cn(
-                    'w-full text-left rounded-lg px-3 py-2 transition-colors duration-150',
-                    isActive
-                      ? 'bg-accent text-accent-foreground'
-                      : 'hover:bg-accent/50',
-                    isExpired && !isActive && 'opacity-60'
-                  )}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className={cn(
-                        'text-sm font-medium truncate flex-1',
-                        isExpired && 'italic text-muted-foreground'
-                      )}
-                    >
-                      {title}
-                    </span>
-                    {isGenerating && (
-                      <Loader2
-                        className="w-3.5 h-3.5 shrink-0 animate-spin text-primary"
-                        aria-label="Generating"
-                      />
+                const sessionButton = (
+                  <button
+                    key={session.id}
+                    type="button"
+                    onClick={() => !isDisabled && onSelectSession(session.id)}
+                    disabled={isDisabled}
+                    className={cn(
+                      'w-full text-left rounded-lg px-3 py-2 transition-colors duration-150',
+                      isActive
+                        ? 'bg-accent text-accent-foreground'
+                        : isDisabled
+                          ? 'opacity-40 cursor-not-allowed'
+                          : 'hover:bg-accent/50',
+                      isExpired && !isActive && !isDisabled && 'opacity-60'
                     )}
-                    <Badge
-                      variant="secondary"
-                      className="shrink-0 text-[10px] px-1.5 py-0"
-                    >
-                      {session.messageCount}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <span className="text-xs text-muted-foreground truncate">
-                      {timeAgo}
-                    </span>
-                    {isExpired && (
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={cn(
+                          'text-sm font-medium truncate flex-1',
+                          (isExpired || isDisabled) && 'italic text-muted-foreground'
+                        )}
+                      >
+                        {title}
+                      </span>
+                      {isGenerating && (
+                        <Loader2
+                          className="w-3.5 h-3.5 shrink-0 animate-spin text-primary"
+                          aria-label="Generating"
+                        />
+                      )}
                       <Badge
                         variant="secondary"
-                        className="text-[10px] px-1.5 py-0 shrink-0"
+                        className="shrink-0 text-[10px] px-1.5 py-0"
                       >
-                        Expired
+                        {session.messageCount}
                       </Badge>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                      <span className="text-xs text-muted-foreground truncate">
+                        {timeAgo}
+                      </span>
+                      {isExpired && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] px-1.5 py-0 shrink-0"
+                        >
+                          Expired
+                        </Badge>
+                      )}
+                    </div>
+                  </button>
+                );
+
+                if (isDisabled) {
+                  return (
+                    <Tooltip key={session.id}>
+                      <TooltipTrigger asChild>
+                        {sessionButton}
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[200px]">
+                        <p className="text-xs">
+                          This conversation is based on previous insights. Continue with the latest chat session.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return sessionButton;
+              })}
+            </div>
+          </TooltipProvider>
         )}
       </ScrollArea>
     </div>

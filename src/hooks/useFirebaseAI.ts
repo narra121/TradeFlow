@@ -15,6 +15,8 @@ interface UseFirebaseReportResult {
   error: string | null;
   cacheChecked: boolean;
   cacheHit: boolean;
+  isStale: boolean;
+  cachedInsightId: string | null;
   checkCache: (trades: Trade[], accountId?: string, period?: string) => void;
   generate: (trades: Trade[], accountId?: string, period?: string) => void;
   abort: () => void;
@@ -44,6 +46,8 @@ export function useFirebaseReport(): UseFirebaseReportResult {
   const [error, setError] = useState<string | null>(null);
   const [cacheChecked, setCacheChecked] = useState(false);
   const [cacheHit, setCacheHit] = useState(false);
+  const [isStale, setIsStale] = useState(false);
+  const [cachedInsightId, setCachedInsightId] = useState<string | null>(null);
   const unsubRef = useRef<(() => void) | null>(null);
 
   const abort = useCallback(() => {
@@ -61,6 +65,8 @@ export function useFirebaseReport(): UseFirebaseReportResult {
     unsubRef.current = null;
     setCacheChecked(false);
     setCacheHit(false);
+    setIsStale(false);
+    setCachedInsightId(null);
     setData(null);
     setError(null);
 
@@ -84,16 +90,31 @@ export function useFirebaseReport(): UseFirebaseReportResult {
           const mapped = mapInsightToResponse(existing);
           setData(mapped);
           setCacheHit(true);
+          setIsStale(false);
+          setCachedInsightId(insightId);
+          setCacheChecked(true);
+        } else if (existing && existing.status === 'complete' && existing.tradesHash !== tradesHash) {
+          // Stale: cached insights exist but trades have changed
+          const mapped = mapInsightToResponse(existing);
+          setData(mapped);
+          setCacheHit(true);
+          setIsStale(true);
+          setCachedInsightId(insightId);
           setCacheChecked(true);
         } else if (existing && existing.status === 'generating') {
           setStreaming(true);
           setCacheChecked(true);
           setCacheHit(false);
+          setCachedInsightId(insightId);
           const unsub = listenToInsight(userId, insightId, (insight) => {
             if (!insight) return;
             const mapped = mapInsightToResponse(insight);
             if (Object.keys(mapped).length > 0) setData(mapped);
-            if (insight.status === 'complete') setStreaming(false);
+            if (insight.status === 'complete') {
+              setStreaming(false);
+              setCacheHit(true);
+              setIsStale(false);
+            }
             if (insight.status === 'error') {
               setError(insight.error || 'Generation failed');
               setStreaming(false);
@@ -162,5 +183,5 @@ export function useFirebaseReport(): UseFirebaseReportResult {
     run();
   }, []);
 
-  return { data, streaming, error, cacheChecked, cacheHit, checkCache, generate, abort };
+  return { data, streaming, error, cacheChecked, cacheHit, isStale, cachedInsightId, checkCache, generate, abort };
 }

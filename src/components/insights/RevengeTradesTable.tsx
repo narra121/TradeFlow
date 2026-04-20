@@ -5,6 +5,7 @@ import type { RevengeTradeSignal } from '@/types/insights';
 
 interface RevengeTradesTableProps {
   revengeTrades: RevengeTradeSignal[];
+  onViewTrade?: (tradeId: string) => void;
 }
 
 function formatCurrency(value: number): string {
@@ -17,7 +18,7 @@ function totalPnl(trades: RevengeTradeSignal[]): number {
   return trades.reduce((sum, t) => sum + t.revengePnl, 0);
 }
 
-export function RevengeTradesTable({ revengeTrades }: RevengeTradesTableProps) {
+export function RevengeTradesTable({ revengeTrades, onViewTrade }: RevengeTradesTableProps) {
   if (revengeTrades.length === 0) return null;
 
   const displayTrades = revengeTrades.slice(0, 10);
@@ -59,8 +60,24 @@ export function RevengeTradesTable({ revengeTrades }: RevengeTradesTableProps) {
             <tbody>
               {displayTrades.map((trade, i) => (
                 <tr key={i} className="border-b border-border/20 last:border-0">
-                  <td className="py-1.5 px-2 font-mono">{trade.tradeId.slice(0, 8)}</td>
-                  <td className="py-1.5 px-2 font-mono">{trade.triggerTradeId.slice(0, 8)}</td>
+                  <td className="py-1.5 px-2 font-mono">
+                    <button
+                      type="button"
+                      className="text-primary hover:text-primary/80 transition-colors underline-offset-2 hover:underline"
+                      onClick={() => onViewTrade?.(trade.tradeId)}
+                    >
+                      {trade.tradeId.slice(0, 8)}
+                    </button>
+                  </td>
+                  <td className="py-1.5 px-2 font-mono">
+                    <button
+                      type="button"
+                      className="text-primary hover:text-primary/80 transition-colors underline-offset-2 hover:underline"
+                      onClick={() => onViewTrade?.(trade.triggerTradeId)}
+                    >
+                      {trade.triggerTradeId.slice(0, 8)}
+                    </button>
+                  </td>
                   <td className="py-1.5 px-2">{trade.gapMinutes}m</td>
                   <td
                     className={cn(

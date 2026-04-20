@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { useAccounts } from '@/hooks/useAccounts';
 import { useTradeCache } from '@/hooks/useTradeCache';
 import { useFirebaseReport } from '@/hooks/useFirebaseAI';
 import { useRateLimits } from '@/hooks/useRateLimits';
+import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
+import type { Trade } from '@/types/trade';
 import type { InsightsResponse } from '@/types/insights';
 import {
   ProfileScoreCard,
@@ -33,9 +35,10 @@ import {
   Brain,
   Loader2,
   Square,
+  RefreshCw,
+  Clock,
 } from 'lucide-react';
-
-// ── Constants ────────────────────────────────────────────────────────
+import { formatDistanceToNow } from 'date-fns';
 
 const MIN_TRADES_FOR_INSIGHTS = 10;
 const ACTIVE_STATUSES = ['active', 'trialing'];
@@ -51,8 +54,6 @@ function isSubscriptionActive(subscription: any): boolean {
   return false;
 }
 
-// ── Loading animation ────────────────────────────────────────────────
-
 function InsightsLoadingSkeleton() {
   return (
     <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 duration-500">
@@ -60,7 +61,6 @@ function InsightsLoadingSkeleton() {
         <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Brain className="w-10 h-10 text-primary animate-pulse" />
         </div>
-        {/* Orbiting dots */}
         <div className="absolute inset-0 w-20 h-20 animate-spin" style={{ animationDuration: '3s' }}>
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-2 h-2 rounded-full bg-primary/60" />
         </div>
@@ -71,13 +71,10 @@ function InsightsLoadingSkeleton() {
           <div className="absolute top-1/2 right-0 translate-x-1 -translate-y-1/2 w-2 h-2 rounded-full bg-primary/30" />
         </div>
       </div>
-
       <h3 className="text-xl font-semibold text-foreground mb-2">Analyzing your trades...</h3>
       <p className="text-sm text-muted-foreground max-w-sm mb-6 animate-pulse">
         Our AI is reviewing your trading patterns, identifying strengths and areas for improvement
       </p>
-
-      {/* Animated progress steps */}
       <div className="space-y-2 text-left max-w-xs w-full">
         {['Evaluating trade patterns', 'Scoring behavioral dimensions', 'Generating insights'].map(
           (step, i) => (
@@ -96,8 +93,6 @@ function InsightsLoadingSkeleton() {
   );
 }
 
-// ── Streaming skeleton for partial sections ─────────────────────────
-
 function SectionSkeleton({ label }: { label: string }) {
   return (
     <div className="rounded-lg border border-border/50 bg-card/50 p-6 animate-pulse">
@@ -113,8 +108,6 @@ function SectionSkeleton({ label }: { label: string }) {
     </div>
   );
 }
-
-// ── Premium gate ─────────────────────────────────────────────────────
 
 function PremiumGate() {
   return (
@@ -137,13 +130,20 @@ function PremiumGate() {
   );
 }
 
-// ── Main View ────────────────────────────────────────────────────────
+function formatResetTime(resetAt: Date | null): string {
+  if (!resetAt) return '';
+  return formatDistanceToNow(resetAt, { addSuffix: false });
+}
 
 export function InsightsView() {
-  // Local filter state — independent from global Redux filters
   const [datePreset, setDatePreset] = useState<DatePreset>('thisMonth');
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
   const [chatFullscreen, setChatFullscreen] = useState(false);
+
+  // Trade reference modal state
+  const [tradeModalOpen, setTradeModalOpen] = useState(false);
+  const [selectedTradeIds, setSelectedTradeIds] = useState<string[]>([]);
+  const [selectedTradeIndex, setSelectedTradeIndex] = useState(0);
 
   const localDates = useMemo(() => {
     const range = getDateRangeFromPreset(datePreset);
@@ -155,34 +155,19 @@ export function InsightsView() {
 
   const accountId = localAccountId || 'ALL';
 
-  // Subscription check
   const { data: subscription, isLoading: subLoading } = useGetSubscriptionQuery();
   const isPremium = isSubscriptionActive(subscription);
-
-  // Account info (read-only, no dispatch)
   const { accounts } = useAccounts();
-  const totalCapital = useMemo(() => {
-    if (accountId === 'ALL') {
-      return accounts
-        .filter((acc) => acc.id && acc.id !== '-1')
-        .reduce((sum, acc) => sum + (acc.initialBalance || 0), 0);
-    }
-    const account = accounts.find((acc) => acc.id === accountId);
-    return account?.initialBalance || 0;
-  }, [accountId, accounts]);
 
-  // Trade count from cache (no stats API call needed)
   const handleDatePresetChange = (preset: DatePreset) => {
     setDatePreset(preset);
   };
 
-  // Trade cache — IndexedDB-backed hash-based sync
   const {
     trades,
     loading: cacheSyncing,
     syncing,
     error: cacheError,
-    refresh,
   } = useTradeCache({
     accountId,
     startDate: localDates.startDate,
@@ -191,35 +176,30 @@ export function InsightsView() {
 
   const totalTrades = trades.length;
 
-  // Firebase AI streaming report
   const {
     data: insights,
     streaming,
     error: aiError,
     cacheChecked,
     cacheHit,
+    isStale,
+    cachedInsightId,
     checkCache,
     generate,
     abort,
   } = useFirebaseReport();
 
-  // Rate limits
   const rateLimits = useRateLimits();
 
-  // Auto-check Firestore cache when trades are ready
   useEffect(() => {
     if (!syncing && trades.length >= MIN_TRADES_FOR_INSIGHTS && isPremium) {
       checkCache(trades, accountId, datePreset);
     }
   }, [syncing, trades.length, accountId, datePreset, isPremium]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Combined error
   const error = cacheError || aiError;
-
-  // Tab state
   const [activeTab, setActiveTab] = useState<string>('report');
 
-  // Sort insights: critical first, then warning, info, strength
   const sortedInsights = useMemo(() => {
     if (!insights?.insights) return [];
     const order = { critical: 0, warning: 1, info: 2, strength: 3 };
@@ -228,15 +208,45 @@ export function InsightsView() {
     );
   }, [insights?.insights]);
 
-  // Cast partial to full for rendering — sections check existence
   const insightsData = insights as InsightsResponse | null;
 
-  // Handler: generate insights from cached trades
   const handleGenerate = () => {
     generate(trades, accountId, datePreset);
   };
 
-  // Fullscreen chat mode — hides all other content
+  // Trade reference handlers
+  const handleViewTrade = useCallback((tradeId: string) => {
+    setSelectedTradeIds([tradeId]);
+    setSelectedTradeIndex(0);
+    setTradeModalOpen(true);
+  }, []);
+
+  const handleViewTrades = useCallback((tradeIds: string[]) => {
+    setSelectedTradeIds(tradeIds);
+    setSelectedTradeIndex(0);
+    setTradeModalOpen(true);
+  }, []);
+
+  // Resolve trade IDs to Trade objects
+  const selectedTrades = useMemo(() => {
+    return selectedTradeIds
+      .map(id => trades.find(t => t.id === id))
+      .filter((t): t is Trade => t != null);
+  }, [selectedTradeIds, trades]);
+
+  const currentSelectedTrade = selectedTrades[selectedTradeIndex] ?? null;
+
+  // Serialize insights for chat context
+  const insightsJsonForChat = useMemo(() => {
+    if (!insightsData) return undefined;
+    try {
+      return JSON.stringify(insightsData);
+    } catch {
+      return undefined;
+    }
+  }, [insightsData]);
+
+  // Fullscreen chat mode
   if (chatFullscreen) {
     return (
       <div className="h-[calc(100vh-2rem)] flex flex-col animate-fade-in" data-testid="fullscreen-chat-container">
@@ -249,12 +259,14 @@ export function InsightsView() {
           isFullscreen={true}
           onToggleFullscreen={() => setChatFullscreen(false)}
           rateLimits={rateLimits}
+          insightId={cachedInsightId ?? undefined}
+          insightsData={insightsJsonForChat}
+          hasInsights={!!insightsData}
         />
       </div>
     );
   }
 
-  // Don't show the gate flash while subscription loads
   if (subLoading) {
     return (
       <div className="space-y-6">
@@ -308,6 +320,43 @@ export function InsightsView() {
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-400/8 border-l-2 border-blue-400 animate-fade-in">
               <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
               <p className="text-sm text-muted-foreground">Syncing trade data...</p>
+            </div>
+          )}
+
+          {/* Stale trades banner */}
+          {isStale && insightsData && !streaming && (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-warning/8 border-l-2 border-warning animate-fade-in">
+              <AlertTriangle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-foreground font-medium">Your trades have changed since these insights were generated</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Regenerate to include the latest data in your analysis.
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs h-7"
+                  onClick={handleGenerate}
+                  disabled={cacheSyncing || (rateLimits !== null && rateLimits.insights.remaining <= 0)}
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Regenerate
+                </Button>
+                {rateLimits && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {rateLimits.insights.remaining > 0 ? (
+                      <>{rateLimits.insights.remaining}/{rateLimits.insights.limit} remaining</>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Resets in {formatResetTime(rateLimits.insights.resetAt)}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
@@ -379,7 +428,14 @@ export function InsightsView() {
               </Button>
               {rateLimits && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {rateLimits.insights.remaining}/{rateLimits.insights.limit} insights remaining
+                  {rateLimits.insights.remaining > 0 ? (
+                    <>{rateLimits.insights.remaining}/{rateLimits.insights.limit} insights remaining</>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 inline" />
+                      Limit reached. Resets in {formatResetTime(rateLimits.insights.resetAt)}.
+                    </span>
+                  )}
                 </p>
               )}
             </div>
@@ -396,8 +452,7 @@ export function InsightsView() {
               <div className="flex items-center justify-between gap-4">
                 <TabsList>
                   <TabsTrigger value="report">Report</TabsTrigger>
-                  <TabsTrigger value="patterns">Patterns</TabsTrigger>
-                  <TabsTrigger value="chat">Ask AI</TabsTrigger>
+                  <TabsTrigger value="ask-ai">Ask AI</TabsTrigger>
                 </TabsList>
                 {streaming && (
                   <Button
@@ -412,7 +467,7 @@ export function InsightsView() {
                 )}
               </div>
 
-              {/* Report tab */}
+              {/* Report tab (includes patterns) */}
               <TabsContent value="report">
                 <AuroraBackground>
                   <div className="space-y-6 animate-in fade-in-0 duration-500 p-1">
@@ -457,6 +512,7 @@ export function InsightsView() {
                             <InsightCard
                               key={`${insight.severity}-${insight.title}-${index}`}
                               insight={insight}
+                              onViewTrades={handleViewTrades}
                             />
                           ))}
                         </div>
@@ -477,25 +533,25 @@ export function InsightsView() {
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {insights.tradeSpotlights.map((spotlight) => (
-                            <TradeSpotlight key={spotlight.tradeId} spotlight={spotlight} />
+                            <TradeSpotlight
+                              key={spotlight.tradeId}
+                              spotlight={spotlight}
+                              onViewTrade={handleViewTrade}
+                            />
                           ))}
                         </div>
                       </div>
                     ) : streaming ? (
                       <SectionSkeleton label="Loading trade spotlights..." />
                     ) : null}
-                  </div>
-                </AuroraBackground>
-              </TabsContent>
 
-              {/* Patterns tab */}
-              <TabsContent value="patterns">
-                <AuroraBackground>
-                  <div className="space-y-6 animate-in fade-in-0 duration-500 p-1">
+                    {/* Patterns section (merged from old Patterns tab) */}
                     {insights?.patterns ? (
                       <>
-                        <CostOfEmotionCard costOfEmotion={insights.patterns.costOfEmotion} />
-                        <RevengeTradesTable revengeTrades={insights.patterns.revengeTrades} />
+                        <RevengeTradesTable
+                          revengeTrades={insights.patterns.revengeTrades}
+                          onViewTrade={handleViewTrade}
+                        />
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                           <StreakTimeline
                             streaks={insights.patterns.streaks}
@@ -514,19 +570,13 @@ export function InsightsView() {
                         <SectionSkeleton label="Loading pattern analysis..." />
                         <SectionSkeleton label="Loading streak data..." />
                       </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <p className="text-sm text-muted-foreground">
-                          No pattern data available. Generate insights to see trading patterns.
-                        </p>
-                      </div>
-                    )}
+                    ) : null}
                   </div>
                 </AuroraBackground>
               </TabsContent>
 
               {/* Ask AI tab */}
-              <TabsContent value="chat">
+              <TabsContent value="ask-ai">
                 <InsightsChat
                   accountId={accountId}
                   period={datePreset}
@@ -534,13 +584,35 @@ export function InsightsView() {
                   endDate={localDates.endDate}
                   trades={trades}
                   isFullscreen={false}
-                  onToggleFullscreen={() => { setActiveTab('chat'); setChatFullscreen(true); }}
+                  onToggleFullscreen={() => { setActiveTab('ask-ai'); setChatFullscreen(true); }}
                   rateLimits={rateLimits}
+                  insightId={cachedInsightId ?? undefined}
+                  insightsData={insightsJsonForChat}
+                  hasInsights={!!insightsData}
                 />
               </TabsContent>
             </Tabs>
           )}
         </>
+      )}
+
+      {/* Trade Detail Modal — for trade references in insights */}
+      {selectedTrades.length > 0 && (
+        <TradeDetailModal
+          trade={currentSelectedTrade}
+          isOpen={tradeModalOpen}
+          onClose={() => {
+            setTradeModalOpen(false);
+            setSelectedTradeIds([]);
+            setSelectedTradeIndex(0);
+          }}
+          onPrevious={selectedTrades.length > 1 ? () => setSelectedTradeIndex(i => Math.max(0, i - 1)) : undefined}
+          onNext={selectedTrades.length > 1 ? () => setSelectedTradeIndex(i => Math.min(selectedTrades.length - 1, i + 1)) : undefined}
+          hasPrevious={selectedTradeIndex > 0}
+          hasNext={selectedTradeIndex < selectedTrades.length - 1}
+          currentIndex={selectedTradeIndex}
+          totalCount={selectedTrades.length}
+        />
       )}
     </div>
   );

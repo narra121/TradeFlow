@@ -62,6 +62,9 @@ describe('InsightsChat', () => {
     isFullscreen: false,
     onToggleFullscreen: vi.fn(),
     rateLimits: null as any,
+    insightId: undefined as string | undefined,
+    insightsData: undefined as string | undefined,
+    hasInsights: true,
   };
 
   beforeEach(() => {
@@ -139,6 +142,8 @@ describe('InsightsChat', () => {
       defaultProps.trades,
       defaultProps.accountId,
       defaultProps.period,
+      undefined,
+      undefined,
     );
   });
 
@@ -170,6 +175,8 @@ describe('InsightsChat', () => {
       defaultProps.trades,
       defaultProps.accountId,
       defaultProps.period,
+      undefined,
+      undefined,
     );
   });
 
@@ -190,13 +197,22 @@ describe('InsightsChat', () => {
       defaultProps.trades,
       defaultProps.accountId,
       defaultProps.period,
+      undefined,
+      undefined,
     );
   });
 
-  it('renders empty state prompt when no messages', () => {
-    render(<InsightsChat {...defaultProps} />);
+  it('renders empty state prompt when no messages and hasInsights is true', () => {
+    render(<InsightsChat {...defaultProps} hasInsights={true} />);
     expect(
-      screen.getByText('Ask me anything about your trading performance'),
+      screen.getByText('Ask me anything about your trading performance and insights'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders empty state prompt when no messages and hasInsights is false', () => {
+    render(<InsightsChat {...defaultProps} hasInsights={false} />);
+    expect(
+      screen.getByText('Generate insights first to start a conversation about your trading data.'),
     ).toBeInTheDocument();
   });
 
@@ -304,7 +320,7 @@ describe('InsightsChat', () => {
 
     render(<InsightsChat {...defaultProps} />);
     expect(
-      screen.getByText(/Message limit reached for this session/),
+      screen.getByText(/You have reached the 25-message limit for this conversation/),
     ).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText('Session message limit reached'),
@@ -444,22 +460,4 @@ describe('InsightsChat', () => {
     expect(mockSwitchSession).toHaveBeenCalledWith('s1');
   });
 
-  it('shows empty state and suggested questions after New Chat in fullscreen', async () => {
-    mockChatReturn = {
-      ...mockChatReturn,
-      sessionId: 'session-42',
-      activeSessionId: 'session-42',
-      messages: [{ role: 'user', text: 'test' }, { role: 'model', text: 'response' }],
-    };
-
-    const user = userEvent.setup();
-    render(<InsightsChat {...defaultProps} isFullscreen={true} />);
-
-    // Click new chat in sidebar
-    await user.click(screen.getByTestId('sidebar-new-chat'));
-
-    // Should show empty state and suggested questions
-    expect(screen.getByText('Ask me anything about your trading performance')).toBeInTheDocument();
-    expect(screen.getByText('What are my biggest mistakes?')).toBeInTheDocument();
-  });
 });

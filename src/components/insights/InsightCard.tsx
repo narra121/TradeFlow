@@ -6,6 +6,7 @@ import type { Insight } from '@/types/insights';
 
 interface InsightCardProps {
   insight: Insight;
+  onViewTrades?: (tradeIds: string[]) => void;
 }
 
 const severityConfig = {
@@ -39,7 +40,7 @@ const severityConfig = {
   },
 } as const;
 
-export function InsightCard({ insight }: InsightCardProps) {
+export function InsightCard({ insight, onViewTrades }: InsightCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { severity, title, detail, evidence, tradeIds } = insight;
   const config = severityConfig[severity] ?? severityConfig.info;
@@ -115,7 +116,7 @@ export function InsightCard({ insight }: InsightCardProps) {
                 className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Navigation would be handled by parent or router
+                  onViewTrades?.(tradeIds!);
                 }}
               >
                 <ExternalLink className="w-3 h-3" />

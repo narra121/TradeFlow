@@ -31,6 +31,9 @@ export interface InsightsChatProps {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   rateLimits: RateLimitInfo | null;
+  insightId?: string;
+  insightsData?: string;
+  hasInsights?: boolean;
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -90,6 +93,9 @@ export function InsightsChat({
   isFullscreen,
   onToggleFullscreen,
   rateLimits,
+  insightId,
+  insightsData,
+  hasInsights = false,
 }: InsightsChatProps) {
   const [inputText, setInputText] = useState('');
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -154,14 +160,13 @@ export function InsightsChat({
     setInputText('');
 
     if (!sessionId || isNewChat) {
-      // First message -- start session, then send after it's created
       setPendingMessage(text);
-      startSession(trades, accountId, period);
+      startSession(trades, accountId, period, insightId, insightsData);
       setIsNewChat(false);
     } else {
       send(text);
     }
-  }, [inputText, streaming, sessionId, isNewChat, trades, accountId, period, startSession, send]);
+  }, [inputText, streaming, sessionId, isNewChat, trades, accountId, period, insightId, insightsData, startSession, send]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -174,16 +179,11 @@ export function InsightsChat({
     if (streaming) return;
     if (!sessionId || isNewChat) {
       setPendingMessage(question);
-      startSession(trades, accountId, period);
+      startSession(trades, accountId, period, insightId, insightsData);
       setIsNewChat(false);
     } else {
       send(question);
     }
-  }
-
-  function handleNewChat() {
-    setIsNewChat(true);
-    clearError();
   }
 
   function handleSelectSession(id: string) {
@@ -206,9 +206,15 @@ export function InsightsChat({
           {showEmptyState && (
             <div className="flex flex-col items-center justify-center h-full text-center py-8">
               <Sparkles className="w-8 h-8 text-muted-foreground/40 mb-3" />
-              <p className="text-sm text-muted-foreground">
-                Ask me anything about your trading performance
-              </p>
+              {hasInsights ? (
+                <p className="text-sm text-muted-foreground">
+                  Ask me anything about your trading performance and insights
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Generate insights first to start a conversation about your trading data.
+                </p>
+              )}
             </div>
           )}
 
@@ -259,7 +265,7 @@ export function InsightsChat({
 
   const sessionFullNotice = isSessionFull && !isNewChat && (
     <p className="text-xs text-muted-foreground text-center">
-      Message limit reached for this session. Start a new conversation by changing the date range or account.
+      You have reached the 25-message limit for this conversation. Regenerate your insights to start a new conversation.
     </p>
   );
 
@@ -323,9 +329,8 @@ export function InsightsChat({
             sessions={sessions}
             activeSessionId={isNewChat ? null : activeSessionId}
             onSelectSession={handleSelectSession}
-            onNewChat={handleNewChat}
             sessionsLoading={sessionsLoading}
-            isRateLimited={isRateLimited}
+            currentInsightId={insightId}
           />
         </div>
 

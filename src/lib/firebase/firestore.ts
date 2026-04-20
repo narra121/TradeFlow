@@ -38,6 +38,7 @@ export interface FirestoreChatSessionSummary {
   createdAt: { toMillis: () => number };
   expiresAt: { toMillis: () => number };
   status: 'active' | 'generating' | 'expired';
+  insightId?: string;
 }
 
 export interface FirestoreChatMessage {
