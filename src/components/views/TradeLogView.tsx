@@ -58,8 +58,7 @@ import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { TablePagination, getStoredPageSize, type PageSize } from '@/components/ui/table-pagination';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { useAppSelector } from '@/store/hooks';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { useGetTradesPaginatedQuery, useUpdateTradeMutation, useDeleteTradeMutation, useBulkDeleteTradesMutation, useGetAccountsQuery } from '@/store/api';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
@@ -127,10 +126,20 @@ type TabType = 'trades' | 'calendar';
 
 export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) {
   const isMobile = useIsMobile();
-  const dispatch = useAppDispatch();
-  const { filters } = useAppSelector((state) => state.trades);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-  
+
+  // Local filter state — independent from Dashboard/Analytics
+  const [localAccountId, setLocalAccountId] = useState<string | null>(null);
+  const accountId = localAccountId || 'ALL';
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
+  const [localDates, setLocalDates] = useState(() => {
+    const range = getDateRangeFromPreset('all');
+    return {
+      startDate: formatLocalDateOnly(range.from),
+      endDate: formatLocalDateOnly(range.to),
+    };
+  });
+
   // Pagination state (must be declared before the query hook that uses pageSize/cursor)
   const [pageSize, setPageSize] = useState<PageSize>(getStoredPageSize);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -138,9 +147,9 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: paginatedData, isLoading: tradesLoading, isFetching: tradesFetching, refetch } = useGetTradesPaginatedQuery({
-    accountId: filters.accountId,
-    startDate: filters.startDate,
-    endDate: filters.endDate,
+    accountId,
+    startDate: localDates.startDate,
+    endDate: localDates.endDate,
     limit: pageSize,
     cursor: cursor || undefined,
   });
@@ -190,15 +199,14 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
 
   // Date filter state - customRange only
   const [customRange, setCustomRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
-  
-  // Update Redux when date filter changes
+
   const handleDatePresetChange = (preset: DatePreset) => {
     const range = getDateRangeFromPreset(preset, customRange);
-    dispatch(setDateRangeFilter({
+    setDatePreset(preset);
+    setLocalDates({
       startDate: formatLocalDateOnly(range.from),
       endDate: formatLocalDateOnly(range.to),
-      datePreset: preset
-    }));
+    });
   };
   
   // Sorting state (persisted to localStorage)
@@ -338,7 +346,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     setCursorHistory([null]);
     setCurrentPage(1);
     setSelectedTradeIds(new Set());
-  }, [filters.accountId, filters.startDate, filters.endDate]);
+  }, [accountId, localDates.startDate, localDates.endDate]);
 
   const handlePageChange = useCallback((page: number) => {
     if (page === currentPage) return;
@@ -531,9 +539,9 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
         </div>
         {activeTab === 'trades' && (
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            <AccountFilter />
+            <AccountFilter value={localAccountId} onValueChange={setLocalAccountId} />
             <DateRangeFilter
-              selectedPreset={filters.datePreset}
+              selectedPreset={datePreset}
               onPresetChange={handleDatePresetChange}
               customRange={customRange}
               onCustomRangeChange={setCustomRange}
@@ -543,7 +551,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
         )}
         {activeTab !== 'trades' && (
           <div className="flex items-center gap-4">
-            <AccountFilter />
+            <AccountFilter value={localAccountId} onValueChange={setLocalAccountId} />
           </div>
         )}
       </div>
