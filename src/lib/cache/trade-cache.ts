@@ -299,6 +299,22 @@ export async function storeTradesOnly(
 /**
  * Delete the entire per-user database.
  */
+export function deleteSyncKeys(
+  db: IDBDatabase,
+  keys: Array<{ accountId: string; date: string }>,
+): Promise<void> {
+  if (keys.length === 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(SYNC_KEYS_STORE, 'readwrite');
+    const store = tx.objectStore(SYNC_KEYS_STORE);
+    for (const { accountId, date } of keys) {
+      store.delete([accountId, date]);
+    }
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 export function clearSyncKeys(
   db: IDBDatabase,
   accountId: string,
