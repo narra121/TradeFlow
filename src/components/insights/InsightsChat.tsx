@@ -126,13 +126,22 @@ export function InsightsChat({
   const inputDisabled = streaming || isSessionFull;
 
   // Auto-focus the chat session linked to the current insightId
+  const autoFocusedForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (sessionsLoading || !insightId || activeSessionId || isNewChat) return;
-    const matchingSession = sessions.find(s => s.insightId === insightId);
+    if (sessionsLoading || isNewChat || sessions.length === 0) return;
+
+    const targetInsightId = insightId || `${accountId}_${period}`;
+    if (autoFocusedForRef.current === targetInsightId) return;
+
+    const matchingSession =
+      sessions.find(s => s.insightId === targetInsightId) ||
+      sessions.find(s => s.accountId === accountId && s.period === period && s.status !== 'expired');
+
     if (matchingSession) {
+      autoFocusedForRef.current = targetInsightId;
       switchSession(matchingSession.id);
     }
-  }, [sessionsLoading, sessions, insightId, activeSessionId, isNewChat, switchSession]);
+  }, [sessionsLoading, sessions, insightId, accountId, period, isNewChat, switchSession]);
 
   // When sessionId appears after startSession, send the pending message
   useEffect(() => {
