@@ -60,16 +60,15 @@ describe('cache/proactive-cache', () => {
   });
 
   describe('backgroundCacheStoreTrades', () => {
-    it('groups trades by account+date and stores them', async () => {
+    it('groups trades by account+date and stores under both real accountId and ALL', async () => {
       const trades = [
-        makeTrade({ id: 't1', accountId: 'acc-1', exitDate: '2026-04-10T15:00:00Z' }),
-        makeTrade({ id: 't2', accountId: 'acc-1', exitDate: '2026-04-10T16:00:00Z' }),
-        makeTrade({ id: 't3', accountId: 'acc-2', exitDate: '2026-04-11T10:00:00Z' }),
+        makeTrade({ id: 't1', accountId: 'acc-1', entryDate: '2026-04-10T09:30:00Z' }),
+        makeTrade({ id: 't2', accountId: 'acc-1', entryDate: '2026-04-10T10:00:00Z' }),
+        makeTrade({ id: 't3', accountId: 'acc-2', entryDate: '2026-04-11T09:00:00Z' }),
       ];
 
       await backgroundCacheStoreTrades(trades);
 
-      // Verify stored in IndexedDB
       const db = await openDatabase(userId);
       const cryptoKey = await deriveKey(userId);
 
@@ -80,6 +79,13 @@ describe('cache/proactive-cache', () => {
       const acc2Day11 = await getTrades(db, 'acc-2', '2026-04-11', cryptoKey);
       expect(acc2Day11).toHaveLength(1);
       expect(acc2Day11[0].id).toBe('t3');
+
+      // Also stored under 'ALL'
+      const allDay10 = await getTrades(db, 'ALL', '2026-04-10', cryptoKey);
+      expect(allDay10).toHaveLength(2);
+
+      const allDay11 = await getTrades(db, 'ALL', '2026-04-11', cryptoKey);
+      expect(allDay11).toHaveLength(1);
 
       db.close();
     });
@@ -137,8 +143,8 @@ describe('cache/proactive-cache', () => {
 
     it('skips trades with no date at all', async () => {
       const trades = [
-        makeTrade({ id: 't1', accountId: 'acc-1', exitDate: '', entryDate: '' }),
-        makeTrade({ id: 't2', accountId: 'acc-1', exitDate: '2026-04-10T15:00:00Z' }),
+        makeTrade({ id: 't1', accountId: 'acc-1', entryDate: '', exitDate: '' }),
+        makeTrade({ id: 't2', accountId: 'acc-1', entryDate: '2026-04-10T09:00:00Z' }),
       ];
 
       await backgroundCacheStoreTrades(trades);
@@ -153,10 +159,10 @@ describe('cache/proactive-cache', () => {
 
     it('groups trades correctly when multiple accounts trade on multiple days', async () => {
       const trades = [
-        makeTrade({ id: 't1', accountId: 'acc-1', exitDate: '2026-04-10T15:00:00Z' }),
-        makeTrade({ id: 't2', accountId: 'acc-1', exitDate: '2026-04-11T15:00:00Z' }),
-        makeTrade({ id: 't3', accountId: 'acc-2', exitDate: '2026-04-10T15:00:00Z' }),
-        makeTrade({ id: 't4', accountId: 'acc-2', exitDate: '2026-04-11T15:00:00Z' }),
+        makeTrade({ id: 't1', accountId: 'acc-1', entryDate: '2026-04-10T09:00:00Z' }),
+        makeTrade({ id: 't2', accountId: 'acc-1', entryDate: '2026-04-11T09:00:00Z' }),
+        makeTrade({ id: 't3', accountId: 'acc-2', entryDate: '2026-04-10T10:00:00Z' }),
+        makeTrade({ id: 't4', accountId: 'acc-2', entryDate: '2026-04-11T10:00:00Z' }),
       ];
 
       await backgroundCacheStoreTrades(trades);
@@ -164,20 +170,16 @@ describe('cache/proactive-cache', () => {
       const db = await openDatabase(userId);
       const cryptoKey = await deriveKey(userId);
 
-      const a1d10 = await getTrades(db, 'acc-1', '2026-04-10', cryptoKey);
-      const a1d11 = await getTrades(db, 'acc-1', '2026-04-11', cryptoKey);
-      const a2d10 = await getTrades(db, 'acc-2', '2026-04-10', cryptoKey);
-      const a2d11 = await getTrades(db, 'acc-2', '2026-04-11', cryptoKey);
+      expect(await getTrades(db, 'acc-1', '2026-04-10', cryptoKey)).toHaveLength(1);
+      expect(await getTrades(db, 'acc-1', '2026-04-11', cryptoKey)).toHaveLength(1);
+      expect(await getTrades(db, 'acc-2', '2026-04-10', cryptoKey)).toHaveLength(1);
+      expect(await getTrades(db, 'acc-2', '2026-04-11', cryptoKey)).toHaveLength(1);
 
-      expect(a1d10).toHaveLength(1);
-      expect(a1d11).toHaveLength(1);
-      expect(a2d10).toHaveLength(1);
-      expect(a2d11).toHaveLength(1);
-
-      expect(a1d10[0].id).toBe('t1');
-      expect(a1d11[0].id).toBe('t2');
-      expect(a2d10[0].id).toBe('t3');
-      expect(a2d11[0].id).toBe('t4');
+      // ALL has merged trades per date
+      const allDay10 = await getTrades(db, 'ALL', '2026-04-10', cryptoKey);
+      const allDay11 = await getTrades(db, 'ALL', '2026-04-11', cryptoKey);
+      expect(allDay10).toHaveLength(2);
+      expect(allDay11).toHaveLength(2);
 
       db.close();
     });

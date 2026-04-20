@@ -10,11 +10,11 @@ function getUserIdFromToken(): string | null {
   } catch { return null; }
 }
 
-function groupByAccountDate(trades: Trade[]): Map<string, Trade[]> {
-  const map = new Map<string, Trade[]>();
+function groupByAccountDate(trades: any[]): Map<string, any[]> {
+  const map = new Map<string, any[]>();
   for (const trade of trades) {
     const accountId = trade.accountId || 'unknown';
-    const date = (trade.exitDate || trade.entryDate || '').slice(0, 10);
+    const date = (trade.openDate || trade.entryDate || trade.closeDate || trade.exitDate || '').slice(0, 10);
     if (!date) continue;
     const key = `${accountId}#${date}`;
     const arr = map.get(key) || [];
@@ -31,9 +31,23 @@ export async function backgroundCacheStoreTrades(trades: Trade[]): Promise<void>
   const cryptoKey = await deriveKey(userId);
   try {
     const groups = groupByAccountDate(trades);
+
+    // Store under real accountIds
     for (const [key, dayTrades] of groups) {
       const [accountId, date] = key.split('#', 2);
       await storeTradesOnly(db, accountId, date, dayTrades, cryptoKey);
+    }
+
+    // Also store under 'ALL' grouped by date (merge all accounts per date)
+    const byDate = new Map<string, any[]>();
+    for (const [key, dayTrades] of groups) {
+      const date = key.split('#', 2)[1];
+      const existing = byDate.get(date) || [];
+      existing.push(...dayTrades);
+      byDate.set(date, existing);
+    }
+    for (const [date, dayTrades] of byDate) {
+      await storeTradesOnly(db, 'ALL', date, dayTrades, cryptoKey);
     }
   } finally {
     db.close();
@@ -52,7 +66,8 @@ export async function backgroundCacheDeleteTrades(tradeIds: string[]): Promise<v
     cursorReq.onsuccess = () => {
       const cursor = cursorReq.result;
       if (cursor) {
-        if (idSet.has(cursor.value.tradeId)) cursor.delete();
+        const tId = cursor.value.tradeId || cursor.value.id;
+        if (idSet.has(tId)) cursor.delete();
         cursor.continue();
       }
     };
