@@ -1539,9 +1539,10 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                             key={day.toISOString()}
                             onClick={() => handleDayClick(day)}
                             className={cn(
-                              "aspect-square p-2 rounded-xl transition-all animate-fade-in",
-                              stats ? "cursor-pointer hover:ring-2 hover:ring-primary/50" : "cursor-default",
-                              "hover:bg-secondary/50",
+                              "group aspect-square p-2 rounded-xl transition-all animate-fade-in border",
+                              stats
+                                ? cn("cursor-pointer", stats.pnl >= 0 ? "border-transparent hover:border-success/40" : "border-transparent hover:border-destructive/40")
+                                : "cursor-default border-transparent",
                               !isCurrentMonth && "opacity-30",
                               isToday && "ring-2 ring-primary",
                               stats && (stats.pnl >= 0 ? "bg-success/10" : "bg-destructive/10")
@@ -1549,13 +1550,23 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                             style={{ animationDelay: `${(weekIndex * 7 + dayIndex) * 0.01}s` }}
                           >
                             <div className="h-full flex flex-col">
-                              <span className={cn(
-                                "text-sm",
-                                isToday ? "text-primary font-semibold" : "text-muted-foreground"
-                              )}>
-                                {format(day, 'd')}
-                              </span>
-                              
+                              <div className="flex items-center justify-between">
+                                <span className={cn(
+                                  "text-sm",
+                                  isToday ? "text-primary font-semibold" : "text-muted-foreground"
+                                )}>
+                                  {format(day, 'd')}
+                                </span>
+                                {stats && (
+                                  <span className={cn(
+                                    "text-[10px] font-medium",
+                                    stats.pnl >= 0 ? "text-success" : "text-destructive"
+                                  )}>
+                                    {stats.wins}W {stats.losses}L
+                                  </span>
+                                )}
+                              </div>
+
                               {stats && (
                                 <div className="flex-1 flex flex-col justify-end">
                                   <span className={cn(
@@ -1566,6 +1577,12 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                                   </span>
                                   <span className="text-xs text-muted-foreground">
                                     {stats.trades} trade{stats.trades !== 1 ? 's' : ''}
+                                  </span>
+                                  <span className={cn(
+                                    "text-[10px] underline underline-offset-2 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0",
+                                    stats.pnl >= 0 ? "text-success" : "text-destructive"
+                                  )}>
+                                    View trades →
                                   </span>
                                 </div>
                               )}
