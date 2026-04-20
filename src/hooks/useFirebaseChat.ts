@@ -1,8 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Trade } from '@/types/trade';
 import type { ChatMessage } from '@/types/insights';
-import { trimTrades } from '@/lib/firebase/trades';
 import { startChatSessionFn, sendChatMessageFn } from '@/lib/firebase/functions';
 import {
   listenToMessages,
@@ -11,23 +9,21 @@ import {
   type FirestoreChatMessage,
   type FirestoreChatSessionSummary,
 } from '@/lib/firebase/firestore';
-import { sha256Hex } from '@/lib/cache/hash';
 import { app } from '@/lib/firebase/init';
 import { parseFirebaseError } from '@/lib/firebase/errors';
+import type { TrimmedTradesData } from './useTrimmedTrades';
 
 export interface UseFirebaseChatResult {
   sessions: FirestoreChatSessionSummary[];
   sessionsLoading: boolean;
   activeSessionId: string | null;
-  /** @deprecated Use activeSessionId instead */
-  sessionId: string | null;
   sessionSwitching: boolean;
   messages: ChatMessage[];
   streaming: boolean;
   error: string | null;
   messageCount: number;
   messageLimit: number;
-  startSession: (trades: Trade[], accountId: string, period: string, insightId?: string, insightsData?: string) => void;
+  startSession: (trimmedData: TrimmedTradesData, accountId: string, period: string, insightId?: string) => void;
   switchSession: (sessionId: string) => void;
   send: (text: string) => void;
   abort: () => void;
@@ -42,7 +38,8 @@ export interface UseFirebaseChatResult {
  * switchSession() tears down current listeners and subscribes to a different session.
  * send() calls sendChatMessage which writes to Firestore; listeners pick up new messages automatically.
  */
-export function useFirebaseChat(): UseFirebaseChatResult {
+export function useFirebaseChat(options: { enabled?: boolean } = {}): UseFirebaseChatResult {
+  const { enabled = true } = options;
   const [sessions, setSessions] = useState<FirestoreChatSessionSummary[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -59,6 +56,10 @@ export function useFirebaseChat(): UseFirebaseChatResult {
 
   const abort = useCallback(() => {
     setStreaming(false);
+    unsubMsgsRef.current?.();
+    unsubSessionRef.current?.();
+    unsubMsgsRef.current = null;
+    unsubSessionRef.current = null;
   }, []);
 
   const clearError = useCallback(() => {
@@ -67,6 +68,14 @@ export function useFirebaseChat(): UseFirebaseChatResult {
 
   // Subscribe to chat sessions collection when Firebase auth is ready
   useEffect(() => {
+    if (!enabled) {
+      unsubSessionsRef.current?.();
+      unsubSessionsRef.current = null;
+      setSessions([]);
+      setSessionsLoading(false);
+      return;
+    }
+
     const auth = getAuth(app);
 
     const authUnsub = onAuthStateChanged(auth, (user) => {
@@ -96,7 +105,7 @@ export function useFirebaseChat(): UseFirebaseChatResult {
       unsubMsgsRef.current?.();
       unsubSessionRef.current?.();
     };
-  }, []);
+  }, [enabled]);
 
   const switchSession = useCallback((sessionId: string) => {
     const auth = getAuth(app);
@@ -139,8 +148,7 @@ export function useFirebaseChat(): UseFirebaseChatResult {
     unsubSessionRef.current = unsubSession;
   }, []);
 
-  const startSession = useCallback((trades: Trade[], accountId: string, period: string, insightId?: string, insightsData?: string) => {
-    // Clean up previous session listeners
+  const startSession = useCallback((trimmedData: TrimmedTradesData, accountId: string, period: string, insightId?: string) => {
     unsubMsgsRef.current?.();
     unsubSessionRef.current?.();
     unsubMsgsRef.current = null;
@@ -156,8 +164,7 @@ export function useFirebaseChat(): UseFirebaseChatResult {
         const userId = auth.currentUser?.uid;
         if (!userId) throw new Error('Not authenticated with Firebase');
 
-        const trimmed = trimTrades(trades);
-        const tradesHash = await sha256Hex(JSON.stringify(trimmed));
+        const { trimmed, hash: tradesHash } = trimmedData;
 
         const result = await startChatSessionFn({
           trades: trimmed,
@@ -165,7 +172,6 @@ export function useFirebaseChat(): UseFirebaseChatResult {
           period,
           tradesHash,
           insightId,
-          insightsData,
         });
         const newSessionId = result.data.sessionId;
 
@@ -201,7 +207,6 @@ export function useFirebaseChat(): UseFirebaseChatResult {
     sessions,
     sessionsLoading,
     activeSessionId,
-    sessionId: activeSessionId,
     sessionSwitching,
     messages,
     streaming,

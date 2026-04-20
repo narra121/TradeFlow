@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { Trade } from '@/types/trade';
+import type { TrimmedTradesData } from '../useTrimmedTrades';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -57,6 +58,11 @@ const makeTrade = (overrides: Partial<Trade> = {}): Trade => ({
   ...overrides,
 });
 
+const makeTrimmedData = (trades: Trade[] = [makeTrade()]): TrimmedTradesData => ({
+  trimmed: trades.map((t) => ({ tradeId: t.id })) as any,
+  hash: 'abc123hash',
+});
+
 describe('useFirebaseReport', () => {
   let useFirebaseReport: typeof import('../useFirebaseAI').useFirebaseReport;
   const mockUnsubscribe = vi.fn();
@@ -96,7 +102,7 @@ describe('useFirebaseReport', () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     expect(result.current.streaming).toBe(true);
@@ -104,11 +110,10 @@ describe('useFirebaseReport', () => {
   });
 
   it('calls Cloud Function with trimmed trades, accountId, period, and hash', async () => {
-    const trades = [makeTrade()];
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate(trades, 'acc-1', 'thisWeek');
+      result.current.generate(makeTrimmedData(), 'acc-1', 'thisWeek');
     });
 
     await waitFor(() => {
@@ -142,7 +147,7 @@ describe('useFirebaseReport', () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     await waitFor(() => {
@@ -165,7 +170,7 @@ describe('useFirebaseReport', () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     await waitFor(() => {
@@ -193,7 +198,7 @@ describe('useFirebaseReport', () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     await waitFor(() => {
@@ -214,7 +219,7 @@ describe('useFirebaseReport', () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     await waitFor(() => {
@@ -238,7 +243,7 @@ describe('useFirebaseReport', () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     await waitFor(() => {
@@ -257,7 +262,7 @@ describe('useFirebaseReport', () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     await waitFor(() => {
@@ -273,7 +278,7 @@ describe('useFirebaseReport', () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     await waitFor(() => {
@@ -287,7 +292,7 @@ describe('useFirebaseReport', () => {
     const { result } = renderHook(() => useFirebaseReport());
 
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     await waitFor(() => {
@@ -309,7 +314,7 @@ describe('useFirebaseReport', () => {
 
     // First generate
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     await waitFor(() => {
@@ -326,7 +331,7 @@ describe('useFirebaseReport', () => {
 
     // Second generate should clear state
     act(() => {
-      result.current.generate([makeTrade()]);
+      result.current.generate(makeTrimmedData());
     });
 
     expect(result.current.data).toBeNull();
@@ -348,7 +353,7 @@ describe('useFirebaseReport', () => {
       const { result } = renderHook(() => useFirebaseReport());
 
       act(() => {
-        result.current.checkCache([makeTrade()], 'ALL', 'thisMonth');
+        result.current.checkCache(makeTrimmedData(), 'ALL', 'thisMonth');
       });
 
       await waitFor(() => {
@@ -369,7 +374,7 @@ describe('useFirebaseReport', () => {
       const { result } = renderHook(() => useFirebaseReport());
 
       act(() => {
-        result.current.checkCache([makeTrade()]);
+        result.current.checkCache(makeTrimmedData());
       });
 
       await waitFor(() => {
@@ -390,7 +395,7 @@ describe('useFirebaseReport', () => {
       const { result } = renderHook(() => useFirebaseReport());
 
       act(() => {
-        result.current.checkCache([makeTrade()]);
+        result.current.checkCache(makeTrimmedData());
       });
 
       await waitFor(() => {
@@ -411,7 +416,7 @@ describe('useFirebaseReport', () => {
       const { result } = renderHook(() => useFirebaseReport());
 
       act(() => {
-        result.current.checkCache([makeTrade()]);
+        result.current.checkCache(makeTrimmedData());
       });
 
       await waitFor(() => {
@@ -434,7 +439,7 @@ describe('useFirebaseReport', () => {
       const { result } = renderHook(() => useFirebaseReport());
 
       act(() => {
-        result.current.checkCache([makeTrade()]);
+        result.current.checkCache(makeTrimmedData());
       });
 
       await waitFor(() => {
@@ -451,7 +456,7 @@ describe('useFirebaseReport', () => {
       const { result } = renderHook(() => useFirebaseReport());
 
       act(() => {
-        result.current.checkCache([makeTrade()]);
+        result.current.checkCache(makeTrimmedData());
       });
 
       await waitFor(() => {
@@ -468,7 +473,7 @@ describe('useFirebaseReport', () => {
       const { result } = renderHook(() => useFirebaseReport());
 
       act(() => {
-        result.current.checkCache([makeTrade()], 'acc-1', 'thisWeek');
+        result.current.checkCache(makeTrimmedData(), 'acc-1', 'thisWeek');
       });
 
       await waitFor(() => {
@@ -487,7 +492,7 @@ describe('useFirebaseReport', () => {
       const { result } = renderHook(() => useFirebaseReport());
 
       act(() => {
-        result.current.checkCache([makeTrade()]);
+        result.current.checkCache(makeTrimmedData());
       });
 
       await waitFor(() => {
@@ -498,7 +503,7 @@ describe('useFirebaseReport', () => {
       mockGetInsightOnce.mockResolvedValue(null);
 
       act(() => {
-        result.current.checkCache([makeTrade()], 'acc-2', 'last30Days');
+        result.current.checkCache(makeTrimmedData(), 'acc-2', 'last30Days');
       });
 
       // During async reset, cacheChecked should be false

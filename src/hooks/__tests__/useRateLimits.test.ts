@@ -116,7 +116,7 @@ describe('useRateLimits', () => {
   });
 
   it('computes resetAt from windowStart + 6 hours', () => {
-    const windowStartMs = 1700000000000; // fixed timestamp
+    const windowStartMs = Date.now() - 3600000; // 1 hour ago (within 6-hour window)
     mockOnAuthStateChanged.mockImplementation((_auth: any, cb: any) => {
       cb({ uid: 'user-1' });
       return mockAuthUnsub;

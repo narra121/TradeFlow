@@ -1,13 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
-import type { Trade } from '@/types/trade';
 import type { InsightsResponse } from '@/types/insights';
-import { trimTrades } from '@/lib/firebase/trades';
 import { generateInsightFn } from '@/lib/firebase/functions';
 import { listenToInsight, getInsightOnce, type FirestoreInsight } from '@/lib/firebase/firestore';
-import { sha256Hex } from '@/lib/cache/hash';
 import { app } from '@/lib/firebase/init';
 import { parseFirebaseError } from '@/lib/firebase/errors';
+import type { TrimmedTradesData } from './useTrimmedTrades';
 
 interface UseFirebaseReportResult {
   data: Partial<InsightsResponse> | null;
@@ -17,8 +15,8 @@ interface UseFirebaseReportResult {
   cacheHit: boolean;
   isStale: boolean;
   cachedInsightId: string | null;
-  checkCache: (trades: Trade[], accountId?: string, period?: string) => void;
-  generate: (trades: Trade[], accountId?: string, period?: string) => void;
+  checkCache: (trimmedData: TrimmedTradesData, accountId?: string, period?: string) => void;
+  generate: (trimmedData: TrimmedTradesData, accountId?: string, period?: string) => void;
   abort: () => void;
 }
 
@@ -49,6 +47,7 @@ export function useFirebaseReport(): UseFirebaseReportResult {
   const [isStale, setIsStale] = useState(false);
   const [cachedInsightId, setCachedInsightId] = useState<string | null>(null);
   const unsubRef = useRef<(() => void) | null>(null);
+  const previousDataRef = useRef<Partial<InsightsResponse> | null>(null);
 
   const abort = useCallback(() => {
     unsubRef.current?.();
@@ -59,15 +58,13 @@ export function useFirebaseReport(): UseFirebaseReportResult {
   // Cleanup on unmount
   useEffect(() => () => { unsubRef.current?.(); }, []);
 
-  const checkCache = useCallback((trades: Trade[], accountId = 'ALL', period = 'thisMonth') => {
-    // Reset state for new cache check
+  const checkCache = useCallback((trimmedData: TrimmedTradesData, accountId = 'ALL', period = 'thisMonth') => {
     unsubRef.current?.();
     unsubRef.current = null;
     setCacheChecked(false);
     setCacheHit(false);
     setIsStale(false);
     setCachedInsightId(null);
-    setData(null);
     setError(null);
 
     const run = async () => {
@@ -80,22 +77,22 @@ export function useFirebaseReport(): UseFirebaseReportResult {
           return;
         }
 
-        const trimmed = trimTrades(trades);
-        const tradesHash = await sha256Hex(JSON.stringify(trimmed));
+        const { hash: tradesHash } = trimmedData;
         const insightId = `${accountId}_${period}`;
 
         const existing = await getInsightOnce(userId, insightId);
 
         if (existing && existing.status === 'complete' && existing.tradesHash === tradesHash) {
           const mapped = mapInsightToResponse(existing);
+          previousDataRef.current = mapped;
           setData(mapped);
           setCacheHit(true);
           setIsStale(false);
           setCachedInsightId(insightId);
           setCacheChecked(true);
         } else if (existing && existing.status === 'complete' && existing.tradesHash !== tradesHash) {
-          // Stale: cached insights exist but trades have changed
           const mapped = mapInsightToResponse(existing);
+          previousDataRef.current = mapped;
           setData(mapped);
           setCacheHit(true);
           setIsStale(true);
@@ -125,10 +122,12 @@ export function useFirebaseReport(): UseFirebaseReportResult {
           });
           unsubRef.current = unsub;
         } else {
+          setData(null);
           setCacheHit(false);
           setCacheChecked(true);
         }
       } catch {
+        setData(null);
         setCacheHit(false);
         setCacheChecked(true);
       }
@@ -137,8 +136,7 @@ export function useFirebaseReport(): UseFirebaseReportResult {
     run();
   }, []);
 
-  const generate = useCallback((trades: Trade[], accountId = 'ALL', period = 'thisMonth') => {
-    // Abort any in-flight request
+  const generate = useCallback((trimmedData: TrimmedTradesData, accountId = 'ALL', period = 'thisMonth') => {
     unsubRef.current?.();
     unsubRef.current = null;
     setData(null);
@@ -151,11 +149,9 @@ export function useFirebaseReport(): UseFirebaseReportResult {
         const userId = auth.currentUser?.uid;
         if (!userId) throw new Error('Not authenticated with Firebase');
 
-        const trimmed = trimTrades(trades);
-        const tradesHash = await sha256Hex(JSON.stringify(trimmed));
+        const { trimmed, hash: tradesHash } = trimmedData;
         const insightId = `${accountId}_${period}`;
 
-        // Call Cloud Function to trigger generation (or return cached)
         await generateInsightFn({ trades: trimmed, accountId, period, tradesHash });
 
         // Listen to Firestore for progressive updates
@@ -163,7 +159,10 @@ export function useFirebaseReport(): UseFirebaseReportResult {
           if (!insight) return;
           const mapped = mapInsightToResponse(insight);
           if (Object.keys(mapped).length > 0) setData(mapped);
-          if (insight.status === 'complete') setStreaming(false);
+          if (insight.status === 'complete') {
+            previousDataRef.current = mapped;
+            setStreaming(false);
+          }
           if (insight.status === 'error') {
             setError(insight.error || 'Generation failed');
             setStreaming(false);

@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -8,25 +7,15 @@ import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/component
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { useGetSubscriptionQuery } from '@/store/api';
-import { useAccounts } from '@/hooks/useAccounts';
 import { useTradeCache } from '@/hooks/useTradeCache';
 import { useFirebaseReport } from '@/hooks/useFirebaseAI';
 import { useRateLimits } from '@/hooks/useRateLimits';
+import { useTrimmedTrades } from '@/hooks/useTrimmedTrades';
 import { TradeDetailModal } from '@/components/trade/TradeDetailModal';
 import type { Trade } from '@/types/trade';
-import type { InsightsResponse } from '@/types/insights';
 import {
-  ProfileScoreCard,
-  BehavioralScores,
-  InsightCard,
-  TradeSpotlight,
-  InsightsSummary,
-  AuroraBackground,
-  CostOfEmotionCard,
-  StreakTimeline,
-  TimeEdgeHeatmap,
-  RevengeTradesTable,
   InsightsChat,
+  InsightsReportContent,
 } from '@/components/insights';
 import {
   Sparkles,
@@ -93,22 +82,6 @@ function InsightsLoadingSkeleton() {
   );
 }
 
-function SectionSkeleton({ label }: { label: string }) {
-  return (
-    <div className="rounded-lg border border-border/50 bg-card/50 p-6 animate-pulse">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-4 h-4 rounded bg-primary/20" />
-        <span className="text-sm text-muted-foreground">{label}</span>
-      </div>
-      <div className="space-y-2">
-        <div className="h-4 bg-muted/50 rounded w-3/4" />
-        <div className="h-4 bg-muted/50 rounded w-1/2" />
-        <div className="h-4 bg-muted/50 rounded w-2/3" />
-      </div>
-    </div>
-  );
-}
-
 function PremiumGate() {
   return (
     <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
@@ -157,7 +130,7 @@ export function InsightsView() {
 
   const { data: subscription, isLoading: subLoading } = useGetSubscriptionQuery();
   const isPremium = isSubscriptionActive(subscription);
-  const { accounts } = useAccounts();
+
 
   const handleDatePresetChange = (preset: DatePreset) => {
     setDatePreset(preset);
@@ -175,13 +148,13 @@ export function InsightsView() {
   });
 
   const totalTrades = trades.length;
+  const trimmedData = useTrimmedTrades(trades);
 
   const {
     data: insights,
     streaming,
     error: aiError,
     cacheChecked,
-    cacheHit,
     isStale,
     cachedInsightId,
     checkCache,
@@ -192,10 +165,10 @@ export function InsightsView() {
   const rateLimits = useRateLimits();
 
   useEffect(() => {
-    if (!syncing && trades.length >= MIN_TRADES_FOR_INSIGHTS && isPremium) {
-      checkCache(trades, accountId, String(datePreset));
+    if (!syncing && trimmedData && trades.length >= MIN_TRADES_FOR_INSIGHTS && isPremium) {
+      checkCache(trimmedData, accountId, String(datePreset));
     }
-  }, [syncing, trades.length, accountId, datePreset, isPremium]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [syncing, trimmedData, accountId, datePreset, isPremium, checkCache, trades.length]);
 
   const error = cacheError || aiError;
   const [activeTab, setActiveTab] = useState<string>('report');
@@ -208,10 +181,9 @@ export function InsightsView() {
     );
   }, [insights?.insights]);
 
-  const insightsData = insights as InsightsResponse | null;
-
   const handleGenerate = () => {
-    generate(trades, accountId, String(datePreset));
+    if (!trimmedData) return;
+    generate(trimmedData, accountId, String(datePreset));
   };
 
   // Trade reference handlers
@@ -236,16 +208,6 @@ export function InsightsView() {
 
   const currentSelectedTrade = selectedTrades[selectedTradeIndex] ?? null;
 
-  // Serialize insights for chat context
-  const insightsJsonForChat = useMemo(() => {
-    if (!insightsData) return undefined;
-    try {
-      return JSON.stringify(insightsData);
-    } catch {
-      return undefined;
-    }
-  }, [insightsData]);
-
   // Fullscreen chat mode
   if (chatFullscreen) {
     return (
@@ -255,13 +217,12 @@ export function InsightsView() {
           period={String(datePreset)}
           startDate={localDates.startDate}
           endDate={localDates.endDate}
-          trades={trades}
+          trimmedData={trimmedData}
           isFullscreen={true}
           onToggleFullscreen={() => setChatFullscreen(false)}
           rateLimits={rateLimits}
           insightId={cachedInsightId ?? undefined}
-          insightsData={insightsJsonForChat}
-          hasInsights={!!insightsData}
+          hasInsights={!!insights}
         />
       </div>
     );
@@ -324,7 +285,7 @@ export function InsightsView() {
           )}
 
           {/* Stale trades banner */}
-          {isStale && insightsData && !streaming && (
+          {isStale && insights && !streaming && (
             <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-warning/8 border-l-2 border-warning animate-fade-in">
               <AlertTriangle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
               <div className="flex-1">
@@ -381,7 +342,7 @@ export function InsightsView() {
           )}
 
           {/* Not enough trades */}
-          {!insightsData && !streaming && !error && totalTrades < MIN_TRADES_FOR_INSIGHTS && (
+          {!insights && !streaming && !error && totalTrades < MIN_TRADES_FOR_INSIGHTS && (
             <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
               <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mb-6">
                 <AlertTriangle className="w-8 h-8 text-warning/60" />
@@ -407,7 +368,7 @@ export function InsightsView() {
           )}
 
           {/* Generate button — shown when enough trades but no insights yet and not streaming */}
-          {!insightsData && !streaming && !error && cacheChecked && totalTrades >= MIN_TRADES_FOR_INSIGHTS && (
+          {!insights && !streaming && !error && cacheChecked && totalTrades >= MIN_TRADES_FOR_INSIGHTS && (
             <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
                 <Sparkles className="w-8 h-8 text-primary/60" />
@@ -442,12 +403,12 @@ export function InsightsView() {
           )}
 
           {/* Streaming initial state — skeleton while waiting for first data */}
-          {streaming && !insightsData && (
+          {streaming && !insights && (
             <InsightsLoadingSkeleton />
           )}
 
           {/* Tab layout — shown when insights data exists (including partial during streaming) */}
-          {(insightsData || (streaming && insights)) && (
+          {(insights || (streaming && insights)) && (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <div className="flex items-center justify-between gap-4">
                 <TabsList>
@@ -467,112 +428,14 @@ export function InsightsView() {
                 )}
               </div>
 
-              {/* Report tab (includes patterns) */}
               <TabsContent value="report">
-                <AuroraBackground>
-                  <div className="space-y-6 animate-in fade-in-0 duration-500 p-1">
-                    {/* Summary */}
-                    {insights?.summary ? (
-                      <InsightsSummary summary={insights.summary} />
-                    ) : streaming ? (
-                      <SectionSkeleton label="Loading summary..." />
-                    ) : null}
-
-                    {/* Profile + Behavioral Scores */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                      {insights?.profile ? (
-                        <ProfileScoreCard profile={insights.profile} />
-                      ) : streaming ? (
-                        <SectionSkeleton label="Loading profile..." />
-                      ) : null}
-                      {insights?.scores && insights.scores.length > 0 ? (
-                        <BehavioralScores scores={insights.scores} />
-                      ) : streaming ? (
-                        <SectionSkeleton label="Loading scores..." />
-                      ) : null}
-                    </div>
-
-                    {/* Cost of Emotion — only show if there's a cost */}
-                    {insights?.patterns?.costOfEmotion && insights.patterns.costOfEmotion.totalEmotionalCost !== 0 && (
-                      <CostOfEmotionCard costOfEmotion={insights.patterns.costOfEmotion} />
-                    )}
-
-                    {/* Insights */}
-                    {sortedInsights.length > 0 ? (
-                      <div>
-                        <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                          Key Insights
-                          <span className="text-xs text-muted-foreground font-normal">
-                            ({sortedInsights.length})
-                          </span>
-                        </h2>
-                        <div className="space-y-3">
-                          {sortedInsights.map((insight, index) => (
-                            <InsightCard
-                              key={`${insight.severity}-${insight.title}-${index}`}
-                              insight={insight}
-                              onViewTrades={handleViewTrades}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ) : streaming ? (
-                      <SectionSkeleton label="Loading insights..." />
-                    ) : null}
-
-                    {/* Trade Spotlights */}
-                    {insights?.tradeSpotlights && insights.tradeSpotlights.length > 0 ? (
-                      <div>
-                        <h2 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                          Trade Spotlights
-                          <span className="text-xs text-muted-foreground font-normal">
-                            ({insights.tradeSpotlights.length})
-                          </span>
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {insights.tradeSpotlights.map((spotlight) => (
-                            <TradeSpotlight
-                              key={spotlight.tradeId}
-                              spotlight={spotlight}
-                              onViewTrade={handleViewTrade}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ) : streaming ? (
-                      <SectionSkeleton label="Loading trade spotlights..." />
-                    ) : null}
-
-                    {/* Patterns section (merged from old Patterns tab) */}
-                    {insights?.patterns ? (
-                      <>
-                        <RevengeTradesTable
-                          revengeTrades={insights.patterns.revengeTrades}
-                          onViewTrade={handleViewTrade}
-                        />
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                          <StreakTimeline
-                            streaks={insights.patterns.streaks}
-                            longestWinStreak={insights.patterns.longestWinStreak}
-                            longestLossStreak={insights.patterns.longestLossStreak}
-                            currentStreak={insights.patterns.currentStreak}
-                          />
-                          <TimeEdgeHeatmap
-                            hourlyEdges={insights.patterns.hourlyEdges}
-                            dayOfWeekEdges={insights.patterns.dayOfWeekEdges}
-                          />
-                        </div>
-                      </>
-                    ) : streaming ? (
-                      <div className="space-y-4">
-                        <SectionSkeleton label="Loading pattern analysis..." />
-                        <SectionSkeleton label="Loading streak data..." />
-                      </div>
-                    ) : null}
-                  </div>
-                </AuroraBackground>
+                <InsightsReportContent
+                  insights={insights}
+                  sortedInsights={sortedInsights}
+                  streaming={streaming}
+                  onViewTrade={handleViewTrade}
+                  onViewTrades={handleViewTrades}
+                />
               </TabsContent>
 
               {/* Ask AI tab */}
@@ -582,13 +445,12 @@ export function InsightsView() {
                   period={String(datePreset)}
                   startDate={localDates.startDate}
                   endDate={localDates.endDate}
-                  trades={trades}
+                  trimmedData={trimmedData}
                   isFullscreen={false}
                   onToggleFullscreen={() => { setActiveTab('ask-ai'); setChatFullscreen(true); }}
                   rateLimits={rateLimits}
                   insightId={cachedInsightId ?? undefined}
-                  insightsData={insightsJsonForChat}
-                  hasInsights={!!insightsData}
+                  hasInsights={!!insights}
                 />
               </TabsContent>
             </Tabs>

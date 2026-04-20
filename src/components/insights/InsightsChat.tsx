@@ -8,7 +8,7 @@ import { Send, Sparkles, User, Bot, Square, Maximize2, Minimize2 } from 'lucide-
 import { useFirebaseChat } from '@/hooks/useFirebaseChat';
 import { ChatSessionSidebar } from '@/components/insights/ChatSessionSidebar';
 import type { ChatMessage } from '@/types/insights';
-import type { Trade } from '@/types/trade';
+import type { TrimmedTradesData } from '@/hooks/useTrimmedTrades';
 
 interface RateLimitBucket {
   used: number;
@@ -27,12 +27,11 @@ export interface InsightsChatProps {
   period: string;
   startDate: string;
   endDate: string;
-  trades: Trade[];
+  trimmedData: TrimmedTradesData | null;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   rateLimits: RateLimitInfo | null;
   insightId?: string;
-  insightsData?: string;
   hasInsights?: boolean;
 }
 
@@ -89,12 +88,11 @@ function StreamingIndicator() {
 export function InsightsChat({
   accountId,
   period,
-  trades,
+  trimmedData,
   isFullscreen,
   onToggleFullscreen,
   rateLimits,
   insightId,
-  insightsData,
   hasInsights = false,
 }: InsightsChatProps) {
   const [inputText, setInputText] = useState('');
@@ -111,7 +109,6 @@ export function InsightsChat({
     messages,
     streaming,
     error,
-    sessionId,
     messageCount,
     messageLimit,
     startSession,
@@ -143,14 +140,23 @@ export function InsightsChat({
     }
   }, [sessionsLoading, sessions, insightId, accountId, period, isNewChat, switchSession]);
 
-  // When sessionId appears after startSession, send the pending message
+  // When activeSessionId appears after startSession, send the pending message
   useEffect(() => {
-    if (sessionId && pendingMessage) {
+    if (activeSessionId && pendingMessage) {
       send(pendingMessage);
       setPendingMessage(null);
       setIsNewChat(false);
     }
-  }, [sessionId, pendingMessage, send]);
+  }, [activeSessionId, pendingMessage, send]);
+
+  // Safety timeout: clear pendingMessage if session creation takes too long
+  useEffect(() => {
+    if (!pendingMessage) return;
+    const timeout = setTimeout(() => {
+      setPendingMessage(null);
+    }, 10000);
+    return () => clearTimeout(timeout);
+  }, [pendingMessage]);
 
   useEffect(() => {
     if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
@@ -177,14 +183,15 @@ export function InsightsChat({
     if (!text || streaming) return;
     setInputText('');
 
-    if (!sessionId || isNewChat) {
+    if (!activeSessionId || isNewChat) {
+      if (!trimmedData) return;
       setPendingMessage(text);
-      startSession(trades, accountId, period, insightId, insightsData);
+      startSession(trimmedData, accountId, period, insightId);
       setIsNewChat(false);
     } else {
       send(text);
     }
-  }, [inputText, streaming, sessionId, isNewChat, trades, accountId, period, insightId, insightsData, startSession, send]);
+  }, [inputText, streaming, activeSessionId, isNewChat, trimmedData, accountId, period, insightId, startSession, send]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -194,10 +201,10 @@ export function InsightsChat({
   }
 
   function handleSuggestedQuestion(question: string) {
-    if (streaming) return;
-    if (!sessionId || isNewChat) {
+    if (streaming || !trimmedData) return;
+    if (!activeSessionId || isNewChat) {
       setPendingMessage(question);
-      startSession(trades, accountId, period, insightId, insightsData);
+      startSession(trimmedData, accountId, period, insightId);
       setIsNewChat(false);
     } else {
       send(question);
@@ -328,7 +335,7 @@ export function InsightsChat({
         <Button
           size="icon"
           onClick={handleSend}
-          disabled={!inputText.trim() || (isSessionFull && !isNewChat) || (isRateLimited && !sessionId)}
+          disabled={!inputText.trim() || (isSessionFull && !isNewChat) || (isRateLimited && !activeSessionId)}
           aria-label="Send message"
         >
           <Send className="w-4 h-4" />
@@ -410,7 +417,7 @@ export function InsightsChat({
             <CardTitle className="text-base font-semibold">Ask AI</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            {sessionId && !isNewChat && (
+            {activeSessionId && !isNewChat && (
               <span className="text-xs text-muted-foreground">
                 {messageCount}/{messageLimit} messages
               </span>
@@ -429,7 +436,7 @@ export function InsightsChat({
         <p className="text-xs text-muted-foreground mt-1">
           Ask questions about your trading data and get AI-powered analysis
         </p>
-        {rateLimits && !sessionId && (
+        {rateLimits && !activeSessionId && (
           <p className="text-xs text-muted-foreground">
             {rateLimits.sessions.remaining}/{rateLimits.sessions.limit} sessions remaining
           </p>

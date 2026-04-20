@@ -17,7 +17,6 @@ let mockChatReturn: {
   sessions: any[];
   sessionsLoading: boolean;
   activeSessionId: string | null;
-  sessionId: string | null;
   sessionSwitching: boolean;
   messages: ChatMessage[];
   streaming: boolean;
@@ -58,12 +57,11 @@ describe('InsightsChat', () => {
     period: 'thisMonth',
     startDate: '2026-04-01',
     endDate: '2026-04-30',
-    trades: [{ tradeId: 't1', pnl: 50 }] as any[],
+    trimmedData: { trimmed: [{ tradeId: 't1', pnl: 50 }], hash: 'mock-hash' } as any,
     isFullscreen: false,
     onToggleFullscreen: vi.fn(),
     rateLimits: null as any,
     insightId: undefined as string | undefined,
-    insightsData: undefined as string | undefined,
     hasInsights: true,
   };
 
@@ -73,7 +71,6 @@ describe('InsightsChat', () => {
       sessions: [],
       sessionsLoading: false,
       activeSessionId: null,
-      sessionId: null,
       sessionSwitching: false,
       messages: [],
       streaming: false,
@@ -139,10 +136,9 @@ describe('InsightsChat', () => {
     await user.click(screen.getByLabelText('Send message'));
 
     expect(mockStartSession).toHaveBeenCalledWith(
-      defaultProps.trades,
+      defaultProps.trimmedData,
       defaultProps.accountId,
       defaultProps.period,
-      undefined,
       undefined,
     );
   });
@@ -150,7 +146,6 @@ describe('InsightsChat', () => {
   it('calls send for subsequent messages when session exists', async () => {
     mockChatReturn = {
       ...mockChatReturn,
-      sessionId: 'session-42',
       activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'First question' }, { role: 'model', text: 'Response' }],
     };
@@ -172,10 +167,9 @@ describe('InsightsChat', () => {
     await user.type(input, 'test question{Enter}');
 
     expect(mockStartSession).toHaveBeenCalledWith(
-      defaultProps.trades,
+      defaultProps.trimmedData,
       defaultProps.accountId,
       defaultProps.period,
-      undefined,
       undefined,
     );
   });
@@ -194,10 +188,9 @@ describe('InsightsChat', () => {
     await user.click(screen.getByText('What are my biggest mistakes?'));
 
     expect(mockStartSession).toHaveBeenCalledWith(
-      defaultProps.trades,
+      defaultProps.trimmedData,
       defaultProps.accountId,
       defaultProps.period,
-      undefined,
       undefined,
     );
   });
@@ -219,7 +212,6 @@ describe('InsightsChat', () => {
   it('renders user and model messages', () => {
     mockChatReturn = {
       ...mockChatReturn,
-      sessionId: 'session-42',
       activeSessionId: 'session-42',
       messages: [
         { role: 'user', text: 'What are my patterns?' },
@@ -235,7 +227,6 @@ describe('InsightsChat', () => {
   it('hides suggested questions when messages exist', () => {
     mockChatReturn = {
       ...mockChatReturn,
-      sessionId: 'session-42',
       activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'test' }],
     };
@@ -247,7 +238,6 @@ describe('InsightsChat', () => {
   it('shows stop button when streaming', () => {
     mockChatReturn = {
       ...mockChatReturn,
-      sessionId: 'session-42',
       activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'test' }],
       streaming: true,
@@ -262,7 +252,6 @@ describe('InsightsChat', () => {
     const user = userEvent.setup();
     mockChatReturn = {
       ...mockChatReturn,
-      sessionId: 'session-42',
       activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'test' }],
       streaming: true,
@@ -286,7 +275,6 @@ describe('InsightsChat', () => {
   it('disables input when streaming', () => {
     mockChatReturn = {
       ...mockChatReturn,
-      sessionId: 'session-42',
       activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'test' }],
       streaming: true,
@@ -299,7 +287,6 @@ describe('InsightsChat', () => {
   it('shows message counter when session exists', () => {
     mockChatReturn = {
       ...mockChatReturn,
-      sessionId: 'session-42',
       activeSessionId: 'session-42',
       messageCount: 5,
       messageLimit: 25,
@@ -312,7 +299,6 @@ describe('InsightsChat', () => {
   it('shows session limit reached message and disables input', () => {
     mockChatReturn = {
       ...mockChatReturn,
-      sessionId: 'session-42',
       activeSessionId: 'session-42',
       messageCount: 25,
       messageLimit: 25,
@@ -419,7 +405,6 @@ describe('InsightsChat', () => {
   it('shows loading skeleton during sessionSwitching', () => {
     mockChatReturn = {
       ...mockChatReturn,
-      sessionId: 'session-42',
       activeSessionId: 'session-42',
       sessionSwitching: true,
     };

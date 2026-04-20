@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { Trade } from '@/types/trade';
+import type { TrimmedTradesData } from '../useTrimmedTrades';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -63,6 +64,11 @@ const makeTrade = (overrides: Partial<Trade> = {}): Trade => ({
   ...overrides,
 });
 
+const makeTrimmedData = (trades: Trade[] = [makeTrade()]): TrimmedTradesData => ({
+  trimmed: trades.map((t) => ({ tradeId: t.id })) as any,
+  hash: 'hash-abc',
+});
+
 describe('useFirebaseChat', () => {
   let useFirebaseChat: typeof import('../useFirebaseChat').useFirebaseChat;
   const mockUnsubMsgs = vi.fn();
@@ -110,11 +116,10 @@ describe('useFirebaseChat', () => {
   });
 
   it('startSession calls Cloud Function with trimmed trades', async () => {
-    const trades = [makeTrade()];
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession(trades, 'acc-1', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'acc-1', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -131,7 +136,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisWeek');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisWeek');
     });
 
     await waitFor(() => {
@@ -143,7 +148,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -164,7 +169,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -191,7 +196,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -220,7 +225,7 @@ describe('useFirebaseChat', () => {
 
     // Start session first
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -244,7 +249,7 @@ describe('useFirebaseChat', () => {
 
     // Start session
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -281,7 +286,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -298,7 +303,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -310,7 +315,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -334,7 +339,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -361,7 +366,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -373,7 +378,7 @@ describe('useFirebaseChat', () => {
     const { result, unmount } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -393,7 +398,7 @@ describe('useFirebaseChat', () => {
 
     // Start first session
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -404,7 +409,7 @@ describe('useFirebaseChat', () => {
     mockStartChatSessionFn.mockResolvedValue({ data: { sessionId: 'session-99' } });
 
     await act(async () => {
-      result.current.startSession([makeTrade()], 'acc-2', 'thisWeek');
+      result.current.startSession(makeTrimmedData(), 'acc-2', 'thisWeek');
     });
 
     expect(mockUnsubMsgs).toHaveBeenCalled();
@@ -482,7 +487,7 @@ describe('useFirebaseChat', () => {
 
     // Start a session first to set up listeners
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -523,7 +528,7 @@ describe('useFirebaseChat', () => {
 
     // Start a session — this calls the Cloud Function
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -579,7 +584,7 @@ describe('useFirebaseChat', () => {
     const { result } = renderHook(() => useFirebaseChat());
 
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {
@@ -598,7 +603,7 @@ describe('useFirebaseChat', () => {
 
     // Start session and get some messages
     act(() => {
-      result.current.startSession([makeTrade()], 'ALL', 'thisMonth');
+      result.current.startSession(makeTrimmedData(), 'ALL', 'thisMonth');
     });
 
     await waitFor(() => {

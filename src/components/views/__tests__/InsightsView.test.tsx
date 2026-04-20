@@ -41,6 +41,11 @@ vi.mock('@/hooks/useRateLimits', () => ({
   useRateLimits: vi.fn(),
 }));
 
+// Mock useTrimmedTrades
+vi.mock('@/hooks/useTrimmedTrades', () => ({
+  useTrimmedTrades: vi.fn(),
+}));
+
 // Mock child components
 vi.mock('@/components/account/AccountFilter', () => ({
   AccountFilter: () => <div data-testid="account-filter">Account Filter</div>,
@@ -71,6 +76,31 @@ vi.mock('@/components/insights', () => ({
       <button data-testid="toggle-fullscreen" onClick={onToggleFullscreen}>Toggle</button>
     </div>
   ),
+  InsightsReportContent: ({ insights, sortedInsights, streaming }: any) => (
+    <div data-testid="insights-report-content">
+      {insights?.summary && <div data-testid="insights-summary">{insights.summary}</div>}
+      {insights?.profile && <div data-testid="profile-score-card">{insights.profile.typeLabel}</div>}
+      {insights?.scores?.length > 0 && <div data-testid="behavioral-scores">{insights.scores.length} scores</div>}
+      {insights?.patterns?.costOfEmotion?.totalEmotionalCost !== 0 && insights?.patterns?.costOfEmotion && (
+        <div data-testid="cost-of-emotion">{insights.patterns.costOfEmotion.totalEmotionalCost}</div>
+      )}
+      {sortedInsights?.map((insight: any, i: number) => (
+        <div key={i} data-testid="insight-card">{insight.title}</div>
+      ))}
+      {insights?.tradeSpotlights?.map((s: any) => (
+        <div key={s.tradeId} data-testid="trade-spotlight">{s.symbol}</div>
+      ))}
+      {insights?.patterns && (
+        <>
+          <div data-testid="revenge-trades-table">Revenge Trades Table</div>
+          <div data-testid="streak-timeline">Streak Timeline</div>
+          <div data-testid="time-edge-heatmap">Time Edge Heatmap</div>
+        </>
+      )}
+      {streaming && !insights?.profile && <span>Loading profile...</span>}
+      {streaming && !(insights?.scores?.length > 0) && <span>Loading scores...</span>}
+    </div>
+  ),
 }));
 
 // Import mocked modules for per-test overrides
@@ -79,6 +109,7 @@ import { useAccounts } from '@/hooks/useAccounts';
 import { useTradeCache } from '@/hooks/useTradeCache';
 import { useFirebaseReport } from '@/hooks/useFirebaseAI';
 import { useRateLimits } from '@/hooks/useRateLimits';
+import { useTrimmedTrades } from '@/hooks/useTrimmedTrades';
 
 // ── Default mock return values ──────────────────────────────────────
 
@@ -92,6 +123,11 @@ const fewTrades = [
   { tradeId: 't1', symbol: 'EURUSD', pnl: 100 },
   { tradeId: 't2', symbol: 'GBPUSD', pnl: -50 },
 ];
+
+const mockTrimmedData = {
+  trimmed: sampleTrades.map((t: any) => ({ symbol: t.symbol, pnl: t.pnl })),
+  hash: 'mock-hash-abc123',
+};
 
 const sampleInsightsData = {
   profile: { type: 'day_trader', typeLabel: 'Day Trader', aggressivenessScore: 6, aggressivenessLabel: 'Aggressive', trend: null, summary: 'Active day trader' },
@@ -128,6 +164,7 @@ function setupDefaultMocks(overrides: {
   subscription?: any;
   subLoading?: boolean;
   trades?: any[];
+  trimmedData?: any;
   cacheLoading?: boolean;
   cacheSyncing?: boolean;
   cacheError?: string | null;
@@ -158,12 +195,22 @@ function setupDefaultMocks(overrides: {
     refresh: vi.fn(),
   } as any);
 
+  vi.mocked(useTrimmedTrades).mockReturnValue(
+    overrides.trimmedData !== undefined
+      ? overrides.trimmedData
+      : (overrides.trades ?? sampleTrades).length >= 10
+        ? mockTrimmedData
+        : null,
+  );
+
   vi.mocked(useFirebaseReport).mockReturnValue({
     data: overrides.insights ?? null,
     streaming: overrides.streaming ?? false,
     error: overrides.aiError ?? null,
     cacheChecked: overrides.cacheChecked ?? true,
     cacheHit: overrides.cacheHit ?? false,
+    isStale: false,
+    cachedInsightId: null,
     checkCache: vi.fn(),
     generate: vi.fn(),
     abort: vi.fn(),
@@ -249,6 +296,8 @@ describe('InsightsView', () => {
       error: null,
       cacheChecked: true,
       cacheHit: false,
+      isStale: false,
+      cachedInsightId: null,
       checkCache: vi.fn(),
       generate: generateFn,
       abort: vi.fn(),
@@ -258,7 +307,7 @@ describe('InsightsView', () => {
     render(<InsightsView />);
 
     await user.click(screen.getByRole('button', { name: /Generate Insights/ }));
-    expect(generateFn).toHaveBeenCalledWith(sampleTrades, 'ALL', 'thisMonth');
+    expect(generateFn).toHaveBeenCalledWith(mockTrimmedData, 'ALL', 'thisMonth');
   });
 
   it('shows loading skeleton while streaming without data', () => {
@@ -380,24 +429,15 @@ describe('InsightsView', () => {
 
     it('calls abort when Stop is clicked', async () => {
       const abortFn = vi.fn();
-      vi.mocked(useFirebaseReport).mockReturnValue({
-        data: { summary: 'Partial summary' } as any,
-        streaming: true,
-        error: null,
-        cacheChecked: true,
-        cacheHit: false,
-        checkCache: vi.fn(),
-        generate: vi.fn(),
-        abort: abortFn,
-      });
       setupDefaultMocks();
-      // Re-mock useFirebaseReport since setupDefaultMocks overrides it
       vi.mocked(useFirebaseReport).mockReturnValue({
         data: { summary: 'Partial summary' } as any,
         streaming: true,
         error: null,
         cacheChecked: true,
         cacheHit: false,
+        isStale: false,
+        cachedInsightId: null,
         checkCache: vi.fn(),
         generate: vi.fn(),
         abort: abortFn,
@@ -430,6 +470,8 @@ describe('InsightsView', () => {
         error: null,
         cacheChecked: true,
         cacheHit: false,
+        isStale: false,
+        cachedInsightId: null,
         checkCache: vi.fn(),
         generate: vi.fn(),
         abort: vi.fn(),
@@ -480,6 +522,8 @@ describe('InsightsView', () => {
         error: 'Network error',
         cacheChecked: true,
         cacheHit: false,
+        isStale: false,
+        cachedInsightId: null,
         checkCache: vi.fn(),
         generate: generateFn,
         abort: vi.fn(),
@@ -489,7 +533,7 @@ describe('InsightsView', () => {
       render(<InsightsView />);
 
       await user.click(screen.getByRole('button', { name: /Retry/ }));
-      expect(generateFn).toHaveBeenCalledWith(sampleTrades, 'ALL', 'thisMonth');
+      expect(generateFn).toHaveBeenCalledWith(mockTrimmedData, 'ALL', 'thisMonth');
     });
   });
 
@@ -541,13 +585,15 @@ describe('InsightsView', () => {
         error: null,
         cacheChecked: false,
         cacheHit: false,
+        isStale: false,
+        cachedInsightId: null,
         checkCache: checkCacheFn,
         generate: vi.fn(),
         abort: vi.fn(),
       });
       render(<InsightsView />);
 
-      expect(checkCacheFn).toHaveBeenCalledWith(sampleTrades, 'ALL', 'thisMonth');
+      expect(checkCacheFn).toHaveBeenCalledWith(mockTrimmedData, 'ALL', 'thisMonth');
     });
 
     it('does not call checkCache when trades are below threshold', () => {
@@ -558,6 +604,8 @@ describe('InsightsView', () => {
         error: null,
         cacheChecked: false,
         cacheHit: false,
+        isStale: false,
+        cachedInsightId: null,
         checkCache: checkCacheFn,
         generate: vi.fn(),
         abort: vi.fn(),
@@ -569,6 +617,7 @@ describe('InsightsView', () => {
         error: null,
         refresh: vi.fn(),
       } as any);
+      vi.mocked(useTrimmedTrades).mockReturnValue(null);
       render(<InsightsView />);
 
       expect(checkCacheFn).not.toHaveBeenCalled();
@@ -583,6 +632,8 @@ describe('InsightsView', () => {
         error: null,
         cacheChecked: false,
         cacheHit: false,
+        isStale: false,
+        cachedInsightId: null,
         checkCache: checkCacheFn,
         generate: vi.fn(),
         abort: vi.fn(),
