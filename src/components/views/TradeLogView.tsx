@@ -1559,10 +1559,10 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                               {stats && (
                                 <div className="flex-1 flex flex-col justify-end">
                                   <span className={cn(
-                                    "text-xs font-semibold font-mono",
+                                    "text-sm font-semibold font-mono",
                                     stats.pnl >= 0 ? "text-success" : "text-destructive"
                                   )}>
-                                    {stats.pnl >= 0 ? '+' : ''}{stats.pnl.toFixed(0)}
+                                    {stats.pnl >= 0 ? '+' : ''}${stats.pnl.toFixed(2)}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
                                     {stats.trades} trade{stats.trades !== 1 ? 's' : ''}
@@ -1590,7 +1590,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                                 "text-xs font-semibold font-mono",
                                 weekStats.pnl >= 0 ? "text-success" : "text-destructive"
                               )}>
-                                {weekStats.pnl >= 0 ? '+' : ''}${weekStats.pnl.toFixed(0)}
+                                {weekStats.pnl >= 0 ? '+' : ''}${weekStats.pnl.toFixed(2)}
                               </span>
                             </div>
                             <div className="space-y-0.5">
