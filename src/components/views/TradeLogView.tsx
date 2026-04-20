@@ -61,7 +61,7 @@ import { TablePagination, getStoredPageSize, type PageSize } from '@/components/
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { useGetTradesQuery, useUpdateTradeMutation, useDeleteTradeMutation, useBulkDeleteTradesMutation, useGetAccountsQuery } from '@/store/api';
+import { useGetTradesPaginatedQuery, useUpdateTradeMutation, useDeleteTradeMutation, useBulkDeleteTradesMutation, useGetAccountsQuery } from '@/store/api';
 import { getEligibleTrades } from '@/lib/tradeCalculations';
 import { CreateTradePayload } from '@/lib/api/trades';
 
@@ -131,15 +131,21 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const { filters } = useAppSelector((state) => state.trades);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   
-  // Prepare query params, excluding datePreset and accountId='ALL'
-  // Use useMemo to prevent unnecessary re-renders and cache invalidation
-  const queryParams = useMemo(() => ({
+  // Pagination state (must be declared before the query hook that uses pageSize/cursor)
+  const [pageSize, setPageSize] = useState<PageSize>(getStoredPageSize);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null]);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const { data: paginatedData, isLoading: tradesLoading, isFetching: tradesFetching, refetch } = useGetTradesPaginatedQuery({
     accountId: filters.accountId,
     startDate: filters.startDate,
     endDate: filters.endDate,
-  }), [filters.accountId, filters.startDate, filters.endDate]);
-  
-  const { data: trades = [], isLoading: tradesLoading, isFetching: tradesFetching, refetch } = useGetTradesQuery(queryParams);
+    limit: pageSize,
+    cursor: cursor || undefined,
+  });
+  const trades = paginatedData?.trades ?? [];
+  const paginationInfo = paginatedData?.pagination ?? { nextCursor: null, hasMore: false, limit: pageSize };
   const { data: accountsData, isFetching: accountsFetching } = useGetAccountsQuery();
   const showSkeleton = tradesLoading;
   const isRefreshing = tradesFetching || accountsFetching;
@@ -179,10 +185,6 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     } catch { /* toast middleware handles error */ }
     finally { setIsBulkDeleting(false); }
   };
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSize>(getStoredPageSize);
 
   const [activeTab, setActiveTab] = useState<TabType>('trades');
 
@@ -320,34 +322,48 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
     });
   }, [dateFilteredTrades, symbolFilters, outcomeFilters, strategyFilters, sessionFilters, mistakeFilters, sortColumn, sortDirection, accountNameMap]);
 
-  // --- Pagination: compute paged slice ---
-  const totalFilteredTrades = filteredTrades.length;
-  const totalPages = Math.max(1, Math.ceil(totalFilteredTrades / pageSize));
+  // --- Server-side cursor-based pagination ---
+  // Client-side filters operate on the current page only (no slicing needed).
+  const paginatedTrades = filteredTrades;
 
-  // Clamp currentPage when data or filters change
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+  // Estimate total items for TablePagination UI (exact total unknown with cursor pagination)
+  const hasMore = paginationInfo.hasMore;
+  const estimatedTotal = hasMore
+    ? currentPage * pageSize + 1          // signals "at least one more page"
+    : (currentPage - 1) * pageSize + trades.length;  // exact count on last page
 
-  // Reset to page 1 when filters or query params change
+  // Reset pagination when server-side query params change
   useEffect(() => {
+    setCursor(null);
+    setCursorHistory([null]);
     setCurrentPage(1);
-  }, [symbolFilters, outcomeFilters, strategyFilters, sessionFilters, mistakeFilters, queryParams]);
-
-  const paginatedTrades = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredTrades.slice(start, start + pageSize);
-  }, [filteredTrades, currentPage, pageSize]);
+    setSelectedTradeIds(new Set());
+  }, [filters.accountId, filters.startDate, filters.endDate]);
 
   const handlePageChange = useCallback((page: number) => {
+    if (page === currentPage) return;
+
+    if (page > currentPage && paginationInfo.hasMore) {
+      // Going forward — store next cursor position and advance
+      setCursorHistory(prev => {
+        const next = [...prev];
+        next[page - 1] = paginationInfo.nextCursor;
+        return next;
+      });
+      setCursor(paginationInfo.nextCursor);
+    } else if (page < currentPage) {
+      // Going backward — use stored cursor from history
+      setCursor(cursorHistory[page - 1] ?? null);
+    }
+
     setCurrentPage(page);
     setSelectedTradeIds(new Set());
-  }, []);
+  }, [currentPage, paginationInfo, cursorHistory]);
 
   const handlePageSizeChange = useCallback((size: PageSize) => {
     setPageSize(size);
+    setCursor(null);
+    setCursorHistory([null]);
     setCurrentPage(1);
     setSelectedTradeIds(new Set());
   }, []);
@@ -1063,7 +1079,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                 <div
                   key={trade.id}
                   className="glass-card p-4 cursor-pointer active:bg-secondary/30"
-                  onClick={() => handleViewTrade((currentPage - 1) * pageSize + idx)}
+                  onClick={() => handleViewTrade(idx)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -1122,7 +1138,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             {filteredTrades.length > 0 && (
               <TablePagination
                 currentPage={currentPage}
-                totalItems={totalFilteredTrades}
+                totalItems={estimatedTotal}
                 pageSize={pageSize}
                 isLoading={tradesFetching}
                 onPageChange={handlePageChange}
@@ -1224,8 +1240,8 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                 <tbody className="divide-y divide-border/30">
                   {paginatedTrades.map((trade, index) => {
                     const account = accounts.find(a => a.id === trade.accountId);
-                    // Global index within filteredTrades for the detail modal
-                    const globalIndex = (currentPage - 1) * pageSize + index;
+                    // Index within current page's filteredTrades for the detail modal
+                    const globalIndex = index;
                     return (
                     <tr
                       key={trade.id}
@@ -1436,7 +1452,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             {filteredTrades.length > 0 && (
               <TablePagination
                 currentPage={currentPage}
-                totalItems={totalFilteredTrades}
+                totalItems={estimatedTotal}
                 pageSize={pageSize}
                 isLoading={tradesFetching}
                 onPageChange={handlePageChange}

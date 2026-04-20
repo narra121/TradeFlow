@@ -3,58 +3,62 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders as render, screen, waitFor } from '@/test/test-utils';
 import { TradeLogView } from '../TradeLogView';
 
-// Use vi.hoisted so the mock fn is available inside the hoisted vi.mock factory
-const { mockBulkDeleteTrades } = vi.hoisted(() => ({
+// Use vi.hoisted so mock values are available inside the hoisted vi.mock factory
+const { mockBulkDeleteTrades, defaultTrades } = vi.hoisted(() => ({
   mockBulkDeleteTrades: vi.fn().mockReturnValue({ unwrap: () => Promise.resolve() }),
+  defaultTrades: [
+    {
+      id: '1',
+      symbol: 'EURUSD',
+      direction: 'LONG',
+      entryPrice: 1.1,
+      exitPrice: 1.12,
+      stopLoss: 1.09,
+      takeProfit: 1.13,
+      size: 1,
+      entryDate: '2025-01-15T10:00:00Z',
+      exitDate: '2025-01-15T14:00:00Z',
+      outcome: 'TP',
+      pnl: 200,
+      pnlPercent: 2.0,
+      riskRewardRatio: 2.0,
+      accountId: 'acc1',
+      strategy: 'Breakout',
+      session: 'London',
+      mistakes: ['FOMO'],
+      keyLesson: 'Wait for confirmation',
+    },
+    {
+      id: '2',
+      symbol: 'GBPUSD',
+      direction: 'SHORT',
+      entryPrice: 1.3,
+      exitPrice: 1.28,
+      stopLoss: 1.31,
+      takeProfit: 1.27,
+      size: 0.5,
+      entryDate: '2025-01-16T09:00:00Z',
+      exitDate: '2025-01-16T12:00:00Z',
+      outcome: 'SL',
+      pnl: -100,
+      pnlPercent: -1.0,
+      riskRewardRatio: 1.5,
+      accountId: 'acc1',
+      strategy: 'Scalp',
+      session: 'NY',
+      mistakes: [],
+      keyLesson: '',
+    },
+  ],
 }));
 
 // Mock RTK Query hooks from store/api
 vi.mock('@/store/api', () => ({
-  useGetTradesQuery: vi.fn().mockReturnValue({
-    data: [
-      {
-        id: '1',
-        symbol: 'EURUSD',
-        direction: 'LONG',
-        entryPrice: 1.1,
-        exitPrice: 1.12,
-        stopLoss: 1.09,
-        takeProfit: 1.13,
-        size: 1,
-        entryDate: '2025-01-15T10:00:00Z',
-        exitDate: '2025-01-15T14:00:00Z',
-        outcome: 'TP',
-        pnl: 200,
-        pnlPercent: 2.0,
-        riskRewardRatio: 2.0,
-        accountId: 'acc1',
-        strategy: 'Breakout',
-        session: 'London',
-        mistakes: ['FOMO'],
-        keyLesson: 'Wait for confirmation',
-      },
-      {
-        id: '2',
-        symbol: 'GBPUSD',
-        direction: 'SHORT',
-        entryPrice: 1.3,
-        exitPrice: 1.28,
-        stopLoss: 1.31,
-        takeProfit: 1.27,
-        size: 0.5,
-        entryDate: '2025-01-16T09:00:00Z',
-        exitDate: '2025-01-16T12:00:00Z',
-        outcome: 'SL',
-        pnl: -100,
-        pnlPercent: -1.0,
-        riskRewardRatio: 1.5,
-        accountId: 'acc1',
-        strategy: 'Scalp',
-        session: 'NY',
-        mistakes: [],
-        keyLesson: '',
-      },
-    ],
+  useGetTradesPaginatedQuery: vi.fn().mockReturnValue({
+    data: {
+      trades: defaultTrades,
+      pagination: { nextCursor: null, hasMore: false, limit: 50 },
+    },
     isLoading: false,
     isFetching: false,
     refetch: vi.fn(),
@@ -250,9 +254,9 @@ describe('TradeLogView', () => {
   });
 
   it('shows loading skeleton when data is loading', async () => {
-    const { useGetTradesQuery } = await import('@/store/api');
-    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: [],
+    const { useGetTradesPaginatedQuery } = await import('@/store/api');
+    (useGetTradesPaginatedQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: { trades: [], pagination: { nextCursor: null, hasMore: false, limit: 50 } },
       isLoading: true,
       isFetching: false,
     });
@@ -262,9 +266,9 @@ describe('TradeLogView', () => {
   });
 
   it('shows empty state when no trades match filters', async () => {
-    const { useGetTradesQuery } = await import('@/store/api');
-    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: [],
+    const { useGetTradesPaginatedQuery } = await import('@/store/api');
+    (useGetTradesPaginatedQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: { trades: [], pagination: { nextCursor: null, hasMore: false, limit: 50 } },
       isLoading: false,
       isFetching: false,
       refetch: vi.fn(),
@@ -351,52 +355,12 @@ describe('TradeLogView - Bulk Delete Confirmation', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     // Reset the mock to default (with trades) before each test
-    const { useGetTradesQuery } = await import('@/store/api');
-    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: [
-        {
-          id: '1',
-          symbol: 'EURUSD',
-          direction: 'LONG',
-          entryPrice: 1.1,
-          exitPrice: 1.12,
-          stopLoss: 1.09,
-          takeProfit: 1.13,
-          size: 1,
-          entryDate: '2025-01-15T10:00:00Z',
-          exitDate: '2025-01-15T14:00:00Z',
-          outcome: 'TP',
-          pnl: 200,
-          pnlPercent: 2.0,
-          riskRewardRatio: 2.0,
-          accountId: 'acc1',
-          strategy: 'Breakout',
-          session: 'London',
-          mistakes: ['FOMO'],
-          keyLesson: 'Wait for confirmation',
-        },
-        {
-          id: '2',
-          symbol: 'GBPUSD',
-          direction: 'SHORT',
-          entryPrice: 1.3,
-          exitPrice: 1.28,
-          stopLoss: 1.31,
-          takeProfit: 1.27,
-          size: 0.5,
-          entryDate: '2025-01-16T09:00:00Z',
-          exitDate: '2025-01-16T12:00:00Z',
-          outcome: 'SL',
-          pnl: -100,
-          pnlPercent: -1.0,
-          riskRewardRatio: 1.5,
-          accountId: 'acc1',
-          strategy: 'Scalp',
-          session: 'NY',
-          mistakes: [],
-          keyLesson: '',
-        },
-      ],
+    const { useGetTradesPaginatedQuery } = await import('@/store/api');
+    (useGetTradesPaginatedQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        trades: defaultTrades,
+        pagination: { nextCursor: null, hasMore: false, limit: 50 },
+      },
       isLoading: false,
       isFetching: false,
       refetch: vi.fn(),
@@ -488,9 +452,9 @@ describe('TradeLogView - Empty State', () => {
   });
 
   it('shows helpful empty state when no trades match filters', async () => {
-    const { useGetTradesQuery } = await import('@/store/api');
-    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: [],
+    const { useGetTradesPaginatedQuery } = await import('@/store/api');
+    (useGetTradesPaginatedQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: { trades: [], pagination: { nextCursor: null, hasMore: false, limit: 50 } },
       isLoading: false,
       isFetching: false,
       refetch: vi.fn(),
@@ -511,31 +475,12 @@ describe('TradeLogView - Empty State', () => {
   });
 
   it('shows filter-aware message when filters are active', async () => {
-    const { useGetTradesQuery } = await import('@/store/api');
-    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: [
-        {
-          id: '1',
-          symbol: 'EURUSD',
-          direction: 'LONG',
-          entryPrice: 1.1,
-          exitPrice: 1.12,
-          stopLoss: 1.09,
-          takeProfit: 1.13,
-          size: 1,
-          entryDate: '2025-01-15T10:00:00Z',
-          exitDate: '2025-01-15T14:00:00Z',
-          outcome: 'TP',
-          pnl: 200,
-          pnlPercent: 2.0,
-          riskRewardRatio: 2.0,
-          accountId: 'acc1',
-          strategy: 'Breakout',
-          session: 'London',
-          mistakes: ['FOMO'],
-          keyLesson: 'Wait for confirmation',
-        },
-      ],
+    const { useGetTradesPaginatedQuery } = await import('@/store/api');
+    (useGetTradesPaginatedQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        trades: [defaultTrades[0]],
+        pagination: { nextCursor: null, hasMore: false, limit: 50 },
+      },
       isLoading: false,
       isFetching: false,
       refetch: vi.fn(),
@@ -619,52 +564,12 @@ describe('TradeLogView - Sort Persistence', () => {
     vi.clearAllMocks();
     localStorage.removeItem(SORT_STORAGE_KEY);
     // Reset the mock to default (with trades) before each test
-    const { useGetTradesQuery } = await import('@/store/api');
-    (useGetTradesQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: [
-        {
-          id: '1',
-          symbol: 'EURUSD',
-          direction: 'LONG',
-          entryPrice: 1.1,
-          exitPrice: 1.12,
-          stopLoss: 1.09,
-          takeProfit: 1.13,
-          size: 1,
-          entryDate: '2025-01-15T10:00:00Z',
-          exitDate: '2025-01-15T14:00:00Z',
-          outcome: 'TP',
-          pnl: 200,
-          pnlPercent: 2.0,
-          riskRewardRatio: 2.0,
-          accountId: 'acc1',
-          strategy: 'Breakout',
-          session: 'London',
-          mistakes: ['FOMO'],
-          keyLesson: 'Wait for confirmation',
-        },
-        {
-          id: '2',
-          symbol: 'GBPUSD',
-          direction: 'SHORT',
-          entryPrice: 1.3,
-          exitPrice: 1.28,
-          stopLoss: 1.31,
-          takeProfit: 1.27,
-          size: 0.5,
-          entryDate: '2025-01-16T09:00:00Z',
-          exitDate: '2025-01-16T12:00:00Z',
-          outcome: 'SL',
-          pnl: -100,
-          pnlPercent: -1.0,
-          riskRewardRatio: 1.5,
-          accountId: 'acc1',
-          strategy: 'Scalp',
-          session: 'NY',
-          mistakes: [],
-          keyLesson: '',
-        },
-      ],
+    const { useGetTradesPaginatedQuery } = await import('@/store/api');
+    (useGetTradesPaginatedQuery as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        trades: defaultTrades,
+        pagination: { nextCursor: null, hasMore: false, limit: 50 },
+      },
       isLoading: false,
       isFetching: false,
       refetch: vi.fn(),
