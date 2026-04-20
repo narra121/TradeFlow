@@ -12,11 +12,12 @@ vi.mock('@/lib/api/api', () => ({
 import apiClient from '@/lib/api/api';
 const mockPost = vi.mocked(apiClient.post);
 
-function makeTrade(overrides: Partial<Trade> = {}): Trade {
+function makeTrade(overrides: Record<string, any> = {}): any {
   return {
     id: 'trade-1', symbol: 'AAPL', direction: 'LONG',
     entryPrice: 150, exitPrice: 155, stopLoss: 148, takeProfit: 160,
-    size: 100, entryDate: '2026-04-10T09:30:00Z', exitDate: '2026-04-10T15:00:00Z',
+    size: 100, openDate: '2026-04-10T09:30:00Z', closeDate: '2026-04-10T15:00:00Z',
+    entryDate: '2026-04-10T09:30:00Z', exitDate: '2026-04-10T15:00:00Z',
     outcome: 'TP', pnl: 500, riskRewardRatio: 2.5,
     ...overrides,
   };
@@ -71,7 +72,7 @@ describe('cache/sync', () => {
     mockPost.mockResolvedValueOnce({
       serverHashes: { '2026-04-10': 'h10', '2026-04-11': 'h11' },
       staleDays: ['2026-04-11'],
-      trades: [makeTrade({ id: 'd11', exitDate: '2026-04-11T15:00:00Z' })],
+      trades: [makeTrade({ id: 'd11', openDate: '2026-04-11T09:30:00Z' })],
     });
 
     const result = await syncTrades(userId, accountId, '2026-04-10', '2026-04-11');
