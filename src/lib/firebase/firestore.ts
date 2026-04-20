@@ -1,4 +1,4 @@
-import { doc, collection, onSnapshot, query, orderBy, type Unsubscribe } from 'firebase/firestore';
+import { doc, collection, onSnapshot, query, orderBy, limit, getDoc, type Unsubscribe } from 'firebase/firestore';
 import { db } from './init';
 import type { InsightsResponse } from '@/types/insights';
 
@@ -20,6 +20,18 @@ export interface FirestoreInsight {
 }
 
 export interface FirestoreChatSession {
+  title?: string;
+  accountId: string;
+  period: string;
+  messageCount: number;
+  createdAt: { toMillis: () => number };
+  expiresAt: { toMillis: () => number };
+  status: 'active' | 'generating' | 'expired';
+}
+
+export interface FirestoreChatSessionSummary {
+  id: string;
+  title?: string;
   accountId: string;
   period: string;
   messageCount: number;
@@ -38,6 +50,15 @@ export interface FirestoreChatMessage {
 export interface RateLimitData {
   insightGenerations?: { count: number; windowStart: { toMillis: () => number } };
   chatSessions?: { count: number; windowStart: { toMillis: () => number } };
+}
+
+export async function getInsightOnce(
+  userId: string,
+  insightId: string,
+): Promise<FirestoreInsight | null> {
+  const docRef = doc(db, 'users', userId, 'insights', insightId);
+  const snap = await getDoc(docRef);
+  return snap.exists() ? (snap.data() as FirestoreInsight) : null;
 }
 
 export function listenToInsight(
@@ -89,6 +110,28 @@ export function listenToChatSession(
     docRef,
     (snapshot) => {
       callback(snapshot.exists() ? (snapshot.data() as FirestoreChatSession) : null);
+    },
+    (error) => {
+      onError?.(error);
+    },
+  );
+}
+
+export function listenToChatSessions(
+  userId: string,
+  callback: (sessions: FirestoreChatSessionSummary[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const colRef = collection(db, 'users', userId, 'chatSessions');
+  const q = query(colRef, orderBy('createdAt', 'desc'), limit(50));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const sessions = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as FirestoreChatSessionSummary[];
+      callback(sessions);
     },
     (error) => {
       onError?.(error);

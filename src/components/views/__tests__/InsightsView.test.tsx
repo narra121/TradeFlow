@@ -65,7 +65,12 @@ vi.mock('@/components/insights', () => ({
   StreakTimeline: () => <div data-testid="streak-timeline">Streak Timeline</div>,
   TimeEdgeHeatmap: () => <div data-testid="time-edge-heatmap">Time Edge Heatmap</div>,
   RevengeTradesTable: () => <div data-testid="revenge-trades-table">Revenge Trades Table</div>,
-  InsightsChat: () => <div data-testid="insights-chat">Insights Chat</div>,
+  InsightsChat: ({ isFullscreen, onToggleFullscreen }: any) => (
+    <div data-testid="insights-chat" data-fullscreen={isFullscreen}>
+      Insights Chat
+      <button data-testid="toggle-fullscreen" onClick={onToggleFullscreen}>Toggle</button>
+    </div>
+  ),
 }));
 
 // Import mocked modules for per-test overrides
@@ -130,6 +135,8 @@ function setupDefaultMocks(overrides: {
   streaming?: boolean;
   aiError?: string | null;
   rateLimits?: any;
+  cacheChecked?: boolean;
+  cacheHit?: boolean;
 } = {}) {
   vi.mocked(useGetSubscriptionQuery).mockReturnValue({
     data: overrides.subscription ?? { status: 'active' },
@@ -155,6 +162,9 @@ function setupDefaultMocks(overrides: {
     data: overrides.insights ?? null,
     streaming: overrides.streaming ?? false,
     error: overrides.aiError ?? null,
+    cacheChecked: overrides.cacheChecked ?? true,
+    cacheHit: overrides.cacheHit ?? false,
+    checkCache: vi.fn(),
     generate: vi.fn(),
     abort: vi.fn(),
   });
@@ -237,6 +247,9 @@ describe('InsightsView', () => {
       data: null,
       streaming: false,
       error: null,
+      cacheChecked: true,
+      cacheHit: false,
+      checkCache: vi.fn(),
       generate: generateFn,
       abort: vi.fn(),
     });
@@ -385,6 +398,9 @@ describe('InsightsView', () => {
         data: { summary: 'Partial summary' } as any,
         streaming: true,
         error: null,
+        cacheChecked: true,
+        cacheHit: false,
+        checkCache: vi.fn(),
         generate: vi.fn(),
         abort: abortFn,
       });
@@ -394,6 +410,9 @@ describe('InsightsView', () => {
         data: { summary: 'Partial summary' } as any,
         streaming: true,
         error: null,
+        cacheChecked: true,
+        cacheHit: false,
+        checkCache: vi.fn(),
         generate: vi.fn(),
         abort: abortFn,
       });
@@ -423,6 +442,9 @@ describe('InsightsView', () => {
         } as any,
         streaming: true,
         error: null,
+        cacheChecked: true,
+        cacheHit: false,
+        checkCache: vi.fn(),
         generate: vi.fn(),
         abort: vi.fn(),
       });
@@ -470,6 +492,9 @@ describe('InsightsView', () => {
         data: null,
         streaming: false,
         error: 'Network error',
+        cacheChecked: true,
+        cacheHit: false,
+        checkCache: vi.fn(),
         generate: generateFn,
         abort: vi.fn(),
       });
@@ -479,6 +504,196 @@ describe('InsightsView', () => {
 
       await user.click(screen.getByRole('button', { name: /Retry/ }));
       expect(generateFn).toHaveBeenCalledWith(sampleTrades, 'ALL', 'thisMonth');
+    });
+  });
+
+  describe('cache auto-check', () => {
+    it('auto-shows cached insight without Generate button when cacheHit is true', () => {
+      setupDefaultMocks({
+        insights: sampleInsightsData,
+        cacheChecked: true,
+        cacheHit: true,
+      });
+      render(<InsightsView />);
+
+      // Should render the tabs (insights data is set)
+      expect(screen.getByRole('tab', { name: 'Report' })).toBeInTheDocument();
+      // Should NOT show Generate button
+      expect(screen.queryByText('Ready to Analyze')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Generate Insights/ })).not.toBeInTheDocument();
+    });
+
+    it('shows Generate button when cacheChecked is true but cacheHit is false', () => {
+      setupDefaultMocks({
+        cacheChecked: true,
+        cacheHit: false,
+      });
+      render(<InsightsView />);
+
+      expect(screen.getByText('Ready to Analyze')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Generate Insights/ })).toBeInTheDocument();
+    });
+
+    it('shows checking indicator while cacheChecked is false', () => {
+      setupDefaultMocks({
+        cacheChecked: false,
+        cacheHit: false,
+      });
+      render(<InsightsView />);
+
+      expect(screen.getByText('Checking for cached insights...')).toBeInTheDocument();
+      // Should NOT show Generate button while checking
+      expect(screen.queryByText('Ready to Analyze')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Generate Insights/ })).not.toBeInTheDocument();
+    });
+
+    it('calls checkCache when trades are ready and user is premium', () => {
+      const checkCacheFn = vi.fn();
+      vi.mocked(useFirebaseReport).mockReturnValue({
+        data: null,
+        streaming: false,
+        error: null,
+        cacheChecked: false,
+        cacheHit: false,
+        checkCache: checkCacheFn,
+        generate: vi.fn(),
+        abort: vi.fn(),
+      });
+      render(<InsightsView />);
+
+      expect(checkCacheFn).toHaveBeenCalledWith(sampleTrades, 'ALL', 'thisMonth');
+    });
+
+    it('does not call checkCache when trades are below threshold', () => {
+      const checkCacheFn = vi.fn();
+      vi.mocked(useFirebaseReport).mockReturnValue({
+        data: null,
+        streaming: false,
+        error: null,
+        cacheChecked: false,
+        cacheHit: false,
+        checkCache: checkCacheFn,
+        generate: vi.fn(),
+        abort: vi.fn(),
+      });
+      vi.mocked(useTradeCache).mockReturnValue({
+        trades: fewTrades,
+        loading: false,
+        syncing: false,
+        error: null,
+        refresh: vi.fn(),
+      } as any);
+      render(<InsightsView />);
+
+      expect(checkCacheFn).not.toHaveBeenCalled();
+    });
+
+    it('does not call checkCache for free users', () => {
+      const checkCacheFn = vi.fn();
+      setupDefaultMocks({ subscription: { status: 'free' } });
+      vi.mocked(useFirebaseReport).mockReturnValue({
+        data: null,
+        streaming: false,
+        error: null,
+        cacheChecked: false,
+        cacheHit: false,
+        checkCache: checkCacheFn,
+        generate: vi.fn(),
+        abort: vi.fn(),
+      });
+      render(<InsightsView />);
+
+      expect(checkCacheFn).not.toHaveBeenCalled();
+    });
+
+    it('does not show checking indicator when not enough trades', () => {
+      setupDefaultMocks({
+        trades: fewTrades,
+        cacheChecked: false,
+        cacheHit: false,
+      });
+      render(<InsightsView />);
+
+      expect(screen.queryByText('Checking for cached insights...')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('fullscreen chat', () => {
+    beforeEach(() => {
+      setupDefaultMocks({ insights: sampleInsightsData });
+    });
+
+    it('enters fullscreen mode when chat toggle is clicked', async () => {
+      const user = userEvent.setup();
+      render(<InsightsView />);
+
+      // Switch to Ask AI tab first
+      await user.click(screen.getByRole('tab', { name: 'Ask AI' }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('insights-chat')).toBeInTheDocument();
+      });
+
+      // Click the toggle button inside the mocked InsightsChat
+      await user.click(screen.getByTestId('toggle-fullscreen'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('fullscreen-chat-container')).toBeInTheDocument();
+      });
+
+      // Verify the InsightsChat receives isFullscreen=true
+      const chat = screen.getByTestId('insights-chat');
+      expect(chat).toHaveAttribute('data-fullscreen', 'true');
+    });
+
+    it('exits fullscreen mode and shows tabs again', async () => {
+      const user = userEvent.setup();
+      render(<InsightsView />);
+
+      // Enter fullscreen via Ask AI tab
+      await user.click(screen.getByRole('tab', { name: 'Ask AI' }));
+      await waitFor(() => {
+        expect(screen.getByTestId('insights-chat')).toBeInTheDocument();
+      });
+      await user.click(screen.getByTestId('toggle-fullscreen'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('fullscreen-chat-container')).toBeInTheDocument();
+      });
+
+      // Exit fullscreen
+      await user.click(screen.getByTestId('toggle-fullscreen'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('fullscreen-chat-container')).not.toBeInTheDocument();
+      });
+
+      // Tabs should be visible again
+      expect(screen.getByRole('tab', { name: 'Report' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Patterns' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Ask AI' })).toBeInTheDocument();
+    });
+
+    it('fullscreen hides header and filters', async () => {
+      const user = userEvent.setup();
+      render(<InsightsView />);
+
+      // Enter fullscreen
+      await user.click(screen.getByRole('tab', { name: 'Ask AI' }));
+      await waitFor(() => {
+        expect(screen.getByTestId('insights-chat')).toBeInTheDocument();
+      });
+      await user.click(screen.getByTestId('toggle-fullscreen'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('fullscreen-chat-container')).toBeInTheDocument();
+      });
+
+      // Header, filters, and tabs should be hidden
+      expect(screen.queryByText('AI Insights')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('account-filter')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('date-range-filter')).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: 'Report' })).not.toBeInTheDocument();
     });
   });
 });

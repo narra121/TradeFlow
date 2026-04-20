@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -143,6 +143,7 @@ export function InsightsView() {
   // Local filter state — independent from global Redux filters
   const [datePreset, setDatePreset] = useState<DatePreset>('thisMonth');
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
+  const [chatFullscreen, setChatFullscreen] = useState(false);
 
   const localDates = useMemo(() => {
     const range = getDateRangeFromPreset(datePreset);
@@ -195,12 +196,22 @@ export function InsightsView() {
     data: insights,
     streaming,
     error: aiError,
+    cacheChecked,
+    cacheHit,
+    checkCache,
     generate,
     abort,
   } = useFirebaseReport();
 
   // Rate limits
   const rateLimits = useRateLimits();
+
+  // Auto-check Firestore cache when trades are ready
+  useEffect(() => {
+    if (!syncing && trades.length >= MIN_TRADES_FOR_INSIGHTS && isPremium) {
+      checkCache(trades, accountId, datePreset);
+    }
+  }, [syncing, trades.length, accountId, datePreset, isPremium]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Combined error
   const error = cacheError || aiError;
@@ -224,6 +235,24 @@ export function InsightsView() {
   const handleGenerate = () => {
     generate(trades, accountId, datePreset);
   };
+
+  // Fullscreen chat mode — hides all other content
+  if (chatFullscreen) {
+    return (
+      <div className="h-[calc(100vh-2rem)] flex flex-col animate-fade-in" data-testid="fullscreen-chat-container">
+        <InsightsChat
+          accountId={accountId}
+          period={datePreset}
+          startDate={localDates.startDate}
+          endDate={localDates.endDate}
+          trades={trades}
+          isFullscreen={true}
+          onToggleFullscreen={() => setChatFullscreen(false)}
+          rateLimits={rateLimits}
+        />
+      </div>
+    );
+  }
 
   // Don't show the gate flash while subscription loads
   if (subLoading) {
@@ -320,8 +349,16 @@ export function InsightsView() {
             </div>
           )}
 
+          {/* Checking cache indicator */}
+          {!cacheChecked && !streaming && !error && totalTrades >= MIN_TRADES_FOR_INSIGHTS && (
+            <div className="flex items-center gap-2 justify-center py-16 sm:py-24 animate-in fade-in-0 duration-300">
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              <p className="text-sm text-muted-foreground">Checking for cached insights...</p>
+            </div>
+          )}
+
           {/* Generate button — shown when enough trades but no insights yet and not streaming */}
-          {!insightsData && !streaming && !error && totalTrades >= MIN_TRADES_FOR_INSIGHTS && (
+          {!insightsData && !streaming && !error && cacheChecked && totalTrades >= MIN_TRADES_FOR_INSIGHTS && (
             <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
                 <Sparkles className="w-8 h-8 text-primary/60" />
@@ -496,6 +533,9 @@ export function InsightsView() {
                   startDate={localDates.startDate}
                   endDate={localDates.endDate}
                   trades={trades}
+                  isFullscreen={false}
+                  onToggleFullscreen={() => { setActiveTab('chat'); setChatFullscreen(true); }}
+                  rateLimits={rateLimits}
                 />
               </TabsContent>
             </Tabs>

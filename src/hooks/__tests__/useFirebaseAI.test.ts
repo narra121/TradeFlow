@@ -7,6 +7,7 @@ import type { Trade } from '@/types/trade';
 // ---------------------------------------------------------------------------
 const mockGenerateInsightFn = vi.fn();
 const mockListenToInsight = vi.fn();
+const mockGetInsightOnce = vi.fn();
 const mockTrimTrades = vi.fn();
 const mockSha256Hex = vi.fn();
 
@@ -16,6 +17,7 @@ vi.mock('@/lib/firebase/functions', () => ({
 
 vi.mock('@/lib/firebase/firestore', () => ({
   listenToInsight: (...args: any[]) => mockListenToInsight(...args),
+  getInsightOnce: (...args: any[]) => mockGetInsightOnce(...args),
 }));
 
 vi.mock('@/lib/firebase/trades', () => ({
@@ -68,6 +70,7 @@ describe('useFirebaseReport', () => {
     mockSha256Hex.mockResolvedValue('abc123hash');
     mockGenerateInsightFn.mockResolvedValue({ data: { cached: false, insightId: 'ALL_thisMonth' } });
     mockListenToInsight.mockReturnValue(mockUnsubscribe);
+    mockGetInsightOnce.mockResolvedValue(null);
 
     const mod = await import('../useFirebaseAI');
     useFirebaseReport = mod.useFirebaseReport;
@@ -79,6 +82,9 @@ describe('useFirebaseReport', () => {
     expect(result.current.data).toBeNull();
     expect(result.current.streaming).toBe(false);
     expect(result.current.error).toBeNull();
+    expect(result.current.cacheChecked).toBe(false);
+    expect(result.current.cacheHit).toBe(false);
+    expect(typeof result.current.checkCache).toBe('function');
     expect(typeof result.current.generate).toBe('function');
     expect(typeof result.current.abort).toBe('function');
   });
@@ -326,5 +332,184 @@ describe('useFirebaseReport', () => {
     expect(result.current.data).toBeNull();
     expect(result.current.error).toBeNull();
     expect(result.current.streaming).toBe(true);
+  });
+
+  // ── checkCache ──────────────────────────────────────────────────────
+
+  describe('checkCache', () => {
+    it('sets cacheHit=true and data when complete doc with matching hash is found', async () => {
+      mockGetInsightOnce.mockResolvedValue({
+        status: 'complete',
+        tradesHash: 'abc123hash',
+        summary: 'Cached summary',
+        profile: { type: 'day_trader' },
+      });
+
+      const { result } = renderHook(() => useFirebaseReport());
+
+      act(() => {
+        result.current.checkCache([makeTrade()], 'ALL', 'thisMonth');
+      });
+
+      await waitFor(() => {
+        expect(result.current.cacheChecked).toBe(true);
+      });
+
+      expect(result.current.cacheHit).toBe(true);
+      expect(result.current.data).toEqual({
+        summary: 'Cached summary',
+        profile: { type: 'day_trader' },
+      });
+      expect(result.current.streaming).toBe(false);
+    });
+
+    it('sets cacheHit=false and cacheChecked=true when no doc exists', async () => {
+      mockGetInsightOnce.mockResolvedValue(null);
+
+      const { result } = renderHook(() => useFirebaseReport());
+
+      act(() => {
+        result.current.checkCache([makeTrade()]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.cacheChecked).toBe(true);
+      });
+
+      expect(result.current.cacheHit).toBe(false);
+      expect(result.current.data).toBeNull();
+    });
+
+    it('sets cacheHit=false when doc exists but hash does not match', async () => {
+      mockGetInsightOnce.mockResolvedValue({
+        status: 'complete',
+        tradesHash: 'different-hash',
+        summary: 'Old summary',
+      });
+
+      const { result } = renderHook(() => useFirebaseReport());
+
+      act(() => {
+        result.current.checkCache([makeTrade()]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.cacheChecked).toBe(true);
+      });
+
+      expect(result.current.cacheHit).toBe(false);
+      expect(result.current.data).toBeNull();
+    });
+
+    it('starts listening when doc status is generating', async () => {
+      mockGetInsightOnce.mockResolvedValue({
+        status: 'generating',
+        tradesHash: 'abc123hash',
+      });
+
+      const { result } = renderHook(() => useFirebaseReport());
+
+      act(() => {
+        result.current.checkCache([makeTrade()]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.cacheChecked).toBe(true);
+      });
+
+      expect(result.current.streaming).toBe(true);
+      expect(result.current.cacheHit).toBe(false);
+      expect(mockListenToInsight).toHaveBeenCalledWith(
+        'user-123',
+        'ALL_thisMonth',
+        expect.any(Function),
+        expect.any(Function),
+      );
+    });
+
+    it('sets cacheChecked=true when user is not authenticated', async () => {
+      mockGetAuth.mockReturnValue({ currentUser: null });
+
+      const { result } = renderHook(() => useFirebaseReport());
+
+      act(() => {
+        result.current.checkCache([makeTrade()]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.cacheChecked).toBe(true);
+      });
+
+      expect(result.current.cacheHit).toBe(false);
+      expect(mockGetInsightOnce).not.toHaveBeenCalled();
+    });
+
+    it('sets cacheChecked=true on error without throwing', async () => {
+      mockGetInsightOnce.mockRejectedValue(new Error('Firestore unavailable'));
+
+      const { result } = renderHook(() => useFirebaseReport());
+
+      act(() => {
+        result.current.checkCache([makeTrade()]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.cacheChecked).toBe(true);
+      });
+
+      expect(result.current.cacheHit).toBe(false);
+      expect(result.current.error).toBeNull();
+    });
+
+    it('computes insightId from accountId and period', async () => {
+      mockGetInsightOnce.mockResolvedValue(null);
+
+      const { result } = renderHook(() => useFirebaseReport());
+
+      act(() => {
+        result.current.checkCache([makeTrade()], 'acc-1', 'thisWeek');
+      });
+
+      await waitFor(() => {
+        expect(mockGetInsightOnce).toHaveBeenCalledWith('user-123', 'acc-1_thisWeek');
+      });
+    });
+
+    it('resets state when called again', async () => {
+      // First call: cache hit
+      mockGetInsightOnce.mockResolvedValue({
+        status: 'complete',
+        tradesHash: 'abc123hash',
+        summary: 'Cached summary',
+      });
+
+      const { result } = renderHook(() => useFirebaseReport());
+
+      act(() => {
+        result.current.checkCache([makeTrade()]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.cacheHit).toBe(true);
+      });
+
+      // Second call: reset and cache miss
+      mockGetInsightOnce.mockResolvedValue(null);
+
+      act(() => {
+        result.current.checkCache([makeTrade()], 'acc-2', 'last30Days');
+      });
+
+      // During async reset, cacheChecked should be false
+      expect(result.current.cacheChecked).toBe(false);
+      expect(result.current.cacheHit).toBe(false);
+
+      await waitFor(() => {
+        expect(result.current.cacheChecked).toBe(true);
+      });
+
+      expect(result.current.cacheHit).toBe(false);
+      expect(result.current.data).toBeNull();
+    });
   });
 });

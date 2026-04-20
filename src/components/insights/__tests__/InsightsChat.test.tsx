@@ -10,27 +10,43 @@ import type { ChatMessage } from '@/types/insights';
 const mockStartSession = vi.fn();
 const mockSend = vi.fn();
 const mockAbort = vi.fn();
+const mockSwitchSession = vi.fn();
+const mockClearError = vi.fn();
 
 let mockChatReturn: {
+  sessions: any[];
+  sessionsLoading: boolean;
+  activeSessionId: string | null;
+  sessionId: string | null;
+  sessionSwitching: boolean;
   messages: ChatMessage[];
   streaming: boolean;
   error: string | null;
-  sessionId: string | null;
   messageCount: number;
   messageLimit: number;
   startSession: ReturnType<typeof vi.fn>;
+  switchSession: ReturnType<typeof vi.fn>;
   send: ReturnType<typeof vi.fn>;
   abort: ReturnType<typeof vi.fn>;
+  clearError: ReturnType<typeof vi.fn>;
 };
 
 vi.mock('@/hooks/useFirebaseChat', () => ({
   useFirebaseChat: () => mockChatReturn,
 }));
 
-let mockRateLimitsReturn: any = null;
-
-vi.mock('@/hooks/useRateLimits', () => ({
-  useRateLimits: () => mockRateLimitsReturn,
+vi.mock('@/components/insights/ChatSessionSidebar', () => ({
+  ChatSessionSidebar: ({ sessions, activeSessionId, onSelectSession, onNewChat, sessionsLoading, isRateLimited }: any) => (
+    <div data-testid="chat-session-sidebar" data-active-session={activeSessionId} data-loading={sessionsLoading}>
+      <span data-testid="sidebar-session-count">{sessions.length}</span>
+      <button data-testid="sidebar-new-chat" onClick={onNewChat}>New Chat</button>
+      {sessions.map((s: any) => (
+        <button key={s.id} data-testid={`sidebar-session-${s.id}`} onClick={() => onSelectSession(s.id)}>
+          {s.title || s.id}
+        </button>
+      ))}
+    </div>
+  ),
 }));
 
 // ---------------------------------------------------------------------------
@@ -43,25 +59,33 @@ describe('InsightsChat', () => {
     startDate: '2026-04-01',
     endDate: '2026-04-30',
     trades: [{ tradeId: 't1', pnl: 50 }] as any[],
+    isFullscreen: false,
+    onToggleFullscreen: vi.fn(),
+    rateLimits: null as any,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockChatReturn = {
+      sessions: [],
+      sessionsLoading: false,
+      activeSessionId: null,
+      sessionId: null,
+      sessionSwitching: false,
       messages: [],
       streaming: false,
       error: null,
-      sessionId: null,
       messageCount: 0,
       messageLimit: 25,
       startSession: mockStartSession,
+      switchSession: mockSwitchSession,
       send: mockSend,
       abort: mockAbort,
+      clearError: mockClearError,
     };
-    mockRateLimitsReturn = null;
   });
 
-  it('renders "Ask AI" heading', () => {
+  it('renders "Ask AI" heading in embedded mode', () => {
     render(<InsightsChat {...defaultProps} />);
     expect(screen.getByText('Ask AI')).toBeInTheDocument();
   });
@@ -122,6 +146,7 @@ describe('InsightsChat', () => {
     mockChatReturn = {
       ...mockChatReturn,
       sessionId: 'session-42',
+      activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'First question' }, { role: 'model', text: 'Response' }],
     };
 
@@ -179,6 +204,7 @@ describe('InsightsChat', () => {
     mockChatReturn = {
       ...mockChatReturn,
       sessionId: 'session-42',
+      activeSessionId: 'session-42',
       messages: [
         { role: 'user', text: 'What are my patterns?' },
         { role: 'model', text: 'Based on your trades, I see...' },
@@ -194,6 +220,7 @@ describe('InsightsChat', () => {
     mockChatReturn = {
       ...mockChatReturn,
       sessionId: 'session-42',
+      activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'test' }],
     };
 
@@ -205,6 +232,7 @@ describe('InsightsChat', () => {
     mockChatReturn = {
       ...mockChatReturn,
       sessionId: 'session-42',
+      activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'test' }],
       streaming: true,
     };
@@ -219,6 +247,7 @@ describe('InsightsChat', () => {
     mockChatReturn = {
       ...mockChatReturn,
       sessionId: 'session-42',
+      activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'test' }],
       streaming: true,
     };
@@ -242,6 +271,7 @@ describe('InsightsChat', () => {
     mockChatReturn = {
       ...mockChatReturn,
       sessionId: 'session-42',
+      activeSessionId: 'session-42',
       messages: [{ role: 'user', text: 'test' }],
       streaming: true,
     };
@@ -254,6 +284,7 @@ describe('InsightsChat', () => {
     mockChatReturn = {
       ...mockChatReturn,
       sessionId: 'session-42',
+      activeSessionId: 'session-42',
       messageCount: 5,
       messageLimit: 25,
     };
@@ -266,6 +297,7 @@ describe('InsightsChat', () => {
     mockChatReturn = {
       ...mockChatReturn,
       sessionId: 'session-42',
+      activeSessionId: 'session-42',
       messageCount: 25,
       messageLimit: 25,
     };
@@ -280,25 +312,154 @@ describe('InsightsChat', () => {
   });
 
   it('shows rate limit info when rateLimits are available and no session', () => {
-    mockRateLimitsReturn = {
-      insights: { used: 0, limit: 6, remaining: 6, resetAt: null },
-      sessions: { used: 3, limit: 6, remaining: 3, resetAt: null },
-    };
-
-    render(<InsightsChat {...defaultProps} />);
+    render(
+      <InsightsChat
+        {...defaultProps}
+        rateLimits={{
+          insights: { used: 0, limit: 6, remaining: 6, resetAt: null },
+          sessions: { used: 3, limit: 6, remaining: 3, resetAt: null },
+        }}
+      />,
+    );
     expect(screen.getByText('3/6 sessions remaining')).toBeInTheDocument();
   });
 
   it('disables suggested questions when rate limited', () => {
-    mockRateLimitsReturn = {
-      insights: { used: 0, limit: 6, remaining: 6, resetAt: null },
-      sessions: { used: 6, limit: 6, remaining: 0, resetAt: new Date() },
-    };
-
-    render(<InsightsChat {...defaultProps} />);
+    render(
+      <InsightsChat
+        {...defaultProps}
+        rateLimits={{
+          insights: { used: 0, limit: 6, remaining: 6, resetAt: null },
+          sessions: { used: 6, limit: 6, remaining: 0, resetAt: new Date() },
+        }}
+      />,
+    );
     const buttons = screen.getAllByRole('button', { name: /What are my biggest|How can I|What patterns|Which trades/ });
     buttons.forEach((btn) => {
       expect(btn).toBeDisabled();
     });
+  });
+
+  // --- New tests for fullscreen/embedded modes ---
+
+  it('shows expand button in embedded mode', () => {
+    render(<InsightsChat {...defaultProps} isFullscreen={false} />);
+    expect(screen.getByLabelText('Expand chat')).toBeInTheDocument();
+  });
+
+  it('calls onToggleFullscreen when expand button is clicked', async () => {
+    const toggleFn = vi.fn();
+    const user = userEvent.setup();
+    render(<InsightsChat {...defaultProps} isFullscreen={false} onToggleFullscreen={toggleFn} />);
+    await user.click(screen.getByLabelText('Expand chat'));
+    expect(toggleFn).toHaveBeenCalled();
+  });
+
+  it('shows session sidebar in fullscreen mode', () => {
+    render(<InsightsChat {...defaultProps} isFullscreen={true} />);
+    expect(screen.getByTestId('chat-session-sidebar')).toBeInTheDocument();
+    expect(screen.getByTestId('fullscreen-chat')).toBeInTheDocument();
+  });
+
+  it('does not show session sidebar in embedded mode', () => {
+    render(<InsightsChat {...defaultProps} isFullscreen={false} />);
+    expect(screen.queryByTestId('chat-session-sidebar')).not.toBeInTheDocument();
+  });
+
+  it('shows minimize button in fullscreen mode', () => {
+    render(<InsightsChat {...defaultProps} isFullscreen={true} />);
+    expect(screen.getByLabelText('Exit fullscreen')).toBeInTheDocument();
+  });
+
+  it('calls onToggleFullscreen when minimize button is clicked', async () => {
+    const toggleFn = vi.fn();
+    const user = userEvent.setup();
+    render(<InsightsChat {...defaultProps} isFullscreen={true} onToggleFullscreen={toggleFn} />);
+    await user.click(screen.getByLabelText('Exit fullscreen'));
+    expect(toggleFn).toHaveBeenCalled();
+  });
+
+  it('Escape key exits fullscreen', async () => {
+    const toggleFn = vi.fn();
+    render(<InsightsChat {...defaultProps} isFullscreen={true} onToggleFullscreen={toggleFn} />);
+
+    // Fire Escape keydown on document
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+    document.dispatchEvent(event);
+
+    expect(toggleFn).toHaveBeenCalled();
+  });
+
+  it('Escape key does not trigger when not fullscreen', () => {
+    const toggleFn = vi.fn();
+    render(<InsightsChat {...defaultProps} isFullscreen={false} onToggleFullscreen={toggleFn} />);
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+    document.dispatchEvent(event);
+
+    expect(toggleFn).not.toHaveBeenCalled();
+  });
+
+  it('shows loading skeleton during sessionSwitching', () => {
+    mockChatReturn = {
+      ...mockChatReturn,
+      sessionId: 'session-42',
+      activeSessionId: 'session-42',
+      sessionSwitching: true,
+    };
+
+    render(<InsightsChat {...defaultProps} />);
+    expect(screen.getByTestId('session-switching-skeleton')).toBeInTheDocument();
+  });
+
+  it('shows "AI Chat" title in fullscreen mode', () => {
+    render(<InsightsChat {...defaultProps} isFullscreen={true} />);
+    expect(screen.getByText('AI Chat')).toBeInTheDocument();
+  });
+
+  it('renders sidebar with sessions in fullscreen mode', () => {
+    mockChatReturn = {
+      ...mockChatReturn,
+      sessions: [
+        { id: 's1', title: 'Session 1', accountId: 'acc-1', period: 'thisMonth', messageCount: 5, createdAt: { toMillis: () => 1000 }, expiresAt: { toMillis: () => 2000 }, status: 'active' },
+        { id: 's2', title: 'Session 2', accountId: 'acc-1', period: 'thisMonth', messageCount: 3, createdAt: { toMillis: () => 900 }, expiresAt: { toMillis: () => 2000 }, status: 'active' },
+      ],
+    };
+
+    render(<InsightsChat {...defaultProps} isFullscreen={true} />);
+    expect(screen.getByTestId('sidebar-session-count')).toHaveTextContent('2');
+  });
+
+  it('calls switchSession when selecting a session in sidebar', async () => {
+    mockChatReturn = {
+      ...mockChatReturn,
+      sessions: [
+        { id: 's1', title: 'Session 1', accountId: 'acc-1', period: 'thisMonth', messageCount: 5, createdAt: { toMillis: () => 1000 }, expiresAt: { toMillis: () => 2000 }, status: 'active' },
+      ],
+    };
+
+    const user = userEvent.setup();
+    render(<InsightsChat {...defaultProps} isFullscreen={true} />);
+    await user.click(screen.getByTestId('sidebar-session-s1'));
+    expect(mockSwitchSession).toHaveBeenCalledWith('s1');
+  });
+
+  it('shows empty state and suggested questions after New Chat in fullscreen', async () => {
+    mockChatReturn = {
+      ...mockChatReturn,
+      sessionId: 'session-42',
+      activeSessionId: 'session-42',
+      messages: [{ role: 'user', text: 'test' }, { role: 'model', text: 'response' }],
+    };
+
+    const user = userEvent.setup();
+    render(<InsightsChat {...defaultProps} isFullscreen={true} />);
+
+    // Click new chat in sidebar
+    await user.click(screen.getByTestId('sidebar-new-chat'));
+
+    // Should show empty state and suggested questions
+    expect(screen.getByText('Ask me anything about your trading performance')).toBeInTheDocument();
+    expect(screen.getByText('What are my biggest mistakes?')).toBeInTheDocument();
   });
 });

@@ -124,6 +124,17 @@ export interface ChatMessage {
   text: string;
 }
 
+export interface ChatSessionSummary {
+  id: string;
+  title?: string;
+  accountId: string;
+  period: string;
+  messageCount: number;
+  createdAt: number; // millis
+  expiresAt: number; // millis
+  status: 'active' | 'generating' | 'expired';
+}
+
 export interface TrimmedTrade {
   tradeId: string;
   symbol: string;

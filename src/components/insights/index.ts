@@ -9,3 +9,4 @@ export { StreakTimeline } from './StreakTimeline';
 export { TimeEdgeHeatmap } from './TimeEdgeHeatmap';
 export { RevengeTradesTable } from './RevengeTradesTable';
 export { InsightsChat } from './InsightsChat';
+export { ChatSessionSidebar } from './ChatSessionSidebar';

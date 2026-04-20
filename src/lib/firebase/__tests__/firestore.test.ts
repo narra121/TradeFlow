@@ -8,6 +8,7 @@ const mockDoc = vi.fn();
 const mockCollection = vi.fn();
 const mockQuery = vi.fn();
 const mockOrderBy = vi.fn();
+const mockGetDoc = vi.fn();
 
 vi.mock('firebase/firestore', () => ({
   onSnapshot: (...args: any[]) => mockOnSnapshot(...args),
@@ -15,6 +16,7 @@ vi.mock('firebase/firestore', () => ({
   collection: (...args: any[]) => mockCollection(...args),
   query: (...args: any[]) => mockQuery(...args),
   orderBy: (...args: any[]) => mockOrderBy(...args),
+  getDoc: (...args: any[]) => mockGetDoc(...args),
 }));
 
 // Mock firebase init
@@ -23,6 +25,7 @@ vi.mock('../init', () => ({
 }));
 
 import {
+  getInsightOnce,
   listenToInsight,
   listenToMessages,
   listenToChatSession,
@@ -39,6 +42,44 @@ describe('Firestore listeners', () => {
     mockQuery.mockReturnValue('mock-query');
     mockOrderBy.mockReturnValue('mock-order');
     mockOnSnapshot.mockReturnValue(mockUnsubscribe);
+  });
+
+  // ── getInsightOnce ──────────────────────────────────────────────────
+
+  describe('getInsightOnce', () => {
+    it('creates doc ref with correct path', async () => {
+      mockGetDoc.mockResolvedValue({ exists: () => false, data: () => null });
+      await getInsightOnce('user-1', 'insight-1');
+
+      expect(mockDoc).toHaveBeenCalledWith(
+        { type: 'mock-firestore' },
+        'users',
+        'user-1',
+        'insights',
+        'insight-1',
+      );
+    });
+
+    it('returns data when document exists', async () => {
+      const insightData = { status: 'complete', summary: 'Test summary', tradesHash: 'abc123' };
+      mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => insightData,
+      });
+
+      const result = await getInsightOnce('user-1', 'insight-1');
+      expect(result).toEqual(insightData);
+    });
+
+    it('returns null when document does not exist', async () => {
+      mockGetDoc.mockResolvedValue({
+        exists: () => false,
+        data: () => null,
+      });
+
+      const result = await getInsightOnce('user-1', 'insight-1');
+      expect(result).toBeNull();
+    });
   });
 
   // ── listenToInsight ─────────────────────────────────────────────────
