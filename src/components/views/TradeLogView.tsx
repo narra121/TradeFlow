@@ -1119,7 +1119,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             )}
 
             {/* Pagination bar */}
-            {filteredTrades.length > pageSize && (
+            {filteredTrades.length > 0 && (
               <TablePagination
                 currentPage={currentPage}
                 totalItems={totalFilteredTrades}
@@ -1433,7 +1433,7 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             )}
 
             {/* Pagination bar */}
-            {filteredTrades.length > pageSize && (
+            {filteredTrades.length > 0 && (
               <TablePagination
                 currentPage={currentPage}
                 totalItems={totalFilteredTrades}
