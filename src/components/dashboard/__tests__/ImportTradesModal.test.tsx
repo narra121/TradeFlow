@@ -529,9 +529,9 @@ describe('ImportTradesModal - Multi-Account Selection', () => {
     const { useAccounts } = await import('@/hooks/useAccounts');
     (useAccounts as ReturnType<typeof vi.fn>).mockReturnValue({
       accounts: [
-        { id: 'acc1', name: 'Main Account' },
-        { id: 'acc2', name: 'Demo Account' },
-        { id: 'acc3', name: 'Prop Firm' },
+        { id: 'acc1', name: 'Main Account', status: 'active' },
+        { id: 'acc2', name: 'Demo Account', status: 'active' },
+        { id: 'acc3', name: 'Prop Firm', status: 'active' },
       ],
       selectedAccountId: null,
       selectedAccount: null,
