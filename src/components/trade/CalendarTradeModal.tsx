@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Trade } from '@/types/trade';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -43,11 +43,18 @@ export function CalendarTradeModal({
   onDelete,
 }: CalendarTradeModalProps) {
   const [selectedTradeIndex, setSelectedTradeIndex] = useState(0);
+  const prevDateRef = useRef(selectedDate);
 
-  // Reset selected trade when trades change
   useEffect(() => {
-    setSelectedTradeIndex(0);
-  }, [trades]);
+    const dateChanged = prevDateRef.current.getTime() !== selectedDate.getTime();
+    prevDateRef.current = selectedDate;
+
+    if (dateChanged) {
+      setSelectedTradeIndex(0);
+    } else {
+      setSelectedTradeIndex(prev => Math.min(prev, Math.max(0, trades.length - 1)));
+    }
+  }, [trades, selectedDate]);
 
   const selectedTrade = trades[selectedTradeIndex];
 

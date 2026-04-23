@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { AccountCard } from '@/components/account/AccountCard';
 import { AddAccountModal } from '@/components/account/AddAccountModal';
 import { Button } from '@/components/ui/button';
-import { TradingAccount, AccountStatus } from '@/types/trade';
-import { Plus, Building2, AlertTriangle, Loader2 } from 'lucide-react';
+import { TradingAccount, AccountStatus, AccountType } from '@/types/trade';
+import { Plus, Building2, AlertTriangle, Loader2, Search, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { AdSlot } from '@/components/ads/AdSlot';
@@ -21,6 +22,16 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSelectedAccount } from '@/store/slices/accountsSlice';
 import { useGetAccountsQuery, useCreateAccountMutation, useUpdateAccountMutation, useDeleteAccountMutation, useUpdateAccountStatusMutation } from '@/store/api';
 import { AccountCardSkeleton, StatCardSkeleton } from '@/components/ui/loading-skeleton';
+import { accountTypeLabels, accountStatusLabels, accountStatusColors } from '@/hooks/useAccounts';
+
+const STATUS_FILTERS: { value: AccountStatus | 'all'; label: string }[] = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'active', label: 'Active' },
+  { value: 'breached', label: 'Breached' },
+  { value: 'passed', label: 'Passed' },
+  { value: 'withdrawn', label: 'Withdrawn' },
+  { value: 'inactive', label: 'Inactive' },
+];
 
 export function AccountsView() {
   const dispatch = useAppDispatch();
@@ -41,6 +52,29 @@ export function AccountsView() {
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<AccountStatus | 'all'>('all');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filteredAccounts = useMemo(() => {
+    let result = accounts;
+    if (statusFilter !== 'all') {
+      result = result.filter(acc => acc.status === statusFilter);
+    }
+    const q = searchQuery.toLowerCase().trim();
+    if (q) {
+      result = result.filter(acc =>
+        acc.name.toLowerCase().includes(q) ||
+        acc.broker.toLowerCase().includes(q) ||
+        (accountTypeLabels[acc.type as AccountType] || '').toLowerCase().includes(q) ||
+        acc.currency.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [searchQuery, statusFilter, accounts]);
+
+  const hasActiveFilters = searchQuery.trim() !== '' || statusFilter !== 'all';
 
   const handleDeleteConfirm = async () => {
     if (deletingAccountId) {
@@ -89,12 +123,12 @@ export function AccountsView() {
   };
 
   const totalBalance = useMemo(
-    () => accountsData?.totalBalance ?? accounts.reduce((sum, acc) => sum + acc.balance, 0),
-    [accountsData?.totalBalance, accounts]
+    () => filteredAccounts.reduce((sum, acc) => sum + acc.balance, 0),
+    [filteredAccounts]
   );
   const totalPnl = useMemo(
-    () => accountsData?.totalPnl ?? accounts.reduce((sum, acc) => sum + (acc.balance - acc.initialBalance), 0),
-    [accountsData?.totalPnl, accounts]
+    () => filteredAccounts.reduce((sum, acc) => sum + (acc.balance - acc.initialBalance), 0),
+    [filteredAccounts]
   );
 
   return (
@@ -115,6 +149,65 @@ export function AccountsView() {
         </div>
       </div>
 
+      {/* Search & Status Filter */}
+      {!showSkeleton && accounts.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search accounts..."
+              className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-8 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  inputRef.current?.focus();
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as AccountStatus | 'all')}>
+            <SelectTrigger className="w-full sm:w-[160px] h-9">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_FILTERS.map((sf) => (
+                <SelectItem key={sf.value} value={sf.value}>
+                  <div className="flex items-center gap-2">
+                    {sf.value !== 'all' && (
+                      <span className={cn(
+                        "w-2 h-2 rounded-full shrink-0",
+                        sf.value === 'active' && "bg-success",
+                        sf.value === 'breached' && "bg-destructive",
+                        sf.value === 'passed' && "bg-primary",
+                        sf.value === 'withdrawn' && "bg-warning",
+                        sf.value === 'inactive' && "bg-muted-foreground",
+                      )} />
+                    )}
+                    <span>{sf.label}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <span className="text-xs text-muted-foreground whitespace-nowrap self-center">
+              {filteredAccounts.length} of {accounts.length}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Summary Stats */}
       {showSkeleton ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -129,7 +222,7 @@ export function AccountsView() {
               <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               <span className="text-xs sm:text-sm text-muted-foreground">Total Accounts</span>
             </div>
-            <p className="text-xl sm:text-2xl font-bold font-mono text-foreground">{accounts.length}</p>
+            <p className="text-xl sm:text-2xl font-bold font-mono text-foreground">{filteredAccounts.length}</p>
           </div>
           <div className="glass-card p-4 sm:p-5">
             <div className="flex items-center gap-3 mb-2">
@@ -177,7 +270,12 @@ export function AccountsView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {accounts.map((account) => (
+          {filteredAccounts.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+              <Search className="w-8 h-8 text-muted-foreground/40 mb-3" />
+              <p className="text-sm text-muted-foreground">No accounts match your filters</p>
+            </div>
+          ) : filteredAccounts.map((account) => (
             <AccountCard
               key={account.id}
               account={account}
@@ -190,17 +288,19 @@ export function AccountsView() {
           ))}
 
           {/* Add Account Card */}
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="glass-card p-6 border-dashed border-2 flex flex-col items-center justify-center gap-3 min-h-[140px] hover:border-primary/50 hover:bg-primary/5 transition-all group"
-          >
-            <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-              <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-            </div>
-            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-              Add New Account
-            </span>
-          </button>
+          {!hasActiveFilters && (
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="glass-card p-6 border-dashed border-2 flex flex-col items-center justify-center gap-3 min-h-[140px] hover:border-primary/50 hover:bg-primary/5 transition-all group"
+            >
+              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                Add New Account
+              </span>
+            </button>
+          )}
         </div>
       )}
 

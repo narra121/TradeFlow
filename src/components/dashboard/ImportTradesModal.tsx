@@ -1001,59 +1001,73 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
         {/* Footer */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border bg-secondary/30 shrink-0 space-y-3">
           {/* Account selector — show when trades are extracted */}
-          {extractedTrades.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
-                <Building2 className="w-4 h-4" />
-                <span>Save to account{accounts.length > 1 ? '(s)' : ''}:</span>
-              </div>
-              {accounts.length === 0 ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground/70 bg-secondary/30 rounded-lg p-2.5">
-                  <span>No accounts yet.</span>
-                  <button
-                    type="button"
-                    onClick={() => window.open('/app/accounts', '_blank')}
-                    className="text-primary hover:text-primary/80 font-medium transition-colors"
-                  >
-                    Create an account
-                  </button>
-                  <span>to organize trades, or save without an account.</span>
+          {extractedTrades.length > 0 && (() => {
+            const activeAccounts = accounts.filter(a => a.status === 'active');
+            return (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
+                  <Building2 className="w-4 h-4" />
+                  <span>Save to account{activeAccounts.length > 1 ? '(s)' : ''}:</span>
                 </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {accounts.map((acc) => {
-                    const isSelected = importAccountIds.includes(acc.id);
-                    return (
-                      <button
-                        key={acc.id}
-                        type="button"
-                        onClick={() => {
-                          setImportAccountIds(prev =>
-                            isSelected
-                              ? prev.filter(id => id !== acc.id)
-                              : [...prev, acc.id]
+                {activeAccounts.length === 0 ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground/70 bg-secondary/30 rounded-lg p-2.5">
+                    <Info className="w-3.5 h-3.5 shrink-0" />
+                    <span>No active accounts.</span>
+                    <button
+                      type="button"
+                      onClick={() => window.open('/app/accounts', '_blank')}
+                      className="text-primary hover:text-primary/80 font-medium transition-colors"
+                    >
+                      Create or activate an account
+                    </button>
+                    <span>to assign trades, or save without an account.</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="max-h-[104px] overflow-y-auto overscroll-contain rounded-md border border-border/40 p-2">
+                      <div className="flex flex-wrap gap-2">
+                        {activeAccounts.map((acc) => {
+                          const isSelected = importAccountIds.includes(acc.id);
+                          return (
+                            <button
+                              key={acc.id}
+                              type="button"
+                              onClick={() => {
+                                setImportAccountIds(prev =>
+                                  isSelected
+                                    ? prev.filter(id => id !== acc.id)
+                                    : [...prev, acc.id]
+                                );
+                              }}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                                isSelected
+                                  ? 'bg-primary/10 border-primary/40 text-primary'
+                                  : 'bg-secondary/30 border-transparent text-muted-foreground hover:bg-secondary/50'
+                              }`}
+                            >
+                              {isSelected && <Check className="w-3 h-3" />}
+                              {acc.name}
+                            </button>
                           );
-                        }}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                          isSelected
-                            ? 'bg-primary/10 border-primary/40 text-primary'
-                            : 'bg-secondary/30 border-transparent text-muted-foreground hover:bg-secondary/50'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3" />}
-                        {acc.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {importAccountIds.length === 0 && accounts.length > 0 && (
-                <span className="text-xs text-muted-foreground/60">
-                  No account selected — trades will be saved without an account
-                </span>
-              )}
-            </div>
-          )}
+                        })}
+                      </div>
+                    </div>
+                    {accounts.length > activeAccounts.length && (
+                      <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
+                        <Info className="w-3 h-3 shrink-0" />
+                        Only active accounts are shown. Inactive, breached, or withdrawn accounts are excluded.
+                      </span>
+                    )}
+                  </>
+                )}
+                {importAccountIds.length === 0 && activeAccounts.length > 0 && (
+                  <span className="text-xs text-muted-foreground/60">
+                    No account selected — trades will be saved without an account
+                  </span>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Action buttons */}
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">

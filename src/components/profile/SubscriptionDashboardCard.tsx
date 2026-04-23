@@ -207,8 +207,8 @@ export function SubscriptionDashboardCard({
 
                 {status === 'cancellation_requested' && (
                   <div className="space-y-3">
-                    <div className="flex items-start gap-2 rounded-md bg-orange-500/10 border border-orange-500/20 p-3 text-sm text-orange-200">
-                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-orange-400" />
+                    <div className="flex items-start gap-2.5 rounded-lg bg-amber-950/30 border border-amber-500/20 px-3.5 py-3 text-sm text-amber-200/90">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
                       <span>Your subscription is scheduled to cancel at the end of the current billing period. You will not be charged again.</span>
                     </div>
                     <Button variant="default" size="sm" onClick={onUndoCancellation} disabled={busy} className="w-full">
@@ -225,24 +225,30 @@ export function SubscriptionDashboardCard({
 
                 {status === 'created' && (
                   <div className="space-y-3">
-                    <div className="flex items-start gap-2 rounded-md bg-orange-500/10 border border-orange-500/20 p-3 text-sm text-orange-200">
-                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-orange-400" />
+                    <div className="flex items-start gap-2.5 rounded-lg bg-amber-950/30 border border-amber-500/20 px-3.5 py-3 text-sm text-amber-200/90">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
                       <span>Your subscription has been created but payment is pending. Complete payment to activate your plan.</span>
                     </div>
-                    <Button variant="default" size="sm" onClick={onRetryPayment} disabled={busy} className="w-full">
-                      {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing Payment...</> : 'Complete Payment'}
+                    <Button variant="outline" onClick={onRetryPayment} disabled={busy} className="w-full border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:border-amber-500/60">
+                      {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing Payment...</> : <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Complete Payment
+                      </>}
                     </Button>
                   </div>
                 )}
 
                 {status === 'past_due' && (
                   <div className="space-y-3">
-                    <div className="flex items-start gap-2 rounded-md bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-200">
+                    <div className="flex items-start gap-2.5 rounded-lg bg-red-950/30 border border-red-500/20 px-3.5 py-3 text-sm text-red-200/90">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
                       <span>Your payment failed. Please retry or update your payment method to continue your subscription.</span>
                     </div>
-                    <Button variant="default" size="sm" onClick={onRetryPayment} disabled={busy} className="w-full">
-                      {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Retrying...</> : 'Retry Payment'}
+                    <Button variant="outline" onClick={onRetryPayment} disabled={busy} className="w-full border-red-500/40 text-red-300 hover:bg-red-500/10 hover:border-red-500/60">
+                      {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Retrying...</> : <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Retry Payment
+                      </>}
                     </Button>
                   </div>
                 )}

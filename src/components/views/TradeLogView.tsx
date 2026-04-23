@@ -23,7 +23,8 @@ import {
   BookOpen,
   SlidersHorizontal,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Eye
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -423,9 +424,34 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
   const confirmDelete = async () => {
     if (deletingTradeId) {
       setIsDeleting(true);
+
+      const wasInDetailModal = isDetailModalOpen && selectedTradeIndex !== null &&
+        filteredTrades[selectedTradeIndex]?.id === deletingTradeId;
+      const detailIndex = selectedTradeIndex;
+      const detailTotal = filteredTrades.length;
+
+      const wasInCalendarModal = isCalendarModalOpen && selectedDate !== null;
+      const calendarTrades = wasInCalendarModal ? getTradesForDay(selectedDate!) : [];
+      const calendarTotal = calendarTrades.length;
+
       try {
         await deleteTrade(deletingTradeId).unwrap();
         setDeletingTradeId(null);
+
+        if (wasInDetailModal && detailIndex !== null) {
+          const remaining = detailTotal - 1;
+          if (remaining <= 0) {
+            setIsDetailModalOpen(false);
+            setSelectedTradeIndex(null);
+          } else if (detailIndex >= remaining) {
+            setSelectedTradeIndex(remaining - 1);
+          }
+        }
+
+        if (wasInCalendarModal && calendarTotal <= 1) {
+          setIsCalendarModalOpen(false);
+          setSelectedDate(null);
+        }
       } catch (error: any) {
         // Toast middleware handles error display
       } finally {
@@ -1420,7 +1446,10 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                       )}
                       {isColumnVisible('actions') && (
                         <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleViewTrade(globalIndex)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -1428,9 +1457,6 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewTrade(globalIndex)}>
-                                  View Details
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleEditTrade(trade)}>Edit Trade</DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="text-destructive"
@@ -1870,8 +1896,6 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
           handleEditTrade(trade);
         }}
         onDelete={(tradeId) => {
-          setIsDetailModalOpen(false);
-          setSelectedTradeIndex(null);
           handleDeleteTrade(tradeId);
         }}
         onPrevious={handlePreviousTrade}
@@ -1902,8 +1926,6 @@ export function TradeLogView({ onAddTrade, onImportTrades }: TradeLogViewProps) 
             handleEditTrade(trade);
           }}
           onDelete={(tradeId) => {
-            setIsCalendarModalOpen(false);
-            setSelectedDate(null);
             handleDeleteTrade(tradeId);
           }}
         />

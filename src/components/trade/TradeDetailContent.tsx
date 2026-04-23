@@ -135,6 +135,12 @@ export function TradeDetailContent({
             {trade.session && (
               <span className="text-muted-foreground text-xs shrink-0">{trade.session}</span>
             )}
+            {accountName && (
+              <>
+                <span className="text-muted-foreground text-xs shrink-0">|</span>
+                <span className="text-xs text-muted-foreground shrink-0">{accountName}</span>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <Button variant="outline" size="sm" onClick={onPrevious} disabled={!hasPrevious}>
@@ -316,12 +322,10 @@ export function TradeDetailContent({
           <div className="col-span-full min-h-0 overflow-hidden grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3">
 
             {/* News & Account */}
-            <div className={cn(
-              !hasNewsEvents && !accountName ? EMPTY_CARD : CARD
-            )}>
+            <div className={cn(hasNewsEvents ? CARD : EMPTY_CARD)}>
               <div className={LABEL}>News & Events</div>
               {hasNewsEvents ? (
-                <div className="flex flex-wrap gap-1 mb-2.5">
+                <div className="flex flex-wrap gap-1">
                   {trade.newsEvents!.map((event, idx) => (
                     <Badge key={idx} variant="outline" className="bg-warning/15 text-warning border-warning/30 text-[10px]">
                       {event}
@@ -329,13 +333,7 @@ export function TradeDetailContent({
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground/50 italic mb-2.5">None recorded</p>
-              )}
-              {accountName && (
-                <div className="border-t border-border/30 pt-2">
-                  <div className={SUBLABEL}>Account</div>
-                  <div className="text-xs mt-0.5">{accountName}</div>
-                </div>
+                <p className="text-xs text-muted-foreground/50 italic">None recorded</p>
               )}
             </div>
 
