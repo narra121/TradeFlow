@@ -23,7 +23,19 @@ export function useSavedOptions() {
   });
   const [updateOptions, { isLoading: isUpdating }] = useUpdateSavedOptionsMutation();
 
-  const options = useMemo(() => apiOptions || defaultOptions, [apiOptions]);
+  const options = useMemo<SavedOptions>(() => {
+    if (!apiOptions) return defaultOptions;
+    return {
+      symbols: apiOptions.symbols ?? defaultOptions.symbols,
+      strategies: apiOptions.strategies ?? defaultOptions.strategies,
+      sessions: apiOptions.sessions ?? defaultOptions.sessions,
+      marketConditions: apiOptions.marketConditions ?? defaultOptions.marketConditions,
+      newsEvents: apiOptions.newsEvents ?? defaultOptions.newsEvents,
+      mistakes: apiOptions.mistakes ?? defaultOptions.mistakes,
+      lessons: apiOptions.lessons ?? defaultOptions.lessons,
+      timeframes: apiOptions.timeframes ?? defaultOptions.timeframes,
+    };
+  }, [apiOptions]);
 
   const updateWithNewOptions = useCallback(
     (updater: (prev: SavedOptions) => SavedOptions) => {

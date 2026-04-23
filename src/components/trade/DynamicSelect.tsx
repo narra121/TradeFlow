@@ -66,7 +66,7 @@ export function DynamicSelect({
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[180px] p-0 bg-popover border-border" align="start">
         <div className="max-h-48 sm:max-h-60 overflow-y-auto">
-          {options.map((option) => (
+          {(options || []).map((option) => (
             <div
               key={option}
               className="group flex items-center hover:bg-accent/50 transition-colors"

@@ -44,7 +44,7 @@ export function MistakeTagsInput({
     <div className={cn('space-y-3', className)}>
       {/* Available Tags */}
       <div className="flex flex-wrap gap-2">
-        {availableTags.map((tag) => {
+        {(availableTags || []).map((tag) => {
           const isSelected = selectedTags.includes(tag);
           return (
             <button
