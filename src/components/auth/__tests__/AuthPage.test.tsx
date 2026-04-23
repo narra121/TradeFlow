@@ -317,7 +317,7 @@ describe('AuthPage', () => {
           auth: { user: null, token: null, refreshToken: null, isAuthenticated: false, signupSuccess: false },
         },
       });
-      expect(screen.getByText('Detailed trade analytics & insights')).toBeInTheDocument();
+      expect(screen.getByText('Detailed trade analytics & performance tracking')).toBeInTheDocument();
       expect(screen.getByText('Performance tracking & goal setting')).toBeInTheDocument();
       expect(screen.getByText('Calendar view with P&L visualization')).toBeInTheDocument();
     });

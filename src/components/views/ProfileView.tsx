@@ -1,12 +1,10 @@
 import { Link } from 'react-router-dom';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useProfilePageState } from '@/hooks/useProfilePageState';
-import { ProfileHeroBanner } from '@/components/profile/ProfileHeroBanner';
 import { PersonalInfoCard } from '@/components/profile/PersonalInfoCard';
 import { SubscriptionDashboardCard } from '@/components/profile/SubscriptionDashboardCard';
 import { CompactPricingSection } from '@/components/profile/CompactPricingSection';
 import {
-  ProfileHeroBannerSkeleton,
   ProfileCardSkeleton,
   SubscriptionCardSkeleton,
   SubscriptionPlansCardSkeleton,
@@ -33,19 +31,6 @@ export function ProfileView() {
       </div>
 
       {showSkeleton ? (
-        <ProfileHeroBannerSkeleton />
-      ) : (
-        <ProfileHeroBanner
-          name={state.profile?.name || ''}
-          email={state.profile?.email || ''}
-          memberSince={state.memberSinceDate}
-          subscriptionStatus={state.subscription?.status}
-          isEditing={state.isEditing}
-          onEditClick={state.startEditing}
-        />
-      )}
-
-      {showSkeleton ? (
         <ProfileCardSkeleton />
       ) : (
         <PersonalInfoCard
@@ -56,6 +41,7 @@ export function ProfileView() {
           onEditFormChange={state.setEditFormData}
           onSave={state.handleSaveProfile}
           onCancel={state.cancelEditing}
+          onEditClick={state.startEditing}
           onLogout={state.handleLogout}
           isSaving={state.isSavingProfile}
         />

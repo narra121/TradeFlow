@@ -28,7 +28,7 @@ export const SOFTWARE_APP_SCHEMA = {
   operatingSystem: 'Web',
   url: 'https://tradequt.com',
   description:
-    'Free trading journal software for day traders and swing traders. Track trades, analyze win rate and profit factor, import from brokers, and get AI-powered insights.',
+    'Free trading journal software for day traders and swing traders. Track trades, analyze win rate and profit factor, and import from brokers.',
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -46,7 +46,7 @@ export const FAQ_ITEMS = [
   {
     question: 'Is TradeQut free to use?',
     answer:
-      'Yes, TradeQut offers a free plan with core features including trade logging, basic analytics, and performance tracking. Premium plans add AI-powered insights, detailed analytics, and unlimited trade history.',
+      'Yes, TradeQut offers a free plan with core features including trade logging, analytics, and performance tracking. Premium plans add an ad-free experience and unlimited trade history.',
   },
   {
     question: 'What markets does TradeQut support?',
@@ -61,7 +61,7 @@ export const FAQ_ITEMS = [
   {
     question: 'How does TradeQut help improve trading performance?',
     answer:
-      'TradeQut provides analytics including win rate, profit factor, risk-reward ratios, drawdown tracking, and performance by time of day. You can set goals, define trading rules, and get AI-generated insights to identify patterns.',
+      'TradeQut provides analytics including win rate, profit factor, risk-reward ratios, drawdown tracking, and performance by time of day. You can set goals and define trading rules to identify patterns and improve discipline.',
   },
   {
     question: 'Is my trading data secure?',

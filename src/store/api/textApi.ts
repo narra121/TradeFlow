@@ -2,7 +2,6 @@ import { api } from './baseApi';
 
 export interface EnhanceTextRequest {
   text: string;
-  isTradingNotes?: boolean;
 }
 
 export interface EnhanceTextResponse {

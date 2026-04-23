@@ -18,7 +18,6 @@ interface DateRangeFilterProps {
   customRange?: { from: Date; to: Date };
   onCustomRangeChange?: (range: { from: Date; to: Date }) => void;
   showCustomPicker?: boolean;
-  insightsMode?: boolean;
 }
 
 export function DateRangeFilter({
@@ -27,18 +26,9 @@ export function DateRangeFilter({
   customRange,
   onCustomRangeChange,
   showCustomPicker = false,
-  insightsMode = false,
 }: DateRangeFilterProps) {
   const [fromOpen, setFromOpen] = useState(false);
   const [toOpen, setToOpen] = useState(false);
-
-  const insightsPresets: { value: DatePreset; label: string }[] = [
-    { value: 'thisMonth', label: 'This Month' },
-    { value: 'last2Months', label: 'Last 2 Months' },
-    { value: 'last3Months', label: 'Last 3 Months' },
-    { value: 'last6Months', label: 'Last 6 Months' },
-    { value: 'last1Year', label: 'Last 1 Year' },
-  ];
 
   const daysPresets: { value: DatePreset; label: string }[] = [
     { value: 7, label: '7 days' },
@@ -67,27 +57,6 @@ export function DateRangeFilter({
       setToOpen(false);
     }
   };
-
-  if (insightsMode) {
-    return (
-      <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg overflow-x-auto scrollbar-none max-w-full">
-        {insightsPresets.map((preset) => (
-          <button
-            key={preset.value}
-            onClick={() => onPresetChange(preset.value)}
-            className={cn(
-              "shrink-0 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
-              selectedPreset === preset.value
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <>

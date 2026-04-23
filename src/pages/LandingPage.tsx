@@ -445,7 +445,7 @@ export function LandingPage() {
               <span className="text-primary"> Transparent Pricing</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              All core features are free forever. Upgrade for AI-powered insights and an ad-free experience.
+              All core features are free forever. Upgrade for an ad-free experience.
             </p>
           </div>
           <PricingCards context="landing" />

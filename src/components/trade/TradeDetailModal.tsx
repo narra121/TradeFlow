@@ -28,7 +28,7 @@ export function TradeDetailModal({
 }: TradeDetailModalProps) {
   return (
     <Dialog open={isOpen && !!trade} onOpenChange={onClose}>
-      <DialogContent className="max-w-[90vw] w-[90vw] max-h-[90vh] p-0 overflow-hidden flex flex-col">
+      <DialogContent className="max-w-[90vw] w-[90vw] h-[90vh] max-h-[90vh] p-0 overflow-hidden flex flex-col">
         <DialogTitle className="sr-only">Trade Details</DialogTitle>
         {trade && <TradeDetailContent trade={trade} {...contentProps} />}
       </DialogContent>

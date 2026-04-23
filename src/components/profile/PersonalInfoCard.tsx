@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { User, LogOut, Loader2, Check, X } from "lucide-react";
+import { User, LogOut, Loader2, Check, X, Edit2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PersonalInfoCardProps {
@@ -26,6 +26,7 @@ interface PersonalInfoCardProps {
   onEditFormChange: (data: { name: string; email: string }) => void;
   onSave: () => Promise<void>;
   onCancel: () => void;
+  onEditClick: () => void;
   onLogout: () => Promise<void>;
   isSaving: boolean;
 }
@@ -38,6 +39,7 @@ export function PersonalInfoCard({
   onEditFormChange,
   onSave,
   onCancel,
+  onEditClick,
   onLogout,
   isSaving,
 }: PersonalInfoCardProps) {
@@ -62,7 +64,7 @@ export function PersonalInfoCard({
             )}
           </div>
 
-          {isEditing && (
+          {isEditing ? (
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -82,6 +84,11 @@ export function PersonalInfoCard({
                 Save
               </Button>
             </div>
+          ) : (
+            <Button variant="outline" size="sm" onClick={onEditClick}>
+              <Edit2 className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
           )}
         </div>
 

@@ -110,7 +110,7 @@ describe('CalendarTradeModal', () => {
     render(<CalendarTradeModal {...defaultProps} />);
 
     expect(screen.getByTestId('dialog')).toBeInTheDocument();
-    expect(screen.getByTestId('dialog-title')).toHaveTextContent('Trades on March 15th, 2025');
+    expect(screen.getByTestId('dialog-title')).toHaveTextContent('March 15th, 2025');
   });
 
   it('shows trade details for selected trade via TradeDetailContent', () => {
@@ -195,7 +195,8 @@ describe('CalendarTradeModal', () => {
     expect(screen.getAllByText('GBPUSD').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('shows day navigation buttons', () => {
+  it('shows day navigation buttons', async () => {
+    const user = userEvent.setup();
     const onPreviousDay = vi.fn();
     const onNextDay = vi.fn();
 
@@ -206,15 +207,23 @@ describe('CalendarTradeModal', () => {
         onNextDay={onNextDay}
         hasPreviousDay={true}
         hasNextDay={true}
+        currentDayIndex={1}
+        totalDays={5}
       />
     );
 
-    const prevBtn = screen.getByText('Prev');
-    const nextBtn = screen.getByText('Next');
-    expect(prevBtn).toBeInTheDocument();
-    expect(nextBtn).toBeInTheDocument();
-    expect(prevBtn.closest('button')).not.toBeDisabled();
-    expect(nextBtn.closest('button')).not.toBeDisabled();
+    // Day nav buttons are icon-only (ghost variant) in the header
+    // Find day counter to verify day nav is present
+    expect(screen.getByText('2/5')).toBeInTheDocument();
+
+    // Get all buttons in the dialog header area
+    const header = screen.getByTestId('dialog-header');
+    const headerButtons = header.querySelectorAll('button:not([disabled])');
+    expect(headerButtons.length).toBeGreaterThanOrEqual(2);
+
+    // Click first chevron (prev day) and last relevant chevron (next day)
+    await user.click(headerButtons[0]);
+    expect(onPreviousDay).toHaveBeenCalled();
   });
 
   it('disables prev/next day buttons when no adjacent days', () => {
@@ -223,13 +232,15 @@ describe('CalendarTradeModal', () => {
         {...defaultProps}
         hasPreviousDay={false}
         hasNextDay={false}
+        currentDayIndex={0}
+        totalDays={1}
       />
     );
 
-    const prevBtn = screen.getByText('Prev').closest('button');
-    const nextBtn = screen.getByText('Next').closest('button');
-    expect(prevBtn).toBeDisabled();
-    expect(nextBtn).toBeDisabled();
+    const header = screen.getByTestId('dialog-header');
+    // Day nav buttons should be disabled; find buttons that contain chevron icons
+    const disabledButtons = header.querySelectorAll('button[disabled]');
+    expect(disabledButtons.length).toBeGreaterThanOrEqual(2);
   });
 
   it('shows day index/total when provided', () => {

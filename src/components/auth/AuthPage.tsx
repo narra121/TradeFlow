@@ -271,7 +271,7 @@ export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
 
           <div className="space-y-4">
             {[
-              "Detailed trade analytics & insights",
+              "Detailed trade analytics & performance tracking",
               "Performance tracking & goal setting",
               "Calendar view with P&L visualization",
             ].map((feature, i) => (

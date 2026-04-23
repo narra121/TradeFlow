@@ -6,13 +6,11 @@ import {
   TrendingUp,
   Settings,
   ChevronLeft,
-  ChevronRight,
   Zap,
   Target,
   User,
   Building2,
   HelpCircle,
-  Sparkles,
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,9 +28,8 @@ const navItems: (NavItem & { shortcut?: string })[] = [
   { icon: Building2, label: 'Accounts', id: 'accounts', shortcut: '2' },
   { icon: BookOpen, label: 'Trade Log', id: 'tradelog', shortcut: '3' },
   { icon: TrendingUp, label: 'Analytics', id: 'analytics', shortcut: '4' },
-  { icon: Sparkles, label: 'AI Insights', id: 'insights', shortcut: '5' },
-  { icon: Target, label: 'Goals', id: 'goals', shortcut: '6' },
-  { icon: Settings, label: 'Settings', id: 'settings', shortcut: '7' },
+  { icon: Target, label: 'Goals', id: 'goals', shortcut: '5' },
+  { icon: Settings, label: 'Settings', id: 'settings', shortcut: '6' },
 ];
 
 /** Conditionally wraps children in a tooltip (only when sidebar is collapsed on desktop). */
@@ -136,42 +133,62 @@ export function Sidebar({ activeView, onViewChange, collapsed, onCollapsedChange
           "h-16 flex items-center border-b border-sidebar-border",
           !showExpanded && !isMobile ? "justify-center px-2" : "justify-between px-4"
         )}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            {showExpanded && (
-              <span className="text-lg font-semibold text-foreground tracking-tight">
-                TradeQut
-              </span>
-            )}
-          </div>
-          {isMobile ? (
-            <button
-              onClick={() => onMobileOpenChange?.(false)}
-              className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
-              aria-label="Close sidebar"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          ) : (
+          {!showExpanded && !isMobile ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => onCollapsedChange(!collapsed)}
-                  className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
-                  aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                  onClick={() => onCollapsedChange(false)}
+                  className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow cursor-pointer"
+                  aria-label="Expand sidebar"
                 >
-                  {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                  <Zap className="w-5 h-5 text-primary-foreground" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right">
-                <span>{collapsed ? 'Expand' : 'Collapse'} sidebar</span>
+                <span>Expand sidebar</span>
                 <kbd className="ml-2 inline-flex items-center rounded border border-border/50 bg-muted/50 px-1 py-0.5 text-[10px] font-mono text-muted-foreground">
                   ⌘ [
                 </kbd>
               </TooltipContent>
             </Tooltip>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
+                  <Zap className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <span className="text-lg font-semibold text-foreground tracking-tight">
+                  TradeQut
+                </span>
+              </div>
+              {isMobile ? (
+                <button
+                  onClick={() => onMobileOpenChange?.(false)}
+                  className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+                  aria-label="Close sidebar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onCollapsedChange(true)}
+                      className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+                      aria-label="Collapse sidebar"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <span>Collapse sidebar</span>
+                    <kbd className="ml-2 inline-flex items-center rounded border border-border/50 bg-muted/50 px-1 py-0.5 text-[10px] font-mono text-muted-foreground">
+                      ⌘ [
+                    </kbd>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </>
           )}
         </div>
 

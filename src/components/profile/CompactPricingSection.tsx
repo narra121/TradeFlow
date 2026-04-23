@@ -37,7 +37,7 @@ export function CompactPricingSection({
     <Card className="bg-card/50 backdrop-blur border-border/50 rounded-xl">
       <CardHeader className="text-center pb-2">
         <h3 className="text-lg font-semibold">Upgrade Your Plan</h3>
-        <p className="text-sm text-muted-foreground">Unlock AI insights and go ad-free</p>
+        <p className="text-sm text-muted-foreground">Upgrade to go ad-free</p>
       </CardHeader>
 
       <CardContent className="space-y-6">

@@ -89,7 +89,7 @@ describe('GuidePage - Section Headings', () => {
     expect(screen.getByText('Log every trade with full context')).toBeInTheDocument();
     expect(screen.getByText('Bulk import from files, screenshots, or clipboard')).toBeInTheDocument();
     expect(screen.getByText('View, filter, and manage all your trades')).toBeInTheDocument();
-    expect(screen.getByText('Deep insights into your trading patterns')).toBeInTheDocument();
+    expect(screen.getByText('Deep information about your trading patterns')).toBeInTheDocument();
     expect(screen.getByText('Set targets and maintain discipline')).toBeInTheDocument();
     expect(screen.getByText('Customize your dropdown options and preferences')).toBeInTheDocument();
     expect(screen.getByText('Your account info and subscription')).toBeInTheDocument();
@@ -363,7 +363,7 @@ describe('GuidePage - Analytics Section', () => {
     expect(screen.getByText('Symbol Distribution')).toBeInTheDocument();
   });
 
-  it('renders insights feature items', () => {
+  it('renders behavior feature items', () => {
     renderWithProviders(<GuidePage />);
     expect(screen.getByText('Top Mistakes')).toBeInTheDocument();
     expect(screen.getByText('Broken Rules')).toBeInTheDocument();

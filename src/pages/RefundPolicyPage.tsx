@@ -40,8 +40,7 @@ export function RefundPolicyPage() {
               <h2 className="text-2xl font-semibold text-success mb-4">TradeQut Free Tier</h2>
               <p className="text-muted-foreground leading-relaxed">
                 TradeQut offers <span className="text-foreground font-medium">all core features for free</span> —
-                no credit card required. A paid subscription (starting at &#8377;99/month) unlocks AI-powered
-                insights and removes ads.
+                no credit card required. A paid subscription (starting at &#8377;99/month) removes ads.
               </p>
             </section>
 
@@ -49,8 +48,7 @@ export function RefundPolicyPage() {
               <h2 className="text-2xl font-semibold text-foreground mb-4">1. Subscription Plans</h2>
               <p className="text-muted-foreground leading-relaxed">
                 TradeQut is free for all core features. A paid subscription (starting at &#8377;99/month or &#8377;999/year)
-                unlocks AI-powered insights and an ad-free experience. All other features are included
-                in the free tier.
+                provides an ad-free experience. All other features are included in the free tier.
               </p>
             </section>
 

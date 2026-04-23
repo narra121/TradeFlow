@@ -10,7 +10,7 @@ import {
   Rocket,
   LayoutDashboard,
   Plus,
-  Upload,
+  Import,
   BookOpen,
   TrendingUp,
   Target,
@@ -28,7 +28,6 @@ import {
   Camera,
   ChevronRight,
   X,
-  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,10 +37,9 @@ const sections = [
   { id: 'getting-started', label: 'Getting Started', icon: Rocket },
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'adding-trades', label: 'Adding Trades', icon: Plus },
-  { id: 'importing-trades', label: 'Importing Trades', icon: Upload },
+  { id: 'importing-trades', label: 'Importing Trades', icon: Import },
   { id: 'trade-log', label: 'Trade Log', icon: BookOpen },
   { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-  { id: 'ai-insights', label: 'AI Insights', icon: Sparkles },
   { id: 'goals-rules', label: 'Goals & Rules', icon: Target },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'profile', label: 'Profile', icon: User },
@@ -433,7 +431,7 @@ function AddingTradesSection() {
 
 function ImportingTradesSection() {
   return (
-    <SectionWrapper id="importing-trades" title="Importing Trades" subtitle="Bulk import from files, screenshots, or clipboard" icon={Upload}>
+    <SectionWrapper id="importing-trades" title="Importing Trades" subtitle="Bulk import from files, screenshots, or clipboard" icon={Import}>
       <p className="text-muted-foreground leading-relaxed">
         Click the <strong className="text-foreground">Import</strong> button to open the import modal. TradeQut supports three import methods,
         all powered by AI extraction.
@@ -526,10 +524,10 @@ function TradeLogSection() {
 
 function AnalyticsSection() {
   return (
-    <SectionWrapper id="analytics" title="Analytics" subtitle="Deep insights into your trading patterns" icon={TrendingUp}>
+    <SectionWrapper id="analytics" title="Analytics" subtitle="Deep information about your trading patterns" icon={TrendingUp}>
       <p className="text-muted-foreground leading-relaxed">
-        The Analytics page transforms your trade data into actionable insights. It shows 12 performance metrics,
-        8 chart types, and an insights section that highlights your most common mistakes and lessons.
+        The Analytics page transforms your trade data into actionable information. It shows 12 performance metrics,
+        8 chart types, and a behavior section that highlights your most common mistakes and lessons.
       </p>
 
       <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Performance Metrics</h3>
@@ -558,11 +556,11 @@ function AnalyticsSection() {
         <li><strong className="text-foreground">Session Performance</strong> — Performance by trading session</li>
       </ul>
 
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Insights</h3>
-      <GuideScreenshot src="/guide/analytics-insights.png" alt="Analytics insights" caption="Top mistakes, broken rules, and key lessons with P&L impact" />
+      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Behavior</h3>
+      <GuideScreenshot src="/guide/analytics-insights.png" alt="Analytics behavior section" caption="Top mistakes, broken rules, and key lessons with P&L impact" />
 
       <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        The Insights section at the bottom reveals patterns in your behavior:
+        The Behavior section at the bottom reveals patterns in your trading:
       </p>
       <FeatureGrid items={[
         { icon: AlertTriangle, title: 'Top Mistakes', desc: 'Your most frequent mistakes ranked by count and P&L impact. See exactly how much each mistake costs you.' },
@@ -571,49 +569,7 @@ function AnalyticsSection() {
       ]} />
 
       <TipBox type="tip">
-        Analytics charts require at least 3 trades to display. For meaningful patterns and reliable insights, aim for 20+ trades in your selected period.
-      </TipBox>
-    </SectionWrapper>
-  );
-}
-
-function AIInsightsSection() {
-  return (
-    <SectionWrapper id="ai-insights" title="AI Insights" subtitle="AI-powered analysis of your trading performance" icon={Sparkles}>
-      <p className="text-muted-foreground leading-relaxed">
-        The AI Insights page uses artificial intelligence to analyze your trading data and generate a comprehensive
-        assessment of your trading style, strengths, and areas for improvement. It's like having a personal trading
-        coach reviewing your journal.
-      </p>
-
-      <GuideScreenshot src="/guide/ai-insights.png" alt="AI Insights page with trader profile and behavioral scores" />
-
-      <h3 className="text-xl font-semibold text-foreground mt-8 mb-4">What AI Insights Provides</h3>
-      <FeatureGrid items={[
-        { icon: FileText, title: 'Overall Assessment', desc: 'A detailed written analysis of your trading patterns, consistency, risk management, and profitability across all your trades.' },
-        { icon: User, title: 'Trader Profile', desc: 'AI classifies your trading style (e.g., Day Trader, Swing Trader) and assigns a profile score from 1-5 based on discipline and consistency.' },
-        { icon: BarChart3, title: 'Behavioral Scores', desc: 'Scored metrics for discipline, consistency, patience, risk management, and emotional control — each rated out of 100.' },
-        { icon: Lightbulb, title: 'Key Insights', desc: 'Specific, actionable observations about your trading — from undefined risk parameters to overtrading patterns and win rate trends.' },
-      ]} />
-
-      <h3 className="text-xl font-semibold text-foreground mt-8 mb-4">How to Use AI Insights</h3>
-      <ol className="list-decimal list-inside space-y-3 my-6 text-muted-foreground leading-relaxed">
-        <li>Navigate to the <strong className="text-foreground">Insights</strong> page from the sidebar.</li>
-        <li>Select your account and date range (or choose "All Time" for a complete analysis).</li>
-        <li>Click <strong className="text-foreground">"Generate Insights"</strong> — the AI will analyze your trades and produce a report.</li>
-        <li>Review your Trader Profile score, behavioral scores, and key insights.</li>
-        <li>Use the actionable recommendations to adjust your trading strategy and set new goals.</li>
-      </ol>
-
-      <TipBox type="tip">
-        AI Insights work best with at least 10-20 trades. The more data the AI has, the more accurate and detailed
-        your trader profile and behavioral analysis will be. Regenerate insights periodically to track how your
-        trading discipline evolves over time.
-      </TipBox>
-
-      <TipBox type="info">
-        AI Insights are generated using advanced language models and are based entirely on your trade data. They are
-        for educational purposes only and do not constitute financial advice.
+        Analytics charts require at least 3 trades to display. For meaningful patterns, aim for 20+ trades in your selected period.
       </TipBox>
     </SectionWrapper>
   );
@@ -665,7 +621,7 @@ function GoalsRulesSection() {
       </ul>
 
       <TipBox type="tip">
-        Your broken rules appear in the Analytics insights section, showing you how often each rule is broken and its P&L impact.
+        Your broken rules appear in the Analytics behavior section, showing you how often each rule is broken and its P&L impact.
         This creates a powerful feedback loop for improving discipline.
       </TipBox>
     </SectionWrapper>
@@ -719,7 +675,7 @@ function ProfileSection() {
 
       <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Subscription</h3>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        All core features are free with ads. Upgrade to a paid plan for AI-powered insights and an ad-free experience.
+        All core features are free with ads. Upgrade to a paid plan for an ad-free experience.
         Choose between Monthly and Yearly billing — the Yearly plan offers the best value.
       </p>
 
@@ -833,7 +789,6 @@ export function GuidePage() {
                 <ImportingTradesSection />
                 <TradeLogSection />
                 <AnalyticsSection />
-                <AIInsightsSection />
                 <GoalsRulesSection />
                 <SettingsSection />
                 <ProfileSection />

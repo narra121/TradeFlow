@@ -31,7 +31,7 @@ function getUserIdFromToken(): string | null {
 }
 
 /**
- * Hook that orchestrates IndexedDB cache sync for the AI Insights page.
+ * Hook that orchestrates IndexedDB cache sync.
  *
  * Uses direct day-level hash comparison: fetches server day hashes and
  * compares against local IndexedDB hashes, then only fetches stale days.

@@ -61,14 +61,6 @@ describe('PricingCards', () => {
   it('shows strikethrough for paid-only features on the free card', () => {
     renderWithRouter(<PricingCards context="landing" />);
 
-    // AI-powered insights appears 3 times. The free card's should be strikethrough.
-    const aiTexts = screen.getAllByText('AI-powered insights');
-    // Free card is the first one
-    expect(aiTexts[0]).toHaveClass('line-through');
-    // Paid cards should NOT have strikethrough
-    expect(aiTexts[1]).not.toHaveClass('line-through');
-    expect(aiTexts[2]).not.toHaveClass('line-through');
-
     const adTexts = screen.getAllByText('Ad-free experience');
     expect(adTexts[0]).toHaveClass('line-through');
     expect(adTexts[1]).not.toHaveClass('line-through');

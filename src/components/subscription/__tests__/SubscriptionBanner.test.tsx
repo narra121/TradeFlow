@@ -159,7 +159,7 @@ describe('SubscriptionBanner', () => {
     );
 
     expect(
-      screen.getByText(/subscribe to unlock ai insights and go ad-free/i)
+      screen.getByText(/subscribe to go ad-free and support development/i)
     ).toBeInTheDocument();
   });
 

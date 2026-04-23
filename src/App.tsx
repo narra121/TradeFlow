@@ -181,18 +181,11 @@ function AppRoutes() {
           refreshToken()
             .then(() => {
               setAuthReady(true);
-              import('@/lib/firebase/auth').then(({ initFirebaseAuth }) => {
-                initFirebaseAuth().catch(() => {});
-              });
             })
             .catch(() => {
               dispatch(clearAuth());
               navigate('/login', { replace: true });
             });
-        });
-      } else {
-        import('@/lib/firebase/auth').then(({ initFirebaseAuth }) => {
-          initFirebaseAuth().catch(() => {});
         });
       }
     } catch {

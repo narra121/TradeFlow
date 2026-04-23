@@ -94,7 +94,7 @@ export function AboutPage() {
                 <h3 className="text-xl font-semibold text-foreground mb-3">Free Forever</h3>
                 <p className="text-muted-foreground leading-relaxed">
                   All core features are free — no credit card required. Upgrade only if you want
-                  AI-powered insights and an ad-free experience.
+                  an ad-free experience.
                 </p>
               </div>
 

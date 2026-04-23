@@ -462,7 +462,7 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
       if (!isOpen) resetModal();
       onOpenChange(isOpen);
     }}>
-      <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[80vw] max-w-[95vw] sm:max-w-[90vw] md:max-w-[80vw] h-[95vh] sm:h-[85vh] max-h-[95vh] sm:max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
+      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] p-0 bg-card border-border overflow-hidden flex flex-col">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
           <DialogTitle className="text-lg sm:text-xl font-semibold">Import Trades</DialogTitle>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
@@ -479,10 +479,15 @@ export function ImportTradesModal({ open, onOpenChange, onImportTrades }: Import
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               className={cn(
-                "relative border-2 border-dashed rounded-xl p-4 sm:p-8 transition-all duration-200",
-                isDragging
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-muted-foreground/50"
+                "relative rounded-xl transition-all duration-500 ease-in-out",
+                isProcessing || extractedTrades.length > 0
+                  ? "max-h-0 p-0 border-0 opacity-0 overflow-hidden"
+                  : cn(
+                      "border-2 border-dashed p-4 sm:p-8 max-h-[400px] opacity-100",
+                      isDragging
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/50"
+                    )
               )}
             >
               <input

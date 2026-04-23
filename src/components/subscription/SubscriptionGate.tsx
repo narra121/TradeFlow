@@ -61,7 +61,7 @@ export function SubscriptionGate({ children, subscription, isLoading }: Subscrip
             Premium Feature
           </h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-            Subscribe to unlock AI-powered insights and enjoy an ad-free experience.
+            Subscribe to enjoy an ad-free experience.
           </p>
 
           {/* CTA */}

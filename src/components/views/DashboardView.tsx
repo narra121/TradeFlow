@@ -7,7 +7,7 @@ import { QuickStats } from '@/components/dashboard/QuickStats';
 import { AccountFilter } from '@/components/account/AccountFilter';
 import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, DollarSign, TrendingUp, Activity, BarChart3, Info, AlertTriangle } from 'lucide-react';
+import { Plus, Import, DollarSign, TrendingUp, Activity, BarChart3, Info, AlertTriangle } from 'lucide-react';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -143,7 +143,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
           <div className="flex items-center gap-2 sm:gap-3">
             <RefreshButton onRefresh={refetch} isFetching={isFetching} />
             <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
-              <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Import className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="hidden sm:inline">Import</span>
             </Button>
             <Button onClick={onAddTrade} size="default" className="gap-2">
@@ -206,7 +206,7 @@ export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps
                       Add Your First Trade
                     </Button>
                     <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
-                      <Upload className="w-4 h-4" />
+                      <Import className="w-4 h-4" />
                       Import Trades
                     </Button>
                   </div>

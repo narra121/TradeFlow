@@ -67,46 +67,30 @@ export function CalendarTradeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-[95vw] md:w-[90vw] md:max-w-[90vw] max-h-[95vh] md:max-h-[90vh] p-0 overflow-hidden">
-        <DialogHeader className="px-3 py-3 sm:px-6 sm:py-4 border-b border-border/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] p-0 overflow-hidden">
+        <DialogHeader className="pl-6 pr-12 py-3 border-b border-border/50 bg-card/90 backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-sm sm:text-lg font-semibold truncate">
               Trades on {format(selectedDate, 'MMMM do, yyyy')}
+              <span className="text-muted-foreground font-normal ml-2">({trades.length})</span>
             </DialogTitle>
-            <span className="text-xs sm:text-sm text-muted-foreground shrink-0">
-              ({trades.length})
-            </span>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onPreviousDay}
-              disabled={!hasPreviousDay}
-              className="h-7 px-2 sm:h-8 sm:px-3"
-            >
-              <ChevronLeft className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Prev</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onNextDay}
-              disabled={!hasNextDay}
-              className="h-7 px-2 sm:h-8 sm:px-3"
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight className="w-4 h-4 sm:ml-1" />
-            </Button>
-            {currentDayIndex !== undefined && totalDays !== undefined && (
-              <span className="text-xs sm:text-sm text-muted-foreground ml-1 sm:ml-2">
-                {currentDayIndex + 1}/{totalDays}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button variant="outline" size="sm" onClick={onPreviousDay} disabled={!hasPreviousDay}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              {currentDayIndex !== undefined && totalDays !== undefined && (
+                <span className="text-xs text-muted-foreground min-w-[3ch] text-center">
+                  {currentDayIndex + 1}/{totalDays}
+                </span>
+              )}
+              <Button variant="outline" size="sm" onClick={onNextDay} disabled={!hasNextDay}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
-        <div className="flex flex-col md:flex-row h-[calc(95vh-80px)] md:h-[calc(90vh-80px)]">
+        <div className="flex flex-col md:flex-row h-[calc(90vh-52px)]">
           {/* Trade List - Horizontal scroll on mobile, sidebar on desktop */}
           <div className="md:w-64 border-b md:border-b-0 md:border-r border-border/50 flex flex-col shrink-0">
             <div className="p-2 md:p-3 border-b border-border/50">
@@ -160,8 +144,8 @@ export function CalendarTradeModal({
             </ScrollArea>
           </div>
 
-          {/* Right Content - Trade Details (reuses same layout as table view) */}
-          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          {/* Right Content - Trade Details (uses same header as table view) */}
+          <div className="flex-1 min-h-0 flex flex-col">
             <TradeDetailContent
               trade={selectedTrade}
               onPrevious={handlePreviousTrade}

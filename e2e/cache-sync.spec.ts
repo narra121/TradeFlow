@@ -18,8 +18,8 @@ test.describe('Trade Cache Sync', () => {
   });
 
   test('TC-901: updating a trade invalidates IndexedDB sync-key for that day', async ({ page }) => {
-    // 1. Navigate to insights to populate IndexedDB cache via syncTrades
-    await page.goto(`${DEV_URL}/app/insights`, { waitUntil: 'networkidle' });
+    // 1. Navigate to dashboard to populate IndexedDB cache via syncTrades
+    await page.goto(`${DEV_URL}/app/dashboard`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(4000);
 
     // 2. Read sync-keys count from IndexedDB
@@ -125,8 +125,8 @@ test.describe('Trade Cache Sync', () => {
       }
     });
 
-    // 3. Navigate to insights (triggers syncTrades with empty hashes)
-    await page.goto(`${DEV_URL}/app/insights`, { waitUntil: 'networkidle' });
+    // 3. Navigate to dashboard (triggers syncTrades with empty hashes)
+    await page.goto(`${DEV_URL}/app/dashboard`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(5000);
 
     // 4. Verify POST /trades/sync was called

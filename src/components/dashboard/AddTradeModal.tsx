@@ -337,9 +337,9 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:w-[90vw] max-w-[95vw] sm:max-w-[90vw] h-[95vh] sm:h-[85vh] max-h-[95vh] sm:max-h-[85vh] p-0 bg-card border-border overflow-hidden flex flex-col">
+      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] p-0 bg-card border-border overflow-hidden flex flex-col">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pr-6">
             <DialogTitle className="text-lg sm:text-xl font-semibold">{editMode ? 'Edit Trade' : 'Add New Trade'}</DialogTitle>
             {draftRestored && !editMode && (
               <button
@@ -589,7 +589,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
               </section>
 
               {/* Section B: Trade Context (Collapsible) */}
-              <Collapsible defaultOpen={false} className="bg-card/50 border border-border/50 rounded-xl">
+              <Collapsible defaultOpen={true} className="bg-card/50 border border-border/50 rounded-xl">
                 <CollapsibleTrigger className="flex items-center gap-2 w-full px-3.5 py-3 text-[11px] font-medium uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group">
                   <Clock className="w-3.5 h-3.5" />
                   <span>Trade Context</span>
@@ -636,7 +636,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
               </Collapsible>
 
               {/* Section C: Analysis (Collapsible) */}
-              <Collapsible defaultOpen={false} className="bg-card/50 border border-border/50 rounded-xl">
+              <Collapsible defaultOpen={true} className="bg-card/50 border border-border/50 rounded-xl">
                 <CollapsibleTrigger className="flex items-center gap-2 w-full px-3.5 py-3 text-[11px] font-medium uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group">
                   <BarChart3 className="w-3.5 h-3.5" />
                   <span>Analysis</span>
@@ -716,7 +716,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
               </Collapsible>
 
               {/* Section D: Trade Notes (Collapsible) */}
-              <Collapsible defaultOpen={false} className="bg-card/50 border border-border/50 rounded-xl">
+              <Collapsible defaultOpen={true} className="bg-card/50 border border-border/50 rounded-xl">
                 <CollapsibleTrigger className="flex items-center gap-2 w-full px-3.5 py-3 text-[11px] font-medium uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group">
                   <FileText className="w-3.5 h-3.5" />
                   <span>Trade Notes</span>
@@ -737,7 +737,6 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
                         <TextEnhancerButton
                           text={tradeNotes}
                           onEnhanced={setTradeNotes}
-                          isTradingNotes={true}
                         />
                       </div>
                     </div>
@@ -746,7 +745,7 @@ export function AddTradeModal({ open, onOpenChange, onAddTrade, editMode = false
               </Collapsible>
 
               {/* Section E: Visual Evidence (Collapsible) */}
-              <Collapsible defaultOpen={false} className="bg-card/50 border border-border/50 rounded-xl">
+              <Collapsible defaultOpen={true} className="bg-card/50 border border-border/50 rounded-xl">
                 <CollapsibleTrigger className="flex items-center gap-2 w-full px-3.5 py-3 text-[11px] font-medium uppercase tracking-wider text-primary hover:text-primary/80 transition-colors group">
                   <Camera className="w-3.5 h-3.5" />
                   <span>Visual Evidence</span>

@@ -265,7 +265,7 @@ describe('AnalyticsView - Empty State', () => {
   });
 });
 
-describe('AnalyticsView - Insights Sections', () => {
+describe('AnalyticsView - Behavior Sections', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

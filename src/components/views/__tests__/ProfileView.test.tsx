@@ -131,9 +131,9 @@ describe('ProfileView', () => {
     expect(screen.getByText('Subscription')).toBeInTheDocument();
   });
 
-  it('shows Edit Profile button in hero banner', () => {
+  it('shows Edit button in personal info card', () => {
     render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /edit profile/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument();
   });
 
   it('shows Logout button', () => {
@@ -237,10 +237,9 @@ describe('ProfileView - User Info & Form Fields', () => {
     } as any);
   });
 
-  it('renders user name in both banner and personal info card', () => {
+  it('renders user name in personal info card', () => {
     render(<ProfileView />);
-    const nameElements = screen.getAllByText('Jane Doe');
-    expect(nameElements.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
   });
 
   it('renders user email', () => {
@@ -255,9 +254,9 @@ describe('ProfileView - User Info & Form Fields', () => {
     expect(screen.getByText('Email Address')).toBeInTheDocument();
   });
 
-  it('renders the Edit Profile button', () => {
+  it('renders the Edit button', () => {
     render(<ProfileView />);
-    expect(screen.getByRole('button', { name: /edit profile/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument();
   });
 
   it('shows profile subtitle text', () => {
@@ -265,20 +264,7 @@ describe('ProfileView - User Info & Form Fields', () => {
     expect(screen.getByText('Manage your profile and subscription')).toBeInTheDocument();
   });
 
-  it('shows "Member since" with date derived from account createdAt', () => {
-    render(<ProfileView />);
-    expect(screen.getByText(/Member since June 2025/)).toBeInTheDocument();
-  });
-
-  it('hides "Member since" when no accounts exist', async () => {
-    const { useAccounts } = await import('@/hooks/useAccounts');
-    (useAccounts as ReturnType<typeof vi.fn>).mockReturnValue({
-      accounts: [],
-      selectedAccountId: null,
-      selectedAccount: null,
-      setSelectedAccountId: vi.fn(),
-    });
-
+  it('does not show "Member since" (banner removed)', () => {
     render(<ProfileView />);
     expect(screen.queryByText(/Member since/)).not.toBeInTheDocument();
   });
@@ -377,7 +363,7 @@ describe('ProfileView - Profile Validation', () => {
     const user = userEvent.setup();
     render(<ProfileView />);
 
-    const editButton = screen.getByRole('button', { name: /edit profile/i });
+    const editButton = screen.getByRole('button', { name: /^edit$/i });
     await user.click(editButton);
 
     const nameInput = screen.getByLabelText('Full Name');
@@ -705,7 +691,7 @@ describe('ProfileView - Compact Pricing Integration', () => {
     } as any);
 
     render(<ProfileView />);
-    expect(screen.getByText(/Unlock AI insights and go ad-free/)).toBeInTheDocument();
+    expect(screen.getByText(/Upgrade to go ad-free/)).toBeInTheDocument();
   });
 
   it('shows feature checklist items', () => {
@@ -717,7 +703,6 @@ describe('ProfileView - Compact Pricing Integration', () => {
 
     render(<ProfileView />);
     expect(screen.getByText('Unlimited trade entries')).toBeInTheDocument();
-    expect(screen.getByText('AI-powered insights')).toBeInTheDocument();
     expect(screen.getByText('Ad-free experience')).toBeInTheDocument();
   });
 });

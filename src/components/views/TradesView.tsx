@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
   Plus,
-  Upload,
+  Import,
   Search,
   ArrowUpRight,
   ArrowDownRight,
@@ -172,7 +172,7 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
-            <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Import className="w-4 h-4 sm:w-5 sm:h-5" />
             Import
           </Button>
           <Button onClick={onAddTrade} size="default" className="gap-2">
@@ -403,8 +403,6 @@ export function TradesView({ onAddTrade, onImportTrades }: TradesViewProps) {
           setSelectedTradeIndex(null);
         }}
         onEdit={(trade) => {
-          setIsDetailModalOpen(false);
-          setSelectedTradeIndex(null);
           handleEditTrade(trade);
         }}
         onDelete={(tradeId) => {

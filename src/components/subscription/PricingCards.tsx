@@ -27,7 +27,6 @@ export const FEATURES: Feature[] = [
   { label: 'Trade journal & notes', free: true },
   { label: 'Trading rules engine', free: true },
   { label: 'All future features', free: true },
-  { label: 'AI-powered insights', free: false },
   { label: 'Ad-free experience', free: false },
 ];
 

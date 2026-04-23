@@ -40,7 +40,7 @@ describe('SubscriptionGate', () => {
 
     expect(screen.getByText('Premium Feature')).toBeInTheDocument();
     expect(
-      screen.getByText(/subscribe to unlock ai-powered insights/i)
+      screen.getByText(/subscribe to enjoy an ad-free experience/i)
     ).toBeInTheDocument();
   });
 
@@ -50,7 +50,7 @@ describe('SubscriptionGate', () => {
 
     expect(screen.getByText('Premium Feature')).toBeInTheDocument();
     expect(
-      screen.getByText(/subscribe to unlock ai-powered insights/i)
+      screen.getByText(/subscribe to enjoy an ad-free experience/i)
     ).toBeInTheDocument();
   });
 
@@ -59,7 +59,7 @@ describe('SubscriptionGate', () => {
 
     expect(screen.getByText('Premium Feature')).toBeInTheDocument();
     expect(
-      screen.getByText(/subscribe to unlock ai-powered insights/i)
+      screen.getByText(/subscribe to enjoy an ad-free experience/i)
     ).toBeInTheDocument();
   });
 

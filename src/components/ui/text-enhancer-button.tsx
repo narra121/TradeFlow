@@ -11,16 +11,14 @@ interface TextEnhancerButtonProps {
   className?: string;
   size?: 'sm' | 'default';
   disabled?: boolean;
-  isTradingNotes?: boolean;
 }
 
-export function TextEnhancerButton({ 
-  text, 
-  onEnhanced, 
-  className, 
+export function TextEnhancerButton({
+  text,
+  onEnhanced,
+  className,
   size = 'sm',
   disabled = false,
-  isTradingNotes = false
 }: TextEnhancerButtonProps) {
   const [enhanceText, { isLoading }] = useEnhanceTextMutation();
 
@@ -28,7 +26,7 @@ export function TextEnhancerButton({
     if (!text.trim()) return;
 
     try {
-      const result = await enhanceText({ text, isTradingNotes }).unwrap();
+      const result = await enhanceText({ text }).unwrap();
       onEnhanced(result.enhancedText);
     } catch (error: any) {
       console.error('Failed to enhance text:', error);
