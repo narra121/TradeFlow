@@ -2,11 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { lazy, Suspense, useState, useEffect, useRef, Component } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import { Loader2 } from "lucide-react";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearAuth } from "@/store/slices/authSlice";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { HelmetProvider } from 'react-helmet-async';
@@ -194,22 +194,26 @@ function AppRoutes() {
     }
   }, []);
 
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+  // Authenticated users on public/app routes: show loading until auth is confirmed,
+  // then render the correct route. This prevents FOUC (flash of landing page).
+  if (!authReady && isAuthenticated) {
+    return <PageLoadingFallback />;
+  }
+
   return (
     <ChunkErrorBoundary>
     <Suspense fallback={<PageLoadingFallback />}>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/" element={isAuthenticated ? <Navigate to="/app/dashboard" replace /> : <LandingPage />} />
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/app/dashboard" replace /> : <LoginPage />} />
+        <Route path="/signup" element={isAuthenticated ? <Navigate to="/app/dashboard" replace /> : <SignupPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/app/*" element={
-          authReady ? (
-            <RequireAuth>
-              <AppPage />
-            </RequireAuth>
-          ) : (
-            <PageLoadingFallback />
-          )
+          <RequireAuth>
+            <AppPage />
+          </RequireAuth>
         } />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
