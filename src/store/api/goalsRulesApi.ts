@@ -110,7 +110,7 @@ export const goalsRulesApi = api.injectEndpoints({
         }
         return goal;
       },
-      invalidatesTags: [{ type: 'Goals', id: 'LIST' }],
+      invalidatesTags: ['Goals'],
     }),
 
     getRules: builder.query<TradingRule[], void>({
@@ -154,9 +154,9 @@ export const goalsRulesApi = api.injectEndpoints({
         }
         return rule;
       },
-      invalidatesTags: [{ type: 'Rules', id: 'LIST' }],
+      invalidatesTags: ['Rules'],
     }),
-    
+
     updateRule: builder.mutation<TradingRule, { id: string; payload: UpdateRulePayload }>({
       query: ({ id, payload }) => ({
         url: `/rules/${encodeURIComponent(id)}`,

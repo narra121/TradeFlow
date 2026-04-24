@@ -68,8 +68,24 @@ export const accountsApi = api.injectEndpoints({
         return account;
       },
       invalidatesTags: [{ type: 'Accounts', id: 'LIST' }],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data: newAccount } = await queryFulfilled;
+
+          // Immediately insert the new account into the getAccounts cache
+          // so it appears in AddTradeModal / ImportTradesModal without
+          // waiting for the tag-invalidation refetch to complete.
+          dispatch(
+            accountsApi.util.updateQueryData('getAccounts', undefined, (draft) => {
+              draft.accounts.push(newAccount);
+            })
+          );
+        } catch {
+          // Error handled by component
+        }
+      },
     }),
-    
+
     updateAccount: builder.mutation<TradingAccount, { id: string; payload: Partial<CreateAccountPayload> }>({
       query: ({ id, payload }) => ({
         url: `/accounts/${id}`,
