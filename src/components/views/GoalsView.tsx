@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { AdSlot } from '@/components/ads/AdSlot';
-import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Trophy, Info, Settings } from 'lucide-react';
+import { Target, TrendingUp, Shield, Award, CheckCircle2, Pencil, X, Check, Plus, Trash2, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Trophy, Info, Settings, ArrowDownToLine } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery, useUpdateGoalMutation, useCreateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation, useGetProfileQuery } from '@/store/api';
+import { useGetRulesAndGoalsQuery, useGetGoalsProgressQuery, useUpdateGoalMutation, useCreateGoalMutation, useCreateRuleMutation, useUpdateRuleMutation, useDeleteRuleMutation, useToggleRuleMutation, useGetProfileQuery, useGetAccountsQuery } from '@/store/api';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
@@ -155,6 +156,18 @@ export function GoalsView() {
     }
   }, [debouncedDate, periodFilter]);
 
+  // Sibling periodKey: if weekly → that month; if monthly → that week
+  const siblingPeriodKey = useMemo(() => {
+    if (periodFilter === 'weekly') {
+      return `month#${format(startOfMonth(debouncedDate), 'yyyy-MM')}`;
+    } else {
+      const monday = startOfWeek(debouncedDate, { weekStartsOn: 1 });
+      return `week#${format(monday, 'yyyy-MM-dd')}`;
+    }
+  }, [debouncedDate, periodFilter]);
+
+  const siblingLabel = periodFilter === 'weekly' ? 'monthly' : 'weekly';
+
   // Format period label based on selected date (not debounced) for immediate UI feedback
   const periodLabel = useMemo(() => {
     const displayRange = periodFilter === 'weekly'
@@ -175,6 +188,18 @@ export function GoalsView() {
   }, [selectedDate, periodFilter]);
 
   const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
+  const { data: accountsData } = useGetAccountsQuery();
+  const accounts = accountsData?.accounts || [];
+
+  const totalCapital = useMemo(() => {
+    const accountId = selectedAccountId || 'ALL';
+    if (accountId === 'ALL') {
+      return accounts
+        .filter(acc => acc.id && acc.id !== '-1')
+        .reduce((sum, acc) => sum + (acc.initialBalance || 0), 0);
+    }
+    return accounts.find(acc => acc.id === accountId)?.initialBalance || 0;
+  }, [selectedAccountId, accounts]);
 
   const { data: rulesGoalsData, isLoading: rulesGoalsLoading, isFetching: rulesGoalsFetching, refetch } = useGetRulesAndGoalsQuery({
     periodKey,
@@ -188,6 +213,12 @@ export function GoalsView() {
     period: periodFilter,
     periodKey,
     currentPeriod: isCurrentPeriod,
+    totalCapital,
+  });
+
+  const { data: siblingData } = useGetRulesAndGoalsQuery({
+    periodKey: siblingPeriodKey,
+    currentPeriod: false,
   });
 
   const showSkeleton = rulesGoalsLoading || progressLoading;
@@ -215,6 +246,27 @@ export function GoalsView() {
   const rules = backendRules.length > 0 ? backendRules : defaultRuleObjects;
   const isUsingDefaultRules = backendRules.length === 0;
   
+  // Rules from sibling period that aren't in the current period
+  const pullableRules = useMemo(() => {
+    const siblingRules = siblingData?.rules || [];
+    if (siblingRules.length === 0 || isUsingDefaultRules) return [];
+    const currentRuleTexts = new Set(backendRules.map(r => r.rule.toLowerCase().trim()));
+    return siblingRules.filter(r => !currentRuleTexts.has(r.rule.toLowerCase().trim()));
+  }, [siblingData?.rules, backendRules, isUsingDefaultRules]);
+
+  const [pullingRuleText, setPullingRuleText] = useState<string | null>(null);
+
+  const handlePullRule = async (ruleText: string) => {
+    setPullingRuleText(ruleText);
+    try {
+      await createRule({ rule: ruleText, periodKey }).unwrap();
+    } catch {
+      // Toast middleware handles error display
+    } finally {
+      setPullingRuleText(null);
+    }
+  };
+
   // Navigate to previous period
   const goToPreviousPeriod = () => {
     if (periodFilter === 'weekly') {
@@ -804,6 +856,39 @@ export function GoalsView() {
               </div>
             );
           })}
+
+          {/* Pullable rules from sibling period */}
+          {isCurrentPeriod && pullableRules.map((item) => (
+            <div
+              key={`pull-${item.ruleId}`}
+              className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl bg-secondary/20 border border-dashed border-border/40 opacity-50 hover:opacity-80 transition-opacity animate-fade-in"
+            >
+              <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-muted">
+                <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+              <span className="flex-1 text-sm text-muted-foreground">{item.rule}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 hover:bg-primary/10"
+                    onClick={() => handlePullRule(item.rule)}
+                    disabled={pullingRuleText === item.rule}
+                  >
+                    {pullingRuleText === item.rule ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <ArrowDownToLine className="w-3.5 h-3.5 text-primary" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Pull from {siblingLabel} rules</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          ))}
 
           {/* Add New Rule Input */}
           {isAddingRule && (

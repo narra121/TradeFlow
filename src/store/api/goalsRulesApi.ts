@@ -316,12 +316,14 @@ export const goalsRulesApi = api.injectEndpoints({
       period: 'weekly' | 'monthly';
       periodKey?: string;
       currentPeriod?: boolean;
+      totalCapital?: number;
     }>({
       query: (params) => ({
         url: '/goals/progress',
         params: {
           ...params,
           currentPeriod: params.currentPeriod !== undefined ? String(params.currentPeriod) : undefined,
+          totalCapital: params.totalCapital !== undefined ? String(params.totalCapital) : undefined,
         },
       }),
       providesTags: ['Goals', 'Rules', 'Stats'],
