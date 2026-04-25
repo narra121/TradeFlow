@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { SEO } from '@/components/SEO';
@@ -11,9 +12,9 @@ export function SignupPage() {
     return <Navigate to="/app" replace />;
   }
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = useCallback(() => {
     navigate('/app');
-  };
+  }, [navigate]);
 
   return (
     <>
