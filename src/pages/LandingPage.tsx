@@ -4,7 +4,6 @@ import { SEO } from '@/components/SEO';
 import { LANDING_PAGE_SCHEMA, FAQ_ITEMS } from '@/config/seo';
 import { Button } from '@/components/ui/button';
 import {
-  Zap,
   BarChart3,
   Calendar,
   Target,
@@ -24,6 +23,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PricingCards } from '@/components/subscription/PricingCards';
 
@@ -526,13 +526,22 @@ export function LandingPage() {
               <h4 className="font-semibold text-foreground mb-4">Resources</h4>
               <ul className="space-y-3">
                 <li>
+                  <Link to="/blog" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Blog</Link>
+                </li>
+                <li>
                   <Link to="/guide" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Guide</Link>
                 </li>
                 <li>
-                  <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors text-sm">About</Link>
+                  <Link to="/glossary" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Glossary</Link>
                 </li>
                 <li>
-                  <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Support</Link>
+                  <Link to="/resources" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Calculators</Link>
+                </li>
+                <li>
+                  <Link to="/case-studies" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Case Studies</Link>
+                </li>
+                <li>
+                  <Link to="/changelog" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Changelog</Link>
                 </li>
               </ul>
             </div>

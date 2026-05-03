@@ -136,3 +136,113 @@ export function breadcrumbSchema(items: { name: string; url: string }[]) {
     })),
   };
 }
+
+export function blogArticleSchema(article: {
+  slug: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.description,
+    datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
+    image: 'https://tradequt.com/og-image.png',
+    mainEntityOfPage: `https://tradequt.com/blog/${article.slug}`,
+    author: { '@type': 'Organization', name: 'TradeQut', url: 'https://tradequt.com' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'TradeQut',
+      logo: { '@type': 'ImageObject', url: 'https://tradequt.com/og-image.png' },
+    },
+  };
+}
+
+export const BLOG_INDEX_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'TradeQut Blog - Trading Journal Tips & Strategies',
+  description: 'Expert articles on trading journaling, analytics, psychology, and strategies to improve your trading performance.',
+  url: 'https://tradequt.com/blog',
+  isPartOf: { '@type': 'WebSite', name: 'TradeQut', url: 'https://tradequt.com' },
+};
+
+export function glossarySchema(terms: { term: string; definition: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTermSet',
+    name: 'Trading Glossary',
+    description: 'Comprehensive glossary of trading terms and definitions for traders of all levels.',
+    url: 'https://tradequt.com/glossary',
+    hasDefinedTerm: terms.map((t) => ({
+      '@type': 'DefinedTerm',
+      name: t.term,
+      description: t.definition,
+    })),
+  };
+}
+
+export function calculatorSchema(name: string, description: string, path: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name,
+    description,
+    url: `https://tradequt.com${path}`,
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Web',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  };
+}
+
+export function caseStudySchema(study: {
+  slug: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    articleSection: 'Case Study',
+    headline: study.title,
+    description: study.description,
+    datePublished: study.publishedAt,
+    dateModified: study.publishedAt,
+    image: 'https://tradequt.com/og-image.png',
+    mainEntityOfPage: `https://tradequt.com/case-studies/${study.slug}`,
+    author: { '@type': 'Organization', name: 'TradeQut', url: 'https://tradequt.com' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'TradeQut',
+      logo: { '@type': 'ImageObject', url: 'https://tradequt.com/og-image.png' },
+    },
+  };
+}
+
+export const CHANGELOG_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'TradeQut Changelog',
+  description: 'Product updates and release notes for TradeQut trading journal.',
+  url: 'https://tradequt.com/changelog',
+};
+
+export const RESOURCES_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Trading Tools & Calculators - TradeQut',
+  description: 'Free trading calculators: position size, risk-reward ratio, and pip value. Essential tools for every trader.',
+  url: 'https://tradequt.com/resources',
+};
+
+export const CASE_STUDIES_INDEX_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Trading Success Stories - TradeQut Case Studies',
+  description: 'Real stories of traders who improved their performance with disciplined journaling and analytics.',
+  url: 'https://tradequt.com/case-studies',
+};
