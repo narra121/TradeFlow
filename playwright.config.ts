@@ -5,7 +5,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 4,
+  // The dev server compiles each lazy route on first visit; a cold route can take several seconds.
+  expect: { timeout: 10_000 },
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: 'http://localhost:8080',

@@ -1,0 +1,159 @@
+import { useEffect, useState } from 'react';
+import { AlertTriangle, Pencil } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Field } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Money } from '@/components/ui/money';
+import { DirectionChip } from '@/components/ui/chips';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { formatDateTime, formatQuantity } from '@/lib/format';
+import { STATUS_LABEL } from '@/lib/import/labels';
+import { rowStatus, validateTrade, type EditableField, type ReviewRow } from '@/lib/import/rows';
+import { cn } from '@/lib/utils';
+
+interface MobileReviewProps {
+  rows: ReviewRow[];
+  currency?: string;
+  readOnly?: boolean;
+  onInclude: (key: string, included: boolean) => void;
+  onEdit: (key: string, field: EditableField, value: string | number) => void;
+}
+
+/** Phone layout of the review: one card per row; the pencil opens the row in a sheet with labelled inputs. */
+export function MobileReview({ rows, currency, readOnly, onInclude, onEdit }: MobileReviewProps) {
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const editing = rows.find((r) => r.key === editKey) ?? null;
+  return (
+    <>
+      <ul className="divide-y divide-border border-y border-border">
+        {rows.map((row) => {
+          const errors = validateTrade(row.trade);
+          const status = rowStatus(row, errors);
+          const t = row.trade;
+          return (
+            <li key={row.key} className={cn('flex items-start gap-3 py-3', (status === 'excluded' || status === 'duplicate') && 'text-muted-foreground')}>
+              <Checkbox
+                className="mt-1"
+                checked={row.included || !!row.saved}
+                disabled={readOnly || !!row.saved}
+                onCheckedChange={(v) => onInclude(row.key, v === true)}
+                aria-label={`Include ${t.symbol || 'row'}`}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    {t.symbol || '—'} <DirectionChip direction={t.side === 'BUY' ? 'LONG' : 'SHORT'} />
+                  </span>
+                  {Number.isFinite(t.pnl) && <Money value={t.pnl} currency={currency} />}
+                </div>
+                <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
+                  {t.closeDate && !Number.isNaN(new Date(t.closeDate).getTime()) ? formatDateTime(t.closeDate) : 'No close date'} · {t.quantity > 0 ? formatQuantity(t.quantity) : '—'} qty
+                </p>
+                <p className={cn('mt-0.5 flex items-center gap-1 text-xs', status === 'fix' ? 'text-loss' : 'text-muted-foreground')}>
+                  {status === 'fix' && <AlertTriangle className="h-3 w-3" aria-hidden="true" />}
+                  {status === 'fix' ? `${row.note ? `${row.note} ` : ''}${Object.values(errors).join(' ')}` : STATUS_LABEL[status]}
+                </p>
+              </div>
+              {!readOnly && !row.saved && (
+                <Button type="button" variant="ghost" size="icon" aria-label={`Edit ${t.symbol || 'row'}`} onClick={() => setEditKey(row.key)} className="h-11 w-11">
+                  <Pencil className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <RowSheet row={editing} onClose={() => setEditKey(null)} onEdit={onEdit} />
+    </>
+  );
+}
+
+const FIELDS: { field: EditableField; label: string; type: 'text' | 'number' | 'datetime-local' }[] = [
+  { field: 'symbol', label: 'Symbol', type: 'text' },
+  { field: 'quantity', label: 'Quantity', type: 'number' },
+  { field: 'entryPrice', label: 'Entry price', type: 'number' },
+  { field: 'exitPrice', label: 'Exit price', type: 'number' },
+  { field: 'openDate', label: 'Opened', type: 'datetime-local' },
+  { field: 'closeDate', label: 'Closed', type: 'datetime-local' },
+  { field: 'fees', label: 'Fees', type: 'number' },
+  { field: 'pnl', label: 'Net P&L', type: 'number' },
+];
+
+const toLocal = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
+function RowSheet({ row, onClose, onEdit }: { row: ReviewRow | null; onClose: () => void; onEdit: MobileReviewProps['onEdit'] }) {
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!row) return;
+    const t = row.trade;
+    setDraft({
+      symbol: t.symbol,
+      quantity: String(t.quantity || ''),
+      entryPrice: String(t.entryPrice || ''),
+      exitPrice: String(t.exitPrice || ''),
+      openDate: toLocal(t.openDate),
+      closeDate: toLocal(t.closeDate),
+      fees: String(t.fees ?? 0),
+      pnl: String(t.pnl ?? 0),
+      side: t.side,
+    });
+  }, [row]);
+  if (!row) return <Sheet open={false} />;
+  const preview = { ...row.trade, symbol: draft.symbol ?? '', quantity: Number(draft.quantity), entryPrice: Number(draft.entryPrice), exitPrice: Number(draft.exitPrice), openDate: draft.openDate ? new Date(draft.openDate).toISOString() : '', closeDate: draft.closeDate ? new Date(draft.closeDate).toISOString() : '', fees: Number(draft.fees), pnl: Number(draft.pnl) };
+  const errors = validateTrade(preview);
+  const apply = () => {
+    for (const f of FIELDS) {
+      const v = draft[f.field] ?? '';
+      const next = f.type === 'number' ? Number(v) : f.type === 'datetime-local' ? (v ? new Date(v).toISOString() : '') : v.trim().toUpperCase();
+      const was = f.type === 'datetime-local' ? row.trade[f.field as 'openDate' | 'closeDate'] : row.trade[f.field as keyof typeof row.trade];
+      if (!Object.is(next, was)) onEdit(row.key, f.field, next);
+    }
+    if (draft.side && draft.side !== row.trade.side) onEdit(row.key, 'side', draft.side);
+    onClose();
+  };
+  return (
+    <Sheet open onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Edit trade</SheetTitle>
+          <SheetDescription>{row.trade.symbol || 'Row'} · {row.source}</SheetDescription>
+        </SheetHeader>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <Field label="Side" className="col-span-2">
+            {(a) => (
+              <select {...a} value={draft.side ?? 'BUY'} onChange={(e) => setDraft((d) => ({ ...d, side: e.target.value }))} className="h-11 w-full rounded-md border border-input bg-background px-3 text-base">
+                <option value="BUY">Long</option>
+                <option value="SELL">Short</option>
+              </select>
+            )}
+          </Field>
+          {FIELDS.map((f) => (
+            <Field key={f.field} label={f.label} error={errors[f.field]} className={f.type === 'datetime-local' || f.field === 'symbol' ? 'col-span-2' : undefined}>
+              {(a) => (
+                <Input
+                  {...a}
+                  type={f.type}
+                  step={f.type === 'number' ? 'any' : undefined}
+                  inputMode={f.type === 'number' ? 'decimal' : undefined}
+                  className="h-11"
+                  value={draft[f.field] ?? ''}
+                  onChange={(e) => setDraft((d) => ({ ...d, [f.field]: e.target.value }))}
+                />
+              )}
+            </Field>
+          ))}
+        </div>
+        <SheetFooter className="mt-4 gap-2">
+          <Button type="button" variant="ghost" onClick={onClose} className="h-11">Cancel</Button>
+          <Button type="button" onClick={apply} className="h-11">Done</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}

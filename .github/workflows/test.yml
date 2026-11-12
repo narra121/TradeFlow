@@ -48,3 +48,31 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
+
+  public-site:
+    name: Public site build, audit and budgets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.12"
+      - name: Install dependencies (fresh resolve for Linux platform)
+        run: rm -f bun.lock package-lock.json && bun install
+      - name: Install Playwright Browsers
+        run: bunx playwright install --with-deps chromium
+      - name: Build (prerender and verify-dist)
+        run: bun run build
+      - name: Accessibility and anti-slop audit of the public routes
+        run: node scripts/seo/audit-public.mjs --out audit-shots --report-only /login,/signup
+      - name: Performance budgets
+        run: node scripts/perf/budget.mjs --out perf-report
+      - name: Upload audit and budget reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-site-reports
+          path: |
+            audit-shots/
+            perf-report/
+

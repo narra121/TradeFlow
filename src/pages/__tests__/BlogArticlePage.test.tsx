@@ -41,17 +41,18 @@ function renderWithRoute(slug: string) {
 describe('BlogArticlePage', () => {
   it('renders article title for a valid slug', async () => {
     renderWithRoute('how-to-keep-trading-journal');
-    expect(await screen.findByText('How to Keep a Trading Journal: The Complete Guide')).toBeInTheDocument();
+    expect(await screen.findByText('How to keep a trading journal: the complete guide')).toBeInTheDocument();
   });
 
   it('renders author box', async () => {
     renderWithRoute('how-to-keep-trading-journal');
-    expect(await screen.findByText('TradeQut Team')).toBeInTheDocument();
+    expect(await screen.findByText(/\d+ min read/)).toBeInTheDocument();
+    expect(screen.queryByText('TradeQut Team')).not.toBeInTheDocument();
   });
 
   it('renders tags', async () => {
     renderWithRoute('how-to-keep-trading-journal');
-    expect(await screen.findByText('beginner')).toBeInTheDocument();
+    expect(await screen.findByText(/beginner · journaling/)).toBeInTheDocument();
   });
 
   it('renders article description', async () => {

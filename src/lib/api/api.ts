@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { refreshToken } from '@/lib/api/tokenRefresh';
+import { API_BASE_URL } from '@/lib/api/config';
+import { classifyPlanError, emitPlanSignal } from '@/lib/planErrors';
 
 /**
  * API Client Module with Automatic Token Refresh
@@ -13,8 +16,6 @@ import { refreshToken } from '@/lib/api/tokenRefresh';
  * Multiple concurrent 401s are queued and processed together after refresh completes.
  */
 
-// API Base URL from environment variable
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.tradequt.com/v1';
 
 // Debounce unauthorized events to prevent rapid-fire
 let unauthorizedTimeout: NodeJS.Timeout | null = null;
@@ -170,21 +171,15 @@ apiClient.interceptors.response.use(
       } else {
         // Handle other error cases
         switch (status) {
-          case 403: {
-            // Check if this is a subscription-required error
-            const responseData = error.response.data as any;
-            const errorCode = responseData?.errorCode || responseData?.error?.code;
-            if (errorCode === 'SUBSCRIPTION_REQUIRED') {
-              const reason = responseData?.errors?.[0]?.reason || responseData?.error?.details?.reason || 'subscription_ended';
-              const message = responseData?.message || 'Please subscribe to continue using TradeQut.';
-              window.dispatchEvent(new CustomEvent('subscription-required', {
-                detail: { reason, message },
-              }));
-            } else {
-              console.error('Access forbidden');
-            }
+          case 402: {
+            const signal = classifyPlanError(402, error.response.data);
+            if (signal) emitPlanSignal(signal);
             break;
           }
+
+          case 403:
+            console.error('Access forbidden');
+            break;
 
           case 404:
             console.error('Resource not found');

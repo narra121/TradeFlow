@@ -19,7 +19,7 @@ export default function TradingMetricsThatMatter() {
         Expectancy tells you how much you can expect to make or lose per trade on average. It accounts
         for both the probability and magnitude of wins and losses.
       </p>
-      <div className="bg-card rounded-xl border border-border/50 p-4 mb-6">
+      <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
           Expectancy = (Win% x Avg Win) - (Loss% x Avg Loss)
         </p>
@@ -56,7 +56,7 @@ export default function TradingMetricsThatMatter() {
         $100 and made $250, the R-multiple is +2.5R. Lost your full $100 risk? That is -1R. Exited early
         with a $60 loss? That is -0.6R.
       </p>
-      <div className="bg-card rounded-xl border border-border/50 p-4 mb-6">
+      <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
           R-Multiple = Trade P&L / Initial Risk (dollar amount at stop-loss)
         </p>
@@ -73,7 +73,7 @@ export default function TradingMetricsThatMatter() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         The Sharpe ratio measures risk-adjusted returns: how much return you generate per unit of volatility.
       </p>
-      <div className="bg-card rounded-xl border border-border/50 p-4 mb-6">
+      <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
           Sharpe Ratio = Average Return per Trade / Standard Deviation of Returns
         </p>

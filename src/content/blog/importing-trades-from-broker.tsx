@@ -1,150 +1,113 @@
-import { Link } from 'react-router-dom';
+import { A, Callout, H2, H3, OL, P, Table, UL } from '../components/ArticleParts';
+import { PLAN_LIMITS } from '../product-facts';
+
+const limit = (feature: string) => PLAN_LIMITS.find((r) => r.feature === feature);
+const imports = limit('Broker file imports');
+const extraction = limit('AI extraction from screenshots/files');
 
 export default function ImportingTradesFromBroker() {
   return (
     <>
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Three Ways to Import Your Trades</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        Manually entering every trade into a journal is the biggest reason traders abandon journaling. It takes too
-        long, especially for active{' '}
-        <Link to="/blog/day-trading-journal" className="text-primary hover:text-primary/80">day traders</Link> who
-        might take 5 to 10 trades per session. TradeQut solves this with three import methods that cover virtually
-        every broker and platform: CSV file upload, AI-powered screenshot extraction, and clipboard paste. Each
-        method is designed to get your trades into the journal with minimal manual effort, so you can spend your
-        time on analysis and review rather than data entry.
-      </p>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        The right method depends on what your broker provides. Most modern brokers offer CSV or Excel export of trade
-        history. Some platforms only show trade data on screen without easy export options. And sometimes you just want
-        to quickly capture a few trades from a notification or message. All three methods feed into the same journal
-        format, so your analytics and reporting work identically regardless of how the data was imported.
-      </p>
+      <P>
+        Typing every fill by hand is the main reason traders give up on a journal. TradeQut&apos;s <em>Import</em> page takes the
+        file your broker already gives you, or screenshots when there is no file, and shows every trade for review before
+        anything is saved. This guide covers each route and what to check.
+      </P>
 
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">CSV Import Step-by-Step</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        CSV import is the most reliable method for bulk trade imports. Here is how to use it effectively.
-      </p>
-      <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
-        <li>
-          <strong className="text-foreground">Step 1: Export from your broker.</strong> Log into your trading platform
-          and navigate to the trade history or account statement section. Most brokers have an "Export" or "Download"
-          button that produces a CSV or Excel file. Look for options that include all trade fields: symbol, entry date,
-          exit date, entry price, exit price, quantity, and P&L.
-        </li>
-        <li>
-          <strong className="text-foreground">Step 2: Review the file.</strong> Open the CSV in a spreadsheet program
-          and verify the data looks correct. Check that dates are in a recognizable format, prices have the right
-          decimal precision, and that the file includes both entries and exits for each trade.
-        </li>
-        <li>
-          <strong className="text-foreground">Step 3: Upload to TradeQut.</strong> In the trade import modal, select
-          the CSV tab and drag your file into the upload area or click to browse. The AI engine automatically detects
-          column mappings, matching your broker's column headers to TradeQut's trade fields.
-        </li>
-        <li>
-          <strong className="text-foreground">Step 4: Verify and confirm.</strong> Review the extracted trades before
-          confirming. Check that symbols, dates, prices, and{' '}
-          <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link> values are correct. You
-          can edit individual fields before import if anything needs adjustment.
-        </li>
-      </ul>
+      <H2>Supported broker files</H2>
+      <Table
+        caption="Where to download the file (menu names can differ by app version)"
+        head={['Broker', 'File', 'Where to find it']}
+        rows={[
+          ['Zerodha', 'Console tradebook, CSV or XLSX', 'Console → Reports → Tradebook → segment and date range (at most 365 days per download)'],
+          ['Zerodha', 'Console P&L statement, XLSX or CSV', 'Console → Reports → P&L. A per-symbol summary without trade times; the tradebook gives full trades'],
+          ['Dhan', 'Trade history, CSV or XLSX', 'Dhan web → Reports → Trade History → date range'],
+          ['Upstox', 'Trade report, CSV or XLSX', 'Reports → Trade Report (Tradebook) → segment and date range'],
+          ['Angel One', 'Trade history, CSV or XLSX', 'Reports → Trade History (or Tradebook) → date range'],
+          ['Groww', 'Order history, XLSX or CSV', 'Profile → Reports → Order History (Stocks or F&O) → date range'],
+          ['MetaTrader 4', 'Detailed report, HTML', 'Account History tab → right-click → Save as Detailed Report'],
+          ['MetaTrader 5', 'History report, HTML or XLSX', 'Toolbox → History → right-click → Report'],
+        ]}
+      />
+      <P>
+        Leave <em>Source</em> on <em>Auto-detect</em> and TradeQut recognises the layout, or pick the broker yourself; each
+        broker button shows its export steps. Files can be CSV, XLSX or HTML up to 4 MB.
+      </P>
 
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">AI Screenshot Extraction</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        Not every broker makes it easy to export trade data as structured files. Some platforms only display trade
-        history on screen, or you might want to capture trades from a mobile app that does not offer CSV export.
-        This is where AI-powered screenshot extraction becomes invaluable.
-      </p>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        Take a screenshot of your trade history, account statement, or even a trade confirmation screen. Upload the
-        image to TradeQut's import modal under the Screenshot tab. The AI engine, powered by Google's Gemini model,
-        analyzes the image and extracts trade data from it. It can read tables, lists, and even partially obscured
-        text. The extraction handles various layouts from different brokers including MetaTrader 4 and 5, TradingView,
-        Thinkorswim, Interactive Brokers, and most other major platforms.
-      </p>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        For best results when using screenshot extraction, follow these tips. Capture the full trade row including all
-        columns. Avoid cropping too tightly, as the AI uses surrounding context to understand column headers. Ensure
-        the screenshot is clear and not blurry. If you have many trades, take multiple screenshots rather than one
-        zoomed-out image where text is too small to read. You can upload multiple images in a single import session.
-      </p>
+      <H2>How an import works</H2>
+      <OL>
+        <li>Open <em>Import</em> and choose the account the trades belong to.</li>
+        <li>Drop the file on the page, paste it, or choose it from your computer.</li>
+        <li>
+          Review the table. Each row is marked <em>Ready</em>, <em>Needs a fix</em> (a value is missing or unclear; edit it in
+          place) or <em>Already imported</em>.
+        </li>
+        <li>Import. Only the rows you kept are saved, and the page shows how many.</li>
+      </OL>
 
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Clipboard Paste</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        The clipboard method is the fastest option for small batches of trades. Select your trade data from any
-        source, whether a broker's web interface, a spreadsheet, a trading chat room, or even a plain text summary,
-        and paste it into the text input area of TradeQut's import modal. The AI engine parses the pasted content and
-        extracts structured trade data from it.
-      </p>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        This method works with surprisingly unstructured data. You can paste formatted tables, tab-separated values,
-        comma-separated text, or even natural language descriptions like "Bought 100 shares of AAPL at 185.50 on
-        Jan 15, sold at 192.30 on Jan 18." The AI interprets the context and maps the data to the appropriate trade
-        fields. While structured data produces more reliable results, the clipboard method's flexibility makes it
-        ideal for quick captures during the trading day when you want to log a trade immediately without navigating
-        through export menus.
-      </p>
+      <H3>Duplicates</H3>
+      <P>
+        Every imported trade keeps a reference to the file record it came from. Import the same tradebook again, or an
+        overlapping date range, and the trades already in that account are marked <em>Already imported</em> and skipped.
+      </P>
 
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Supported Formats and Platforms</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        TradeQut's import system is designed to be format-agnostic rather than requiring specific templates for each
-        broker. The AI engine adapts to whatever format your data arrives in. That said, here are the most commonly
-        used formats and the platforms they come from.
-      </p>
-      <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
-        <li><strong className="text-foreground">CSV/Excel:</strong> MetaTrader 4 and 5 account statements, Interactive Brokers Flex Queries, Thinkorswim account statements, TradingView exports, cTrader history exports.</li>
-        <li><strong className="text-foreground">Screenshots:</strong> Any broker platform that displays trade history on screen, including mobile trading apps, web-based platforms, and desktop terminals.</li>
-        <li><strong className="text-foreground">Plain text:</strong> Trade summaries from Telegram trading groups, Discord channels, email confirmations, or your own notes.</li>
-      </ul>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        For{' '}
-        <Link to="/blog/forex-trading-journal" className="text-primary hover:text-primary/80">forex traders</Link>{' '}
-        using MetaTrader, the MT4/MT5 account statement HTML export is particularly well-supported. Simply save
-        the detailed statement as HTML or copy the table content and paste it into the import tool.
-      </p>
+      <H3>Charges for Indian brokers</H3>
+      <P>
+        Tradebooks list fills, not the charges on them. For Zerodha, Dhan, Upstox, Angel One and Groww files, TradeQut estimates
+        brokerage, STT, exchange transaction charges, SEBI fee, stamp duty and GST for each trade at the rates in force on the
+        trade date, and records the total as the trade&apos;s fees, so P&amp;L is net. Your contract note is the authoritative
+        figure. Why these charges matter is explained in <A to="/blog/fo-trading-charges-india">F&amp;O charges in India</A>.
+      </P>
 
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Troubleshooting Common Issues</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        Even with AI-powered extraction, imports occasionally need adjustment. Here are the most common issues and
-        how to resolve them.
-      </p>
-      <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
-        <li>
-          <strong className="text-foreground">Dates in wrong format:</strong> Some brokers use DD/MM/YYYY while others
-          use MM/DD/YYYY. If the AI misinterprets the date format, review the extracted dates before confirming.
-          Trades with dates in the future are a clear signal that the day and month were swapped.
-        </li>
-        <li>
-          <strong className="text-foreground">Missing P&L:</strong> If your broker export does not include P&L as a
-          column, TradeQut calculates it automatically from entry price, exit price, and quantity. Ensure these
-          three fields are present and correct.
-        </li>
-        <li>
-          <strong className="text-foreground">Duplicate trades:</strong> If you import the same file twice, the system
-          detects duplicate trades based on symbol, date, and price combinations. Review the duplicate warning before
-          confirming to avoid double-counting trades in your{' '}
-          <Link to="/blog/trading-analytics-find-edge" className="text-primary hover:text-primary/80">analytics</Link>.
-        </li>
-        <li>
-          <strong className="text-foreground">Partial extraction from screenshots:</strong> If the AI misses some
-          trades from a screenshot, the image quality may be too low or the text too small. Retake the screenshot at
-          a higher resolution or crop it into smaller sections with fewer trades per image.
-        </li>
-        <li>
-          <strong className="text-foreground">Currency and lot size:</strong> Ensure your broker's export uses the
-          same currency as your TradeQut account settings. If lot sizes appear as "1.00" when you expected "100,000
-          units," this is a standard lot notation that the system handles correctly.
-        </li>
-      </ul>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        After importing, always spot-check a few trades against your broker's records. Confirm that the entry and
-        exit prices, dates, and P&L values match. Once verified, your imported trades are fully integrated into
-        your journal and will appear in all analytics, stats, and goal tracking. The few minutes spent importing
-        saves hours of manual entry and ensures your journal stays current, which is the foundation of everything
-        from{' '}
-        <Link to="/blog/build-trading-plan" className="text-primary hover:text-primary/80">plan tracking</Link> to{' '}
-        <Link to="/blog/trading-psychology-managing-emotions" className="text-primary hover:text-primary/80">emotional pattern analysis</Link>.
-      </p>
+      <H3>MetaTrader times and costs</H3>
+      <P>
+        MetaTrader reports use the broker&apos;s server time, and commission and swap are separate columns. TradeQut reads both
+        and includes them in net P&amp;L. See the <A to="/blog/mt5-trading-journal">MT5 journal guide</A> for what to check.
+      </P>
+
+      <H2>Any other broker: CSV or Excel</H2>
+      <P>
+        Choose <em>Other broker</em> and upload a CSV or Excel export. You match your file&apos;s columns to the trade fields
+        (symbol, side, quantity, prices, dates, fees) on the next step. No export at all? Download the CSV template from the
+        Import page, fill in your trades and import it the same way.
+      </P>
+
+      <H2>Screenshots, when there is no file</H2>
+      <P>
+        Some prop-firm and broker dashboards have no export. Upload or paste screenshots of the trade list: PNG, JPG or WebP,
+        up to 1 MB each and up to 15 at a time. AI extraction (Google Gemini) reads the trades, and the review table shows the
+        screenshot behind each row so you can compare the numbers before importing.
+      </P>
+      <UL>
+        <li>Capture whole rows with their column headers; do not crop too tightly.</li>
+        <li>Use several clear screenshots rather than one zoomed-out image.</li>
+        <li>Check prices and dates against the image: extraction can misread a digit.</li>
+      </UL>
+
+      <H2>Monthly limits</H2>
+      <Table
+        caption="Import limits by plan"
+        head={['', 'Free', 'Pro']}
+        rows={[
+          ['Broker file imports', imports?.free ?? '', imports?.pro ?? ''],
+          ['AI extraction from screenshots', extraction?.free ?? '', extraction?.pro ?? ''],
+        ]}
+      />
+      <P>
+        The bar under the Import page title shows how many you have left this month. Plans are compared on the{' '}
+        <A to="/pricing">pricing page</A>.
+      </P>
+
+      <Callout title="Automatic broker sync">
+        TradeQut imports files today. Automatic broker sync is planned for Pro and is not available yet.
+      </Callout>
+
+      <H2>After the import</H2>
+      <P>
+        Spot-check three or four trades against your broker&apos;s records: prices, dates, quantity and net P&amp;L. Then add the
+        journal fields (strategy, mistakes, broken rules, a key lesson) to the trades you want to learn from. The{' '}
+        <A to="/guide#importing-trades">user guide</A> shows the Import page step by step.
+      </P>
     </>
   );
 }

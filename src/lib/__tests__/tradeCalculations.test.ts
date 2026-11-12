@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   getEligibleTrades,
   formatDuration,
-  formatCurrency,
-  formatPercentage,
 } from '../tradeCalculations';
 import type { Trade } from '@/types/trade';
 
@@ -138,62 +136,6 @@ describe('formatDuration', () => {
 });
 
 // ---------------------------------------------------------------------------
-// formatCurrency
-// ---------------------------------------------------------------------------
-
-describe('formatCurrency', () => {
-  it('formats with default 2 decimals', () => {
-    expect(formatCurrency(123.456)).toBe('123.46');
-  });
-
-  it('formats with 0 decimals', () => {
-    expect(formatCurrency(123.4, 0)).toBe('123');
-  });
-
-  it('formats negative numbers', () => {
-    expect(formatCurrency(-99.9, 1)).toBe('-99.9');
-  });
-
-  it('formats zero', () => {
-    expect(formatCurrency(0)).toBe('0.00');
-  });
-
-  it('formats large numbers', () => {
-    expect(formatCurrency(1234567.89)).toBe('1234567.89');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// formatPercentage
-// ---------------------------------------------------------------------------
-
-describe('formatPercentage', () => {
-  it('formats with default 1 decimal', () => {
-    expect(formatPercentage(75.567)).toBe('75.6%');
-  });
-
-  it('formats with 0 decimals', () => {
-    expect(formatPercentage(75.456, 0)).toBe('75%');
-  });
-
-  it('formats 100%', () => {
-    expect(formatPercentage(100)).toBe('100.0%');
-  });
-
-  it('formats 0%', () => {
-    expect(formatPercentage(0)).toBe('0.0%');
-  });
-
-  it('formats negative percentage', () => {
-    expect(formatPercentage(-5.5)).toBe('-5.5%');
-  });
-
-  it('formats with 3 decimals', () => {
-    expect(formatPercentage(33.3333, 3)).toBe('33.333%');
-  });
-});
-
-// ---------------------------------------------------------------------------
 // Extended: getEligibleTrades – additional scenarios
 // ---------------------------------------------------------------------------
 
@@ -240,43 +182,6 @@ describe('formatDuration – extended', () => {
 
   it('formats 72 hours as 3.0d', () => {
     expect(formatDuration(72)).toBe('3.0d');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Extended: formatCurrency – additional scenarios
-// ---------------------------------------------------------------------------
-
-describe('formatCurrency – extended', () => {
-  it('formats with 4 decimals', () => {
-    expect(formatCurrency(1.23456, 4)).toBe('1.2346');
-  });
-
-  it('formats very small positive number', () => {
-    expect(formatCurrency(0.001)).toBe('0.00');
-  });
-
-  it('formats negative zero', () => {
-    expect(formatCurrency(-0)).toBe('0.00');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Extended: formatPercentage – additional scenarios
-// ---------------------------------------------------------------------------
-
-describe('formatPercentage – extended', () => {
-  it('formats very large percentage', () => {
-    expect(formatPercentage(999.99)).toBe('1000.0%');
-  });
-
-  it('formats very small positive percentage', () => {
-    expect(formatPercentage(0.04)).toBe('0.0%');
-  });
-
-  it('formats with 2 decimals', () => {
-    // 50.555.toFixed(2) = '50.55' due to IEEE 754 floating-point representation
-    expect(formatPercentage(50.555, 2)).toBe('50.55%');
   });
 });
 

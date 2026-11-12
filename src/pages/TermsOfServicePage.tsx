@@ -1,201 +1,161 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { SEO } from '@/components/SEO';
-import { Zap, ArrowLeft } from 'lucide-react';
+import { ContactBlock, LegalLayout, type LegalSection } from '@/components/content/LegalLayout';
+import { proPrice, TRIAL_DAYS } from '@/content/product-facts';
+
+const usdMonth = proPrice('USD', 'month').display;
+const usdYear = proPrice('USD', 'year').display;
+const inrMonth = proPrice('INR', 'month').display;
+const inrYear = proPrice('INR', 'year').display;
+
+const SECTIONS: LegalSection[] = [
+  {
+    id: 'acceptance',
+    title: 'Acceptance of terms',
+    body: (
+      <p>
+        By using TradeQut (the &ldquo;Service&rdquo;), operated by TradeQutJournal (&ldquo;we&rdquo;), you agree to these
+        Terms. If you do not agree, do not use the Service.
+      </p>
+    ),
+  },
+  {
+    id: 'service',
+    title: 'The Service',
+    body: (
+      <p>
+        TradeQut is a web-based trading journal for logging and importing trades, tracking goals and rules, and analysing your
+        own trading. A Free plan is available. A Pro subscription adds higher limits and features, described on the{' '}
+        <Link to="/pricing" className="text-primary hover:underline">pricing page</Link>. Features marked &ldquo;Planned&rdquo; are not
+        part of the Service until released.
+      </p>
+    ),
+  },
+  {
+    id: 'accounts',
+    title: 'Accounts',
+    body: (
+      <ul>
+        <li>Provide accurate information and keep your credentials confidential.</li>
+        <li>You are responsible for activity under your account; tell us promptly about unauthorised use.</li>
+        <li>We may suspend or terminate accounts that breach these Terms.</li>
+      </ul>
+    ),
+  },
+  {
+    id: 'acceptable-use',
+    title: 'Acceptable use',
+    body: (
+      <ul>
+        <li>Do not use the Service for unlawful purposes or to infringe others&apos; rights.</li>
+        <li>Do not attempt unauthorised access, disrupt the Service, or upload malicious content.</li>
+        <li>Do not reverse engineer or copy the Service.</li>
+      </ul>
+    ),
+  },
+  {
+    id: 'not-advice',
+    title: 'Not financial advice; AI output',
+    body: (
+      <>
+        <p>
+          TradeQut is a journaling and analytics tool. It does not provide financial advice, trading signals or investment
+          recommendations, and TradeQut is not a SEBI-registered investment adviser or research analyst. Trading involves
+          substantial risk of loss; results shown reflect your own recorded data and do not predict future results. You are
+          solely responsible for your trading decisions.
+        </p>
+        <p>
+          AI features summarise or extract data from what you submit. Their output can be wrong or incomplete; check it against
+          your broker records before relying on it.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'ownership',
+    title: 'Your data and our property',
+    body: (
+      <p>
+        You keep ownership of the data you enter. You give us a limited licence to process it to provide the Service to you,
+        including by the providers named in the <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>. The
+        Service&apos;s design, code and branding belong to TradeQutJournal.
+      </p>
+    ),
+  },
+  {
+    id: 'payment',
+    title: 'Subscriptions and payment',
+    body: (
+      <>
+        <p>
+          Pro costs {usdMonth} per month or {usdYear} per year ({inrMonth} per month or {inrYear} per year for customers billed in
+          INR). Every new account starts with a {TRIAL_DAYS}-day Pro trial without a card. Prices can change for future billing
+          periods; the pricing page shows the current prices.
+        </p>
+        <p>
+          Payments are processed by Stripe under Stripe&apos;s terms. A subscription renews automatically each period until you
+          cancel it in the billing portal. Refunds and cancellation are covered by the{' '}
+          <Link to="/refund" className="text-primary hover:underline">Refund &amp; Cancellation Policy</Link>.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'availability',
+    title: 'Availability',
+    body: (
+      <p>
+        We aim to keep the Service available but do not guarantee uninterrupted access; it may be unavailable for maintenance
+        or reasons beyond our control.
+      </p>
+    ),
+  },
+  {
+    id: 'liability',
+    title: 'Limitation of liability',
+    body: (
+      <p>
+        To the maximum extent permitted by law, TradeQutJournal is not liable for indirect, incidental, special, consequential or
+        punitive damages, including loss of profits, data or trading losses. Our total liability is limited to the amount you
+        paid in the twelve months before the claim, if any.
+      </p>
+    ),
+  },
+  {
+    id: 'termination',
+    title: 'Termination',
+    body: (
+      <p>
+        You can delete your account in Settings or by contacting us, and export your data first. We may suspend or end access if
+        you breach these Terms.
+      </p>
+    ),
+  },
+  {
+    id: 'law',
+    title: 'Governing law',
+    body: (
+      <p>
+        These Terms are governed by the laws of India. Disputes are subject to the exclusive jurisdiction of the courts in
+        Bhupalpally, Telangana, India.
+      </p>
+    ),
+  },
+  {
+    id: 'changes',
+    title: 'Changes',
+    body: <p>We may update these Terms and will change the &ldquo;Last updated&rdquo; date. Continued use means you accept the update.</p>,
+  },
+  { id: 'contact', title: 'Contact', body: <ContactBlock /> },
+];
 
 export function TermsOfServicePage() {
   return (
-    <>
-      <SEO title="Terms of Service - TradeQut" description="Review the terms and conditions for using TradeQut's trading journal platform and services." path="/terms" />
-      <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav aria-label="Terms of service navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">TradeQut</span>
-          </Link>
-          <Button variant="ghost" asChild className="gap-2">
-            <Link to="/">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Home</span>
-              <span className="sm:hidden">Back</span>
-            </Link>
-          </Button>
-        </div>
-      </nav>
-
-      {/* Content */}
-      <main id="main-content">
-        <article>
-      <div className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">Terms of Service</h1>
-          <p className="text-muted-foreground mb-12">Last updated: April 9, 2026</p>
-
-          <div className="space-y-10 text-foreground/90">
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">1. Acceptance of Terms</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                By accessing or using TradeQut (the "Service"), operated by TradeQutJournal ("we", "our", or "us"),
-                you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not
-                use the Service.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">2. Description of Service</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                TradeQut is a web-based trading journal application that allows users to log trades, track
-                performance, analyze trading patterns, and maintain a journal of their trading activity. The
-                Service is free for all core features. A paid subscription provides an ad-free experience.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">3. User Accounts</h2>
-              <div className="space-y-4">
-                <p className="text-muted-foreground leading-relaxed">
-                  To use the Service, you must create an account by providing a valid email address and password. You are responsible for:
-                </p>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                  <li>Maintaining the confidentiality of your account credentials</li>
-                  <li>All activities that occur under your account</li>
-                  <li>Notifying us immediately of any unauthorized access or use</li>
-                  <li>Providing accurate and up-to-date information</li>
-                </ul>
-                <p className="text-muted-foreground leading-relaxed">
-                  We reserve the right to suspend or terminate accounts that violate these terms.
-                </p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">4. User Responsibilities</h2>
-              <p className="text-muted-foreground leading-relaxed mb-3">You agree not to:</p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                <li>Use the Service for any unlawful purpose</li>
-                <li>Attempt to gain unauthorized access to the Service or its systems</li>
-                <li>Interfere with or disrupt the integrity or performance of the Service</li>
-                <li>Upload any malicious code, viruses, or harmful content</li>
-                <li>Use the Service to store or transmit any content that infringes on third-party rights</li>
-                <li>Reverse engineer, decompile, or disassemble any part of the Service</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">5. Trading Disclaimer</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                TradeQut is a journaling and analytics tool only. It does not provide financial advice,
-                trading signals, or investment recommendations. Trading in financial markets involves substantial
-                risk of loss. Past performance displayed in the application reflects your own recorded data and
-                is not indicative of future results. You are solely responsible for your trading decisions.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">6. Intellectual Property</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                The Service, including its design, code, features, and branding, is the intellectual property
-                of TradeQutJournal. You retain ownership of all trading data and content you input into the
-                Service. By using the Service, you grant us a limited license to process your data solely for
-                the purpose of providing the Service to you.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">7. Payment Terms</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                TradeQut is free for all core features with no credit card required. A paid subscription
-                (starting at &#8377;99/month or &#8377;999/year) removes ads.
-                Payments are processed through Stripe, a third-party
-                payment gateway. By making a payment, you agree to Stripe's terms and conditions. All
-                payment-related disputes are subject to our Refund & Cancellation Policy.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">8. Service Availability</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                We strive to keep the Service available at all times but do not guarantee uninterrupted access.
-                The Service may be temporarily unavailable due to maintenance, updates, or circumstances beyond
-                our control. We are not liable for any loss or inconvenience caused by downtime.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">9. Limitation of Liability</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                To the maximum extent permitted by applicable law, TradeQutJournal shall not be liable for
-                any indirect, incidental, special, consequential, or punitive damages, including but not limited
-                to loss of profits, data, or trading losses, arising out of your use of the Service. Our total
-                liability shall not exceed the amount paid by you, if any, in the twelve (12) months preceding the claim.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">10. Termination</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                You may terminate your account at any time by contacting us. We may suspend or terminate your
-                access to the Service at our discretion if you violate these terms. Upon termination, your right
-                to use the Service ceases immediately. You may request export of your data before termination.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">11. Governing Law</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                These Terms shall be governed by and construed in accordance with the laws of India. Any disputes
-                arising from these Terms or the Service shall be subject to the exclusive jurisdiction of the
-                courts in Bhupalpally, Telangana, India.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">12. Changes to These Terms</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                We reserve the right to modify these Terms at any time. Material changes will be communicated
-                by updating the "Last updated" date on this page. Your continued use of the Service after
-                changes constitutes acceptance of the revised Terms.
-              </p>
-            </section>
-
-            <section className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-4">13. Contact Us</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                If you have any questions about these Terms of Service, please contact us:
-              </p>
-              <div className="space-y-2 text-muted-foreground">
-                <p><span className="text-foreground font-medium">Business:</span> TradeQutJournal</p>
-                <p><span className="text-foreground font-medium">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348</p>
-                <p><span className="text-foreground font-medium">Email:</span> support@tradequt.com</p>
-                <p><span className="text-foreground font-medium">Phone:</span> +91 8501018125</p>
-              </div>
-            </section>
-          </div>
-        </div>
-      </div>
-        </article>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} TradeQut. All rights reserved.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
-            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
-            <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="text-primary hover:text-primary/80 transition-colors">Terms of Service</Link>
-            <Link to="/refund" className="text-muted-foreground hover:text-foreground transition-colors">Refund Policy</Link>
-            <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
-          </div>
-        </div>
-      </footer>
-    </div>
-    </>
+    <LegalLayout
+      title="Terms of Service"
+      description="The terms for using TradeQut: the Free and Pro plans, subscriptions through Stripe, AI output, acceptable use and liability."
+      path="/terms"
+      updated="2026-11-11"
+      sections={SECTIONS}
+    />
   );
 }

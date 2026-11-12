@@ -1,63 +1,77 @@
-import { useParams, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
-import { Loader2 } from 'lucide-react';
-import { ContentPageShell } from '@/components/content/ContentPageShell';
+import { Suspense, useRef } from 'react';
+import { Link, Navigate, useParams } from 'react-router-dom';
+import { ChevronLeft, Loader2 } from 'lucide-react';
+import { ArticleToc } from '@/components/content/ArticleToc';
 import { AuthorBox } from '@/components/content/AuthorBox';
-import { ShareButtons } from '@/components/content/ShareButtons';
+import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { RelatedArticles } from '@/components/content/RelatedArticles';
+import { ShareButtons } from '@/components/content/ShareButtons';
 import { blogArticleSchema } from '@/config/seo';
 import { BLOG_ARTICLES, getRelatedArticles } from '@/content/blog/articles';
+import { Faq, ShortAnswer, SignupCta } from '@/content/components/ArticleParts';
+import { lazyContent } from '@/content/lazyContent';
+
+/** The brand suffix only while the whole title stays within the 65 characters a results page shows. */
+function articlePageTitle(title: string): string {
+  const full = `${title} - TradeQut Blog`;
+  return full.length <= 65 ? full : title;
+}
 
 export function BlogArticlePage() {
   const { slug } = useParams<{ slug: string }>();
   const article = BLOG_ARTICLES.find((a) => a.slug === slug);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   if (!article) {
     return <Navigate to="/blog" replace />;
   }
 
-  const ContentComponent = lazy(article.content);
+  const ContentComponent = lazyContent(`blog/${article.slug}`, article.content);
   const related = getRelatedArticles(article.slug, 3);
+  const modified = article.updatedAt ?? article.publishedAt;
 
   return (
     <ContentPageShell
-      title={`${article.title} - TradeQut Blog`}
+      title={articlePageTitle(article.title)}
       description={article.description}
       path={`/blog/${article.slug}`}
       jsonLd={blogArticleSchema(article)}
-      navLabel="Blog article navigation"
+      type="article"
+      publishedTime={article.publishedAt}
+      modifiedTime={modified}
+      maxWidth="max-w-[62ch]"
     >
-      <div className="mb-8">
-        <div className="flex flex-wrap gap-2 mb-4">
-          {article.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary capitalize"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{article.title}</h1>
-        <p className="text-lg text-muted-foreground mb-6">{article.description}</p>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <AuthorBox publishedAt={article.publishedAt} readingTime={article.readingTime} />
+      <Link to="/blog" className="mb-6 inline-flex min-h-6 items-center gap-1 text-sm text-foreground-soft hover:text-foreground">
+        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+        Blog
+      </Link>
+
+      <header className="mb-8">
+        <p className="mb-4 text-xs capitalize text-muted-foreground">{article.tags.join(' · ')}</p>
+        <h1 className="mb-4 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">{article.title}</h1>
+        <p className="mb-6 text-base text-foreground-soft">{article.description}</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <AuthorBox publishedAt={modified} updated={!!article.updatedAt} readingTime={article.readingTime} />
           <ShareButtons title={article.title} url={`/blog/${article.slug}`} />
         </div>
-      </div>
+      </header>
 
-      <div className="border-t border-border/50 pt-8">
+      <div ref={bodyRef} className="border-t border-border pt-8">
+        {article.summary && <ShortAnswer>{article.summary}</ShortAnswer>}
+        <ArticleToc root={bodyRef} />
         <Suspense
           fallback={
             <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading article" />
             </div>
           }
         >
           <ContentComponent />
         </Suspense>
+        {article.faq && <Faq items={article.faq} />}
       </div>
 
+      <SignupCta text="Start free" />
       <RelatedArticles articles={related} />
     </ContentPageShell>
   );

@@ -68,7 +68,7 @@ export default function HowToReviewTrades() {
         </li>
         <li>
           <strong className="text-foreground">Count broken rules.</strong> If you track{' '}
-          <Link to="/glossary#trading-rules" className="text-primary hover:text-primary/80">
+          <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">
             trading rules
           </Link>{' '}
           in your journal, count how many times you broke them this week. Compare to last week.
@@ -183,8 +183,7 @@ export default function HowToReviewTrades() {
         </Link>
         , the analytics dashboard calculates most of these metrics automatically — win rate by
         strategy, P&L by time of day, broken rule counts, and streak analysis. Your weekly review
-        becomes scanning a dashboard rather than manually crunching numbers, which cuts the time
-        roughly in half.
+        then starts from the numbers instead of from building them in a spreadsheet.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-6">
         The traders who improve fastest are not the ones who trade the most — they are the ones who

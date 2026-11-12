@@ -1,33 +1,31 @@
-import { Zap } from 'lucide-react';
-
 interface AuthorBoxProps {
+  /** Date shown: the last update when there is one, otherwise the publication date (YYYY-MM-DD). */
   publishedAt: string;
+  updated?: boolean;
   readingTime?: number;
 }
 
-export function AuthorBox({ publishedAt, readingTime }: AuthorBoxProps) {
-  const formattedDate = new Date(publishedAt + 'T00:00:00').toLocaleDateString('en-US', {
+export function AuthorBox({ publishedAt, updated = false, readingTime }: AuthorBoxProps) {
+  const formattedDate = new Date(`${publishedAt}T00:00:00`).toLocaleDateString('en-GB', {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
   });
 
   return (
-    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-      <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-        <Zap className="w-4 h-4 text-primary-foreground" />
-      </div>
-      <div>
-        <span className="text-foreground font-medium">TradeQut Team</span>
-        <span className="mx-2">&middot;</span>
-        <span>{formattedDate}</span>
-        {readingTime && (
-          <>
-            <span className="mx-2">&middot;</span>
-            <span>{readingTime} min read</span>
-          </>
-        )}
-      </div>
-    </div>
+    <p className="text-sm text-muted-foreground">
+      <span className="font-medium text-foreground">TradeQut</span>
+      <span aria-hidden="true" className="mx-2">&middot;</span>
+      <time dateTime={publishedAt}>
+        {updated ? 'Updated ' : ''}
+        {formattedDate}
+      </time>
+      {readingTime && (
+        <>
+          <span aria-hidden="true" className="mx-2">&middot;</span>
+          <span>{readingTime} min read</span>
+        </>
+      )}
+    </p>
   );
 }

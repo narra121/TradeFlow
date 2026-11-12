@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import apiClient from './api';
 
 // Plan/Price interfaces

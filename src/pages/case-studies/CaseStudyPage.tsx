@@ -26,29 +26,26 @@ export function CaseStudyPage() {
       description={study.description}
       path={`/case-studies/${study.slug}`}
       jsonLd={caseStudySchema(study)}
-      navLabel="Case study navigation"
+      type="article"
+      publishedTime={study.publishedAt}
+      modifiedTime={study.updatedAt ?? study.publishedAt}
     >
       <header className="mb-8">
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-            {study.traderType}
-          </span>
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-            {study.market}
-          </span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{study.title}</h1>
-        <p className="text-lg text-muted-foreground leading-relaxed mb-6">{study.description}</p>
+        <p className="mb-4 text-xs text-muted-foreground">
+          {study.traderType} · {study.market}
+        </p>
+        <h1 className="text-[32px] font-semibold leading-tight text-foreground sm:text-[40px] mb-4">{study.title}</h1>
+        <p className="text-base text-muted-foreground leading-relaxed mb-6">{study.description}</p>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <AuthorBox publishedAt={study.publishedAt} readingTime={4} />
+          <AuthorBox publishedAt={study.updatedAt ?? study.publishedAt} readingTime={4} />
           <ShareButtons title={study.title} url={`/case-studies/${study.slug}`} />
         </div>
       </header>
 
-      <div className="bg-card rounded-xl border border-primary/20 p-6 mb-8">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+      <div className="panel p-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Trader Type</p>
+            <p className="text-sm text-muted-foreground">Scenario about</p>
             <p className="text-sm font-semibold text-foreground mt-1">{study.traderType}</p>
           </div>
           <div>
@@ -56,12 +53,12 @@ export function CaseStudyPage() {
             <p className="text-sm font-semibold text-foreground mt-1">{study.market}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Duration</p>
+            <p className="text-sm text-muted-foreground">Sample</p>
             <p className="text-sm font-semibold text-foreground mt-1">{study.duration}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Key Result</p>
-            <p className="text-sm font-semibold text-primary mt-1">{study.keyResult}</p>
+            <p className="text-sm text-muted-foreground">Method</p>
+            <p className="text-sm font-semibold text-foreground mt-1">{study.method}</p>
           </div>
         </div>
       </div>

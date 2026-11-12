@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { api } from './baseApi';
 import type {
   Goal,
@@ -33,6 +34,12 @@ interface GoalsProgressResponse {
 interface RulesAndGoalsResponse {
   rules: TradingRule[];
   goals: Goal[];
+}
+
+/** The aggregate is cached once per period key; an edit must reach every cached period, not a single argument. */
+function patchAllRulesGoals(dispatch: any, getState: any, recipe: (draft: RulesAndGoalsResponse) => void) {
+  const args = goalsRulesApi.util.selectCachedArgsForQuery(getState(), 'getRulesAndGoals');
+  return args.map((a: any) => dispatch(goalsRulesApi.util.updateQueryData('getRulesAndGoals', a, recipe)));
 }
 
 export const goalsRulesApi = api.injectEndpoints({
@@ -73,19 +80,13 @@ export const goalsRulesApi = api.injectEndpoints({
         return goal;
       },
       invalidatesTags: ['Goals'],
-      async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
+      async onQueryStarted({ id }, { dispatch, getState, queryFulfilled }) {
         try {
           const { data: updatedGoal } = await queryFulfilled;
-
-          // Update the getRulesAndGoals cache
-          dispatch(
-            goalsRulesApi.util.updateQueryData('getRulesAndGoals', undefined, (draft) => {
-              const index = draft.goals.findIndex((goal) => goal.goalId === id);
-              if (index !== -1) {
-                draft.goals[index] = updatedGoal;
-              }
-            })
-          );
+          patchAllRulesGoals(dispatch, getState, (draft) => {
+            const index = draft.goals.findIndex((goal) => goal.goalId === id);
+            if (index !== -1) draft.goals[index] = updatedGoal;
+          });
         } catch {
           // Error handled by component
         }
@@ -176,76 +177,19 @@ export const goalsRulesApi = api.injectEndpoints({
         return rule;
       },
       invalidatesTags: ['Rules'],
-      async onQueryStarted({ id }, { dispatch, queryFulfilled }) {
+      async onQueryStarted({ id }, { dispatch, getState, queryFulfilled }) {
         try {
           const { data: updatedRule } = await queryFulfilled;
-          
-          // Update the getRules cache
           dispatch(
             goalsRulesApi.util.updateQueryData('getRules', undefined, (draft) => {
               const index = draft.findIndex((rule) => rule.ruleId === id);
-              if (index !== -1) {
-                draft[index] = updatedRule;
-              }
+              if (index !== -1) draft[index] = updatedRule;
             })
           );
-          
-          // Update the getRulesAndGoals cache
-          dispatch(
-            goalsRulesApi.util.updateQueryData('getRulesAndGoals', undefined, (draft) => {
-              const index = draft.rules.findIndex((rule) => rule.ruleId === id);
-              if (index !== -1) {
-                draft.rules[index] = updatedRule;
-              }
-            })
-          );
-        } catch {
-          // Error handled by component
-        }
-      },
-    }),
-    
-    toggleRule: builder.mutation<TradingRule, string>({
-      query: (id) => ({
-        url: `/rules/${encodeURIComponent(id)}/toggle`,
-        method: 'PUT',
-      }),
-      transformResponse: (response: any) => {
-        const rule = response.rule;
-        if (response?._apiMessage) {
-             Object.defineProperty(rule, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
-        return rule;
-      },
-      invalidatesTags: ['Rules'],
-      async onQueryStarted(id, { dispatch, queryFulfilled }) {
-        try {
-          const { data: updatedRule } = await queryFulfilled;
-          
-          // Update the getRules cache
-          dispatch(
-            goalsRulesApi.util.updateQueryData('getRules', undefined, (draft) => {
-              const index = draft.findIndex((rule) => rule.ruleId === id);
-              if (index !== -1) {
-                draft[index] = updatedRule;
-              }
-            })
-          );
-          
-          // Update the getRulesAndGoals cache
-          dispatch(
-            goalsRulesApi.util.updateQueryData('getRulesAndGoals', undefined, (draft) => {
-              const index = draft.rules.findIndex((rule) => rule.ruleId === id);
-              if (index !== -1) {
-                draft.rules[index] = updatedRule;
-              }
-            })
-          );
+          patchAllRulesGoals(dispatch, getState, (draft) => {
+            const index = draft.rules.findIndex((rule) => rule.ruleId === id);
+            if (index !== -1) draft.rules[index] = updatedRule;
+          });
         } catch {
           // Error handled by component
         }
@@ -273,32 +217,21 @@ export const goalsRulesApi = api.injectEndpoints({
         return result;
       },
       invalidatesTags: ['Rules'],
-      async onQueryStarted(id, { dispatch, queryFulfilled }) {
-        // Optimistic delete
+      async onQueryStarted(id, { dispatch, getState, queryFulfilled }) {
         const patchResults: any[] = [];
-        
-        // Delete from getRules cache
-        const patchRules = dispatch(
-          goalsRulesApi.util.updateQueryData('getRules', undefined, (draft) => {
-            const index = draft.findIndex((rule) => rule.ruleId === id);
-            if (index !== -1) {
-              draft.splice(index, 1);
-            }
-          })
-        );
-        patchResults.push(patchRules);
-        
-        // Delete from getRulesAndGoals cache
-        const patchRulesAndGoals = dispatch(
-          goalsRulesApi.util.updateQueryData('getRulesAndGoals', undefined, (draft) => {
+        patchResults.push(
+          dispatch(
+            goalsRulesApi.util.updateQueryData('getRules', undefined, (draft) => {
+              const index = draft.findIndex((rule) => rule.ruleId === id);
+              if (index !== -1) draft.splice(index, 1);
+            })
+          ),
+          ...patchAllRulesGoals(dispatch, getState, (draft) => {
             const index = draft.rules.findIndex((rule) => rule.ruleId === id);
-            if (index !== -1) {
-              draft.rules.splice(index, 1);
-            }
-          })
+            if (index !== -1) draft.rules.splice(index, 1);
+          }),
         );
-        patchResults.push(patchRulesAndGoals);
-        
+
         try {
           await queryFulfilled;
           // Success - optimistic update was correct
@@ -338,7 +271,6 @@ export const {
   useGetRulesQuery,
   useCreateRuleMutation,
   useUpdateRuleMutation,
-  useToggleRuleMutation,
   useDeleteRuleMutation,
   useGetGoalsProgressQuery,
 } = goalsRulesApi;

@@ -10,7 +10,7 @@ export default function TrackReduceDrawdown() {
         loss experienced during a specific period before the account recovers to a new high. Drawdown is
         expressed as either a dollar amount or a percentage of the peak equity.
       </p>
-      <div className="bg-card rounded-xl border border-border/50 p-4 mb-6">
+      <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
           Drawdown % = (Peak Equity - Trough Equity) / Peak Equity x 100
         </p>
@@ -30,7 +30,7 @@ export default function TrackReduceDrawdown() {
         percentage gain. This asymmetry accelerates as losses deepen, making deep drawdowns exponentially
         harder to overcome.
       </p>
-      <div className="bg-card rounded-xl border border-border/50 overflow-hidden mb-6">
+      <div className="bg-card rounded-lg border border-border/50 overflow-hidden mb-6">
         <div className="grid grid-cols-3 bg-muted/50 border-b border-border/50">
           <div className="px-4 py-3 font-semibold text-foreground text-sm">Drawdown</div>
           <div className="px-4 py-3 font-semibold text-foreground text-sm">Account Value ($50k start)</div>
@@ -157,7 +157,7 @@ export default function TrackReduceDrawdown() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         Review your maximum consecutive losses, the instruments you traded during the drawdown, and whether
         you followed your rules. Often, the biggest drawdowns correlate with{' '}
-        <Link to="/glossary#broken-rules" className="text-primary hover:text-primary/80">broken rules</Link> rather
+        <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">broken rules</Link> rather
         than bad market conditions. The journal makes this visible by tagging each trade with the rules you
         set for yourself. When you can see that 80% of your drawdown came from trades where you violated
         your own stop-loss rules, the fix becomes obvious. Pair drawdown analysis with your{' '}

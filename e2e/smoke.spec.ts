@@ -1,218 +1,165 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
-test.describe('Smoke Tests', () => {
-  test('app loads the landing page without errors', async ({ page }) => {
-    // Collect console errors
-    const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
-      }
-    });
+/** Console errors that are not defects of the page under test. */
+const BENIGN = ['favicon', 'third-party', 'DevTools', 'ERR_FAILED', 'status of 403'];
 
+function collectConsoleErrors(page: Page): string[] {
+  const errors: string[] = [];
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' && !BENIGN.some((b) => msg.text().includes(b))) errors.push(msg.text());
+  });
+  page.on('pageerror', (e) => errors.push(e.message));
+  return errors;
+}
+
+test.describe('Landing page', () => {
+  test('loads with the headline and no console errors', async ({ page }) => {
+    const errors = collectConsoleErrors(page);
     await page.goto('/');
 
-    // The landing page should show the TradeQut branding
-    await expect(page.getByText('TradeQut').first()).toBeVisible();
-
-    // The hero section should be visible
-    await expect(page.getByText('Master Your')).toBeVisible();
-    await expect(page.getByText('Trading Performance', { exact: true })).toBeVisible();
-
-    // No critical console errors (filter out known benign ones)
-    const criticalErrors = consoleErrors.filter(
-      (err) =>
-        !err.includes('favicon') &&
-        !err.includes('third-party') &&
-        !err.includes('DevTools') &&
-        !err.includes('ipapi.co') &&
-        !err.includes('ERR_FAILED') &&
-        !err.includes('status of 403')
-    );
-    expect(criticalErrors).toHaveLength(0);
+    await expect(page.getByRole('heading', { level: 1, name: 'The trading journal that shows what your rules cost you.' })).toBeVisible();
+    await expect(page.getByText('14-day Pro trial. No card.').first()).toBeVisible();
+    expect(errors).toEqual([]);
   });
 
-  test('landing page has navigation links', async ({ page }) => {
+  test('has no invented social proof', async ({ page }) => {
     await page.goto('/');
-
-    // Check nav links
-    await expect(page.getByRole('link', { name: 'Log In' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Get Started' }).first()).toBeVisible();
-  });
-
-  test('landing page features section renders', async ({ page }) => {
-    await page.goto('/');
-
-    // Feature titles from the LandingPage component (use headings to avoid matching descriptions)
-    await expect(page.getByRole('heading', { name: 'Advanced Analytics' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Calendar View' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Multi-Account Support' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Goals & Rules' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Screenshot Import' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Trade Journal' })).toBeVisible();
-  });
-
-  test('landing page renders at desktop viewport (1280x720)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto('/');
-
-    // At desktop, the nav links should be visible (hidden on mobile)
-    // Scope to nav to avoid matching footer duplicates
-    const nav = page.getByRole('navigation');
-    await expect(nav.getByText('Features')).toBeVisible();
-    await expect(nav.getByText('How it Works')).toBeVisible();
-    await expect(nav.getByText('Testimonials')).toBeVisible();
-    await expect(nav.getByText('Pricing')).toBeVisible();
-  });
-
-  test('login page loads without console errors', async ({ page }) => {
-    const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
-      }
-    });
-
-    await page.goto('/login');
-
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
-
-    const criticalErrors = consoleErrors.filter(
-      (err) =>
-        !err.includes('favicon') &&
-        !err.includes('third-party') &&
-        !err.includes('DevTools') &&
-        !err.includes('ipapi.co') &&
-        !err.includes('ERR_FAILED') &&
-        !err.includes('status of 403')
-    );
-    expect(criticalErrors).toHaveLength(0);
-  });
-
-  test('signup page loads without console errors', async ({ page }) => {
-    const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
-      }
-    });
-
-    await page.goto('/signup');
-
-    await expect(page.getByRole('heading', { name: 'Create account' })).toBeVisible();
-
-    const criticalErrors = consoleErrors.filter(
-      (err) =>
-        !err.includes('favicon') &&
-        !err.includes('third-party') &&
-        !err.includes('DevTools') &&
-        !err.includes('ipapi.co') &&
-        !err.includes('ERR_FAILED') &&
-        !err.includes('status of 403')
-    );
-    expect(criticalErrors).toHaveLength(0);
-  });
-
-  test('404 page renders for unknown routes', async ({ page }) => {
-    await page.goto('/nonexistent-page');
-
-    // The NotFound page should render
-    // Check that the page loaded something (not a blank page)
-    await expect(page.locator('body')).not.toBeEmpty();
-  });
-
-  test('landing page "Get Started" links point to signup', async ({ page }) => {
-    await page.goto('/');
-
-    // The hero CTA links to /signup
-    const getStartedLinks = page.getByRole('link', { name: /Get Started/i });
-    const firstLink = getStartedLinks.first();
-    await expect(firstLink).toHaveAttribute('href', '/signup');
-  });
-
-  test('landing page "Log In" link points to login', async ({ page }) => {
-    await page.goto('/');
-
-    const loginLink = page.getByRole('link', { name: 'Log In' });
-    await expect(loginLink).toHaveAttribute('href', '/login');
-  });
-});
-
-test.describe('Legal & Company Pages', () => {
-  test('About Us page loads with company info', async ({ page }) => {
-    await page.goto('/about');
-
-    await expect(page.getByRole('heading', { name: 'About TradeQut' })).toBeVisible();
-    await expect(page.getByText('Our Story')).toBeVisible();
-    await expect(page.getByText('What We Stand For')).toBeVisible();
-    await expect(page.getByText('What TradeQut Offers')).toBeVisible();
-    await expect(page.getByText('Disclaimer')).toBeVisible();
-    // Business contact details required by PayU
-    await expect(page.getByText('TradeQutJournal')).toBeVisible();
-    await expect(page.getByText('support@tradequt.com')).toBeVisible();
-  });
-
-  test('Privacy Policy page loads with all sections', async ({ page }) => {
-    await page.goto('/privacy');
-
-    await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
-    await expect(page.getByText('Information We Collect')).toBeVisible();
-    await expect(page.getByText('How We Use Your Information')).toBeVisible();
-    await expect(page.getByText('Data Storage & Security')).toBeVisible();
-    await expect(page.getByText('Your Rights')).toBeVisible();
-  });
-
-  test('Terms of Service page loads with all sections', async ({ page }) => {
-    await page.goto('/terms');
-
-    await expect(page.getByRole('heading', { name: 'Terms of Service' })).toBeVisible();
-    await expect(page.getByText('Acceptance of Terms')).toBeVisible();
-    await expect(page.getByText('Trading Disclaimer')).toBeVisible();
-    await expect(page.getByText('Payment Terms')).toBeVisible();
-    await expect(page.getByText('Limitation of Liability')).toBeVisible();
-    await expect(page.getByText('Governing Law')).toBeVisible();
-  });
-
-  test('Refund Policy page loads with required PayU details', async ({ page }) => {
-    await page.goto('/refund');
-
-    await expect(page.getByRole('heading', { name: 'Refund & Cancellation Policy' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Refund Eligibility/ })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /^3\. Cancellation Policy$/ })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Refund Processing/ })).toBeVisible();
-    // PayU requires mode of refund and timeframe
-    await expect(page.getByText(/original payment method/)).toBeVisible();
-    await expect(page.getByText(/5-7 business days/)).toBeVisible();
-  });
-
-  test('Contact Us page loads with all contact details', async ({ page }) => {
-    await page.goto('/contact');
-
-    await expect(page.getByRole('heading', { name: 'Contact Us' })).toBeVisible();
-    // Must have email, phone, and address for PayU
-    await expect(page.getByText('support@tradequt.com')).toBeVisible();
-    await expect(page.getByText('+91 8501018125')).toBeVisible();
-    await expect(page.getByText('Bhupalpally, Telangana')).toBeVisible();
-  });
-
-  test('all legal pages have consistent footer navigation', async ({ page }) => {
-    const pages = ['/about', '/privacy', '/terms', '/refund', '/contact'];
-
-    for (const path of pages) {
-      await page.goto(path);
-      const footer = page.locator('footer');
-      await expect(footer.getByText('About Us')).toBeVisible();
-      await expect(footer.getByText('Privacy Policy')).toBeVisible();
-      await expect(footer.getByText('Terms of Service')).toBeVisible();
-      await expect(footer.getByText('Refund Policy')).toBeVisible();
-      await expect(footer.getByText('Contact Us')).toBeVisible();
+    const text = (await page.locator('body').innerText()) ?? '';
+    for (const banned of [/10,000\+/, /500K\+/, /4\.9\/5/, /#1 Trading Journal/i, /Marcus Chen|Sarah Johnson|David Kim/]) {
+      expect(text).not.toMatch(banned);
     }
   });
 
-  test('landing page footer has About Us link', async ({ page }) => {
+  test('header offers Log in and Start free, and the same links on every page', async ({ page }) => {
     await page.goto('/');
+    const header = page.getByRole('banner');
+    await expect(header.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
+    await expect(header.getByRole('link', { name: 'Start free' })).toHaveAttribute('href', '/signup');
+    const links = (path: string) => page.goto(path).then(() => page.getByRole('navigation', { name: 'Main' }).getByRole('link').allInnerTexts());
+    expect(await links('/pricing')).toEqual(await links('/about'));
+  });
 
-    const footer = page.locator('footer');
-    await expect(footer.getByText('About Us')).toBeVisible();
+  test('shows the Free vs Pro table with a working currency toggle', async ({ page }) => {
+    await page.goto('/');
+    const pricing = page.getByRole('region', { name: 'Pricing' });
+    await expect(pricing.getByText('$9.99')).toBeVisible();
+    await pricing.getByRole('radio', { name: 'INR' }).check({ force: true });
+    await expect(pricing.getByText('₹199')).toBeVisible();
+  });
+
+  test('the product tour tabs are keyboard operable and labelled as sample data', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByText('Sample data')).toBeVisible();
+    await page.getByRole('tab', { name: 'Calendar' }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('tab', { name: 'Trade review' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('works at a phone width: menu opens and nothing overflows horizontally', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await expect(page.getByRole('navigation', { name: 'Menu' })).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    expect(overflow).toBe(false);
+  });
+});
+
+test.describe('Public pages', () => {
+  const PAGES: [string, string][] = [
+    ['/pricing', 'TradeQut pricing'],
+    ['/guide', 'How to use TradeQut'],
+    ['/about', 'About TradeQut'],
+    ['/contact', 'Contact us'],
+    ['/glossary', 'Trading glossary'],
+    ['/changelog', 'Changelog'],
+    ['/blog', 'Blog'],
+    ['/resources', 'Trading calculators'],
+    ['/trading-journal-india', 'A trading journal for Indian F&O traders'],
+    ['/alternatives', 'Trading journal alternatives compared'],
+    ['/status', 'Service status'],
+  ];
+
+  for (const [path, heading] of PAGES) {
+    test(`${path} renders its heading inside the public frame without errors`, async ({ page }) => {
+      const errors = collectConsoleErrors(page);
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+      await expect(page.getByRole('banner')).toBeVisible();
+      await expect(page.getByRole('contentinfo')).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Skip to content' })).toHaveCount(1);
+      expect(errors).toEqual([]);
+    });
+  }
+
+  test('a blog article has its short answer, contents, FAQ and sources', async ({ page }) => {
+    await page.goto('/blog/fo-trading-charges-india');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('F&O trading charges in India');
+    await expect(page.getByLabel('Short answer')).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'On this page' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Frequently asked questions' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sources', exact: true })).toBeVisible();
+  });
+
+  test('unknown routes show a real not-found page with a way back', async ({ page }) => {
+    await page.goto('/nonexistent-page');
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+  });
+
+  test('glossary hash links scroll to and focus the term', async ({ page }) => {
+    await page.goto('/glossary#drawdown');
+    await expect(page.locator('#drawdown')).toBeFocused();
+  });
+});
+
+test.describe('Legal and company pages', () => {
+  test('privacy, terms and refund pages have numbered sections and a contents list', async ({ page }) => {
+    for (const [path, title] of [
+      ['/privacy', 'Privacy Policy'],
+      ['/terms', 'Terms of Service'],
+      ['/refund', 'Refund & Cancellation Policy'],
+    ]) {
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+      await expect(page.getByRole('navigation', { name: 'Contents' })).toBeVisible();
+      await expect(page.getByText(/Last updated/).first()).toBeVisible();
+    }
+  });
+
+  test('legal text names the services actually used and not the old payment provider', async ({ page }) => {
+    await page.goto('/privacy');
+    const text = await page.locator('main').innerText();
+    expect(text).toContain('Stripe');
+    expect(text).toContain('Gemini');
+    expect(text).not.toContain('PayU');
+    await page.goto('/refund');
+    expect(await page.locator('main').innerText()).not.toMatch(/voluntary|nothing changes/i);
+  });
+
+  test('contact details are real links', async ({ page }) => {
+    await page.goto('/contact');
+    await expect(page.getByRole('link', { name: 'support@tradequt.com' })).toHaveAttribute('href', 'mailto:support@tradequt.com');
+    await expect(page.getByRole('link', { name: '+91 8501018125' })).toHaveAttribute('href', 'tel:+918501018125');
+  });
+
+  test('every public page shares the footer with legal links and cookie settings', async ({ page }) => {
+    for (const path of ['/', '/about', '/privacy', '/terms', '/refund', '/contact', '/pricing']) {
+      await page.goto(path);
+      const footer = page.getByRole('contentinfo');
+      for (const name of ['Privacy', 'Terms', 'Refunds', 'Contact']) await expect(footer.getByRole('link', { name })).toBeVisible();
+      await expect(footer.getByRole('button', { name: 'Cookie settings' })).toBeVisible();
+    }
+  });
+});
+
+test.describe('Auth pages open', () => {
+  test('login and signup load an email field without console errors', async ({ page }) => {
+    for (const path of ['/login', '/signup']) {
+      const errors = collectConsoleErrors(page);
+      await page.goto(path);
+      await expect(page.locator('input[type=email]')).toBeVisible();
+      expect(errors).toEqual([]);
+    }
   });
 });

@@ -1,0 +1,21 @@
+{
+  "_comment": "Targets from DESIGN-ENTERPRISE D.10 (public routes). Lab LCP is unthrottled, so its target is the budget for a fast machine; real-user p75 comes from web-vitals reporting.",
+  "targets": {
+    "jsGzKb": 90,
+    "cssGzKb": 30,
+    "biggestChunkGzKb": 80,
+    "fontKb": 120,
+    "fontFiles": 4,
+    "lcpMs": 2500,
+    "cls": 0.1
+  },
+  "baseline": {
+    "jsGzKb": 138.3,
+    "cssGzKb": 16.5,
+    "biggestChunkGzKb": 106.6,
+    "fontKb": 62.7,
+    "fontFiles": 3,
+    "lcpMs": 152,
+    "cls": 0
+  }
+}

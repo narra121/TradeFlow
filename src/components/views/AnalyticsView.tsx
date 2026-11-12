@@ -1,679 +1,139 @@
-import { useState, useMemo } from 'react';
-import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
-import { cn } from '@/lib/utils';
-import { AdSlot } from '@/components/ads/AdSlot';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import { Clock, Timer, PieChart as PieChartIcon, AlertTriangle, Shield, Lightbulb, TrendingUp } from 'lucide-react';
-import { RefreshButton } from '@/components/ui/refresh-button';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MetricsGridSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton';
-import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
-import { AccountFilter } from '@/components/account/AccountFilter';
-import { startOfWeek } from 'date-fns/startOfWeek';
-import { endOfWeek } from 'date-fns/endOfWeek';
-import { format } from 'date-fns/format';
-import { addDays } from 'date-fns/addDays';
-import { isSameDay } from 'date-fns/isSameDay';
-import { useNavigate } from 'react-router-dom';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { LockedPreview } from '@/components/billing/ProGate';
+import { ScopeBarSlot, usePageChrome } from '@/components/shell/chrome';
+import { BehaviourTab } from '@/components/analysis/BehaviourTab';
+import { EdgeTab } from '@/components/analysis/EdgeTab';
+import { OverviewTab } from '@/components/analysis/OverviewTab';
+import { RiskTab } from '@/components/analysis/RiskTab';
+import { TaxReport } from '@/components/analysis/TaxReport';
+import { TimingTab } from '@/components/analysis/TimingTab';
+import type { AnalyticsContext } from '@/components/analysis/drill';
+import { CompareSwitch } from '@/components/stats/CompareSwitch';
+import { CurrencySwitch } from '@/components/stats/CurrencySwitch';
+import { usePeriodStats } from '@/components/stats/usePeriodStats';
+import { useCurrencyView } from '@/components/stats/useCurrencyView';
+import { useScopeCapital } from '@/components/stats/useScopeCapital';
+import { useEntitlements } from '@/hooks/useEntitlements';
+import { useTradeParam } from '@/hooks/useTradeParam';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { useGetStatsQuery, useGetRulesAndGoalsQuery, useGetAccountsQuery } from '@/store/api';
-import { skipToken } from '@reduxjs/toolkit/query/react';
-import { useSavedOptions } from '@/hooks/useSavedOptions';
-import { formatDuration } from '@/lib/tradeCalculations';
+import { getDateRangeFromPreset } from '@/lib/scope';
 
-const MIN_TRADES_FOR_CHARTS = 3;
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'edge', label: 'Edge' },
+  { id: 'timing', label: 'Timing', pro: true },
+  { id: 'risk', label: 'Risk', pro: true },
+  { id: 'behaviour', label: 'Behaviour' },
+  { id: 'tax', label: 'Tax', taxPro: true },
+] as const;
+type TabId = (typeof TABS)[number]['id'];
 
-const COLORS = ['hsl(160, 84%, 39%)', 'hsl(265, 89%, 62%)', 'hsl(45, 93%, 47%)', 'hsl(200, 95%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(320, 70%, 50%)'];
+const LOCKED: Partial<Record<TabId, { title: string; question: string }>> = {
+  timing: { title: 'Timing', question: 'Which hours, weekdays and sessions are your best and worst?' },
+  risk: { title: 'Risk', question: 'How deep are your drawdowns, and how are your results spread in R?' },
+};
 
-const EMPTY_STATS = {
-  totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
-  avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
-  maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
-  grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
-  totalVolume: 0, minDuration: 0, maxDuration: 0,
-  durationBuckets: [] as any[], symbolDistribution: {} as Record<string, any>, strategyDistribution: {} as Record<string, any>,
-  sessionDistribution: {} as Record<string, any>, outcomeDistribution: {} as Record<string, any>, hourlyStats: [] as any[],
-  dailyWinRate: [] as any[], dailyPnl: [] as any[],
-  mistakesDistribution: {} as Record<string, { count: number; totalPnl: number }>,
-  brokenRulesDistribution: {} as Record<string, { count: number; totalPnl: number }>,
-  lessonsDistribution: {} as Record<string, number>,
-} as const;
-
-const ChartEmptyState = () => (
-  <div className="flex flex-col items-center justify-center h-[280px] text-center">
-    <TrendingUp className="w-8 h-8 text-muted-foreground/50 mb-3" />
-    <p className="text-sm text-muted-foreground">Add at least {MIN_TRADES_FOR_CHARTS} trades to see trends</p>
-    <p className="text-xs text-muted-foreground/70 mt-1">Charts need multiple data points to be meaningful</p>
-  </div>
-);
+/** Minimum trades before the statistics mean anything. */
+const MIN_TRADES = 3;
 
 export function AnalyticsView() {
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const filters = useAppSelector((state) => state.trades.filters);
-  const [customRange, setCustomRange] = useState<{ from: Date; to: Date }>(
-    { from: startOfWeek(new Date()), to: endOfWeek(new Date()) }
-  );
+  const [params] = useSearchParams();
+  const filters = useAppSelector((s) => s.trades.filters);
+  const trade = useTradeParam();
+  const ent = useEntitlements();
+  const { accounts, selectedAccountId, accountsLoading } = useScopeCapital();
+  const selectedCurrency = accounts.find((a) => a.id === selectedAccountId)?.currency;
 
-  // Get saved options for sessions
-  const { options } = useSavedOptions();
+  const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'overview') as TabId;
+  const pro = ent.isError || ent.can('advanced_analytics');
+  const taxPro = ent.isError || ent.can('tax_report');
+  const tabNeedsPro = tab === 'timing' || tab === 'risk';
+  const locked = tabNeedsPro && !ent.isLoading && !pro;
 
-  const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
-  const { data: accountsData, isLoading: accountsLoading } = useGetAccountsQuery();
-  const accounts = accountsData?.accounts || [];
+  usePageChrome({
+    tabs: TABS.map((t) => ({
+      id: t.id,
+      label: t.label,
+      to: t.id === 'overview' ? '/app/analytics' : `/app/analytics?tab=${t.id}`,
+      active: tab === t.id,
+      badge: ('pro' in t && !pro && !ent.isLoading) || ('taxPro' in t && !taxPro && !ent.isLoading) ? 'Pro' : undefined,
+    })),
+  });
 
-  const totalCapital = useMemo(() => {
-    const accountId = selectedAccountId || 'ALL';
-    if (accountId === 'ALL') {
-      return accounts
-        .filter(acc => acc.id && acc.id !== '-1')
-        .reduce((sum, acc) => sum + (acc.initialBalance || 0), 0);
-    } else {
-      const account = accounts.find(acc => acc.id === accountId);
-      return account?.initialBalance || 0;
-    }
-  }, [selectedAccountId, accounts]);
+  const skip = tab === 'tax' || locked || (tabNeedsPro && ent.isLoading);
+  const ps = usePeriodStats({ skip });
+  const view = useCurrencyView(ps.stats, ps.prev);
+  const currency = view.currency ?? selectedCurrency;
 
-  const statsQueryParams = useMemo(() => ({
-    accountId: filters.accountId,
-    startDate: filters.startDate,
-    endDate: filters.endDate,
-    totalCapital,
-  }), [filters.accountId, filters.startDate, filters.endDate, totalCapital]);
-
-  const { data: statsData, isLoading: statsLoading, isFetching: statsFetching, refetch } = useGetStatsQuery(
-    accountsLoading ? skipToken : statsQueryParams
-  );
-  const showSkeleton = statsLoading || accountsLoading;
-  const isRefreshing = statsFetching && !showSkeleton;
-
-  const stats = { ...EMPTY_STATS, ...statsData };
-
-  const [datePreset, setDatePreset] = useState<DatePreset>(filters.datePreset || 'thisWeek');
-
-  const handleDatePresetChange = (preset: DatePreset) => {
-    const range = getDateRangeFromPreset(preset, customRange);
-    dispatch(setDateRangeFilter({
-      startDate: formatLocalDateOnly(range.from),
-      endDate: formatLocalDateOnly(range.to),
-      datePreset: preset
-    }));
-    if (preset === 'custom') {
-      setCustomRange(range);
-    }
-    setDatePreset(preset);
+  const showAllTime = () => {
+    const range = getDateRangeFromPreset('all');
+    dispatch(setDateRangeFilter({ startDate: formatLocalDateOnly(range.from), endDate: formatLocalDateOnly(range.to), datePreset: 'all' }));
   };
 
-  // Transform symbolDistribution Record into [{name, value}] for pie charts
-  const pieData = useMemo(() =>
-    Object.entries(stats.symbolDistribution || {}).map(([name, data]) => ({
-      name,
-      value: data.count,
-    })),
-    [stats.symbolDistribution]
+  const compare = tab === 'overview' && ps.canCompare ? (
+    <ScopeBarSlot side="right">
+      <CompareSwitch />
+    </ScopeBarSlot>
+  ) : null;
+
+  if (tab === 'tax') return <TaxReport />;
+  if (locked) {
+    const l = LOCKED[tab]!;
+    return <LockedPreview title={l.title} question={l.question} currency={ent.currency} />;
+  }
+  const noTradesCta = (
+    <>
+      <Button size="sm" onClick={() => trade.openNew()}>Add trade</Button>
+      <Button asChild size="sm" variant="outline"><Link to="/app/import">Import</Link></Button>
+    </>
   );
-
-  // Transform strategyDistribution Record into [{name, value}] for pie charts
-  const strategyPieData = useMemo(() =>
-    Object.entries(stats.strategyDistribution || {}).map(([name, data]) => ({
-      name,
-      value: data.count,
-    })),
-    [stats.strategyDistribution]
-  );
-
-  // Use stats.hourlyStats directly
-  const localHourlyStats = stats.hourlyStats || [];
-
-  // Use stats.dailyWinRate directly
-  const localDailyWinRate = stats.dailyWinRate || [];
-
-  // Duration data from backend
-  const durationData = stats.durationBuckets || [];
-  const minDuration = stats.minDuration || 0;
-  const maxDuration = stats.maxDuration || 0;
-  const avgDuration = stats.avgHoldingTime || 0;
-
-  // Transform sessionDistribution using options.sessions for session performance cards
-  const sessionPerformance = useMemo(() => {
-    const sessionDist = stats.sessionDistribution || {};
-    return (options?.sessions || []).map(sessionName => {
-      const data = sessionDist[sessionName];
-      const trades = data?.count || 0;
-      const wins = data?.wins || 0;
-      const pnl = data?.pnl || 0;
-      const winRate = trades > 0 ? (wins / trades) * 100 : 0;
-
-      return {
-        name: sessionName,
-        trades,
-        winRate,
-        pnl,
-      };
-    });
-  }, [options.sessions, stats.sessionDistribution]);
-
-  // Fetch rules for broken rules resolution
-  const { data: rulesAndGoals } = useGetRulesAndGoalsQuery();
-
-  // Top Mistakes: sort by count desc, take top 8
-  const topMistakes = useMemo(() => {
-    const dist = stats.mistakesDistribution || {};
-    return Object.entries(dist)
-      .map(([name, data]: [string, any]) => ({ name, count: data.count, totalPnl: data.totalPnl }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-  }, [stats.mistakesDistribution]);
-
-  // Broken Rules: resolve ruleId -> rule text, sort by count desc, take top 8
-  const topBrokenRules = useMemo(() => {
-    const dist = stats.brokenRulesDistribution || {};
-    const rulesMap = new Map(
-      (rulesAndGoals?.rules || []).map(r => [r.ruleId, r.rule])
-    );
-    return Object.entries(dist)
-      .map(([ruleId, data]: [string, any]) => ({
-        ruleId,
-        ruleText: rulesMap.get(ruleId) || 'Unknown Rule',
-        count: data.count,
-        totalPnl: data.totalPnl,
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-  }, [stats.brokenRulesDistribution, rulesAndGoals?.rules]);
-
-  // Key Lessons: sort by count desc, take top 8
-  const topLessons = useMemo(() => {
-    const dist = stats.lessonsDistribution || {};
-    return Object.entries(dist)
-      .map(([text, count]: [string, any]) => ({ text, count: count as number }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-  }, [stats.lessonsDistribution]);
-
-  // Daily P&L for current week - filter stats.dailyPnl to current week
-  const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const dailyPnL = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const dayDate = addDays(currentWeekStart, i);
-      // Find matching entry in stats.dailyPnl
-      const match = (stats.dailyPnl || []).find(entry => {
-        return isSameDay(new Date(entry.date), dayDate);
-      });
-      return {
-        day: format(dayDate, 'EEE'),
-        date: format(dayDate, 'MMM d'),
-        pnl: match?.pnl || 0,
-      };
-    });
-  }, [stats.dailyPnl, currentWeekStart]);
-
-  // Performance metrics using calculated stats (guard nulls with ?? 0)
-  const n = (v: number | null | undefined) => v ?? 0;
-  const metrics = [
-    { label: 'Total P&L', value: `$${n(stats.totalPnl).toFixed(2)}`, isPositive: n(stats.totalPnl) >= 0 },
-    { label: 'Win Rate', value: `${n(stats.winRate).toFixed(1)}%`, isPositive: n(stats.winRate) >= 50 },
-    { label: 'Profit Factor', value: stats.profitFactor === Infinity ? '∞' : n(stats.profitFactor).toFixed(2), isPositive: n(stats.profitFactor) >= 1 },
-    { label: 'Average Win', value: `$${n(stats.avgWin).toFixed(2)}`, isPositive: true },
-    { label: 'Average Loss', value: `$${n(stats.avgLoss).toFixed(2)}`, isPositive: false },
-    { label: 'Max Drawdown', value: `${n(stats.maxDrawdown).toFixed(1)}%`, isPositive: false },
-    { label: 'Best Trade', value: `$${n(stats.bestTrade).toFixed(2)}`, isPositive: true },
-    { label: 'Worst Trade', value: `$${n(stats.worstTrade).toFixed(2)}`, isPositive: false },
-    { label: 'Avg R:R', value: n(stats.avgRiskReward).toFixed(2), isPositive: n(stats.avgRiskReward) >= 1.5 },
-    { label: 'Total Trades', value: (stats.totalTrades ?? 0).toString(), isPositive: true },
-    { label: 'Win Streak', value: (stats.consecutiveWins ?? 0).toString(), isPositive: true },
-    { label: 'Loss Streak', value: (stats.consecutiveLosses ?? 0).toString(), isPositive: false },
-  ];
-
-  if (showSkeleton) {
+  if (!accountsLoading && accounts.length === 0) return <EmptyState title={`Add at least ${MIN_TRADES} trades to see analytics.`} action={noTradesCta} />;
+  if (ps.isError) return <ErrorState title="Couldn't load this tab." description="The other tabs keep working." onRetry={ps.refetch} />;
+  if (ps.isLoading || !ps.stats || ent.isLoading) {
     return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Analytics</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">Identify patterns and optimize your strategy</p>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            <AccountFilter />
-            <DateRangeFilter
-              selectedPreset={datePreset}
-              onPresetChange={handleDatePresetChange}
-              customRange={customRange}
-              onCustomRangeChange={setCustomRange}
-              showCustomPicker
-            />
-          </div>
-        </div>
-        <MetricsGridSkeleton />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartSkeleton height="h-[280px]" />
-          <ChartSkeleton height="h-[280px]" />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartSkeleton height="h-[280px]" />
-          <ChartSkeleton height="h-[280px]" />
-        </div>
+      <div className="space-y-4" aria-busy="true" aria-label="Loading analytics">
+        <Skeleton className="h-40" />
+        <Skeleton className="h-72" />
       </div>
     );
   }
+  if (ps.stats.totalTrades < MIN_TRADES) {
+    return (
+      <EmptyState
+        title={`Add at least ${MIN_TRADES} trades to see analytics.`}
+        description={ps.stats.totalTrades > 0 || filters.datePreset === 'all' ? undefined : 'There are none in this period.'}
+        action={
+          <>
+            {noTradesCta}
+            {filters.datePreset !== 'all' && <Button size="sm" variant="ghost" onClick={showAllTime}>Show all time</Button>}
+          </>
+        }
+      />
+    );
+  }
+
+  const ctx: AnalyticsContext = { stats: view.stats ?? ps.stats, prev: view.prev, prevRange: ps.prevRange, currency, multi: view.currencies.length > 1, zone: (ps.stats.timeZone as string | undefined) ?? 'UTC', pro };
 
   return (
-    <div className={cn('space-y-6 transition-opacity duration-200', isRefreshing && 'opacity-60')}>
-      {/* Header */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Analytics</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">Identify patterns and optimize your strategy</p>
-          </div>
-          <RefreshButton onRefresh={refetch} isFetching={statsFetching} />
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-          <AccountFilter />
-          <DateRangeFilter
-            selectedPreset={datePreset}
-            onPresetChange={handleDatePresetChange}
-            customRange={customRange}
-            onCustomRangeChange={setCustomRange}
-            showCustomPicker
-          />
-        </div>
-      </div>
-
-      {/* Section Navigation */}
-      {stats.totalTrades > 0 && (
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/30 px-4 py-2 -mx-4 sm:-mx-6 mb-4">
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
-            {[
-              { id: 'metrics', label: 'Metrics' },
-              { id: 'charts', label: 'Charts' },
-              { id: 'distributions', label: 'Distributions' },
-              { id: 'behavior', label: 'Behavior' },
-            ].map(section => (
-              <Button
-                key={section.id}
-                variant="ghost"
-                size="sm"
-                className="shrink-0 text-xs h-7"
-                onClick={() => document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                {section.label}
-              </Button>
-            ))}
-          </div>
-        </div>
+    <div className="space-y-4">
+      {compare}
+      {view.currency && view.currencies.length > 1 && (
+        <ScopeBarSlot side="left">
+          <CurrencySwitch currencies={view.currencies} value={view.currency} onChange={view.select} />
+        </ScopeBarSlot>
       )}
-
-      {/* Empty State - shown when no trade data */}
-      {stats.totalTrades === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-            <PieChartIcon className="w-8 h-8 text-primary/60" />
-          </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">No analytics data yet</h3>
-          <p className="text-muted-foreground max-w-md mb-8">
-            Analytics will populate once you have logged trades. Head to the Dashboard to add your first trade.
-          </p>
-          <div className="flex items-center gap-3">
-            <Button onClick={() => navigate('/app/dashboard')} size="default" className="gap-2">
-              Go to Dashboard
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-      {/* Metrics Grid */}
-      <div id="metrics" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-        {metrics.map((metric, index) => (
-          <div
-            key={metric.label}
-            className="glass-card p-3 sm:p-4 animate-fade-in"
-            style={{ animationDelay: `${index * 0.03}s` }}
-          >
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">{metric.label}</p>
-            <p className={cn(
-              "text-base sm:text-xl font-semibold font-mono mt-1 truncate",
-              metric.isPositive ? "text-success" : "text-destructive"
-            )}>
-              {metric.value}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts Row */}
-      <div id="charts" className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Equity Curve */}
-        {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
-          <PerformanceChart dailyPnl={stats?.dailyPnl} />
-        ) : (
-          <div className="glass-card p-3 sm:p-5">
-            <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Equity Curve</h3>
-            <ChartEmptyState />
-          </div>
-        )}
-
-        {/* Daily P&L Bar Chart - Current Week */}
-        <div className="glass-card p-3 sm:p-5">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h3 className="font-semibold text-foreground text-sm sm:text-base">Daily P&L</h3>
-            <span className="text-xs text-muted-foreground hidden sm:inline">This Week (Sun - Sat)</span>
-          </div>
-          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
-          <div className="h-[240px] sm:h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyPnL} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
-                <XAxis
-                  dataKey="day"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }}
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: 'hsl(220, 18%, 10%)',
-                    border: '1px solid hsl(220, 16%, 18%)',
-                    borderRadius: '8px',
-                  }}
-                  labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }}
-                  cursor={{ fill: 'hsla(160, 84%, 39%, 0.05)' }}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'P&L']}
-                  labelFormatter={(label, payload) => payload?.[0]?.payload?.date || label}
-                />
-                <Bar
-                  dataKey="pnl"
-                  radius={[4, 4, 0, 0]}
-                >
-                  {dailyPnL.map((entry, index) => (
-                    <Cell
-                      key={`cell-${entry.day}`}
-                      fill={entry.pnl >= 0 ? 'hsl(160, 84%, 39%)' : 'hsl(0, 72%, 51%)'}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          ) : (
-            <ChartEmptyState />
-          )}
-        </div>
-      </div>
-
-      <AdSlot placementId="analytics-between-charts" className="my-6" />
-
-      {/* Hourly & Daily Win Rate Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Hourly Win Rate */}
-        <div className="glass-card p-3 sm:p-5">
-          <div className="flex items-center gap-2 mb-4 sm:mb-6">
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-            <h3 className="font-semibold text-foreground text-sm sm:text-base">Hourly Win Rate</h3>
-          </div>
-          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
-          <div className="h-[240px] sm:h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={localHourlyStats} margin={{ top: 10, right: 5, left: 0, bottom: 0 }} barCategoryGap="8%">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
-                <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 9 }} interval={0} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }} tickFormatter={(value) => `${value}%`} domain={[0, 100]} width={40} />
-                <Tooltip contentStyle={{ background: 'hsl(220, 18%, 10%)', border: '1px solid hsl(220, 16%, 18%)', borderRadius: '8px' }} labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }} cursor={{ fill: 'hsla(160, 84%, 39%, 0.05)' }} formatter={(value: number, name: string) => { if (name === 'winRate') return [`${value.toFixed(1)}%`, 'Win Rate']; return [value, name]; }} labelFormatter={(label) => `${label}:00`} />
-                <Bar dataKey="winRate" radius={[2, 2, 0, 0]} fill="hsl(var(--primary))" maxBarSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          ) : ( <ChartEmptyState /> )}
-        </div>
-
-        {/* Daily Win Rate - Horizontal Bar */}
-        <div className="glass-card p-3 sm:p-5">
-          <div className="flex items-center gap-2 mb-4 sm:mb-6">
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
-            <h3 className="font-semibold text-foreground text-sm sm:text-base">Daily Win Rate</h3>
-          </div>
-          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
-          <div className="h-[240px] sm:h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={localDailyWinRate} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" horizontal={false} />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
-                <YAxis type="category" dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }} width={40} />
-                <Tooltip contentStyle={{ background: 'hsl(220, 18%, 10%)', border: '1px solid hsl(220, 16%, 18%)', borderRadius: '8px' }} labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }} cursor={{ fill: 'hsla(160, 84%, 39%, 0.05)' }} formatter={(value: number) => [`${value.toFixed(1)}%`, 'Win Rate']} labelFormatter={(label) => `${label}`} />
-                <Bar dataKey="winRate" radius={[0, 4, 4, 0]} fill="hsl(var(--accent))" maxBarSize={28} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          ) : ( <ChartEmptyState /> )}
-        </div>
-      </div>
-
-      {/* Trade Duration + Session Performance Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Trade Duration Chart */}
-        <div className="glass-card p-3 sm:p-5">
-          <div className="flex items-center gap-2 mb-4 sm:mb-6">
-            <Timer className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
-            <h3 className="font-semibold text-foreground text-sm sm:text-base">Trade Duration (Time to TP/SL)</h3>
-          </div>
-          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
-          <>
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-            <div className="p-2 sm:p-3 bg-secondary/30 rounded-lg text-center">
-              <p className="text-xs text-muted-foreground">Fastest</p>
-              <p className="font-mono font-semibold text-success text-xs sm:text-base truncate">{formatDuration(minDuration)}</p>
-            </div>
-            <div className="p-2 sm:p-3 bg-secondary/30 rounded-lg text-center">
-              <p className="text-xs text-muted-foreground">Average</p>
-              <p className="font-mono font-semibold text-foreground text-xs sm:text-base truncate">{formatDuration(avgDuration)}</p>
-            </div>
-            <div className="p-2 sm:p-3 bg-secondary/30 rounded-lg text-center">
-              <p className="text-xs text-muted-foreground">Longest</p>
-              <p className="font-mono font-semibold text-warning text-xs sm:text-base truncate">{formatDuration(maxDuration)}</p>
-            </div>
-          </div>
-          <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={durationData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 18%)" vertical={false} />
-                <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(220, 12%, 55%)', fontSize: 12 }} />
-                <Tooltip contentStyle={{ background: 'hsl(220, 18%, 10%)', border: '1px solid hsl(220, 16%, 18%)', borderRadius: '8px' }} labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }} cursor={{ fill: 'hsla(160, 84%, 39%, 0.05)' }} />
-                <Bar dataKey="wins" stackId="a" fill="hsl(160, 84%, 39%)" radius={[0, 0, 0, 0]} name="Wins" />
-                <Bar dataKey="losses" stackId="a" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} name="Losses" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex gap-4 mt-4 justify-center text-sm">
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-success" /><span className="text-muted-foreground">Wins</span></div>
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-destructive" /><span className="text-muted-foreground">Losses</span></div>
-          </div>
-          </>
-          ) : ( <ChartEmptyState /> )}
-        </div>
-
-        {/* Performance by Session */}
-        <div className="glass-card p-3 sm:p-5">
-          <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Performance by Session</h3>
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            {sessionPerformance.map((session, index) => (
-              <div key={session.name} className="p-2.5 sm:p-3 bg-secondary/30 rounded-xl animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                <h4 className="font-medium text-foreground text-sm mb-2 truncate">{session.name}</h4>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Trades</span>
-                    <span className="font-mono text-foreground">{session.trades}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Win%</span>
-                    <span className={cn("font-mono", session.winRate >= 50 ? "text-success" : "text-destructive")}>
-                      {session.trades > 0 ? (session.winRate ?? 0).toFixed(1) : '0.0'}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">P&L</span>
-                    <span className={cn("font-mono", session.pnl >= 0 ? "text-success" : "text-destructive")}>
-                      {(session.pnl ?? 0) >= 0 ? '+' : ''}{(session.pnl ?? 0) > 0 ? `$${(session.pnl ?? 0).toFixed(0)}` : (session.pnl ?? 0) < 0 ? `-$${Math.abs(session.pnl ?? 0).toFixed(0)}` : '$0'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Distribution Charts Row */}
-      <div id="distributions" className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Symbol Distribution */}
-        <div className="glass-card p-3 sm:p-5">
-          <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Symbol Distribution</h3>
-          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
-          <>
-          <div className="h-[220px] sm:h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={4} dataKey="value">
-                  {pieData.map((entry, index) => ( <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} /> ))}
-                </Pie>
-                <Tooltip contentStyle={{ background: 'hsl(220, 18%, 10%)', border: '1px solid hsl(220, 16%, 18%)', borderRadius: '8px' }} labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap gap-3 justify-center mt-4">
-            {pieData.map((item, index) => (
-              <div key={item.name} className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                <span className="text-sm text-muted-foreground">{item.name}</span>
-              </div>
-            ))}
-          </div>
-          </>
-          ) : ( <ChartEmptyState /> )}
-        </div>
-
-        {/* Strategy Distribution */}
-        <div className="glass-card p-3 sm:p-5">
-          <h3 className="font-semibold text-foreground text-sm sm:text-base mb-4 sm:mb-6">Strategy Distribution</h3>
-          {stats.totalTrades >= MIN_TRADES_FOR_CHARTS ? (
-          <>
-          <div className="h-[220px] sm:h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={strategyPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={4} dataKey="value">
-                  {strategyPieData.map((_, index) => ( <Cell key={`cell-strat-${strategyPieData[index]?.name || index}`} fill={COLORS[(index + 2) % COLORS.length]} /> ))}
-                </Pie>
-                <Tooltip contentStyle={{ background: 'hsl(220, 18%, 10%)', border: '1px solid hsl(220, 16%, 18%)', borderRadius: '8px' }} labelStyle={{ background: 'hsla(160, 84%, 39%, 0.1)' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap gap-3 justify-center mt-4">
-            {strategyPieData.map((item, index) => (
-              <div key={item.name} className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[(index + 2) % COLORS.length] }} />
-                <span className="text-sm text-muted-foreground">{item.name}</span>
-              </div>
-            ))}
-          </div>
-          </>
-          ) : ( <ChartEmptyState /> )}
-        </div>
-      </div>
-
-      {/* Behavior: Mistakes, Broken Rules, Key Lessons */}
-      <div id="behavior" className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Top Mistakes */}
-        <div className="glass-card p-4 sm:p-6 animate-fade-in">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-warning" />
-            <h3 className="text-sm sm:text-base font-semibold text-foreground">Top Mistakes</h3>
-          </div>
-          {topMistakes.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No mistakes recorded yet</p>
-          ) : (
-            <div>
-              {topMistakes.map((item) => (
-                <div key={item.name} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                  <span className="text-sm text-foreground truncate mr-2">{item.name}</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">{item.count}</span>
-                    <span className={cn('font-mono text-xs', (item.totalPnl ?? 0) >= 0 ? 'text-success' : 'text-destructive')}>
-                      {(item.totalPnl ?? 0) >= 0 ? '+' : ''}${(item.totalPnl ?? 0).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Broken Rules Impact */}
-        <div className="glass-card p-4 sm:p-6 animate-fade-in">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
-            <h3 className="text-sm sm:text-base font-semibold text-foreground">Broken Rules</h3>
-          </div>
-          {topBrokenRules.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No broken rules recorded</p>
-          ) : (
-            <div>
-              {topBrokenRules.map((item) => (
-                <div key={item.ruleId} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                  <span className="text-sm text-foreground truncate mr-2">{item.ruleText}</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">{item.count}</span>
-                    <span className={cn('font-mono text-xs', (item.totalPnl ?? 0) >= 0 ? 'text-success' : 'text-destructive')}>
-                      {(item.totalPnl ?? 0) >= 0 ? '+' : ''}${(item.totalPnl ?? 0).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Key Lessons */}
-        <div className="glass-card p-4 sm:p-6 animate-fade-in">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-            <h3 className="text-sm sm:text-base font-semibold text-foreground">Key Lessons</h3>
-          </div>
-          {topLessons.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No lessons recorded yet</p>
-          ) : (
-            <div>
-              {topLessons.map((item) => (
-                <div key={item.text} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                  <span className="text-sm text-foreground truncate mr-2" title={item.text}>{item.text}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium shrink-0">{item.count}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-        </>
-      )}
+      {tab === 'overview' && <OverviewTab ctx={ctx} />}
+      {tab === 'edge' && <EdgeTab ctx={ctx} />}
+      {tab === 'timing' && <TimingTab ctx={ctx} />}
+      {tab === 'risk' && <RiskTab ctx={ctx} />}
+      {tab === 'behaviour' && <BehaviourTab ctx={ctx} />}
     </div>
   );
 }

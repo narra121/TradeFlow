@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 export interface AggregatedStats {
   totalTrades: number;
   wins: number;

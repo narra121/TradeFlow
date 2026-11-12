@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
+import { LOGGED_OUT_URL, isLoggingOut } from '@/components/auth/loggingOut';
 import { useAppSelector } from '@/store/hooks';
 
 export function RequireAuth({ children }: { children: JSX.Element }) {
@@ -9,6 +10,7 @@ export function RequireAuth({ children }: { children: JSX.Element }) {
   const hasToken = !isAuthenticated && !!localStorage.getItem('idToken');
 
   if (!isAuthenticated && !hasToken) {
+    if (isLoggingOut()) return <Navigate to={LOGGED_OUT_URL} replace />;
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

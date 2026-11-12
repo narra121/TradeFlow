@@ -36,13 +36,14 @@ describe('SmartInput', () => {
     expect(onChange).toHaveBeenCalledWith('A');
   });
 
-  it('shows suggestions dropdown when input is focused', async () => {
+  it('opens the suggestions with ArrowDown, and not merely on focus', async () => {
     const user = userEvent.setup();
     // When value is empty, it shows up to first 5 suggestions
     render(<SmartInput {...defaultProps} />);
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
 
     // Should show the first 5 suggestions
     expect(screen.getByText('AAPL')).toBeInTheDocument();
@@ -58,6 +59,7 @@ describe('SmartInput', () => {
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
 
     // Only AAPL matches "AA"
     expect(screen.getByText('AAPL')).toBeInTheDocument();
@@ -72,6 +74,7 @@ describe('SmartInput', () => {
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
     await user.click(screen.getByText('GOOG'));
 
     expect(onChange).toHaveBeenCalledWith('GOOG');
@@ -83,6 +86,7 @@ describe('SmartInput', () => {
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
 
     expect(screen.getByText(/Create "XYZ"/)).toBeInTheDocument();
   });
@@ -93,6 +97,7 @@ describe('SmartInput', () => {
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
 
     expect(screen.queryByText(/Create "AAPL"/)).not.toBeInTheDocument();
   });
@@ -104,6 +109,7 @@ describe('SmartInput', () => {
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
     await user.click(screen.getByText(/Create "XYZ"/));
 
     expect(onAddNew).toHaveBeenCalledWith('XYZ');
@@ -120,6 +126,7 @@ describe('SmartInput', () => {
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
 
     // Suggestions visible
     expect(screen.getByText('AAPL')).toBeInTheDocument();
@@ -173,6 +180,7 @@ describe('SmartInput – additional coverage', () => {
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
     await user.paste('PASTED');
 
     expect(onChange).toHaveBeenCalledWith('PASTED');
@@ -184,6 +192,7 @@ describe('SmartInput – additional coverage', () => {
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
 
     // MSFT and META contain 'M'
     expect(screen.getByText('MSFT')).toBeInTheDocument();
@@ -199,11 +208,23 @@ describe('SmartInput – additional coverage', () => {
 
     const input = screen.getByPlaceholderText('Enter symbol...');
     await user.click(input);
+    await user.keyboard('{ArrowDown}');
 
     const createBtn = screen.getByText(/Create "NEWSTOCK"/);
     expect(createBtn).toBeInTheDocument();
 
     await user.click(createBtn);
     expect(onAddNew).toHaveBeenCalledWith('NEWSTOCK');
+  });
+});
+
+describe('SmartInput (R-fe-app-011)', () => {
+  it('does not open the list when it only receives focus, and opens it from the caret', async () => {
+    const user = userEvent.setup();
+    render(<SmartInput value="" onChange={() => undefined} suggestions={['AAPL', 'MSFT']} onAddNew={() => undefined} />);
+    await user.tab();
+    expect(screen.queryByRole('listbox')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Show suggestions' }));
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 });

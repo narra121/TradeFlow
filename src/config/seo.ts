@@ -1,132 +1,94 @@
+import {
+  COMPANY_FACTS,
+  PRODUCT_DEFINITION,
+  PRODUCT_FAQ,
+  PRO_PRICES,
+  SITE_URL,
+  SUPPORT_EMAIL,
+  TRIAL_DAYS,
+  type FaqItem,
+} from '@/content/product-facts';
+
+const CONTEXT = 'https://schema.org';
+const PUBLISHER = {
+  '@type': 'Organization',
+  name: 'TradeQut',
+  url: SITE_URL,
+  logo: { '@type': 'ImageObject', url: COMPANY_FACTS.logo },
+};
+const OG_IMAGE = `${SITE_URL}/og-image.png`;
+
 export const WEBSITE_SCHEMA = {
-  '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: 'TradeQut',
   alternateName: 'TradeQut Trading Journal',
-  url: 'https://tradequt.com',
+  url: SITE_URL,
 };
 
 export const ORGANIZATION_SCHEMA = {
   '@type': 'Organization',
   name: 'TradeQut',
-  url: 'https://tradequt.com',
-  logo: 'https://tradequt.com/og-image.png',
-  description:
-    'Free trading journal app for stocks, forex, crypto, and options — track trades, analyze performance, and improve your trading strategy',
+  url: SITE_URL,
+  logo: COMPANY_FACTS.logo,
+  description: PRODUCT_DEFINITION,
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'Customer Service',
-    email: 'support@tradequt.com',
+    email: SUPPORT_EMAIL,
     telephone: '+91-8501018125',
   },
 };
 
+/** Free plan plus the four Pro prices from product-facts, so structured data never drifts from the pricing table. */
 export const SOFTWARE_APP_SCHEMA = {
   '@type': 'SoftwareApplication',
   name: 'TradeQut',
-  applicationCategory: 'BusinessApplication',
+  applicationCategory: 'FinanceApplication',
   operatingSystem: 'Web',
-  url: 'https://tradequt.com',
-  description:
-    'Free trading journal software for day traders and swing traders. Track trades, analyze win rate and profit factor, and import from brokers.',
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'USD',
-    description: 'Free tier available',
-  },
+  url: SITE_URL,
+  description: PRODUCT_DEFINITION,
+  offers: [
+    { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD' },
+    ...PRO_PRICES.map((p) => ({
+      '@type': 'Offer',
+      name: `Pro (${p.interval === 'month' ? 'monthly' : 'yearly'}, ${p.currency})`,
+      price: String(p.amount),
+      priceCurrency: p.currency,
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: String(p.amount),
+        priceCurrency: p.currency,
+        billingDuration: 1,
+        billingIncrement: 1,
+        unitCode: p.interval === 'month' ? 'MON' : 'ANN',
+      },
+      description: `${TRIAL_DAYS}-day free trial, no card required`,
+    })),
+  ],
 };
 
-export const FAQ_ITEMS = [
-  {
-    question: 'What is TradeQut?',
-    answer:
-      'TradeQut is a free online trading journal that helps traders track, analyze, and improve their performance. You can log trades manually, import from CSV files, or use AI-powered extraction from broker statement screenshots.',
-  },
-  {
-    question: 'Is TradeQut free to use?',
-    answer:
-      'Yes, TradeQut offers a free plan with core features including trade logging, analytics, and performance tracking. Premium plans add an ad-free experience and unlimited trade history.',
-  },
-  {
-    question: 'What markets does TradeQut support?',
-    answer:
-      'TradeQut supports stocks, forex, futures, options, and cryptocurrency. You can track trades across multiple accounts and asset classes in one place.',
-  },
-  {
-    question: 'Can I import trades from my broker?',
-    answer:
-      'Yes. You can import trades via CSV files, Excel spreadsheets, or screenshots of broker statements. The AI-powered extraction reads trade data from images automatically.',
-  },
-  {
-    question: 'How does TradeQut help improve trading performance?',
-    answer:
-      'TradeQut provides analytics including win rate, profit factor, risk-reward ratios, drawdown tracking, and performance by time of day. You can set goals and define trading rules to identify patterns and improve discipline.',
-  },
-  {
-    question: 'Is my trading data secure?',
-    answer:
-      'Yes. TradeQut uses AWS infrastructure with encryption at rest and in transit. Your data is stored securely and only accessible to you. We never share trading data with third parties.',
-  },
-];
+export const FAQ_ITEMS: FaqItem[] = PRODUCT_FAQ;
 
-export const FAQ_SCHEMA = {
-  '@type': 'FAQPage',
-  mainEntity: FAQ_ITEMS.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-};
+export function faqSchema(items: FaqItem[]) {
+  return {
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  };
+}
+
+export const FAQ_SCHEMA = faqSchema(PRODUCT_FAQ);
 
 export const LANDING_PAGE_SCHEMA = {
-  '@context': 'https://schema.org',
+  '@context': CONTEXT,
   '@graph': [WEBSITE_SCHEMA, ORGANIZATION_SCHEMA, SOFTWARE_APP_SCHEMA, FAQ_SCHEMA],
 };
 
-export const GUIDE_ARTICLE_SCHEMA = {
-  '@type': 'Article',
-  headline: 'TradeQut User Guide - Complete Trading Journal Tutorial',
-  description:
-    'Step-by-step guide to using TradeQut. Learn how to log trades, analyze performance, set goals, and track your progress.',
-  datePublished: '2026-04-18',
-  dateModified: '2026-04-18',
-  image: 'https://tradequt.com/og-image.png',
-  mainEntityOfPage: 'https://tradequt.com/guide',
-  author: { '@type': 'Organization', name: 'TradeQut', url: 'https://tradequt.com' },
-  publisher: {
-    '@type': 'Organization',
-    name: 'TradeQut',
-    logo: { '@type': 'ImageObject', url: 'https://tradequt.com/og-image.png' },
-  },
-};
-
-export const CONTACT_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'ContactPage',
-  name: 'Contact TradeQut',
-  url: 'https://tradequt.com/contact',
-  mainEntity: {
-    '@type': 'Organization',
-    name: 'TradeQut',
-    email: 'support@tradequt.com',
-    telephone: '+91-8501018125',
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: 'TradeQutJournal',
-      addressLocality: 'Bhupalpally',
-      addressRegion: 'Telangana',
-      addressCountry: 'IN',
-    },
-  },
-};
-
-export function breadcrumbSchema(items: { name: string; url: string }[]) {
+export function breadcrumbList(items: { name: string; url: string }[]) {
   return {
-    '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: items.map((item, i) => ({
       '@type': 'ListItem',
@@ -137,112 +99,195 @@ export function breadcrumbSchema(items: { name: string; url: string }[]) {
   };
 }
 
+export function breadcrumbSchema(items: { name: string; url: string }[]) {
+  return { '@context': CONTEXT, ...breadcrumbList(items) };
+}
+
+interface ArticleLike {
+  title: string;
+  description: string;
+  publishedAt: string;
+  updatedAt?: string;
+}
+
+function articleNode(a: ArticleLike, url: string, section?: string) {
+  return {
+    '@type': 'Article',
+    headline: a.title,
+    description: a.description,
+    datePublished: a.publishedAt,
+    dateModified: a.updatedAt ?? a.publishedAt,
+    image: OG_IMAGE,
+    mainEntityOfPage: url,
+    ...(section ? { articleSection: section } : {}),
+    author: { '@type': 'Organization', name: 'TradeQut', url: SITE_URL },
+    publisher: PUBLISHER,
+  };
+}
+
+export const GUIDE_ARTICLE_SCHEMA = {
+  '@context': CONTEXT,
+  '@graph': [
+    articleNode(
+      {
+        title: 'How to use TradeQut',
+        description:
+          'How to use TradeQut: add trading accounts, log or import trades, read the dashboard, calendar and analytics, use AI reports and chat, set goals and rules.',
+        publishedAt: '2026-04-18',
+        updatedAt: '2026-11-12',
+      },
+      `${SITE_URL}/guide`,
+    ),
+    breadcrumbList([
+      { name: 'Home', url: SITE_URL },
+      { name: 'User guide', url: `${SITE_URL}/guide` },
+    ]),
+  ],
+};
+
+export const CONTACT_SCHEMA = {
+  '@context': CONTEXT,
+  '@type': 'ContactPage',
+  name: 'Contact TradeQut',
+  url: `${SITE_URL}/contact`,
+  mainEntity: {
+    '@type': 'Organization',
+    name: 'TradeQut',
+    email: SUPPORT_EMAIL,
+    telephone: '+91-8501018125',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: '3-187/2, Regonda',
+      addressLocality: 'Bhupalpally',
+      postalCode: '506348',
+      addressRegion: 'Telangana',
+      addressCountry: 'IN',
+    },
+  },
+};
+
 export function blogArticleSchema(article: {
   slug: string;
   title: string;
   description: string;
   publishedAt: string;
+  updatedAt?: string;
+  faq?: FaqItem[];
+  howTo?: { name: string; steps: { name: string; text: string }[] };
 }) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: article.title,
-    description: article.description,
-    datePublished: article.publishedAt,
-    dateModified: article.publishedAt,
-    image: 'https://tradequt.com/og-image.png',
-    mainEntityOfPage: `https://tradequt.com/blog/${article.slug}`,
-    author: { '@type': 'Organization', name: 'TradeQut', url: 'https://tradequt.com' },
-    publisher: {
-      '@type': 'Organization',
-      name: 'TradeQut',
-      logo: { '@type': 'ImageObject', url: 'https://tradequt.com/og-image.png' },
-    },
-  };
+  const url = `${SITE_URL}/blog/${article.slug}`;
+  const graph: object[] = [
+    articleNode(article, url),
+    breadcrumbList([
+      { name: 'Home', url: SITE_URL },
+      { name: 'Blog', url: `${SITE_URL}/blog` },
+      { name: article.title, url },
+    ]),
+  ];
+  if (article.faq?.length) graph.push(faqSchema(article.faq));
+  if (article.howTo) {
+    graph.push({
+      '@type': 'HowTo',
+      name: article.howTo.name,
+      step: article.howTo.steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.name, text: s.text })),
+    });
+  }
+  return { '@context': CONTEXT, '@graph': graph };
 }
 
 export const BLOG_INDEX_SCHEMA = {
-  '@context': 'https://schema.org',
+  '@context': CONTEXT,
   '@type': 'CollectionPage',
-  name: 'TradeQut Blog - Trading Journal Tips & Strategies',
-  description: 'Expert articles on trading journaling, analytics, psychology, and strategies to improve your trading performance.',
-  url: 'https://tradequt.com/blog',
-  isPartOf: { '@type': 'WebSite', name: 'TradeQut', url: 'https://tradequt.com' },
+  name: 'TradeQut Blog - Trading Journal Guides',
+  description: 'Guides on trading journaling, analytics, charges, risk and discipline for Indian and global traders.',
+  url: `${SITE_URL}/blog`,
+  isPartOf: { '@type': 'WebSite', name: 'TradeQut', url: SITE_URL },
 };
 
 export function glossarySchema(terms: { term: string; definition: string }[]) {
   return {
-    '@context': 'https://schema.org',
+    '@context': CONTEXT,
     '@type': 'DefinedTermSet',
     name: 'Trading Glossary',
-    description: 'Comprehensive glossary of trading terms and definitions for traders of all levels.',
-    url: 'https://tradequt.com/glossary',
-    hasDefinedTerm: terms.map((t) => ({
-      '@type': 'DefinedTerm',
-      name: t.term,
-      description: t.definition,
-    })),
+    description: 'Glossary of trading terms and definitions.',
+    url: `${SITE_URL}/glossary`,
+    hasDefinedTerm: terms.map((t) => ({ '@type': 'DefinedTerm', name: t.term, description: t.definition })),
   };
 }
 
 export function calculatorSchema(name: string, description: string, path: string) {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name,
-    description,
-    url: `https://tradequt.com${path}`,
-    applicationCategory: 'FinanceApplication',
-    operatingSystem: 'Web',
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    '@context': CONTEXT,
+    '@graph': [
+      {
+        '@type': 'WebApplication',
+        name,
+        description,
+        url: `${SITE_URL}${path}`,
+        applicationCategory: 'FinanceApplication',
+        operatingSystem: 'Web',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      },
+      breadcrumbList([
+        { name: 'Home', url: SITE_URL },
+        { name: 'Calculators', url: `${SITE_URL}/resources` },
+        { name, url: `${SITE_URL}${path}` },
+      ]),
+    ],
   };
 }
 
-export function caseStudySchema(study: {
-  slug: string;
-  title: string;
-  description: string;
-  publishedAt: string;
-}) {
+export function caseStudySchema(study: ArticleLike & { slug: string }) {
+  const url = `${SITE_URL}/case-studies/${study.slug}`;
   return {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    articleSection: 'Case Study',
-    headline: study.title,
-    description: study.description,
-    datePublished: study.publishedAt,
-    dateModified: study.publishedAt,
-    image: 'https://tradequt.com/og-image.png',
-    mainEntityOfPage: `https://tradequt.com/case-studies/${study.slug}`,
-    author: { '@type': 'Organization', name: 'TradeQut', url: 'https://tradequt.com' },
-    publisher: {
-      '@type': 'Organization',
-      name: 'TradeQut',
-      logo: { '@type': 'ImageObject', url: 'https://tradequt.com/og-image.png' },
-    },
+    '@context': CONTEXT,
+    '@graph': [
+      articleNode(study, url, 'Illustrative scenario'),
+      breadcrumbList([
+        { name: 'Home', url: SITE_URL },
+        { name: 'Journaling scenarios', url: `${SITE_URL}/case-studies` },
+        { name: study.title, url },
+      ]),
+    ],
   };
+}
+
+/** Stand-alone SEO pages (/pricing, /trading-journal-india, /alternatives/*). */
+export function seoPageSchema(page: { path: string; title: string; description: string; label: string }, extra: object[] = [], faq?: FaqItem[]) {
+  const url = `${SITE_URL}${page.path}`;
+  const graph: object[] = [
+    { '@type': 'WebPage', name: page.title, description: page.description, url, isPartOf: { '@type': 'WebSite', name: 'TradeQut', url: SITE_URL } },
+    breadcrumbList([
+      { name: 'Home', url: SITE_URL },
+      { name: page.label, url },
+    ]),
+    ...extra,
+  ];
+  if (faq?.length) graph.push(faqSchema(faq));
+  return { '@context': CONTEXT, '@graph': graph };
 }
 
 export const CHANGELOG_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'ItemList',
+  '@context': CONTEXT,
+  '@type': 'CollectionPage',
   name: 'TradeQut Changelog',
-  description: 'Product updates and release notes for TradeQut trading journal.',
-  url: 'https://tradequt.com/changelog',
+  description: 'Product updates and release notes for the TradeQut trading journal.',
+  url: `${SITE_URL}/changelog`,
 };
 
 export const RESOURCES_SCHEMA = {
-  '@context': 'https://schema.org',
+  '@context': CONTEXT,
   '@type': 'CollectionPage',
   name: 'Trading Tools & Calculators - TradeQut',
-  description: 'Free trading calculators: position size, risk-reward ratio, and pip value. Essential tools for every trader.',
-  url: 'https://tradequt.com/resources',
+  description: 'Free trading calculators: position size, risk-reward ratio, and pip value.',
+  url: `${SITE_URL}/resources`,
 };
 
 export const CASE_STUDIES_INDEX_SCHEMA = {
-  '@context': 'https://schema.org',
+  '@context': CONTEXT,
   '@type': 'CollectionPage',
-  name: 'Trading Success Stories - TradeQut Case Studies',
-  description: 'Real stories of traders who improved their performance with disciplined journaling and analytics.',
-  url: 'https://tradequt.com/case-studies',
+  name: 'Journaling Scenarios (Illustrative) - TradeQut',
+  description:
+    'Illustrative walk-throughs of how a trading journal exposes common problems. Hypothetical data; not real customers and not performance claims.',
+  url: `${SITE_URL}/case-studies`,
 };

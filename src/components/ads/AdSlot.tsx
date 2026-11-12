@@ -17,8 +17,9 @@ export function AdSlot({ placementId, className }: AdSlotProps) {
   useEffect(() => {
     if (placement && adConfig?.clientId && !adPushed.current) {
       try {
-        (window as any).adsbygoogle = (window as any).adsbygoogle || [];
-        (window as any).adsbygoogle.push({});
+        const w = window as unknown as { adsbygoogle?: unknown[] };
+        w.adsbygoogle = w.adsbygoogle || [];
+        w.adsbygoogle.push({});
         adPushed.current = true;
       } catch {
         // Ad blocker or script not loaded — gracefully ignore

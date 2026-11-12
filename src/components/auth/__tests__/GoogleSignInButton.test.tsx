@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock authApi endpoints
 vi.mock('@/store/api/authApi', () => {
   const createMatcher = (type: string) => {
-    const matcher = (action: any) => action?.type === type;
+    const matcher = (action: { type?: string } | undefined) => action?.type === type;
     matcher.match = matcher;
     matcher.type = type;
     return matcher;
@@ -21,159 +21,116 @@ vi.mock('@/store/api/authApi', () => {
   };
 });
 
-describe('GoogleSignInButton', () => {
+describe('GoogleSignInButton + useGoogleSignIn', () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
-    // @ts-ignore
-    delete window.location;
-    window.location = { ...originalLocation, href: '', origin: 'https://tradequt.com' };
+    sessionStorage.clear();
+    Object.defineProperty(window, 'location', { value: { ...originalLocation, href: '', origin: 'https://tradequt.com' }, writable: true, configurable: true });
   });
 
   afterEach(() => {
-    window.location = originalLocation;
+    Object.defineProperty(window, 'location', { value: originalLocation, writable: true, configurable: true });
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
 
-  it('renders null when VITE_COGNITO_DOMAIN is not set', async () => {
-    // Default env has empty values, so module-level constants are ''
+  async function renderHost(opts: { configured: boolean; from?: string | null; onError?: () => void; label?: string }) {
+    if (opts.configured) {
+      vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
+      vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
+    }
+    vi.resetModules();
     const { GoogleSignInButton } = await import('../GoogleSignInButton');
+    const { useGoogleSignIn } = await import('../useGoogleSignIn');
     const { render } = await import('@/test/test-utils');
+    function Host() {
+      const google = useGoogleSignIn(opts.from ?? null, opts.onError);
+      return <GoogleSignInButton google={google} label={opts.label} />;
+    }
+    return render(<Host />);
+  }
 
-    const { container } = render(<GoogleSignInButton />);
+  it('renders nothing when Google sign-in is not configured', async () => {
+    const { container } = await renderHost({ configured: false });
     expect(container.innerHTML).toBe('');
   });
 
-  it('renders button when env vars are configured', async () => {
-    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
-    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
-
-    // Reset modules so the component re-reads env vars at module level
-    vi.resetModules();
-
-    const { GoogleSignInButton } = await import('../GoogleSignInButton');
-    const { render } = await import('@/test/test-utils');
-
-    render(<GoogleSignInButton />);
+  it('renders the button with the Google mark when configured', async () => {
+    const { container } = await renderHost({ configured: true });
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
+    expect(container.querySelector('svg.g')).toBeInTheDocument();
   });
 
-  it('constructs correct Cognito authorize URL on click', async () => {
-    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
-    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
-
-    vi.resetModules();
-
-    const { GoogleSignInButton } = await import('../GoogleSignInButton');
-    const { render } = await import('@/test/test-utils');
-
-    render(<GoogleSignInButton />);
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /continue with google/i }));
-
-    const expectedRedirectUri = encodeURIComponent('https://tradequt.com/auth/callback');
-    const expectedUrl =
-      `https://auth.test.com/oauth2/authorize?` +
-      `response_type=code&` +
-      `client_id=test-client-id&` +
-      `redirect_uri=${expectedRedirectUri}&` +
-      `identity_provider=Google&` +
-      `scope=${encodeURIComponent('openid email profile')}`;
-
-    expect(window.location.href).toBe(expectedUrl);
+  it('takes a different label', async () => {
+    await renderHost({ configured: true, label: 'Try Google again' });
+    expect(screen.getByRole('button', { name: 'Try Google again' })).toBeInTheDocument();
   });
 
-  it('includes Google SVG logo', async () => {
-    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
-    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
+  it('constructs the Cognito authorize URL with state and PKCE on click', async () => {
+    await renderHost({ configured: true });
 
-    vi.resetModules();
+    await userEvent.click(screen.getByRole('button', { name: /continue with google/i }));
 
-    const { GoogleSignInButton } = await import('../GoogleSignInButton');
-    const { render } = await import('@/test/test-utils');
-
-    const { container } = render(<GoogleSignInButton />);
-    const svg = container.querySelector('svg');
-    expect(svg).toBeInTheDocument();
+    await vi.waitFor(() => expect(window.location.href).toContain('oauth2/authorize'));
+    const url = new URL(window.location.href);
+    expect(url.origin + url.pathname).toBe('https://auth.test.com/oauth2/authorize');
+    expect(url.searchParams.get('client_id')).toBe('test-client-id');
+    expect(url.searchParams.get('redirect_uri')).toBe('https://tradequt.com/auth/callback');
+    expect(url.searchParams.get('identity_provider')).toBe('Google');
+    expect(url.searchParams.get('scope')).toBe('openid email profile');
+    expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+    expect(url.searchParams.get('code_challenge')).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    const state = url.searchParams.get('state');
+    expect(state).toBeTruthy();
+    expect(JSON.parse(sessionStorage.getItem('tq.oauth') ?? '{}').state).toBe(state);
   });
 
-  it('passes className to button', async () => {
-    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
-    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
+  it('stores the destination the user was heading for next to the state', async () => {
+    await renderHost({ configured: true, from: '/app/trades?trade=t1' });
+    await userEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+    await vi.waitFor(() => expect(window.location.href).toContain('oauth2/authorize'));
+    expect(JSON.parse(sessionStorage.getItem('tq.oauth') ?? '{}').from).toBe('/app/trades?trade=t1');
+  });
 
-    vi.resetModules();
-
-    const { GoogleSignInButton } = await import('../GoogleSignInButton');
-    const { render } = await import('@/test/test-utils');
-
-    render(<GoogleSignInButton className="custom-class" />);
+  it('reads Opening Google… and is aria-disabled (still focusable) once clicked', async () => {
+    await renderHost({ configured: true });
     const button = screen.getByRole('button', { name: /continue with google/i });
-    expect(button.className).toContain('custom-class');
-  });
 
-  it('shows "Redirecting..." text after click instead of "Continue with Google"', async () => {
-    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
-    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
+    await userEvent.click(button);
 
-    vi.resetModules();
-
-    const { GoogleSignInButton } = await import('../GoogleSignInButton');
-    const { render } = await import('@/test/test-utils');
-
-    render(<GoogleSignInButton />);
-
-    const user = userEvent.setup();
-    const button = screen.getByRole('button', { name: /continue with google/i });
-    await user.click(button);
-
-    expect(screen.getByText('Redirecting...')).toBeInTheDocument();
+    expect(screen.getByText('Opening Google…')).toBeInTheDocument();
     expect(screen.queryByText('Continue with Google')).not.toBeInTheDocument();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).not.toBeDisabled();
   });
 
-  it('becomes disabled with opacity-70 and cursor-not-allowed after click', async () => {
-    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
-    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
-
-    vi.resetModules();
-
-    const { GoogleSignInButton } = await import('../GoogleSignInButton');
-    const { render } = await import('@/test/test-utils');
-
-    render(<GoogleSignInButton />);
-
-    const user = userEvent.setup();
-    const button = screen.getByRole('button', { name: /continue with google/i });
-    await user.click(button);
-
-    // After click, button should be disabled
-    expect(button).toBeDisabled();
-    // Button should have loading-related classes
-    expect(button.className).toContain('opacity-70');
-    expect(button.className).toContain('cursor-not-allowed');
-  });
-
-  it('shows spinner icon while loading', async () => {
-    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
-    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
-
-    vi.resetModules();
-
-    const { GoogleSignInButton } = await import('../GoogleSignInButton');
-    const { render } = await import('@/test/test-utils');
-
-    const { container } = render(<GoogleSignInButton />);
-
-    const user = userEvent.setup();
-    const button = screen.getByRole('button', { name: /continue with google/i });
-    await user.click(button);
-
-    // The Google SVG should be replaced by the Loader2 spinner
-    // Before click: SVG with viewBox="0 0 24 24" (Google logo)
-    // After click: SVG with animate-spin class (Loader2)
+  it('shows the spinner in place of the Google mark while opening', async () => {
+    const { container } = await renderHost({ configured: true });
+    await userEvent.click(screen.getByRole('button', { name: /continue with google/i }));
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
-    expect(svg!.classList.contains('animate-spin')).toBe(true);
+    expect(svg!.classList.contains('spin')).toBe(true);
+  });
+
+  it('calls onError and becomes usable again when the start fails', async () => {
+    const onError = vi.fn();
+    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
+    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
+    vi.resetModules();
+    vi.doMock('@/lib/oauth', () => ({ startOAuth: () => Promise.reject(new Error('no crypto')) }));
+    const { GoogleSignInButton } = await import('../GoogleSignInButton');
+    const { useGoogleSignIn } = await import('../useGoogleSignIn');
+    const { render } = await import('@/test/test-utils');
+    function Host() {
+      return <GoogleSignInButton google={useGoogleSignIn(null, onError)} />;
+    }
+    render(<Host />);
+
+    await userEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', { name: /continue with google/i })).not.toHaveAttribute('aria-disabled');
+    vi.doUnmock('@/lib/oauth');
   });
 });

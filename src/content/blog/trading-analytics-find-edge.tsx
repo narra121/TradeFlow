@@ -113,10 +113,10 @@ export default function TradingAnalyticsFindEdge() {
         and then ruthlessly organize your trading day around exploiting it.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        TradeQut makes this systematic. The analytics dashboard breaks your performance across every dimension
-        discussed here: time, symbol, session quality, strategy, and rule compliance. The data is presented visually,
-        making your strongest and weakest areas obvious. Review weekly, make one adjustment at a time, and track
-        whether it improved results. Over months, this iterative process compounds into a data-proven trading operation.
+        In TradeQut, Analytics breaks your results down along the dimensions discussed here: symbol, strategy, session,
+        weekday and hour on the Edge and Timing tabs, and mistakes and broken rules on the Behaviour tab, each with its
+        number of trades so you can judge the sample. Review weekly, make one adjustment at a time, and track
+        whether it improved results. Over months, this iterative process compounds into a data-driven trading routine.
       </p>
     </>
   );

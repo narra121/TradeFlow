@@ -1,19 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { glossarySchema } from '@/config/seo';
 import { GLOSSARY_TERMS } from '@/content/glossary/terms';
-import { Search } from 'lucide-react';
 
 export function GlossaryPage() {
   const [search, setSearch] = useState('');
+  const searchId = useId();
 
   const filtered = useMemo(() => {
     if (!search) return GLOSSARY_TERMS;
     const q = search.toLowerCase();
-    return GLOSSARY_TERMS.filter(
-      (t) => t.term.toLowerCase().includes(q) || t.definition.toLowerCase().includes(q)
-    );
+    return GLOSSARY_TERMS.filter((t) => t.term.toLowerCase().includes(q) || t.definition.toLowerCase().includes(q));
   }, [search]);
 
   const letters = useMemo(() => {
@@ -29,73 +28,92 @@ export function GlossaryPage() {
   return (
     <ContentPageShell
       title="Trading Glossary - Key Terms & Definitions | TradeQut"
-      description="Comprehensive glossary of trading terms: win rate, profit factor, drawdown, pip, leverage, and 25+ more. Clear definitions with formulas and examples."
+      description="Glossary of trading terms: win rate, profit factor, drawdown, pip, leverage and more. Clear definitions with formulas and examples."
       path="/glossary"
       jsonLd={glossarySchema(GLOSSARY_TERMS)}
-      navLabel="Glossary navigation"
     >
-      <div className="text-center mb-12 sm:mb-16">
-        <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">Trading Glossary</h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Essential trading terms explained clearly. From basic concepts to advanced metrics — everything you need to understand your trading journal.
-        </p>
-      </div>
+      <header className="mb-8">
+        <h1 className="mb-3 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">Trading glossary</h1>
+        <p className="text-base text-foreground-soft">Trading terms explained, with formulas and examples.</p>
+      </header>
 
-      <div className="relative mb-8">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative mb-2">
+        <label htmlFor={searchId} className="sr-only">
+          Search terms
+        </label>
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <input
-          type="text"
+          id={searchId}
+          type="search"
           placeholder="Search terms..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border/50 bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="h-10 w-full rounded-md border border-input bg-card pl-10 pr-3 text-foreground placeholder:text-muted-foreground"
         />
       </div>
+      <p role="status" className="mb-4 text-sm text-muted-foreground">
+        {filtered.length} {filtered.length === 1 ? 'term' : 'terms'}
+      </p>
+      {filtered.length === 0 && (
+        <div className="mb-8">
+          <p className="text-foreground-soft">No terms match &ldquo;{search}&rdquo;.</p>
+          <button
+            type="button"
+            onClick={() => setSearch('')}
+            className="mt-2 inline-flex h-9 items-center rounded-md border border-border-strong px-3 text-sm font-medium text-foreground hover:bg-secondary"
+          >
+            Clear search
+          </button>
+        </div>
+      )}
 
-      <div className="flex flex-wrap gap-2 mb-8">
+      <nav aria-label="Jump to letter" className="sticky top-14 z-30 -mx-4 mb-8 flex flex-wrap gap-1 border-b border-border bg-background px-4 py-2 sm:-mx-6 sm:px-6">
         {letters.map(([letter]) => (
           <a
             key={letter}
             href={`#letter-${letter}`}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-card border border-border/50 text-sm font-medium text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-sm font-medium text-foreground-soft hover:bg-secondary hover:text-foreground sm:h-8 sm:w-8"
           >
             {letter}
           </a>
         ))}
-      </div>
+      </nav>
 
-      <div className="space-y-12">
+      <div className="space-y-10">
         {letters.map(([letter, terms]) => (
-          <section key={letter} id={`letter-${letter}`}>
-            <h2 className="text-2xl font-bold text-primary mb-6 border-b border-border/50 pb-2">{letter}</h2>
-            <div className="space-y-6">
+          <section key={letter} id={`letter-${letter}`} aria-labelledby={`h-${letter}`} className="scroll-mt-32">
+            <h2 id={`h-${letter}`} className="mb-4 border-b border-border pb-2 text-xl font-semibold text-primary">
+              {letter}
+            </h2>
+            <dl className="space-y-6">
               {terms.map((term) => (
-                <div key={term.id} id={term.id} className="bg-card rounded-xl border border-border/50 p-6 scroll-mt-24">
-                  <h3 className="text-xl font-semibold text-foreground mb-2">{term.term}</h3>
-                  <p className="text-muted-foreground leading-relaxed mb-3">{term.definition}</p>
-                  {term.formula && (
-                    <div className="bg-background rounded-lg px-4 py-2 mb-3 font-mono text-sm text-foreground">
-                      {term.formula}
-                    </div>
-                  )}
-                  {term.example && (
-                    <p className="text-sm text-muted-foreground italic mb-3">{term.example}</p>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    {term.relatedTerms.map((rt) => (
-                      <a key={rt} href={`#${rt}`} className="text-xs text-primary hover:text-primary/80 transition-colors">
-                        #{GLOSSARY_TERMS.find((t) => t.id === rt)?.term ?? rt}
-                      </a>
-                    ))}
-                    {term.relatedArticles.map((slug) => (
-                      <Link key={slug} to={`/blog/${slug}`} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                        Read more →
-                      </Link>
-                    ))}
-                  </div>
+                <div key={term.id} className="scroll-mt-32">
+                  <dt>
+                    <h3 id={term.id} className="scroll-mt-32 text-lg font-semibold text-foreground">
+                      {term.term}
+                    </h3>
+                  </dt>
+                  <dd className="mt-1">
+                    <p className="leading-relaxed text-foreground-soft">{term.definition}</p>
+                    {term.formula && <p className="num my-3 rounded bg-card px-3 py-2 text-sm text-foreground">{term.formula}</p>}
+                    {term.example && <p className="mt-2 text-sm italic text-muted-foreground">{term.example}</p>}
+                    <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                      {term.relatedTerms.length > 0 && <span className="text-muted-foreground">See also:</span>}
+                      {term.relatedTerms.map((rt) => (
+                        <a key={rt} href={`#${rt}`} className="inline-flex min-h-6 min-w-6 items-center justify-center text-primary hover:underline">
+                          {GLOSSARY_TERMS.find((t) => t.id === rt)?.term ?? rt}
+                        </a>
+                      ))}
+                      {term.relatedArticles.map((slug) => (
+                        <Link key={slug} to={`/blog/${slug}`} className="inline-flex min-h-6 items-center text-foreground-soft hover:text-foreground">
+                          Read more &rarr;
+                        </Link>
+                      ))}
+                    </p>
+                  </dd>
                 </div>
               ))}
-            </div>
+            </dl>
           </section>
         ))}
       </div>

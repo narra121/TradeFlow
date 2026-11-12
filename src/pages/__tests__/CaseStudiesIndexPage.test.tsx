@@ -1,49 +1,45 @@
 import { describe, it, expect } from 'vitest';
 import { renderWithProviders, screen } from '@/test/test-utils';
 import { CaseStudiesIndexPage } from '../case-studies/CaseStudiesIndexPage';
+import { CASE_STUDIES } from '@/content/case-studies/studies';
 
 describe('CaseStudiesIndexPage', () => {
-  it('renders the page title', () => {
+  it('is titled as illustrative scenarios, not success stories', () => {
     renderWithProviders(<CaseStudiesIndexPage />);
-    expect(screen.getByText('Trading Success Stories')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Journaling scenarios (illustrative)' })).toBeInTheDocument();
+    expect(screen.queryByText(/success stories/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/real traders/i)).not.toBeInTheDocument();
   });
 
-  it('renders case study cards', () => {
+  it('says every scenario uses hypothetical data', () => {
     renderWithProviders(<CaseStudiesIndexPage />);
-    expect(screen.getByText(/Day Trader Went from 40% to 62%/)).toBeInTheDocument();
-    expect(screen.getByText(/FTMO Challenge/)).toBeInTheDocument();
+    expect(screen.getByText(/Every scenario uses hypothetical data/)).toBeInTheDocument();
   });
 
-  it('renders all case studies', () => {
+  it('renders a card for every scenario with its method', () => {
     renderWithProviders(<CaseStudiesIndexPage />);
-    expect(screen.getByText(/Revenge Trading to Discipline/)).toBeInTheDocument();
-    expect(screen.getByText(/Multi-Account Management/)).toBeInTheDocument();
-    expect(screen.getByText(/Hidden Edge in Forex Sessions/)).toBeInTheDocument();
+    for (const study of CASE_STUDIES) {
+      expect(screen.getByText(study.title)).toBeInTheDocument();
+      expect(screen.getByText(study.method)).toBeInTheDocument();
+    }
   });
 
-  it('renders trader type and market tags', () => {
+  it('shows trader type and market tags', () => {
     renderWithProviders(<CaseStudiesIndexPage />);
-    expect(screen.getByText('Day Trader')).toBeInTheDocument();
-    expect(screen.getByText('Prop Trader')).toBeInTheDocument();
-    expect(screen.getByText('Swing Trader')).toBeInTheDocument();
+    expect(screen.getByText('Day trader · US stocks')).toBeInTheDocument();
+    expect(screen.getByText('Prop trader · Forex')).toBeInTheDocument();
+    expect(screen.getByText('Swing trader · Crypto')).toBeInTheDocument();
   });
 
-  it('renders key result metrics', () => {
-    renderWithProviders(<CaseStudiesIndexPage />);
-    expect(screen.getByText(/40% → 62% win rate/)).toBeInTheDocument();
-    expect(screen.getByText(/Passed FTMO on 3rd attempt/)).toBeInTheDocument();
-  });
-
-  it('renders the footer', () => {
+  it('renders the shared footer', () => {
     renderWithProviders(<CaseStudiesIndexPage />);
     const year = new Date().getFullYear();
     expect(screen.getByText(new RegExp(`${year} TradeQut`))).toBeInTheDocument();
   });
 
-  it('renders the subtitle text', () => {
-    renderWithProviders(<CaseStudiesIndexPage />);
-    expect(
-      screen.getByText(/How real traders improved consistency/)
-    ).toBeInTheDocument();
+  it('has no named people or outcome claims in any title or description', () => {
+    for (const study of CASE_STUDIES) {
+      expect(study.title + study.description).not.toMatch(/\b\d+% (to|→)|went from|passed|real (trader|customer)/i);
+    }
   });
 });

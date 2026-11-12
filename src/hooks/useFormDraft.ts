@@ -3,7 +3,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 const DEBOUNCE_MS = 500;
 
 export function useFormDraft(key: string) {
-  const [draft, setDraft] = useState<Record<string, any> | null>(() => {
+  const [draft, setDraft] = useState<Record<string, unknown> | null>(() => {
     try {
       const stored = sessionStorage.getItem(key);
       return stored ? JSON.parse(stored) : null;
@@ -21,7 +21,7 @@ export function useFormDraft(key: string) {
     };
   }, []);
 
-  const save = useCallback((formState: Record<string, any>) => {
+  const save = useCallback((formState: Record<string, unknown>) => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       try {

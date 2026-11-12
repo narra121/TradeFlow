@@ -1,73 +1,40 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
-import { GUIDE_ARTICLE_SCHEMA, breadcrumbSchema } from '@/config/seo';
+import { PublicLayout } from '@/components/public/PublicLayout';
+import { GUIDE_ALIASES } from '@/content/guideAnchors';
+import { GUIDE_ARTICLE_SCHEMA } from '@/config/seo';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import {
-  Zap,
-  ArrowLeft,
-  Rocket,
-  LayoutDashboard,
-  Plus,
-  Import,
-  BookOpen,
-  TrendingUp,
-  Target,
-  Settings,
-  User,
-  Lightbulb,
-  AlertTriangle,
-  Info,
-  Keyboard,
-  ArrowRight,
-  BarChart3,
-  Calendar,
-  Shield,
-  FileText,
-  Camera,
-  ChevronRight,
-  X,
-} from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/* ─── Section config ───────────────────────────────────────── */
-
+/* Section ids are public anchors (see src/content/guideAnchors.ts): never rename one, add an alias instead. */
 const sections = [
-  { id: 'getting-started', label: 'Getting Started', icon: Rocket },
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'adding-trades', label: 'Adding Trades', icon: Plus },
-  { id: 'importing-trades', label: 'Importing Trades', icon: Import },
-  { id: 'trade-log', label: 'Trade Log', icon: BookOpen },
-  { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-  { id: 'goals-rules', label: 'Goals & Rules', icon: Target },
-  { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'getting-started', label: 'Getting started' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'adding-trades', label: 'Adding a trade' },
+  { id: 'importing-trades', label: 'Importing trades' },
+  { id: 'trade-log', label: 'Trades and calendar' },
+  { id: 'analytics', label: 'Analytics' },
+  { id: 'insights', label: 'Insights and chat' },
+  { id: 'goals-rules', label: 'Goals and rules' },
+  { id: 'accounts', label: 'Accounts' },
+  { id: 'settings', label: 'Settings, profile and billing' },
 ] as const;
 
-/* ─── Hooks ────────────────────────────────────────────────── */
-
 function useActiveSection() {
-  const [active, setActive] = useState(sections[0].id);
+  const [active, setActive] = useState<string>(sections[0].id);
 
   useEffect(() => {
-    const els = sections
-      .map((s) => document.getElementById(s.id))
-      .filter(Boolean) as HTMLElement[];
-
+    const els = sections.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
     if (!els.length) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActive(entry.target.id);
-          }
-        }
+        for (const entry of entries) if (entry.isIntersecting) setActive(entry.target.id);
       },
       { rootMargin: '-120px 0px -50% 0px', threshold: 0.1 },
     );
-
     els.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
@@ -75,148 +42,77 @@ function useActiveSection() {
   return active;
 }
 
-/* ─── Sub-components ───────────────────────────────────────── */
-
 function GuideScreenshot({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <figure className="my-6">
-        <div
-          className="rounded-xl border border-border/50 overflow-hidden cursor-zoom-in hover:border-primary/30 transition-colors"
+        <button
+          type="button"
           onClick={() => setOpen(true)}
+          aria-label={`Enlarge screenshot: ${alt}`}
+          className="block w-full cursor-zoom-in overflow-hidden rounded-lg border border-border hover:border-border-strong"
         >
-          <picture>
-            <source srcSet={src.replace('.png', '.webp')} type="image/webp" />
-            <img
-              src={src}
-              alt={alt}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-auto"
-              width={1440}
-              height={900}
-            />
-          </picture>
-        </div>
-        {caption && (
-          <figcaption className="mt-2 text-sm text-muted-foreground text-center italic">{caption}</figcaption>
-        )}
+          <img src={src} alt={alt} loading="lazy" decoding="async" className="h-auto w-full" width={1440} height={900} />
+        </button>
+        {caption && <figcaption className="mt-2 text-sm text-muted-foreground">{caption}</figcaption>}
       </figure>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-background/95 backdrop-blur-xl border-border/50 overflow-auto">
+        <DialogContent className="max-h-[95vh] max-w-[95vw] overflow-auto border-border bg-background p-0">
           <button
             onClick={() => setOpen(false)}
-            className="absolute top-4 right-4 z-50 p-2 rounded-full bg-background/80 hover:bg-muted transition-colors"
+            aria-label="Close screenshot"
+            className="absolute right-4 top-4 z-50 inline-flex h-8 w-8 items-center justify-center rounded-md bg-background hover:bg-muted"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
-          <img src={src} alt={alt} className="w-full h-auto" width={1440} height={900} />
+          <img src={src} alt={alt} className="h-auto w-full" width={1440} height={900} />
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-function StepCard({ step, title, description }: { step: number; title: string; description: string }) {
+function Steps({ items }: { items: string[] }) {
   return (
-    <div className="flex gap-4 p-4 sm:p-5 rounded-xl bg-card/50 border border-border/50">
-      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-        <span className="text-sm font-bold text-primary">{step}</span>
-      </div>
-      <div>
-        <h4 className="font-medium text-foreground mb-1">{title}</h4>
-        <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function TipBox({
-  type = 'tip',
-  children,
-}: {
-  type?: 'tip' | 'warning' | 'info';
-  children: React.ReactNode;
-}) {
-  const config = {
-    tip: { border: 'border-l-success', icon: Lightbulb, iconColor: 'text-success', label: 'Pro Tip' },
-    warning: { border: 'border-l-warning', icon: AlertTriangle, iconColor: 'text-warning', label: 'Heads Up' },
-    info: { border: 'border-l-info', icon: Info, iconColor: 'text-info', label: 'Note' },
-  }[type];
-
-  const Icon = config.icon;
-
-  return (
-    <div className={cn('my-6 p-4 rounded-r-xl bg-card/30 border border-border/50 border-l-4', config.border)}>
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className={cn('w-4 h-4', config.iconColor)} />
-        <span className={cn('text-sm font-semibold', config.iconColor)}>{config.label}</span>
-      </div>
-      <div className="text-sm text-muted-foreground leading-relaxed">{children}</div>
-    </div>
-  );
-}
-
-function Kbd({ children }: { children: string }) {
-  return (
-    <kbd className="inline-flex items-center justify-center px-2 py-0.5 mx-0.5 rounded bg-muted border border-border text-xs font-mono text-foreground">
-      {children}
-    </kbd>
-  );
-}
-
-function FeatureGrid({ items }: { items: { icon: React.ElementType; title: string; desc: string }[] }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
-      {items.map((item) => (
-        <div key={item.title} className="flex gap-3 p-4 rounded-xl bg-card/50 border border-border/50">
-          <item.icon className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-sm font-medium text-foreground mb-0.5">{item.title}</h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
-          </div>
-        </div>
+    <ol className="list-decimal space-y-2 pl-6 text-foreground-soft">
+      {items.map((t) => (
+        <li key={t}>{t}</li>
       ))}
-    </div>
+    </ol>
   );
 }
 
-function SectionWrapper({
-  id,
-  title,
-  subtitle,
-  icon: Icon,
-  children,
-}: {
-  id: string;
-  title: string;
-  subtitle: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-}) {
+function Bullets({ items }: { items: string[] }) {
+  return (
+    <ul className="list-disc space-y-2 pl-6 text-foreground-soft">
+      {items.map((t) => (
+        <li key={t}>{t}</li>
+      ))}
+    </ul>
+  );
+}
+
+function Note({ children }: { children: React.ReactNode }) {
+  return <p className="rounded-md border border-border bg-card p-3 text-sm text-foreground-soft">{children}</p>;
+}
+
+function SectionWrapper({ id, title, summary, children }: { id: string; title: string; summary: string; children: React.ReactNode }) {
   return (
     <section id={id} className="scroll-mt-24">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Icon className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        </div>
-      </div>
-      <div className="space-y-6">{children}</div>
+      {(GUIDE_ALIASES[id] ?? []).map((alias) => (
+        <span key={alias} id={alias} className="block scroll-mt-24" />
+      ))}
+      <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
+      <p className="mb-5 mt-1 text-sm text-muted-foreground">{summary}</p>
+      <div className="space-y-4">{children}</div>
     </section>
   );
 }
 
-/* ─── TOC ──────────────────────────────────────────────────── */
-
 function GuideTOC({ variant, active }: { variant: 'vertical' | 'horizontal'; active: string }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
 
   const scrollTo = useCallback((id: string) => {
@@ -224,607 +120,295 @@ function GuideTOC({ variant, active }: { variant: 'vertical' | 'horizontal'; act
   }, []);
 
   useEffect(() => {
-    if (variant === 'horizontal' && activeRef.current && scrollRef.current) {
-      activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
+    if (variant === 'horizontal') activeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [active, variant]);
 
   if (variant === 'vertical') {
     return (
-      <nav aria-label="Guide navigation" className="bg-card/50 rounded-2xl border border-border/50 p-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-2">Contents</h3>
+      <nav aria-label="Guide navigation" className="rounded-lg border border-border bg-card p-4">
+        <h3 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contents</h3>
         <ul className="space-y-0.5">
-          {sections.map((s) => {
-            const Icon = s.icon;
-            const isActive = active === s.id;
-            return (
-              <li key={s.id}>
-                <button
-                  onClick={() => scrollTo(s.id)}
-                  className={cn(
-                    'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                  )}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {s.label}
-                </button>
-              </li>
-            );
-          })}
+          {sections.map((s) => (
+            <li key={s.id}>
+              <button
+                onClick={() => scrollTo(s.id)}
+                aria-current={active === s.id ? 'true' : undefined}
+                className={cn(
+                  'flex h-9 w-full items-center rounded-md px-3 text-left text-sm font-medium',
+                  active === s.id ? 'bg-primary/10 text-primary' : 'text-foreground-soft hover:bg-secondary hover:text-foreground',
+                )}
+              >
+                {s.label}
+              </button>
+            </li>
+          ))}
         </ul>
       </nav>
     );
   }
 
   return (
-    <nav
-      ref={scrollRef}
-      aria-label="Guide navigation"
-      className="flex gap-2 overflow-x-auto py-3 px-4 scrollbar-hide"
-    >
-      {sections.map((s) => {
-        const isActive = active === s.id;
-        return (
-          <button
-            key={s.id}
-            ref={isActive ? activeRef : undefined}
-            onClick={() => scrollTo(s.id)}
-            className={cn(
-              'shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border',
-              isActive
-                ? 'bg-primary/10 text-primary border-primary/30'
-                : 'text-muted-foreground border-border/50 hover:text-foreground hover:border-border',
-            )}
-          >
-            {s.label}
-          </button>
-        );
-      })}
+    <nav aria-label="Guide navigation" className="flex gap-2 overflow-x-auto px-4 py-3">
+      {sections.map((s) => (
+        <button
+          key={s.id}
+          ref={active === s.id ? activeRef : undefined}
+          onClick={() => scrollTo(s.id)}
+          aria-current={active === s.id ? 'true' : undefined}
+          className={cn(
+            'inline-flex h-8 shrink-0 items-center rounded-md border px-3 text-xs font-medium',
+            active === s.id ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-foreground-soft hover:text-foreground',
+          )}
+        >
+          {s.label}
+        </button>
+      ))}
     </nav>
   );
 }
 
-/* ─── Section Content ──────────────────────────────────────── */
-
-function GettingStartedSection() {
+function Content() {
   return (
-    <SectionWrapper id="getting-started" title="Getting Started" subtitle="Set up your account in under 2 minutes" icon={Rocket}>
-      <p className="text-muted-foreground leading-relaxed">
-        TradeQut is a professional trading journal that helps you track, analyze, and improve your trading performance.
-        Here's how to get started.
-      </p>
+    <>
+      <SectionWrapper id="getting-started" title="Getting started" summary="Create an account, add a trading account, then log or import trades.">
+        <Steps
+          items={[
+            'Sign up with your email or Google. A new account starts with a 14-day Pro trial and no card.',
+            'Open Accounts and choose Add account: give it a name, the broker, the type and its currency. Keep one account per real account.',
+            'Add your first trade with Add trade, or bring many in at once with Import.',
+            'Use the account and period pickers under the page title to choose what every page shows.',
+          ]}
+        />
+        <GuideScreenshot
+          src="/guide/sidebar.png"
+          alt="Dashboard with the sidebar, top bar and scope bar"
+          caption="Sidebar groups: Journal (Dashboard, Trades, Calendar), Review (Analytics, Goals & rules, Insights), Data (Accounts, Import). Jump to… (Ctrl K) opens any page."
+        />
+        <Note>
+          Amounts in different currencies are never added together. With more than one currency, totals are shown per currency and
+          some figures ask you to pick one account.
+        </Note>
+      </SectionWrapper>
 
-      <div className="space-y-3">
-        <StepCard step={1} title="Create Your Account" description="Sign up with your email and password, or use Google OAuth for instant access. You'll receive a 6-digit verification code to confirm your email." />
-        <StepCard step={2} title="Log In to Your Dashboard" description="After verifying your email, log in to access your personal dashboard. You'll be greeted with a clean workspace ready for your first trade." />
-        <StepCard step={3} title="Create a Trading Account" description="Navigate to Accounts and create your first trading account. Choose from Prop Challenge, Prop Funded, Personal, or Demo. Set your broker name, initial balance, and currency." />
-      </div>
+      <SectionWrapper id="dashboard" title="Dashboard" summary="Today, this week and your overall numbers at a glance.">
+        <GuideScreenshot
+          src="/guide/dashboard.png"
+          alt="Dashboard with today strip, key figures, month calendar and goals this week"
+          caption="Top: today, the week's trade count and drawdown against your limits. Below: net P&L, win rate, profit factor, planned R:R and max drawdown."
+        />
+        <Bullets
+          items={[
+            'The strip at the top shows today, this week against your trade limit, and drawdown against its limit.',
+            'The key figures are for the account and period you picked. Profit factor and max drawdown need one account.',
+            'The equity curve appears when one account is selected. The month calendar and Goals this week sit beside it.',
+            'Recent trades and Needs attention (for example trades without a screenshot) take you straight to the Trades page.',
+          ]}
+        />
+      </SectionWrapper>
 
-      <GuideScreenshot src="/guide/accounts.png" alt="Accounts management page" caption="Manage multiple trading accounts from one place" />
+      <SectionWrapper id="adding-trades" title="Adding a trade" summary="One pane, opened from the top bar on any page.">
+        <Steps
+          items={[
+            'Choose Add trade in the top bar. The New trade pane opens beside the page you were on.',
+            'Pick the account, asset class and direction (Long or Short), then enter the symbol.',
+            'Enter entry, exit, stop loss and take profit, the size, and when the trade opened and closed.',
+            'Check fees and net P&L, choose the outcome (TP hit, Partial, SL hit, Breakeven), and below that add the journal fields: strategy, session, market condition, mistakes, broken rules, a key lesson, notes and screenshots.',
+            'Save the trade. Save & add another keeps the pane open for the next one.',
+          ]}
+        />
+        <GuideScreenshot
+          src="/guide/add-trade.png"
+          alt="The New trade pane next to the trades table"
+          caption="The pane opens beside the table, so you can compare with earlier trades while you type."
+        />
+        <Note>Many trades to enter? The link at the top of the pane takes you to Import.</Note>
+      </SectionWrapper>
 
-      <TipBox type="tip">
-        You can manage multiple accounts simultaneously — perfect for tracking prop firm challenges alongside your personal trading.
-      </TipBox>
+      <SectionWrapper id="importing-trades" title="Importing trades" summary="Upload the file your broker gives you; review before saving.">
+        <Steps
+          items={[
+            'Open Import and choose the account the trades belong to.',
+            'Leave Source on Auto-detect, or pick your broker. Each broker button shows how to export its file.',
+            'Drop the file, paste it, or choose files. CSV, XLSX and HTML files up to 4 MB are accepted; screenshots (PNG, JPG, WebP) up to 1 MB each, up to 15.',
+            'Review what was found, fix anything marked, and import.',
+          ]}
+        />
+        <GuideScreenshot
+          src="/guide/import-trades.png"
+          alt="Import page with account, source, drop zone and broker export guides"
+          caption="Brokers with a guide: Zerodha (tradebook and P&L statement), Dhan, Upstox, Angel One, Groww, MetaTrader 4 and 5, and any other CSV."
+        />
+        <Bullets
+          items={[
+            'Broker not listed? Download the CSV template on the page, fill in your trades and import it as Other CSV.',
+            'The bar under the title shows how many broker imports your plan has left this month.',
+            'Automatic broker sync is planned for Pro and is not available yet.',
+          ]}
+        />
+      </SectionWrapper>
 
-      <div className="mt-4">
-        <h3 className="text-lg font-medium text-foreground mb-3">Navigating the App</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-          The sidebar gives you quick access to every section. On desktop, it stays expanded with labels. On tablets, it auto-collapses
-          to icons. On mobile, tap the hamburger menu to open the navigation drawer.
-        </p>
-        <GuideScreenshot src="/guide/sidebar.png" alt="Sidebar navigation" caption="Sidebar with all navigation options" />
-        <TipBox type="info">
-          Use keyboard shortcuts <Kbd>1</Kbd> through <Kbd>6</Kbd> to jump between views instantly.
-          Press <Kbd>Cmd</Kbd>+<Kbd>[</Kbd> to collapse or expand the sidebar.
-        </TipBox>
-      </div>
-    </SectionWrapper>
+      <SectionWrapper id="trade-log" title="Trades and calendar" summary="Every trade in one table, and the same trades by day.">
+        <GuideScreenshot
+          src="/guide/tradelog-table.png"
+          alt="Trades table grouped by day with filters"
+          caption="Tabs: All, Winners, Losers, Needs journal. Filters: Symbol, Outcome, Strategy, Session, Mistake, Tag, Broken rule. Find (/) searches the table."
+        />
+        <Bullets
+          items={[
+            'Trades are grouped by day, with each day’s result on the group row. Collapse a day to hide its trades.',
+            'Click a trade to open it in the pane: edit its numbers or add the strategy, mistakes, broken rules, key lesson, notes and screenshots.',
+            'Tick the checkboxes to select several trades and act on them together.',
+          ]}
+        />
+        <GuideScreenshot src="/guide/view-trade.png" alt="Trades table with a trade selected" caption="Opening a trade keeps your place in the table." />
+        <GuideScreenshot src="/guide/column-toggle.png" alt="Columns menu of the trades table" caption="The Columns menu chooses what the table shows." />
+        <GuideScreenshot
+          src="/guide/tradelog-calendar.png"
+          alt="Month calendar tinted by net P&L"
+          caption="Calendar: Month, Week and Year views, coloured by net P&L, with weekly totals on the right."
+        />
+        <Bullets
+          items={[
+            'Each day shows its net result and number of trades. The tint has three steps against the month’s largest day: green for a gain, red for a loss.',
+            'A ! on a day means a trade broke a rule. Days are by the time the trade closed, in the time zone shown under the calendar.',
+          ]}
+        />
+      </SectionWrapper>
+
+      <SectionWrapper id="analytics" title="Analytics" summary="See which setups, hours and habits make or lose money.">
+        <GuideScreenshot
+          src="/guide/analytics-metrics.png"
+          alt="Analytics overview with performance, trades and risk figures"
+          caption="Tabs: Overview, Edge, Timing, Risk, Behaviour and Tax."
+        />
+        <Bullets
+          items={[
+            'Overview shows performance, trade and risk figures for the account and period you picked.',
+            'The equity and drawdown chart has a View as table switch for a text version of the same numbers.',
+            'What is working, what is not lists segments (an hour, a strategy, a session) that have at least five trades. A small sample can mislead, so read the count first.',
+            'Edge groups results by symbol, strategy, session, weekday, hour, direction or asset class. Timing shows weekday and hour, Risk the drawdown, streaks and R distribution, and Behaviour what each mistake and broken rule cost.',
+            'Tax (Pro) covers one Indian financial year for accounts in rupees: charges split into STT, exchange charges, SEBI fee and stamp duty, and P&L by tax category to take to your CA. It is not tax advice.',
+          ]}
+        />
+        <GuideScreenshot src="/guide/analytics-charts.png" alt="Equity and drawdown chart with the segments table" caption="Equity and drawdown, then the best and worst segments." />
+      </SectionWrapper>
+
+      <SectionWrapper id="insights" title="Insights and chat" summary="AI reports and questions about your own trades.">
+        <Bullets
+          items={[
+            'Insights › Reports: choose the account and period in the top bar, then Generate report. The report lists what worked and what cost money, each finding with its figures and the trades behind it.',
+            'Insights › Chat: ask about your own journal, for example which strategy lost the most last month. Answers use your recorded trades only.',
+            'Both have monthly limits by plan, listed on the pricing page; Pro also gets a weekly report. The page shows how many you have left.',
+            'Neither one recommends trades, strikes or securities.',
+          ]}
+        />
+        <Note>
+          Reports and chat send figures computed from your trades to Google Gemini, never your notes, screenshots, email or account
+          names, and only when you use them.
+        </Note>
+      </SectionWrapper>
+
+      <SectionWrapper id="goals-rules" title="Goals and rules" summary="Set weekly or monthly limits and the rules you want to follow.">
+        <GuideScreenshot
+          src="/guide/goals-weekly.png"
+          alt="Goals for the week with progress and the rules table"
+          caption="Switch between Week and Month. Goals: profit target, win rate, max drawdown limit and max trades limit."
+        />
+        <Bullets
+          items={[
+            'Each goal shows where you are against its target and whether you are within the limit. Edit changes it.',
+            'Add rule creates a rule such as setting the stop loss before entry. Mark the rules a trade broke in the Broken rules field of the trade pane.',
+            'The rules table shows this week, what the breaks cost, the last eight weeks and the current streak.',
+          ]}
+        />
+        <GuideScreenshot src="/guide/goals-rules.png" alt="Rules table lower on the Goals and rules page" caption="Rules with their weekly status and history." />
+      </SectionWrapper>
+
+      <SectionWrapper id="accounts" title="Accounts" summary="One row per real trading account, each with its own currency.">
+        <GuideScreenshot
+          src="/guide/accounts.png"
+          alt="Accounts table with balance, net since start and trade counts"
+          caption="Balance, net result since start, number of trades and last trade for each account, with totals per currency below."
+        />
+        <Bullets
+          items={[
+            'Add account creates one. Each row also has a ... menu with more actions.',
+            'View journal opens the Trades page filtered to that account.',
+            'The Free plan keeps two accounts; Pro has no account limit.',
+          ]}
+        />
+      </SectionWrapper>
+
+      <SectionWrapper id="settings" title="Settings, profile and billing" summary="Your details, journal options and plan.">
+        <GuideScreenshot
+          src="/guide/settings.png"
+          alt="Settings with the section list and the Profile section"
+          caption="Account (Profile, Sign-in & security), Journal (Preferences, Trade options, Notifications), Data & privacy, Plan & billing."
+        />
+        <Bullets
+          items={[
+            'Profile: your name is shown in the user menu and in emails we send you. Your email is your log-in name.',
+            'Trade options holds the lists you pick from when you add a trade, such as strategies, sessions and mistakes.',
+            'Data & privacy: export your data and delete your account.',
+            'Plan & billing: your plan and usage this month, the upgrade options, and the billing portal for payment details and cancellation.',
+          ]}
+        />
+        <GuideScreenshot src="/guide/profile.png" alt="Profile section of Settings" caption="Profile and the other Settings sections." />
+      </SectionWrapper>
+    </>
   );
 }
-
-function DashboardSection() {
-  return (
-    <SectionWrapper id="dashboard" title="Dashboard" subtitle="Your trading performance at a glance" icon={LayoutDashboard}>
-      <p className="text-muted-foreground leading-relaxed">
-        The dashboard is your home base — showing key performance metrics, your equity curve, and recent trades.
-        Everything updates in real-time as you add or modify trades.
-      </p>
-
-      <GuideScreenshot src="/guide/dashboard.png" alt="Dashboard overview" caption="Dashboard with stat cards, filters, and equity curve" />
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Performance Metrics</h3>
-      <FeatureGrid items={[
-        { icon: TrendingUp, title: 'Total P&L', desc: 'Your net profit or loss across all trades in the selected period. Color-coded green for profit, red for loss.' },
-        { icon: Target, title: 'Win Rate', desc: 'Percentage of winning trades. A win rate above 50% is highlighted in green.' },
-        { icon: BarChart3, title: 'Total Trades', desc: 'The number of closed trades in the selected period, with trend comparison to prior period.' },
-        { icon: Shield, title: 'Profit Factor', desc: 'Gross profit divided by gross loss. Values above 1.0 mean you\'re profitable. Shows "infinity" if you have zero losses.' },
-      ]} />
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Filtering Your Data</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        Use the date range presets at the top to filter by <strong className="text-foreground">7 days</strong>, <strong className="text-foreground">30 days</strong>, <strong className="text-foreground">60 days</strong>, <strong className="text-foreground">90 days</strong>, <strong className="text-foreground">1 year</strong>, <strong className="text-foreground">all time</strong>, <strong className="text-foreground">this week</strong>, or <strong className="text-foreground">this month</strong>.
-        You can also pick a custom date range with the calendar picker. The account dropdown lets you view stats for a specific
-        account or all accounts combined.
-      </p>
-
-      <TipBox type="tip">
-        Click the refresh button in the top-right corner to manually reload your data. The icon spins while fetching.
-      </TipBox>
-    </SectionWrapper>
-  );
-}
-
-function AddingTradesSection() {
-  return (
-    <SectionWrapper id="adding-trades" title="Adding Trades" subtitle="Log every trade with full context" icon={Plus}>
-      <p className="text-muted-foreground leading-relaxed">
-        Click the <strong className="text-foreground">+ Add Trade</strong> button from the dashboard or trade log to open the trade entry form.
-        The form is organized into collapsible sections so you can focus on what matters.
-      </p>
-
-      <GuideScreenshot src="/guide/add-trade.png" alt="Add Trade modal" caption="Core trade details: direction, prices, dates, and P&L" />
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Required Fields</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-border/50">
-              <th className="text-left py-2 pr-4 text-muted-foreground font-medium">Field</th>
-              <th className="text-left py-2 text-muted-foreground font-medium">Description</th>
-            </tr>
-          </thead>
-          <tbody className="text-muted-foreground">
-            <tr className="border-b border-border/30"><td className="py-2 pr-4 text-foreground font-medium">Symbol</td><td className="py-2">The instrument you traded (e.g., EURUSD, XAUUSD, NAS100)</td></tr>
-            <tr className="border-b border-border/30"><td className="py-2 pr-4 text-foreground font-medium">Direction</td><td className="py-2">LONG (buy) or SHORT (sell)</td></tr>
-            <tr className="border-b border-border/30"><td className="py-2 pr-4 text-foreground font-medium">Entry / Exit Price</td><td className="py-2">The price at which you entered and exited the trade</td></tr>
-            <tr className="border-b border-border/30"><td className="py-2 pr-4 text-foreground font-medium">Size</td><td className="py-2">Position size in lots</td></tr>
-            <tr className="border-b border-border/30"><td className="py-2 pr-4 text-foreground font-medium">Entry / Exit Date</td><td className="py-2">When the trade was opened and closed</td></tr>
-            <tr className="border-b border-border/30"><td className="py-2 pr-4 text-foreground font-medium">Net P&L</td><td className="py-2">Auto-calculated, or enter manually</td></tr>
-            <tr><td className="py-2 pr-4 text-foreground font-medium">Outcome</td><td className="py-2">TP (take profit), SL (stop loss), PARTIAL, or BREAKEVEN</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Auto P&L Calculation</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        As you fill in the entry price, exit price, and size, the P&L is calculated automatically:
-      </p>
-      <div className="my-3 p-4 rounded-xl bg-muted/30 border border-border/50 font-mono text-sm text-center text-foreground">
-        P&L = (Exit Price - Entry Price) x Size x Direction
-      </div>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        You can override this by typing a value directly into the Net P&L field. A <strong className="text-foreground">"Manual override active"</strong> label
-        will appear to confirm your manual entry is being used.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Optional Sections</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-        Expand the collapsible sections to add rich context to your trades:
-      </p>
-
-      <GuideScreenshot src="/guide/add-trade-context.png" alt="Add Trade context and analysis" caption="Optional sections: Trade Context, Analysis, Notes, and Images" />
-
-      <FeatureGrid items={[
-        { icon: BarChart3, title: 'Trade Context', desc: 'Strategy, trading session (London, Tokyo, US), and market condition (trending, ranging, choppy).' },
-        { icon: Lightbulb, title: 'Analysis', desc: 'News/events, key lessons learned, mistakes made, and broken trading rules.' },
-        { icon: FileText, title: 'Trade Notes', desc: 'Free-form text notes with AI-powered text enhancement to improve clarity.' },
-        { icon: Camera, title: 'Visual Evidence', desc: 'Attach chart screenshots with timeframe labels (1M, 5M, 15M, 1H, 4H, D, W, M) and descriptions.' },
-      ]} />
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Multi-Account Support</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        When adding a new trade, you can select one or more accounts. A copy of the trade is created for each selected account.
-        When editing an existing trade, you'll see the current account with a <strong className="text-foreground">"Current"</strong> badge,
-        plus an option to add it to additional accounts.
-      </p>
-
-      <TipBox type="info">
-        <strong>Draft persistence:</strong> If you close the form without saving, your data is saved automatically.
-        Reopen the form and you'll see a "Discard draft" option to restore or clear your work.
-      </TipBox>
-    </SectionWrapper>
-  );
-}
-
-function ImportingTradesSection() {
-  return (
-    <SectionWrapper id="importing-trades" title="Importing Trades" subtitle="Bulk import from files, screenshots, or clipboard" icon={Import}>
-      <p className="text-muted-foreground leading-relaxed">
-        Click the <strong className="text-foreground">Import</strong> button to open the import modal. TradeQut supports three import methods,
-        all powered by AI extraction.
-      </p>
-
-      <GuideScreenshot src="/guide/import-trades.png" alt="Import Trades modal" caption="Import trades from files, images, or clipboard" />
-
-      <div className="space-y-3">
-        <StepCard step={1} title="Upload Your Data" description="Drag and drop or select files. Supports CSV, TXT, XLS, XLSX files (up to 1 MB), trade screenshot images (PNG, JPG), or paste data directly from your clipboard." />
-        <StepCard step={2} title="AI Extraction" description="Click 'Extract Trades' and the AI will parse your file or screenshots to identify trade data. The extracted trades appear in an editable table." />
-        <StepCard step={3} title="Review & Edit" description="Click the pencil icon on any row to edit fields inline. You can also select multiple trades and merge them (same direction only) or delete unwanted rows." />
-        <StepCard step={4} title="Save to Account" description="Select one or more accounts at the bottom, then click 'Save'. Trades are created under the selected accounts." />
-      </div>
-
-      <TipBox type="warning">
-        Always verify AI-extracted data before saving. Check that prices, dates, and P&L values match your actual trades.
-        The AI does its best, but numbers from screenshots can sometimes be misread.
-      </TipBox>
-
-      <TipBox type="info">
-        A maximum of 50 trades can be imported at once. If your file has more rows, only the first 50 will be extracted.
-      </TipBox>
-    </SectionWrapper>
-  );
-}
-
-function TradeLogSection() {
-  return (
-    <SectionWrapper id="trade-log" title="Trade Log" subtitle="View, filter, and manage all your trades" icon={BookOpen}>
-      <p className="text-muted-foreground leading-relaxed">
-        The Trade Log is your central trade database with two views: a powerful <strong className="text-foreground">Table</strong> view
-        and a visual <strong className="text-foreground">Calendar</strong> view.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Table View</h3>
-      <GuideScreenshot src="/guide/tradelog-table.png" alt="Trade Log table" caption="Sortable, filterable table with all your trades" />
-
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        The table displays your trades with columns for Symbol, Account, Direction, Entry/Exit prices, Size, Risk:Reward, Outcome, and P&L.
-        Click any column header to sort ascending or descending — your sort preference is saved automatically.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Customizable Columns</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-        Click the <strong className="text-foreground">Columns</strong> button to show or hide columns. Additional columns include
-        Strategy, Session, Mistakes, and Key Lesson. Your column preferences are saved to localStorage.
-      </p>
-      <GuideScreenshot src="/guide/column-toggle.png" alt="Column visibility toggle" caption="Toggle column visibility with the Columns button" />
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Row Actions</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        Each trade row has an actions menu (<strong className="text-foreground">...</strong>) with three options:
-      </p>
-      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mt-2 ml-2">
-        <li><strong className="text-foreground">View Details</strong> — Opens the full trade detail modal with images, notes, and analytics</li>
-        <li><strong className="text-foreground">Edit Trade</strong> — Opens the trade in the edit form to update any field</li>
-        <li><strong className="text-foreground">Delete</strong> — Permanently removes the trade after confirmation</li>
-      </ul>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Bulk Actions</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        Use the checkbox on each row (or the header checkbox to select all) to perform bulk operations.
-        A toolbar appears showing the count of selected trades and a <strong className="text-foreground">Delete Selected</strong> button.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Calendar View</h3>
-      <GuideScreenshot src="/guide/tradelog-calendar.png" alt="Calendar view" caption="Monthly calendar showing daily P&L and weekly summaries" />
-
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        Switch to the <strong className="text-foreground">Calendar</strong> tab to see your trades plotted on a monthly grid.
-        Each day shows the total P&L (green for profit, red for loss) and the trade count.
-        The weekly column on the right shows aggregate stats per week. Click on any day with trades to drill into the details.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Trade Detail Modal</h3>
-      <GuideScreenshot src="/guide/view-trade.png" alt="Trade detail modal" caption="Full trade details with images, notes, mistakes, and key lessons" />
-
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        The trade detail modal shows everything about a trade: symbol, direction, P&L, all price levels, dates,
-        session, strategy, notes, mistakes (as red badges), key lessons, and attached screenshots.
-        Use the <strong className="text-foreground">Prev/Next</strong> buttons to navigate between trades without closing the modal.
-      </p>
-
-      <TipBox type="tip">
-        Click on any trade screenshot in the detail view to open the full-screen image viewer with zoom, pan, and scroll controls.
-      </TipBox>
-    </SectionWrapper>
-  );
-}
-
-function AnalyticsSection() {
-  return (
-    <SectionWrapper id="analytics" title="Analytics" subtitle="Deep information about your trading patterns" icon={TrendingUp}>
-      <p className="text-muted-foreground leading-relaxed">
-        The Analytics page transforms your trade data into actionable information. It shows 12 performance metrics,
-        8 chart types, and a behavior section that highlights your most common mistakes and lessons.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Performance Metrics</h3>
-      <GuideScreenshot src="/guide/analytics-metrics.png" alt="Analytics metrics grid" caption="12 key performance metrics at a glance" />
-
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        The top of the analytics page shows 12 metric cards including Total P&L, Win Rate, Profit Factor,
-        Average Win/Loss, Max Drawdown, Best/Worst Trade, Average Risk:Reward, Total Trades, and Win/Loss Streaks.
-        Each card is color-coded — green for positive metrics, red for concerning ones.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Charts & Visualizations</h3>
-      <GuideScreenshot src="/guide/analytics-charts.png" alt="Analytics charts" caption="Equity curve and daily P&L charts" />
-
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        TradeQut provides 8 chart types to help you spot patterns:
-      </p>
-      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mt-2 ml-2">
-        <li><strong className="text-foreground">Equity Curve</strong> — Cumulative P&L over time</li>
-        <li><strong className="text-foreground">Daily P&L</strong> — Bar chart of daily profit and loss</li>
-        <li><strong className="text-foreground">Hourly Win Rate</strong> — When you trade best (by hour)</li>
-        <li><strong className="text-foreground">Daily Win Rate</strong> — Your best trading days of the week</li>
-        <li><strong className="text-foreground">Trade Duration</strong> — How long you hold trades</li>
-        <li><strong className="text-foreground">Symbol Distribution</strong> — Which instruments you trade most</li>
-        <li><strong className="text-foreground">Strategy Distribution</strong> — Which strategies you use</li>
-        <li><strong className="text-foreground">Session Performance</strong> — Performance by trading session</li>
-      </ul>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Behavior</h3>
-      <GuideScreenshot src="/guide/analytics-insights.png" alt="Analytics behavior section" caption="Top mistakes, broken rules, and key lessons with P&L impact" />
-
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        The Behavior section at the bottom reveals patterns in your trading:
-      </p>
-      <FeatureGrid items={[
-        { icon: AlertTriangle, title: 'Top Mistakes', desc: 'Your most frequent mistakes ranked by count and P&L impact. See exactly how much each mistake costs you.' },
-        { icon: Shield, title: 'Broken Rules', desc: 'Trading rules you break most often, with frequency and financial impact.' },
-        { icon: Lightbulb, title: 'Key Lessons', desc: 'The lessons you\'ve recorded most, helping reinforce what you\'ve learned.' },
-      ]} />
-
-      <TipBox type="tip">
-        Analytics charts require at least 3 trades to display. For meaningful patterns, aim for 20+ trades in your selected period.
-      </TipBox>
-    </SectionWrapper>
-  );
-}
-
-function GoalsRulesSection() {
-  return (
-    <SectionWrapper id="goals-rules" title="Goals & Rules" subtitle="Set targets and maintain discipline" icon={Target}>
-      <p className="text-muted-foreground leading-relaxed">
-        The Goals & Rules page helps you set measurable trading targets and define rules to keep yourself disciplined.
-        Track your progress weekly or monthly.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Trading Goals</h3>
-      <GuideScreenshot src="/guide/goals-weekly.png" alt="Goals weekly view" caption="Weekly goals with progress bars and period navigation" />
-
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        TradeQut tracks 4 goal types, each with a progress bar showing how close you are to your target:
-      </p>
-      <FeatureGrid items={[
-        { icon: TrendingUp, title: 'Profit Target', desc: 'Set a dollar amount you want to earn this period. Progress shows your current P&L vs. target.' },
-        { icon: Target, title: 'Win Rate', desc: 'Target win rate percentage. Progress updates automatically as you close trades.' },
-        { icon: AlertTriangle, title: 'Max Drawdown', desc: 'Maximum acceptable drawdown. This is an inverse goal — staying under the limit means success.' },
-        { icon: BarChart3, title: 'Max Trades', desc: 'Limit the number of trades per period. Another inverse goal to prevent overtrading.' },
-      ]} />
-
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        Switch between <strong className="text-foreground">Weekly</strong> and <strong className="text-foreground">Monthly</strong> tabs,
-        and use the arrow buttons to navigate to past periods. Click the pencil icon on any goal card to edit the target value.
-      </p>
-
-      <TipBox type="info">
-        Past periods are read-only — you can review your historical performance but can't modify targets retroactively.
-        A banner will inform you when you're viewing a past period.
-      </TipBox>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Trading Rules</h3>
-      <GuideScreenshot src="/guide/goals-rules.png" alt="Trading rules" caption="Define and track trading rules with compliance indicators" />
-
-      <p className="text-sm text-muted-foreground leading-relaxed mt-4">
-        Below the goals, you'll find your Trading Rules section. Each rule shows a green check (followed) or red X (broken).
-        The compliance counter tells you how many rules you're following at a glance.
-      </p>
-      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mt-2 ml-2">
-        <li><strong className="text-foreground">Add rules</strong> — Click "+ Add Rule" and type your rule (e.g., "Never revenge trade")</li>
-        <li><strong className="text-foreground">Edit rules</strong> — Hover and click the pencil icon to modify the text</li>
-        <li><strong className="text-foreground">Delete rules</strong> — Hover and click the trash icon. Rules that are broken in existing trades cannot be deleted</li>
-        <li><strong className="text-foreground">Mark as broken</strong> — When adding a trade, select broken rules in the Analysis section</li>
-      </ul>
-
-      <TipBox type="tip">
-        Your broken rules appear in the Analytics behavior section, showing you how often each rule is broken and its P&L impact.
-        This creates a powerful feedback loop for improving discipline.
-      </TipBox>
-    </SectionWrapper>
-  );
-}
-
-function SettingsSection() {
-  return (
-    <SectionWrapper id="settings" title="Settings" subtitle="Customize your dropdown options and preferences" icon={Settings}>
-      <p className="text-muted-foreground leading-relaxed">
-        The Settings page lets you manage the dropdown options that appear throughout the app — in the Add Trade form,
-        filters, and analytics breakdowns.
-      </p>
-
-      <GuideScreenshot src="/guide/settings.png" alt="Settings page" caption="Manage dropdown options for strategies, sessions, and more" />
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Configurable Option Lists</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-        Each section lets you add new options, remove existing ones, and reset to defaults:
-      </p>
-      <FeatureGrid items={[
-        { icon: BarChart3, title: 'Strategies / Setups', desc: 'Trading strategies like Breakout, Reversal, Trend Follow, Scalp, etc.' },
-        { icon: Calendar, title: 'Trading Sessions', desc: 'Market sessions such as London, Tokyo, US, Sydney, or custom sessions.' },
-        { icon: TrendingUp, title: 'Market Conditions', desc: 'Conditions like Trending, Ranging, Choppy, High Volatility, News-driven.' },
-        { icon: FileText, title: 'News Events', desc: 'Economic events like NFP, FOMC, CPI, Earnings that affect your trades.' },
-        { icon: AlertTriangle, title: 'Common Mistakes', desc: 'Your trading mistakes: FOMO, Late Entry, No Stop Loss, Overtrading, etc.' },
-      ]} />
-
-      <TipBox type="info">
-        Options you add here will appear in the dropdowns when adding trades. You can also add new options
-        on-the-fly directly from the Add Trade form using the "Add New" option in any dropdown.
-      </TipBox>
-    </SectionWrapper>
-  );
-}
-
-function ProfileSection() {
-  return (
-    <SectionWrapper id="profile" title="Profile" subtitle="Your account info and subscription" icon={User}>
-      <p className="text-muted-foreground leading-relaxed">
-        The Profile page shows your personal information and subscription status.
-      </p>
-
-      <GuideScreenshot src="/guide/profile.png" alt="Profile page" caption="Personal information and subscription management" />
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Personal Information</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        View your avatar, display name, email address, and "Member since" date. Click the edit button to update your display name —
-        the change will be reflected across the app, including the sidebar.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Subscription</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        All core features are free with ads. Upgrade to a paid plan for an ad-free experience.
-        Choose between Monthly and Yearly billing — the Yearly plan offers the best value.
-      </p>
-
-      <h3 className="text-lg font-medium text-foreground mt-6 mb-3">Logging Out</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        Click the <strong className="text-foreground">Log Out</strong> button at the bottom of the Profile page. A confirmation dialog
-        will appear before you're signed out and redirected to the login page.
-      </p>
-    </SectionWrapper>
-  );
-}
-
-/* ─── Main Page ────────────────────────────────────────────── */
 
 export function GuidePage() {
   const active = useActiveSection();
 
-  // Scroll to hash on mount
-  useEffect(() => {
-    const hash = window.location.hash.slice(1);
-    if (hash) {
-      setTimeout(() => {
-        document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
-  }, []);
-
   return (
-    <div className="min-h-screen bg-background">
+    <PublicLayout>
       <SEO
-        title="TradeQut User Guide - Free Trading Journal App Tutorial"
-        description="Learn how to use TradeQut, a free trading journal for stocks, forex, crypto, and options. Track trades, analyze win rate and profit factor, and improve your trading strategy."
+        title="TradeQut User Guide - How to Log, Import and Review Your Trades"
+        description="How to use TradeQut: add trading accounts, log or import trades, read the dashboard, calendar and analytics, set goals and rules."
         path="/guide"
         type="article"
-        jsonLd={{
-          '@context': 'https://schema.org',
-          '@graph': [
-            GUIDE_ARTICLE_SCHEMA,
-            breadcrumbSchema([
-              { name: 'Home', url: 'https://tradequt.com' },
-              { name: 'User Guide', url: 'https://tradequt.com/guide' },
-            ]),
-          ],
-        }}
+        jsonLd={GUIDE_ARTICLE_SCHEMA}
       />
 
-      {/* Navigation */}
-      <nav aria-label="Guide page navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">TradeQut</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild className="gap-2">
-              <Link to="/">
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Back to Home</span>
-                <span className="sm:hidden">Back</span>
-              </Link>
-            </Button>
-            <Button asChild className="gap-2 hidden sm:inline-flex">
-              <Link to="/signup">
-                Get Started
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
-
-      <main id="main-content">
+      <div>
         <article>
-          {/* Hero */}
-          <section className="relative pt-28 sm:pt-32 pb-10 sm:pb-14 px-4 sm:px-6">
-            <div className="max-w-7xl mx-auto text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                <BookOpen className="w-4 h-4" />
-                Complete User Guide
-              </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-                How to Use TradeQut
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Your complete guide to this free trading journal app. Learn how to log trades, use trading analytics,
-                import from your broker, and improve your day trading or swing trading strategy.
+          <section className="px-4 pb-8 pt-10 sm:px-6 sm:pt-12">
+            <div className="mx-auto max-w-7xl">
+              <h1 className="mb-3 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">How to use TradeQut</h1>
+              <p className="max-w-2xl text-base text-foreground-soft">
+                A step-by-step guide to adding accounts, logging and importing trades, and reading your results. Screenshots show
+                sample data.
               </p>
             </div>
           </section>
 
-          {/* Mobile TOC */}
-          <div className="lg:hidden sticky top-16 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+          <div className="sticky top-14 z-30 border-b border-border bg-background lg:hidden">
             <GuideTOC variant="horizontal" active={active} />
           </div>
 
-          {/* Main content */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
+          <div className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
             <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-12">
-              {/* Desktop sidebar TOC */}
-              <aside className="hidden lg:block self-start sticky top-24">
+              <aside className="sticky top-20 hidden self-start lg:block">
                 <GuideTOC variant="vertical" active={active} />
               </aside>
 
-              {/* Content */}
-              <div className="space-y-16 lg:space-y-20 pt-6 lg:pt-0">
-                <GettingStartedSection />
-                <DashboardSection />
-                <AddingTradesSection />
-                <ImportingTradesSection />
-                <TradeLogSection />
-                <AnalyticsSection />
-                <GoalsRulesSection />
-                <SettingsSection />
-                <ProfileSection />
+              <div className="max-w-3xl space-y-16 pt-6 lg:space-y-20 lg:pt-0">
+                <Content />
 
-                {/* CTA */}
-                <div className="text-center py-12 border-t border-border/50">
-                  <h2 className="text-2xl font-semibold text-foreground mb-3">Ready to start?</h2>
-                  <p className="text-muted-foreground mb-6">Start journaling your trades today — free forever, no credit card required.</p>
-                  <Button asChild size="lg" className="gap-2">
-                    <Link to="/signup">
-                      Get Started Free
-                      <ChevronRight className="w-4 h-4" />
-                    </Link>
+                <div className="border-t border-border py-12">
+                  <h2 className="mb-3 text-2xl font-semibold text-foreground">Ready to start?</h2>
+                  <p className="mb-6 text-muted-foreground">Start journaling with the Free plan. No card required.</p>
+                  <Button asChild size="lg">
+                    <Link to="/signup">Start free</Link>
                   </Button>
                 </div>
               </div>
             </div>
           </div>
         </article>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/30 py-8 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-primary" />
-            <span className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} TradeQut. All rights reserved.</span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
-            <Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link>
-            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-            <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-          </div>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </PublicLayout>
   );
 }

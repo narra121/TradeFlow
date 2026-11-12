@@ -1,187 +1,164 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { SEO } from '@/components/SEO';
-import { Zap, ArrowLeft } from 'lucide-react';
+import { ContactBlock, LegalLayout, type LegalSection } from '@/components/content/LegalLayout';
+import { openConsentSettings } from '@/lib/analytics';
+
+const SECTIONS: LegalSection[] = [
+  {
+    id: 'introduction',
+    title: 'Introduction',
+    body: (
+      <p>
+        TradeQutJournal (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) operates the TradeQut application (the
+        &ldquo;Service&rdquo;). This policy explains what we collect, why, who processes it, and the choices you have.
+      </p>
+    ),
+  },
+  {
+    id: 'information-we-collect',
+    title: 'Information we collect',
+    body: (
+      <ul>
+        <li>
+          <strong>Account data:</strong> your email address and password (stored by our sign-in provider, Amazon Cognito),
+          and your name if you give it. If you sign in with Google, we receive the profile details Google shares with us.
+        </li>
+        <li>
+          <strong>Trading data:</strong> the trades, notes, tags, screenshots, goals, rules and accounts you enter, and the
+          files you import.
+        </li>
+        <li>
+          <strong>Billing data:</strong> your subscription status and Stripe customer and subscription identifiers. Card
+          details are entered on Stripe&apos;s pages and are never seen or stored by us.
+        </li>
+        <li>
+          <strong>Usage data:</strong> technical data such as IP address, browser, device and pages visited, in server logs and,
+          where you allow it, in Google Analytics.
+        </li>
+      </ul>
+    ),
+  },
+  {
+    id: 'how-we-use-information',
+    title: 'How we use information',
+    body: (
+      <ul>
+        <li>To provide the Service, create your account and compute your analytics and reports.</li>
+        <li>To process subscriptions and prevent fraud or abuse.</li>
+        <li>To answer support requests and send service messages.</li>
+        <li>To understand how the public pages and the app are used, and improve them (analytics, with your consent where the law requires it).</li>
+      </ul>
+    ),
+  },
+  {
+    id: 'ai-features',
+    title: 'AI features',
+    body: (
+      <>
+        <p>AI features call Google&apos;s Gemini API only when you use them:</p>
+        <ul>
+          <li>
+            <strong>Screenshot import</strong> sends the screenshots you upload for that import, so the trades in them can be
+            read.
+          </li>
+          <li>
+            <strong>AI reports and chat</strong> send figures computed from your trades (for example P&amp;L, win rate,
+            symbols, strategies, tags and rule names) and, for chat, your question. They do not send your notes, key lessons,
+            screenshots, email address or account names.
+          </li>
+        </ul>
+        <p>
+          Do not submit data you do not want processed this way. AI results can be wrong and describe your own recorded trades
+          only; they are not advice.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'service-providers',
+    title: 'Service providers',
+    body: (
+      <ul>
+        <li>
+          <strong>Amazon Web Services</strong> hosts the Service and stores your data (region us-east-1), encrypted in transit and
+          at rest, and provides sign-in (Cognito).
+        </li>
+        <li>
+          <strong>Stripe</strong> processes subscription payments. When you start checkout, your country (derived from your IP
+          address by our content delivery network, Amazon CloudFront) selects INR or USD pricing.
+        </li>
+        <li>
+          <strong>Google</strong> provides Gemini (AI features), Google Analytics (if you allow it) and Sign in with Google.
+        </li>
+      </ul>
+    ),
+  },
+  {
+    id: 'cookies-and-ads',
+    title: 'Cookies, analytics and ads',
+    body: (
+      <>
+        <p>
+          We store essential data in your browser to keep you signed in and remember your preferences and your cookie choice.
+          Google Analytics is used on the public pages and in the app only when it is switched on for the site. In the EEA, UK
+          and Switzerland, analytics and advertising cookies stay off until you accept; until then Google receives only
+          cookieless measurement signals without identifiers. Elsewhere analytics cookies are on by default, and you can turn
+          them off at any time with the cookie settings below.
+        </p>
+        <p>
+          We do not currently show ads. If we show ads on public content pages (never inside the app), they use Google AdSense,
+          which uses cookies, and your cookie choice applies.
+        </p>
+        <p>
+          <button type="button" onClick={openConsentSettings} className="text-primary hover:underline">
+            Change your cookie settings
+          </button>
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'your-rights',
+    title: 'Your choices and rights',
+    body: (
+      <>
+        <ul>
+          <li>Access, correct, export or delete your data; export and account deletion are in Settings, or ask us.</li>
+          <li>Withdraw cookie consent at any time from the footer link.</li>
+          <li>We do not sell your personal data.</li>
+        </ul>
+        <p>
+          Deleting your account deletes your trading data. Some billing records may be kept where the law requires.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'children',
+    title: 'Children',
+    body: <p>The Service is not intended for anyone under 18, and we do not knowingly collect their data.</p>,
+  },
+  {
+    id: 'changes',
+    title: 'Changes to this policy',
+    body: (
+      <p>
+        We update this page when the Service or the providers above change and change the &ldquo;Last updated&rdquo; date.
+        See also the <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and the{' '}
+        <Link to="/refund" className="text-primary hover:underline">Refund &amp; Cancellation Policy</Link>.
+      </p>
+    ),
+  },
+  { id: 'contact', title: 'Contact', body: <ContactBlock /> },
+];
 
 export function PrivacyPolicyPage() {
   return (
-    <>
-      <SEO title="Privacy Policy - TradeQut" description="Read TradeQut's privacy policy. Learn how we collect, use, and protect your trading data and personal information." path="/privacy" />
-      <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav aria-label="Privacy policy navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">TradeQut</span>
-          </Link>
-          <Button variant="ghost" asChild className="gap-2">
-            <Link to="/">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Home</span>
-              <span className="sm:hidden">Back</span>
-            </Link>
-          </Button>
-        </div>
-      </nav>
-
-      {/* Content */}
-      <main id="main-content">
-        <article>
-      <div className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">Privacy Policy</h1>
-          <p className="text-muted-foreground mb-12">Last updated: April 9, 2026</p>
-
-          <div className="space-y-10 text-foreground/90">
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">1. Introduction</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                TradeQutJournal ("we", "our", or "us") operates the TradeQut application (the "Service").
-                This Privacy Policy explains how we collect, use, disclose, and safeguard your information when
-                you use our Service. By accessing or using TradeQut, you agree to the terms of this Privacy Policy.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">2. Information We Collect</h2>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium text-foreground mb-2">2.1 Personal Information</h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    When you create an account, we collect your name, email address, and password.
-                    This information is required to provide you with access to the Service.
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-foreground mb-2">2.2 Trading Data</h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    You may voluntarily input trading data including trade entries, exits, profit/loss figures,
-                    notes, screenshots, and account details. This data is stored securely and is used solely
-                    to provide you with analytics and journaling features.
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-foreground mb-2">2.3 Usage Data</h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    We may collect information about how you access and use the Service, including your IP address,
-                    browser type, device information, pages visited, and time spent on the platform.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">3. How We Use Your Information</h2>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                <li>To provide, maintain, and improve the Service</li>
-                <li>To create and manage your account</li>
-                <li>To generate trading analytics and performance reports</li>
-                <li>To process optional support contributions</li>
-                <li>To communicate with you about updates, features, and support</li>
-                <li>To detect and prevent fraud or unauthorized access</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">4. Data Storage & Security</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                Your data is stored on secure cloud servers powered by Amazon Web Services (AWS). We implement
-                industry-standard security measures including encryption in transit (TLS/SSL) and encryption at rest
-                to protect your personal and trading data. However, no method of transmission over the Internet is
-                100% secure, and we cannot guarantee absolute security.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">5. Cookies</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                We use cookies and similar tracking technologies to maintain your session, remember your preferences,
-                and improve your experience. You can control cookie settings through your browser preferences.
-                Disabling cookies may affect the functionality of certain features.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">6. Third-Party Services</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                We may use third-party services for authentication, payment processing (PayU), analytics, and
-                hosting. These third parties have their own privacy policies and may collect information as
-                described in their respective policies. We do not sell or share your personal data with third
-                parties for marketing purposes.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">7. Your Rights</h2>
-              <p className="text-muted-foreground leading-relaxed mb-3">
-                You have the right to:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                <li>Access, update, or delete your personal information</li>
-                <li>Export your trading data at any time</li>
-                <li>Request deletion of your account and all associated data</li>
-                <li>Opt out of non-essential communications</li>
-              </ul>
-              <p className="text-muted-foreground leading-relaxed mt-3">
-                To exercise any of these rights, please contact us at the details provided below.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">8. Children's Privacy</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                The Service is not intended for individuals under the age of 18. We do not knowingly collect
-                personal information from children. If we become aware that we have collected data from a child,
-                we will take steps to delete such information promptly.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">9. Changes to This Policy</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                We may update this Privacy Policy from time to time. We will notify you of any material changes
-                by posting the new policy on this page and updating the "Last updated" date. Your continued use
-                of the Service after changes constitutes acceptance of the revised policy.
-              </p>
-            </section>
-
-            <section className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-4">10. Contact Us</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                If you have any questions about this Privacy Policy, please contact us:
-              </p>
-              <div className="space-y-2 text-muted-foreground">
-                <p><span className="text-foreground font-medium">Business:</span> TradeQutJournal</p>
-                <p><span className="text-foreground font-medium">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348</p>
-                <p><span className="text-foreground font-medium">Email:</span> support@tradequt.com</p>
-                <p><span className="text-foreground font-medium">Phone:</span> +91 8501018125</p>
-              </div>
-            </section>
-          </div>
-        </div>
-      </div>
-        </article>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} TradeQut. All rights reserved.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
-            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
-            <Link to="/privacy" className="text-primary hover:text-primary/80 transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
-            <Link to="/refund" className="text-muted-foreground hover:text-foreground transition-colors">Refund Policy</Link>
-            <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
-          </div>
-        </div>
-      </footer>
-    </div>
-    </>
+    <LegalLayout
+      title="Privacy Policy"
+      description="What TradeQut collects, who processes it (AWS, Stripe, Google), how AI features and cookies work, and your choices."
+      path="/privacy"
+      updated="2026-11-12"
+      sections={SECTIONS}
+    />
   );
 }

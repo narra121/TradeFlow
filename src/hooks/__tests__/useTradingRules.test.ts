@@ -93,6 +93,18 @@ describe('useTradingRules', () => {
     expect(typeof result.current.loading).toBe('boolean');
   });
 
+  it('keeps every stored rule, one per period, next to the de-duplicated list', () => {
+    const copies = [
+      { ...mockRules[0], ruleId: 'week#2026-11-09#a' },
+      { ...mockRules[0], ruleId: 'week#2026-11-02#b' },
+    ];
+    mockUseGetRulesQuery.mockReturnValue({ data: copies, isLoading: false });
+    const { result } = renderHook(() => useTradingRules());
+    expect(result.current.rules).toHaveLength(1);
+    expect(result.current.allRules).toHaveLength(2);
+    expect(result.current.allRules.map((r) => r.ruleId)).toEqual(['week#2026-11-09#a', 'week#2026-11-02#b']);
+  });
+
   it('handles empty rules array from API', () => {
     mockUseGetRulesQuery.mockReturnValue({
       data: [],
@@ -163,7 +175,7 @@ describe('useTradingRules', () => {
     const { result } = renderHook(() => useTradingRules());
 
     expect(result.current.rules).toHaveLength(3);
-    expect(result.current.rules.map((r: any) => r.rule)).toEqual([
+    expect(result.current.rules.map((r) => r.rule)).toEqual([
       'Always use stop loss',
       'Max 3 trades per day',
       'No revenge trading',
@@ -230,8 +242,8 @@ describe('useTradingRules - Additional Scenarios', () => {
 
     const { result } = renderHook(() => useTradingRules());
 
-    const activeRules = result.current.rules.filter((r: any) => r.isActive);
-    const inactiveRules = result.current.rules.filter((r: any) => !r.isActive);
+    const activeRules = result.current.rules.filter((r) => r.isActive);
+    const inactiveRules = result.current.rules.filter((r) => !r.isActive);
 
     expect(activeRules).toHaveLength(2);
     expect(inactiveRules).toHaveLength(1);

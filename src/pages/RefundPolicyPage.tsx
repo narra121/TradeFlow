@@ -1,173 +1,92 @@
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { SEO } from '@/components/SEO';
-import { Zap, ArrowLeft } from 'lucide-react';
+import { ContactBlock, LegalLayout, type LegalSection } from '@/components/content/LegalLayout';
+import { TRIAL_DAYS } from '@/content/product-facts';
+
+const SECTIONS: LegalSection[] = [
+  {
+    id: 'plans',
+    title: 'Plans and trial',
+    body: (
+      <p>
+        TradeQut has a Free plan and a paid Pro subscription, billed monthly or yearly through Stripe. Every new account starts
+        with a {TRIAL_DAYS}-day Pro trial without a card, so you can try Pro before paying.
+      </p>
+    ),
+  },
+  {
+    id: 'cancellation',
+    title: 'Cancellation',
+    body: (
+      <>
+        <p>You can cancel at any time from the billing portal in the app. After you cancel:</p>
+        <ul>
+          <li>You keep Pro until the end of the period you already paid for.</li>
+          <li>You are not charged again.</li>
+          <li>Your account then returns to the Free plan, with its limits. Your trades stay in your account and you can export them.</li>
+          <li>The remaining days of a paid period are not refunded.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'refunds',
+    title: 'Refund eligibility',
+    body: (
+      <>
+        <p>Refunds are decided case by case. You are eligible for a full refund if:</p>
+        <ul>
+          <li>You were charged incorrectly or without your authorisation.</li>
+          <li>A duplicate payment was processed.</li>
+          <li>You request a refund within 7 days of the payment date.</li>
+          <li>The payment was made because of a technical error.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'how-to-request',
+    title: 'How to request a refund',
+    body: (
+      <>
+        <p>Email support@tradequt.com with:</p>
+        <ul>
+          <li>Your registered email address.</li>
+          <li>The Stripe receipt or transaction reference, and the payment date.</li>
+          <li>The reason for the request.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'processing',
+    title: 'Processing',
+    body: (
+      <p>
+        We review requests within 3&ndash;5 business days. Approved refunds are returned to the original payment method; the time
+        your bank takes to show the credit is outside our control (typically 5&ndash;7 business days).
+      </p>
+    ),
+  },
+  {
+    id: 'account-deletion',
+    title: 'Account deletion',
+    body: (
+      <p>
+        If you delete your account, an active subscription is cancelled. Deletion is permanent. Export your data first from
+        Settings.
+      </p>
+    ),
+  },
+  { id: 'contact', title: 'Contact', body: <ContactBlock /> },
+];
 
 export function RefundPolicyPage() {
   return (
-    <>
-      <SEO title="Refund Policy - TradeQut" description="Read TradeQut's refund and cancellation policy for subscription plans and services." path="/refund" />
-      <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav aria-label="Refund policy navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">TradeQut</span>
-          </Link>
-          <Button variant="ghost" asChild className="gap-2">
-            <Link to="/">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Home</span>
-              <span className="sm:hidden">Back</span>
-            </Link>
-          </Button>
-        </div>
-      </nav>
-
-      {/* Content */}
-      <main id="main-content">
-        <article>
-      <div className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">Refund & Cancellation Policy</h1>
-          <p className="text-muted-foreground mb-12">Last updated: April 9, 2026</p>
-
-          <div className="space-y-10 text-foreground/90">
-            <section className="bg-card rounded-2xl border border-success/20 p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-success mb-4">TradeQut Free Tier</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                TradeQut offers <span className="text-foreground font-medium">all core features for free</span> —
-                no credit card required. A paid subscription (starting at &#8377;99/month) removes ads.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">1. Subscription Plans</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                TradeQut is free for all core features. A paid subscription (starting at &#8377;99/month or &#8377;999/year)
-                provides an ad-free experience. All other features are included in the free tier.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">2. Refund Eligibility</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Since all payments are voluntary support contributions, refunds are handled on a case-by-case basis.
-                You are eligible for a full refund if:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                <li>You were charged incorrectly or without your authorization</li>
-                <li>A duplicate payment was processed</li>
-                <li>You request a refund within 7 days of the payment date</li>
-                <li>The payment was made due to a technical error</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">3. Cancellation Policy</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                You may cancel your optional support subscription at any time. Upon cancellation:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground mt-3">
-                <li>Your contribution will stop at the end of the current billing cycle</li>
-                <li>You will not be charged for subsequent periods</li>
-                <li>All features of TradeQut will continue to work as before — nothing changes</li>
-                <li>No partial refunds are provided for the remaining period of the current billing cycle</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">4. How to Request a Refund</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                To request a refund, please contact us with the following details:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                <li>Your registered email address</li>
-                <li>Transaction ID or payment reference number</li>
-                <li>Date of the payment</li>
-                <li>Reason for the refund request</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">5. Refund Processing</h2>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 sm:gap-4 bg-card rounded-xl border border-border/50 p-4 sm:p-6">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-primary font-bold">1</span>
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-foreground font-medium mb-1">Submit Request</h3>
-                    <p className="text-muted-foreground text-sm break-words">Email us at support@tradequt.com with your refund details</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 sm:gap-4 bg-card rounded-xl border border-border/50 p-4 sm:p-6">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-primary font-bold">2</span>
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-foreground font-medium mb-1">Review</h3>
-                    <p className="text-muted-foreground text-sm">We will review your request within 3-5 business days</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 sm:gap-4 bg-card rounded-xl border border-border/50 p-4 sm:p-6">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-primary font-bold">3</span>
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-foreground font-medium mb-1">Processing</h3>
-                    <p className="text-muted-foreground text-sm">Approved refunds will be credited to the original payment method within 5-7 business days</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">6. Account Deletion</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                You may request deletion of your account and all associated data at any time by contacting us.
-                If you have an active support subscription, it will be cancelled automatically upon account deletion.
-                Account deletion is permanent and cannot be undone.
-              </p>
-            </section>
-
-            <section className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-4">7. Contact Us</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                For refund requests or any payment-related queries, please reach out to us:
-              </p>
-              <div className="space-y-2 text-muted-foreground">
-                <p><span className="text-foreground font-medium">Business:</span> TradeQutJournal</p>
-                <p><span className="text-foreground font-medium">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348</p>
-                <p><span className="text-foreground font-medium">Email:</span> support@tradequt.com</p>
-                <p><span className="text-foreground font-medium">Phone:</span> +91 8501018125</p>
-              </div>
-            </section>
-          </div>
-        </div>
-      </div>
-        </article>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} TradeQut. All rights reserved.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
-            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
-            <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
-            <Link to="/refund" className="text-primary hover:text-primary/80 transition-colors">Refund Policy</Link>
-            <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
-          </div>
-        </div>
-      </footer>
-    </div>
-    </>
+    <LegalLayout
+      title="Refund & Cancellation Policy"
+      description="How to cancel a TradeQut Pro subscription, what happens after cancellation, and when refunds are available."
+      path="/refund"
+      updated="2026-11-11"
+      sections={SECTIONS}
+    />
   );
 }

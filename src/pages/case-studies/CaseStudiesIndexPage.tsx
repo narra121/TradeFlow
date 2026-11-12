@@ -6,20 +6,19 @@ import { CASE_STUDIES } from '@/content/case-studies/studies';
 export function CaseStudiesIndexPage() {
   return (
     <ContentPageShell
-      title="Trading Success Stories | Case Studies - TradeQut"
-      description="Real stories of traders who improved their performance with disciplined journaling and analytics. See how day traders, prop traders, and swing traders transformed their results."
+      title="Journaling Scenarios (Illustrative) - TradeQut"
+      description="Illustrative walk-throughs of how a trading journal exposes common problems: losing hours, revenge trades, loss limits. Hypothetical data, not real customers."
       path="/case-studies"
       jsonLd={CASE_STUDIES_INDEX_SCHEMA}
-      navLabel="Case studies navigation"
       maxWidth="max-w-5xl"
     >
       <header className="mb-12">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-          Trading Success Stories
+          Journaling scenarios (illustrative)
         </h1>
-        <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
-          How real traders improved consistency, passed prop firm challenges, and found hidden edges
-          through disciplined journaling and data-driven analysis.
+        <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
+          Worked examples of questions a trading journal can answer. Every scenario uses hypothetical data: no real
+          customers, no results to expect.
         </p>
       </header>
 
@@ -31,7 +30,7 @@ export function CaseStudiesIndexPage() {
             description={study.description}
             href={`/case-studies/${study.slug}`}
             tags={[study.traderType, study.market]}
-            meta={study.keyResult}
+            meta={study.method}
           />
         ))}
       </div>

@@ -11,8 +11,8 @@ interface CalculatorCardProps {
 
 export function CalculatorCard({ title, description, href, icon: Icon }: CalculatorCardProps) {
   return (
-    <Link to={href} className="group bg-card rounded-2xl border border-border/50 p-6 sm:p-8 hover:border-primary/30 transition-colors">
-      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+    <Link to={href} className="group bg-card rounded-lg border border-border/50 p-6 sm:p-8 hover:border-primary/30 transition-colors">
+      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
         <Icon className="w-6 h-6 text-primary" />
       </div>
       <h3 className="text-xl font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">{title}</h3>

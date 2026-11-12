@@ -1,39 +1,37 @@
-import { cn } from '@/lib/utils';
+import { useId } from 'react';
 
 interface TagFilterProps {
   tags: string[];
   activeTag: string | null;
   onTagChange: (tag: string | null) => void;
+  /** Number of items per tag, shown in the option label. */
+  counts?: Record<string, number>;
 }
 
-export function TagFilter({ tags, activeTag, onTagChange }: TagFilterProps) {
+const label = (tag: string) => tag.charAt(0).toUpperCase() + tag.slice(1);
+
+/** One labelled select instead of a wall of buttons: it scales to any number of topics and works with a keyboard and a screen reader. */
+export function TagFilter({ tags, activeTag, onTagChange, counts }: TagFilterProps) {
+  const id = useId();
   return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        onClick={() => onTagChange(null)}
-        className={cn(
-          'text-sm font-medium px-3 py-1.5 rounded-full transition-colors',
-          activeTag === null
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-card border border-border/50 text-muted-foreground hover:text-foreground'
-        )}
+    <div className="flex items-center gap-3">
+      <label htmlFor={id} className="text-sm font-medium text-foreground">
+        Topic
+      </label>
+      <select
+        id={id}
+        value={activeTag ?? ''}
+        onChange={(e) => onTagChange(e.target.value || null)}
+        className="h-10 min-w-48 rounded-md border border-input bg-card px-3 text-sm text-foreground"
       >
-        All
-      </button>
-      {tags.map((tag) => (
-        <button
-          key={tag}
-          onClick={() => onTagChange(tag === activeTag ? null : tag)}
-          className={cn(
-            'text-sm font-medium px-3 py-1.5 rounded-full transition-colors capitalize',
-            tag === activeTag
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-card border border-border/50 text-muted-foreground hover:text-foreground'
-          )}
-        >
-          {tag}
-        </button>
-      ))}
+        <option value="">All topics</option>
+        {tags.map((tag) => (
+          <option key={tag} value={tag}>
+            {label(tag)}
+            {counts?.[tag] ? ` (${counts[tag]})` : ''}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

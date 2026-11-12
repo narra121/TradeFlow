@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import type { Trade } from '@/types/trade';
 import { encrypt, decrypt } from './crypto';
 

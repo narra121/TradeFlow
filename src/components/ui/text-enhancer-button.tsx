@@ -28,7 +28,7 @@ export function TextEnhancerButton({
     try {
       const result = await enhanceText({ text }).unwrap();
       onEnhanced(result.enhancedText);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to enhance text:', error);
       // You could add toast notification here
     }

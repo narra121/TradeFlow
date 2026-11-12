@@ -1,322 +1,151 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders as render, screen } from '@/test/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { renderWithProviders } from '@/test/test-utils';
+import type { AggregatedStats } from '@/types/stats';
+
+vi.stubGlobal(
+  'ResizeObserver',
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  },
+);
+
+const periodStats = vi.fn();
+const entitlements = vi.fn();
+const taxReport = vi.fn();
+
+vi.mock('@/components/shell/chrome', () => ({ ScopeBarSlot: ({ children }: { children: React.ReactNode }) => <>{children}</>, usePageChrome: () => undefined }));
+vi.mock('@/components/stats/usePeriodStats', () => ({ usePeriodStats: (o: unknown) => periodStats(o) }));
+const capital = vi.fn();
+vi.mock('@/components/stats/useScopeCapital', () => ({ useScopeCapital: () => capital() }));
+vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => entitlements() }));
+vi.mock('@/store/api/statsApi', () => ({ useGetTaxReportQuery: (...a: unknown[]) => taxReport(...a) }));
+vi.mock('@/hooks/useTradeParam', () => ({ useTradeParam: () => ({ openNew: vi.fn() }) }));
+vi.mock('@/store/api', () => ({ useGetRulesQuery: () => ({ data: [{ ruleId: 'r1', rule: 'No revenge trades' }] }) }));
+
 import { AnalyticsView } from '../AnalyticsView';
 
-// Mock Radix UI Tooltip for RefreshButton
-vi.mock('@radix-ui/react-tooltip', async () => {
-  const React = await import('react');
-  return {
-    Provider: ({ children }: any) => <>{children}</>,
-    Root: ({ children }: any) => <>{children}</>,
-    Trigger: React.forwardRef(({ children, ...props }: any, ref: any) => <div ref={ref} {...props}>{children}</div>),
-    Portal: ({ children }: any) => <>{children}</>,
-    Content: React.forwardRef(({ children, ...props }: any, ref: any) => <div ref={ref} {...props}>{children}</div>),
-    Arrow: React.forwardRef((props: any, ref: any) => <div ref={ref} {...props} />),
-  };
+const stats = {
+  totalTrades: 45, wins: 24, losses: 21, winRate: 53.3, totalPnl: 1108.72, expectancy: 24.64, profitFactor: 1.9, avgWin: 97.64, avgLoss: 58.79, bestTrade: 375, worstTrade: -420,
+  avgRiskReward: 2, maxDrawdown: 0.6, consecutiveWins: 5, consecutiveLosses: 7,
+  segments: {
+    symbol: { NAS100: { trades: 30, wins: 16, net: 900, avgR: null }, GBPJPY: { trades: 15, wins: 8, net: 208.72, avgR: null } },
+    strategy: { Reversal: { trades: 6, wins: 5, net: 844.79, avgR: null } },
+    weekday: {}, hour: {}, session: {},
+  },
+  rDistribution: { buckets: [{ label: '0..1', count: 4 }], noStop: 1 },
+  timeZone: 'Asia/Kolkata', durationBuckets: [], dailyPnl: [],
+  mistakesDistribution: { 'Late Entry': { count: 7, totalPnl: -298.93 } },
+  brokenRulesDistribution: { r1: { count: 3, totalPnl: -120 } },
+} as unknown as AggregatedStats;
+
+const ready = (over: Record<string, unknown> = {}) => ({
+  stats, prev: undefined, prevRange: null, canCompare: false, isLoading: false, isError: false, refetch: vi.fn(), accountsReady: true, ...over,
 });
 
-// Mock recharts - it doesn't work in jsdom
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
-  BarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
-  Bar: () => <div />,
-  XAxis: () => <div />,
-  YAxis: () => <div />,
-  CartesianGrid: () => <div />,
-  Tooltip: () => <div />,
-  PieChart: ({ children }: { children: React.ReactNode }) => <div data-testid="pie-chart">{children}</div>,
-  Pie: () => <div />,
-  Cell: () => <div />,
-  LineChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Line: () => <div />,
-  ScatterChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Scatter: () => <div />,
-  ZAxis: () => <div />,
-  Area: () => <div />,
-  AreaChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
-// Mock RTK Query hooks
-vi.mock('@/store/api', () => ({
-  useGetStatsQuery: vi.fn().mockReturnValue({
-    data: {
-      totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
-      avgWin: 200, avgLoss: 0, profitFactor: Infinity, bestTrade: 200, worstTrade: 0,
-      maxDrawdown: 0, avgRiskReward: 2.0, consecutiveWins: 1, consecutiveLosses: 0,
-      grossProfit: 200, grossLoss: 0, expectancy: 200, sharpeRatio: 0, avgHoldingTime: 14400,
-      totalVolume: 1, minDuration: 14400, maxDuration: 14400,
-      durationBuckets: [], symbolDistribution: { EURUSD: { count: 1, wins: 1, pnl: 200 } },
-      strategyDistribution: { Breakout: { count: 1, wins: 1, pnl: 200 } },
-      sessionDistribution: { 'London Open': { count: 1, wins: 1, pnl: 200 } },
-      outcomeDistribution: { TP: 1 }, hourlyStats: [], dailyWinRate: [], dailyPnl: [],
-    },
-    isLoading: false,
-    isFetching: false,
-    refetch: vi.fn(),
-  }),
-  useGetSavedOptionsQuery: vi.fn().mockReturnValue({
-    data: null,
-    isLoading: false,
-    isFetching: false,
-  }),
-  useUpdateSavedOptionsMutation: vi.fn().mockReturnValue([
-    vi.fn(),
-    { isLoading: false },
-  ]),
-  useGetRulesAndGoalsQuery: vi.fn().mockReturnValue({
-    data: { rules: [], goals: [] },
-    isLoading: false,
-    isFetching: false,
-  }),
-  useGetAccountsQuery: vi.fn().mockReturnValue({
-    data: {
-      accounts: [
-        { id: 'acc1', name: 'Main Account', initialBalance: 10000 },
-      ],
-    },
-    isLoading: false,
-    isFetching: false,
-  }),
-}));
-
-// Mock custom hooks
-vi.mock('@/hooks/useSavedOptions', () => ({
-  useSavedOptions: vi.fn().mockReturnValue({
-    options: {
-      symbols: [],
-      strategies: ['Breakout'],
-      sessions: ['London Open', 'NY Open'],
-      marketConditions: [],
-      newsEvents: [],
-      mistakes: [],
-      lessons: [],
-      timeframes: [],
-    },
-    isLoading: false,
-  }),
-}));
-
-vi.mock('@/hooks/useAccounts', () => ({
-  useAccounts: vi.fn().mockReturnValue({
-    accounts: [
-      { id: 'acc1', name: 'Main Account', initialBalance: 10000 },
-    ],
-    selectedAccountId: null,
-    selectedAccount: null,
-    setSelectedAccountId: vi.fn(),
-  }),
-}));
-
-// Mock child components
-vi.mock('@/components/dashboard/PerformanceChart', () => ({
-  PerformanceChart: () => <div data-testid="performance-chart">Performance Chart</div>,
-}));
-vi.mock('@/components/account/AccountFilter', () => ({
-  AccountFilter: () => <div data-testid="account-filter">Account Filter</div>,
-}));
-vi.mock('@/components/filters/DateRangeFilter', () => ({
-  DateRangeFilter: () => <div data-testid="date-range-filter">Date Range Filter</div>,
-  getDateRangeFromPreset: vi.fn().mockReturnValue({ from: new Date('2025-01-01'), to: new Date('2025-01-31') }),
-}));
-vi.mock('@/components/ui/loading-skeleton', () => ({
-  MetricsGridSkeleton: () => <div data-testid="metrics-skeleton" />,
-  ChartSkeleton: () => <div data-testid="chart-skeleton" />,
-}));
+beforeEach(() => {
+  capital.mockReset().mockReturnValue({ accounts: [{ id: 'a', currency: 'USD' }, { id: 'b', currency: 'INR' }], selectedAccountId: null, totalCapital: 0, accountsReady: true, accountsLoading: false, accountsError: false });
+  periodStats.mockReset().mockReturnValue(ready());
+  entitlements.mockReset().mockReturnValue({ isLoading: false, isError: false, can: () => true, currency: 'USD' });
+  taxReport.mockReset().mockReturnValue({ data: undefined, isLoading: true, isError: false, refetch: vi.fn() });
+});
 
 describe('AnalyticsView', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('renders the tabs as links with the current one marked, Tax as Planned', () => {
+    renderWithProviders(<AnalyticsView />, { route: '/app/analytics' });
+    expect(screen.getByText('Performance')).toBeInTheDocument();
+    expect(screen.getByText('What is working · what is not')).toBeInTheDocument();
   });
 
-  it('renders the heading', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Analytics')).toBeInTheDocument();
+  it('shows the empty state, not a skeleton, when the user has no account yet', () => {
+    capital.mockReturnValue({ accounts: [], selectedAccountId: null, totalCapital: 0, accountsReady: false, accountsLoading: false, accountsError: false });
+    periodStats.mockReturnValue(ready({ stats: undefined, isLoading: false, accountsReady: false }));
+    renderWithProviders(<AnalyticsView />);
+    expect(screen.getByText('Add at least 3 trades to see analytics.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add trade' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Loading analytics')).not.toBeInTheDocument();
   });
 
-  it('renders the subtitle', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Identify patterns and optimize your strategy')).toBeInTheDocument();
+  it('asks for at least three trades with the next steps', () => {
+    periodStats.mockReturnValue(ready({ stats: { ...stats, totalTrades: 2 } }));
+    renderWithProviders(<AnalyticsView />);
+    expect(screen.getByText('Add at least 3 trades to see analytics.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add trade' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Import' })).toHaveAttribute('href', '/app/import');
   });
 
-  it('renders the account filter', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByTestId('account-filter')).toBeInTheDocument();
+  it('shows a per-tab error with Retry, never zeros', async () => {
+    const refetch = vi.fn();
+    periodStats.mockReturnValue(ready({ stats: undefined, isError: true, refetch }));
+    renderWithProviders(<AnalyticsView />);
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(refetch).toHaveBeenCalled();
+    expect(screen.getByText("Couldn't load this tab.")).toBeInTheDocument();
   });
 
-  it('renders the date range filter', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByTestId('date-range-filter')).toBeInTheDocument();
+  it('shows a loading skeleton while the statistics load', () => {
+    periodStats.mockReturnValue(ready({ stats: undefined, isLoading: true }));
+    renderWithProviders(<AnalyticsView />);
+    expect(screen.getByLabelText('Loading analytics')).toBeInTheDocument();
   });
 
-  it('renders the metrics grid section', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Total P&L')).toBeInTheDocument();
-    expect(screen.getAllByText('Win Rate').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Profit Factor')).toBeInTheDocument();
+  it('shows one currency at a time when the scope mixes currencies, with a switch, never a combined figure', async () => {
+    const mixedStats = { ...stats, totalTrades: 45, currencies: ['INR', 'USD'], byCurrency: { INR: { ...stats, totalPnl: -5000, totalTrades: 20 }, USD: { ...stats, totalPnl: 1108.72, totalTrades: 25 } } } as unknown as AggregatedStats;
+    periodStats.mockReturnValue(ready({ stats: mixedStats }));
+    renderWithProviders(<AnalyticsView />);
+    expect(screen.getByRole('radio', { name: 'USD' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText('+$1,108.72')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: 'INR' }));
+    expect(screen.getByText('−₹5,000.00')).toBeInTheDocument();
+    expect(screen.queryByText(/Totals are per currency/)).not.toBeInTheDocument();
   });
 
-  it('renders the equity curve section', () => {
-    render(<AnalyticsView />);
-    // With only 1 trade (< MIN_TRADES_FOR_CHARTS=3), the chart empty state is shown
-    expect(screen.getByText('Equity Curve')).toBeInTheDocument();
-  });
+  describe('Free plan', () => {
+    beforeEach(() => entitlements.mockReturnValue({ isLoading: false, isError: false, can: () => false, currency: 'INR' }));
 
-  it('renders the Daily P&L chart section', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Daily P&L')).toBeInTheDocument();
-  });
-
-  it('renders the Hourly Win Rate section', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Hourly Win Rate')).toBeInTheDocument();
-  });
-
-  it('renders the Daily Win Rate section', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Daily Win Rate')).toBeInTheDocument();
-  });
-
-  it('renders the Symbol Distribution section', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Symbol Distribution')).toBeInTheDocument();
-  });
-
-  it('renders the Strategy Distribution section', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Strategy Distribution')).toBeInTheDocument();
-  });
-
-  it('renders the Performance by Session section', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Performance by Session')).toBeInTheDocument();
-  });
-
-  it('renders the Trade Duration section', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Trade Duration (Time to TP/SL)')).toBeInTheDocument();
-  });
-
-  it('shows loading skeleton when data is loading', async () => {
-    const { useGetStatsQuery } = await import('@/store/api');
-    (useGetStatsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      isFetching: false,
-      refetch: vi.fn(),
+    it('replaces Timing with a locked preview and does not request its data', () => {
+      renderWithProviders(<AnalyticsView />, { route: '/app/analytics?tab=timing' });
+      expect(screen.getByTestId('locked-preview')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Upgrade/ })).toBeInTheDocument();
+      expect(periodStats).toHaveBeenCalledWith(expect.objectContaining({ skip: true }));
     });
 
-    render(<AnalyticsView />);
-    expect(screen.getByTestId('metrics-skeleton')).toBeInTheDocument();
-  });
-});
-
-describe('AnalyticsView - Empty State', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('shows empty state when no trade data exists', async () => {
-    const { useGetStatsQuery } = await import('@/store/api');
-    (useGetStatsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
-        avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
-        maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
-        grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
-        totalVolume: 0, minDuration: 0, maxDuration: 0,
-        durationBuckets: [], symbolDistribution: {}, strategyDistribution: {},
-        sessionDistribution: {}, outcomeDistribution: {}, hourlyStats: [],
-        dailyWinRate: [], dailyPnl: [],
-      },
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
+    it('locks every Group by value except Symbol, with the preview in the billing currency rather than a dialog', () => {
+      const { unmount } = renderWithProviders(<AnalyticsView />, { route: '/app/analytics?tab=edge&by=strategy' });
+      expect(screen.getByTestId('locked-preview')).toHaveTextContent('Group by Strategy');
+      expect(screen.getByTestId('locked-preview')).toHaveTextContent('₹');
+      unmount();
+      renderWithProviders(<AnalyticsView />, { route: '/app/analytics?tab=edge' });
+      expect(screen.queryByTestId('locked-preview')).not.toBeInTheDocument();
+      expect(screen.getByRole('row', { name: /NAS100/ })).toBeInTheDocument();
     });
 
-    render(<AnalyticsView />);
-
-    expect(screen.getByText('No analytics data yet')).toBeInTheDocument();
-    expect(screen.getByText(/Head to the Dashboard/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Go to Dashboard/ })).toBeInTheDocument();
-  });
-
-  it('does not show empty state when trades exist', async () => {
-    const { useGetStatsQuery } = await import('@/store/api');
-    (useGetStatsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
-        avgWin: 200, avgLoss: 0, profitFactor: Infinity, bestTrade: 200, worstTrade: 0,
-        maxDrawdown: 0, avgRiskReward: 2.0, consecutiveWins: 1, consecutiveLosses: 0,
-        grossProfit: 200, grossLoss: 0, expectancy: 200, sharpeRatio: 0, avgHoldingTime: 14400,
-        totalVolume: 1, minDuration: 14400, maxDuration: 14400,
-        durationBuckets: [], symbolDistribution: { EURUSD: { count: 1, wins: 1, pnl: 200 } },
-        strategyDistribution: { Breakout: { count: 1, wins: 1, pnl: 200 } },
-        sessionDistribution: { 'London Open': { count: 1, wins: 1, pnl: 200 } },
-        outcomeDistribution: { TP: 1 }, hourlyStats: [], dailyWinRate: [], dailyPnl: [],
-      },
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
+    it('keeps mistake and rule counts but hides their cost behind Pro', () => {
+      renderWithProviders(<AnalyticsView />, { route: '/app/analytics?tab=behaviour' });
+      expect(screen.getByText('Late Entry')).toBeInTheDocument();
+      expect(screen.getByText('No revenge trades')).toBeInTheDocument();
+      expect(screen.queryByText('−$298.93')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Pro').length).toBeGreaterThan(0);
     });
 
-    render(<AnalyticsView />);
-
-    expect(screen.queryByText('No analytics data yet')).not.toBeInTheDocument();
-  });
-});
-
-describe('AnalyticsView - Behavior Sections', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('renders "Top Mistakes" section heading', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Top Mistakes')).toBeInTheDocument();
-  });
-
-  it('renders "Broken Rules" section heading', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Broken Rules')).toBeInTheDocument();
-  });
-
-  it('renders "Key Lessons" section heading', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('Key Lessons')).toBeInTheDocument();
-  });
-
-  it('shows empty state text when no mistakes data', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('No mistakes recorded yet')).toBeInTheDocument();
-  });
-
-  it('shows empty state text when no lessons data', () => {
-    render(<AnalyticsView />);
-    expect(screen.getByText('No lessons recorded yet')).toBeInTheDocument();
-  });
-
-  it('shows mistake entries when mistakesDistribution has data', async () => {
-    const { useGetStatsQuery } = await import('@/store/api');
-    (useGetStatsQuery as ReturnType<typeof vi.fn>).mockReturnValue({
-      data: {
-        totalPnl: 200, winRate: 100, totalTrades: 1, wins: 1, losses: 0, breakeven: 0,
-        avgWin: 200, avgLoss: 0, profitFactor: Infinity, bestTrade: 200, worstTrade: 0,
-        maxDrawdown: 0, avgRiskReward: 2.0, consecutiveWins: 1, consecutiveLosses: 0,
-        grossProfit: 200, grossLoss: 0, expectancy: 200, sharpeRatio: 0, avgHoldingTime: 14400,
-        totalVolume: 1, minDuration: 14400, maxDuration: 14400,
-        durationBuckets: [], symbolDistribution: { EURUSD: { count: 1, wins: 1, pnl: 200 } },
-        strategyDistribution: { Breakout: { count: 1, wins: 1, pnl: 200 } },
-        sessionDistribution: { 'London Open': { count: 1, wins: 1, pnl: 200 } },
-        outcomeDistribution: { TP: 1 }, hourlyStats: [], dailyWinRate: [], dailyPnl: [],
-        mistakesDistribution: { 'FOMO': { count: 3, totalPnl: -150 } },
-      },
-      isLoading: false,
-      isFetching: false,
-      refetch: vi.fn(),
+    it('limits "what is working" to symbols', () => {
+      renderWithProviders(<AnalyticsView />);
+      expect(screen.getByText(/symbols on Free/)).toBeInTheDocument();
+      expect(screen.queryByText(/Reversal/)).not.toBeInTheDocument();
     });
+  });
 
-    render(<AnalyticsView />);
-    expect(screen.getByText('FOMO')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+  it('does not request statistics on the Tax tab', () => {
+    renderWithProviders(<AnalyticsView />, { route: '/app/analytics?tab=tax' });
+    expect(screen.getByText('Financial year')).toBeInTheDocument();
+    expect(periodStats).toHaveBeenCalledWith(expect.objectContaining({ skip: true }));
+  });
+
+  it('names the weekday × hour zone on Timing for Pro users', () => {
+    renderWithProviders(<AnalyticsView />, { route: '/app/analytics?tab=timing' });
+    expect(screen.getByText('Times in Asia/Kolkata')).toBeInTheDocument();
   });
 });

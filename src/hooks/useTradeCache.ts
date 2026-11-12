@@ -1,3 +1,4 @@
+import { decodeJwtPayload } from '@/lib/jwt';
 import { useState, useEffect, useCallback } from 'react';
 import type { Trade } from '@/types/trade';
 import { syncTrades } from '@/lib/cache/sync';
@@ -23,8 +24,7 @@ function getUserIdFromToken(): string | null {
   try {
     const token = localStorage.getItem('idToken');
     if (!token) return null;
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.sub ?? null;
+    return decodeJwtPayload(token)?.sub ?? null;
   } catch {
     return null;
   }

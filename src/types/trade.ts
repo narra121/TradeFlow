@@ -53,7 +53,20 @@ export interface Trade {
   accountId?: string; // Single account ID for this trade (from response)
   accountIds?: string[]; // Multiple account IDs for creating trades (request only)
   brokenRuleIds?: string[];
+  assetClass?: AssetClass;
+  contractMultiplier?: number;
+  fees?: number;
+  grossPnl?: number;
+  underlying?: string;
+  optionType?: 'call' | 'put';
+  strike?: number;
+  expiry?: string;
+  /** broker trade id; dedupe key together with accountId */
+  externalId?: string;
+  importSource?: string;
 }
+
+export type AssetClass = 'stock' | 'forex' | 'futures' | 'options' | 'crypto' | 'cfd' | 'commodity';
 
 // Saved options for smart inputs (would be stored in DB)
 export interface SavedOptions {

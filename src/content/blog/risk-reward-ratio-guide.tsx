@@ -9,7 +9,7 @@ export default function RiskRewardRatioGuide() {
         compares how much you stand to lose on a trade versus how much you stand to gain. It is expressed
         as a ratio of risk to reward. The formula is:
       </p>
-      <div className="bg-card rounded-xl border border-border/50 p-4 mb-6">
+      <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
           Risk-Reward Ratio = (Entry Price - Stop Loss) / (Take Profit - Entry Price)
         </p>
@@ -43,7 +43,7 @@ export default function RiskRewardRatioGuide() {
         The following table shows the win rate you need just to break even at various risk-reward ratios.
         The lower the required win rate, the more forgiving the strategy is during losing streaks.
       </p>
-      <div className="bg-card rounded-xl border border-border/50 overflow-hidden mb-6">
+      <div className="bg-card rounded-lg border border-border/50 overflow-hidden mb-6">
         <div className="grid grid-cols-3 bg-muted/50 border-b border-border/50">
           <div className="px-4 py-3 font-semibold text-foreground text-sm">Risk:Reward</div>
           <div className="px-4 py-3 font-semibold text-foreground text-sm">Example ($100 risk)</div>

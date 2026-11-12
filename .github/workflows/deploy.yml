@@ -37,13 +37,10 @@ jobs:
       - name: Create .env.development file
         run: |
           echo "VITE_API_URL=${{ secrets.VITE_API_URL_DEV }}" > .env.development
-          echo "VITE_RAZORPAY_KEY_ID=${{ secrets.VITE_RAZORPAY_KEY_ID_DEV }}" >> .env.development
           echo "VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN_DEV }}" >> .env.development
           echo "VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID_DEV }}" >> .env.development
+          echo "VITE_GA_MEASUREMENT_ID=${{ secrets.VITE_GA_MEASUREMENT_ID_DEV }}" >> .env.development
           echo "VITE_EXTRACT_TRADES_URL=${{ secrets.VITE_EXTRACT_TRADES_URL_DEV }}" >> .env.development
-          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY_DEV }}" >> .env.development
-          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" >> .env.development
-          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID_DEV }}" >> .env.development
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
@@ -61,12 +58,6 @@ jobs:
       - name: Deploy to S3
         run: |
           aws s3 sync ./dist s3://tradequt.com-dev --delete
-          # Copy pre-rendered route HTML as flat S3 objects (CloudFront serves /about not /about/index.html)
-          for route in about guide contact privacy terms refund login signup; do
-            aws s3 cp "s3://tradequt.com-dev/${route}/index.html" "s3://tradequt.com-dev/${route}" \
-              --content-type "text/html" \
-              --cache-control "no-cache, no-store, must-revalidate"
-          done
           # Set no-cache on ALL HTML files (root + pre-rendered routes)
           aws s3 cp s3://tradequt.com-dev/ s3://tradequt.com-dev/ \
             --recursive \
@@ -74,6 +65,9 @@ jobs:
             --cache-control "no-cache, no-store, must-revalidate" \
             --exclude "*" --include "*.html" \
             --content-type "text/html"
+          aws s3 cp ./dist s3://tradequt.com-dev/ --recursive \
+            --exclude "*" --include "*.txt" --include "*.xml" \
+            --cache-control "public, max-age=3600"
           aws s3 cp s3://tradequt.com-dev/assets/ s3://tradequt.com-dev/assets/ \
             --recursive \
             --metadata-directive REPLACE \

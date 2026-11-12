@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import axios from 'axios';
 import apiClient from './api';
-import { TradeImage } from '@/types/trade';
+import { AssetClass, TradeImage } from '@/types/trade';
 
 const EXTRACT_TRADES_URL = import.meta.env.VITE_EXTRACT_TRADES_URL;
 
@@ -29,6 +30,16 @@ export interface CreateTradePayload {
   brokenRuleIds?: string[];
   images?: TradeImage[];
   notes?: string;
+  assetClass?: AssetClass;
+  contractMultiplier?: number;
+  fees?: number;
+  grossPnl?: number;
+  underlying?: string;
+  optionType?: 'call' | 'put';
+  strike?: number;
+  expiry?: string;
+  externalId?: string;
+  importSource?: string;
 }
 
 export interface TradesQueryParams {

@@ -1,25 +1,31 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
+import {
+  CalcLayout,
+  DirectionRadios,
+  FormulaDisclosure,
+  DecimalInput,
+  LiveResult,
+  calcLabelClass,
+  parseDecimal,
+} from '@/components/content/calculator';
 import { calculatorSchema } from '@/config/seo';
-
-const inputClassName =
-  'w-full px-4 py-2.5 rounded-xl border border-border/50 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20';
-const labelClassName = 'block text-sm font-medium text-foreground mb-1.5';
 
 type Direction = 'long' | 'short';
 
 export function RiskRewardCalculatorPage() {
   const [direction, setDirection] = useState<Direction>('long');
-  const [entryPrice, setEntryPrice] = useState(100);
-  const [stopLossPrice, setStopLossPrice] = useState(95);
-  const [takeProfitPrice, setTakeProfitPrice] = useState(115);
+  const [entryText, setEntryText] = useState('100');
+  const [stopText, setStopText] = useState('95');
+  const [targetText, setTargetText] = useState('115');
+  const entryPrice = parseDecimal(entryText);
+  const stopLossPrice = parseDecimal(stopText);
+  const takeProfitPrice = parseDecimal(targetText);
 
   const results = useMemo(() => {
-    const risk =
-      direction === 'long' ? entryPrice - stopLossPrice : stopLossPrice - entryPrice;
-    const reward =
-      direction === 'long' ? takeProfitPrice - entryPrice : entryPrice - takeProfitPrice;
+    const risk = direction === 'long' ? entryPrice - stopLossPrice : stopLossPrice - entryPrice;
+    const reward = direction === 'long' ? takeProfitPrice - entryPrice : entryPrice - takeProfitPrice;
 
     if (risk <= 0 || reward <= 0) {
       return { ratio: 0, risk: 0, reward: 0, breakevenWinRate: 0, valid: false };
@@ -31,165 +37,105 @@ export function RiskRewardCalculatorPage() {
     return { ratio, risk, reward, breakevenWinRate, valid: true };
   }, [direction, entryPrice, stopLossPrice, takeProfitPrice]);
 
+  const summary = results.valid
+    ? `Risk-reward 1 to ${results.ratio.toFixed(2)}, breakeven win rate ${results.breakevenWinRate.toFixed(1)} percent.`
+    : 'The stop loss and take profit are on the wrong side of the entry for this direction.';
+
   return (
     <ContentPageShell
-      title="Risk-Reward Calculator - Free | TradeQut"
+      title="Risk-reward calculator - free | TradeQut"
       description="Calculate your risk-reward ratio, potential profit and loss, and breakeven win rate for any trade. Free tool for traders."
       path="/resources/risk-reward"
       jsonLd={calculatorSchema(
-        'Risk-Reward Calculator',
+        'Risk-reward calculator',
         'Determine risk-reward ratio, potential profit/loss, and breakeven win rate for any trade setup.',
         '/resources/risk-reward'
       )}
-      navLabel="Risk-reward calculator navigation"
+      maxWidth="max-w-5xl"
     >
-      {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mb-8">
+      <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
-            <Link to="/resources" className="hover:text-foreground transition-colors">
+            <Link to="/resources" className="inline-flex min-h-6 items-center hover:text-foreground">
               Resources
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="text-foreground font-medium">Risk-Reward Calculator</li>
+          <li className="font-medium text-foreground">Risk-reward calculator</li>
         </ol>
       </nav>
 
-      <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
-        Risk-Reward Calculator
-      </h1>
-      <p className="text-lg text-muted-foreground mb-8 sm:mb-10">
-        Evaluate the risk-reward profile of any trade before you enter it.
-      </p>
+      <h1 className="mb-2 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">Risk-reward calculator</h1>
+      <p className="mb-8 text-base text-foreground-soft">Evaluate the risk-reward profile of any trade before you enter it.</p>
 
-      {/* Calculator */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 sm:mb-16">
-        {/* Inputs */}
-        <div className="space-y-5">
-          {/* Direction toggle */}
-          <div>
-            <span className={labelClassName}>Direction</span>
-            <div className="flex gap-2 mt-1.5">
-              <button
-                type="button"
-                onClick={() => setDirection('long')}
-                className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
-                  direction === 'long'
-                    ? 'bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400'
-                    : 'border-border/50 text-muted-foreground hover:border-border'
-                }`}
-              >
-                Long
-              </button>
-              <button
-                type="button"
-                onClick={() => setDirection('short')}
-                className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
-                  direction === 'short'
-                    ? 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400'
-                    : 'border-border/50 text-muted-foreground hover:border-border'
-                }`}
-              >
-                Short
-              </button>
+      <CalcLayout
+        inputs={
+          <>
+            <DirectionRadios value={direction} onChange={setDirection} />
+            <div>
+              <label htmlFor="entry-price" className={calcLabelClass}>
+                Entry price
+              </label>
+              <DecimalInput id="entry-price" value={entryText} onChange={setEntryText} />
             </div>
-          </div>
-
-          <div>
-            <label htmlFor="entry-price" className={labelClassName}>
-              Entry Price
-            </label>
-            <input
-              id="entry-price"
-              type="number"
-              min={0}
-              step={0.01}
-              value={entryPrice}
-              onChange={(e) => setEntryPrice(Number(e.target.value))}
-              className={inputClassName}
-            />
-          </div>
-          <div>
-            <label htmlFor="stop-loss-price" className={labelClassName}>
-              Stop Loss Price
-            </label>
-            <input
-              id="stop-loss-price"
-              type="number"
-              min={0}
-              step={0.01}
-              value={stopLossPrice}
-              onChange={(e) => setStopLossPrice(Number(e.target.value))}
-              className={inputClassName}
-            />
-          </div>
-          <div>
-            <label htmlFor="take-profit-price" className={labelClassName}>
-              Take Profit Price
-            </label>
-            <input
-              id="take-profit-price"
-              type="number"
-              min={0}
-              step={0.01}
-              value={takeProfitPrice}
-              onChange={(e) => setTakeProfitPrice(Number(e.target.value))}
-              className={inputClassName}
-            />
-          </div>
-        </div>
-
-        {/* Results */}
-        <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 flex flex-col justify-center">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Results</h2>
-          {!results.valid ? (
-            <p className="text-sm text-muted-foreground">
-              {direction === 'long'
-                ? 'Stop loss must be below entry and take profit must be above entry for a long trade.'
-                : 'Stop loss must be above entry and take profit must be below entry for a short trade.'}
-            </p>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Risk-Reward Ratio</p>
-                <p className="text-2xl font-bold text-primary">
-                  1 : {results.ratio.toFixed(2)}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Risk (per unit)</p>
-                  <p className="text-lg font-semibold text-red-500">
-                    ${results.risk.toFixed(2)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Reward (per unit)</p>
-                  <p className="text-lg font-semibold text-green-500">
-                    ${results.reward.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-              <div className="pt-2 border-t border-border/50">
-                <p className="text-sm text-muted-foreground">Breakeven Win Rate</p>
-                <p className="text-lg font-semibold text-foreground">
-                  {results.breakevenWinRate.toFixed(1)}%
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  You need to win at least {results.breakevenWinRate.toFixed(1)}% of your trades
-                  at this R:R to break even.
-                </p>
-              </div>
+            <div>
+              <label htmlFor="stop-loss-price" className={calcLabelClass}>
+                Stop loss price
+              </label>
+              <DecimalInput id="stop-loss-price" value={stopText} onChange={setStopText} />
             </div>
-          )}
-        </div>
-      </div>
+            <div>
+              <label htmlFor="take-profit-price" className={calcLabelClass}>
+                Take profit price
+              </label>
+              <DecimalInput id="take-profit-price" value={targetText} onChange={setTargetText} />
+            </div>
+          </>
+        }
+        result={
+          <>
+            <h2 className="mb-4 text-base font-semibold text-foreground">Result</h2>
+            {!results.valid ? (
+              <p className="text-sm text-foreground-soft">
+                {direction === 'long'
+                  ? 'Stop loss must be below entry and take profit must be above entry for a long trade.'
+                  : 'Stop loss must be above entry and take profit must be below entry for a short trade.'}
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">Risk-reward ratio</p>
+                <p className="num mb-4 text-2xl font-semibold text-foreground">1 : {results.ratio.toFixed(2)}</p>
+                <dl className="grid grid-cols-2 gap-4">
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Risk (per unit)</dt>
+                    <dd className="num text-base font-semibold text-loss">{results.risk.toFixed(2)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Reward (per unit)</dt>
+                    <dd className="num text-base font-semibold text-profit">{results.reward.toFixed(2)}</dd>
+                  </div>
+                </dl>
+                <p className="mt-4 text-sm text-muted-foreground">Breakeven win rate</p>
+                <p className="num text-base font-semibold text-foreground">{results.breakevenWinRate.toFixed(1)}%</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  You need to win at least {results.breakevenWinRate.toFixed(1)}% of your trades at this ratio to break even,
+                  before fees.
+                </p>
+              </>
+            )}
+            <FormulaDisclosure>
+              <p>Risk = distance from entry to stop. Reward = distance from entry to target.</p>
+              <p>Ratio = reward ÷ risk. Breakeven win rate = 1 ÷ (1 + ratio).</p>
+            </FormulaDisclosure>
+            <LiveResult text={summary} />
+          </>
+        }
+      />
 
       {/* Educational content */}
       <section className="prose prose-gray dark:prose-invert max-w-none">
         <h2 className="text-2xl font-bold text-foreground mb-4">
-          Understanding Risk-Reward Ratios
+          Understanding risk-reward ratios
         </h2>
         <p className="text-muted-foreground leading-relaxed mb-4">
           The risk-reward ratio (R:R) compares how much you stand to lose against how much you

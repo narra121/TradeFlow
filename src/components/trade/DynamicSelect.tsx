@@ -69,7 +69,7 @@ export function DynamicSelect({
           {(options || []).map((option) => (
             <div
               key={option}
-              className="group flex items-center hover:bg-accent/50 transition-colors"
+              className="group flex items-center hover:bg-muted transition-colors"
             >
               <button
                 type="button"

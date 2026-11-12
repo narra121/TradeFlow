@@ -1,235 +1,141 @@
 import { test as base, type Page } from '@playwright/test';
 
 /**
- * Generate a fake JWT token for testing purposes.
- * The app checks localStorage for 'idToken' to determine auth state.
- * The token must be a valid JWT structure (header.payload.signature)
- * so the tokenRefreshScheduler can parse it without errors.
+ * A structurally valid, unexpired JWT: the app only decodes it (sub, exp) and never verifies the signature.
  */
 function createFakeJWT(): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = btoa(
-    JSON.stringify({
-      sub: 'test-user-id-123',
-      email: 'test@example.com',
-      name: 'Test User',
-      // Set expiration far in the future so the scheduler doesn't trigger refresh
-      exp: Math.floor(Date.now() / 1000) + 86400, // 24 hours from now
-      iat: Math.floor(Date.now() / 1000),
-    })
-  );
-  const signature = btoa('fake-signature-for-testing');
-  return `${header}.${payload}.${signature}`;
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  return `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: 'test-user-id-123', email: 'test@example.com', name: 'Test User', exp: now + 86400, iat: now })}.${Buffer.from('fake-signature').toString('base64url')}`;
+}
+
+const ago = (days: number, hour: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(hour, 0, 0, 0);
+  return d.toISOString();
+};
+
+export const ACCOUNTS = [
+  { id: 'acc-usd', accountId: 'acc-usd', name: 'FTMO 100K', type: 'PROP', status: 'active', initialBalance: 100000, balance: 100000, currency: 'USD', createdAt: ago(60, 9) },
+  { id: 'acc-inr', accountId: 'acc-inr', name: 'Zerodha F&O', type: 'LIVE', status: 'active', initialBalance: 500000, balance: 500000, currency: 'INR', createdAt: ago(60, 9) },
+];
+
+const trade = (id: string, symbol: string, side: 'BUY' | 'SELL', accountId: string, days: number, pnl: number, over: Record<string, unknown> = {}) => ({
+  tradeId: id,
+  symbol,
+  side,
+  entryPrice: 100,
+  exitPrice: pnl >= 0 ? 101 : 99,
+  stopLoss: 99,
+  takeProfit: 102,
+  quantity: 1,
+  openDate: ago(days, 9),
+  closeDate: ago(days, 10),
+  outcome: pnl >= 0 ? 'TP' : 'SL',
+  pnl,
+  accountId,
+  setupType: 'Breakout',
+  tradingSession: 'London Open',
+  mistakes: [],
+  images: [],
+  ...over,
+});
+
+export const TRADES = [
+  trade('t-1', 'EURUSD', 'BUY', 'acc-usd', 1, 250),
+  trade('t-2', 'GBPJPY', 'SELL', 'acc-usd', 2, -120, { setupType: 'Reversal', mistakes: ['FOMO'] }),
+  trade('t-3', 'NAS100', 'BUY', 'acc-usd', 3, 410),
+  trade('t-4', 'RELIANCE', 'BUY', 'acc-inr', 2, 5200, { setupType: undefined }),
+  trade('t-5', 'NIFTY', 'SELL', 'acc-inr', 4, -3100),
+  trade('t-6', 'BANKNIFTY', 'BUY', 'acc-inr', 5, 1800, { accountId: undefined }),
+];
+
+const ok = (data: unknown) => ({ success: true, data, message: 'OK' });
+
+const STATS = {
+  totalTrades: TRADES.length, wins: 4, losses: 2, breakeven: 0, grossProfit: 7660, grossLoss: -3220, totalPnl: 4440, totalVolume: 6,
+  winRate: 66.7, profitFactor: 2.4, avgWin: 1915, avgLoss: -1610, expectancy: 740, avgRiskReward: 1.2, bestTrade: 5200, worstTrade: -3100,
+  avgHoldingTime: 60, minDuration: 60, maxDuration: 60, consecutiveWins: 2, consecutiveLosses: 1, maxDrawdown: 3100, sharpeRatio: 1.1,
+  durationBuckets: [], symbolDistribution: { EURUSD: { count: 1, wins: 1, pnl: 250 }, NIFTY: { count: 1, wins: 0, pnl: -3100 } },
+  strategyDistribution: { Breakout: { count: 5, wins: 4, pnl: 7660 } }, sessionDistribution: { 'London Open': { count: 6, wins: 4, pnl: 4440 } },
+  outcomeDistribution: {}, hourlyStats: [{ hour: '09', trades: 6, wins: 4, pnl: 4440, winRate: 66.7 }], dailyWinRate: [], dailyPnl: [],
+};
+
+export interface ApiCall {
+  method: string;
+  path: string;
+  body: Record<string, unknown> | null;
+}
+
+/** Answers every `/v1` call from one handler (Playwright runs the last registered matching route first, so several overlapping routes cannot be used). */
+async function mockApi(page: Page, calls: ApiCall[]) {
+  await page.route('**/v1/**', async (route) => {
+    const req = route.request();
+    const sent = req.postData();
+    calls.push({ method: req.method(), path: new URL(req.url()).pathname.replace(/^.*\/v1/, ''), body: sent ? (JSON.parse(sent) as Record<string, unknown>) : null });
+    const url = new URL(req.url());
+    const path = url.pathname.replace(/^.*\/v1/, '');
+    const json = (body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+
+    if (path.startsWith('/trades')) {
+      if (req.method() === 'GET') return json(ok({ trades: TRADES, pagination: { hasMore: false } }));
+      if (req.method() === 'POST' && path === '/trades') return json(ok({ trade: trade('t-new', 'EURUSD', 'BUY', 'acc-usd', 0, 100) }));
+      if (req.method() === 'PUT') {
+        const id = path.split('/')[2];
+        const body = (sent ? JSON.parse(sent) : {}) as Record<string, unknown>;
+        return json(ok({ trade: { ...(TRADES.find((t) => t.tradeId === id) ?? TRADES[0]), ...body } }));
+      }
+      return json(ok({}));
+    }
+    if (path.startsWith('/accounts')) return json(ok({ accounts: ACCOUNTS }));
+    if (path.startsWith('/me/entitlements')) {
+      return json(ok({ entitlements: { plan: 'free', status: 'free', limits: {}, features: {} }, usage: {}, periodResetsAt: ago(-20, 0), writableAccountIds: null }));
+    }
+    if (path.startsWith('/options')) return json(ok({ options: { strategies: ['Breakout', 'Reversal'], sessions: ['London Open'], marketConditions: [], newsEvents: [], mistakes: ['FOMO'], symbols: [], lessons: [], timeframes: [], tags: [] } }));
+    if (path.startsWith('/stats')) return json(ok(STATS));
+    if (path.startsWith('/goals/progress')) {
+      return json(ok({ goalProgress: {}, ruleCompliance: { totalRules: 0, followedCount: 0, brokenRulesCounts: {} }, goals: [], rules: [] }));
+    }
+    if (path === '/rules') return json(ok({ rules: [] }));
+    if (path === '/goals') return json(ok({ goals: [] }));
+    if (path.startsWith('/rules-goals')) return json(ok({ rules: [], goals: [] }));
+    if (path.startsWith('/user/profile')) return json(ok({ user: { id: 'test-user-id-123', name: 'Test User', email: 'test@example.com' } }));
+    if (path.startsWith('/auth/refresh')) return json(ok({ IdToken: createFakeJWT() }));
+    return json(ok({}));
+  });
+}
+
+/** Signs in by seeding the tokens before any page script runs. */
+async function signIn(page: Page) {
+  const token = createFakeJWT();
+  await page.addInitScript((t) => {
+    localStorage.setItem('idToken', t);
+    localStorage.setItem('accessToken', t);
+    localStorage.setItem('refreshToken', 'fake-refresh-token');
+  }, token);
 }
 
 /**
- * Inject auth tokens into localStorage before the page loads,
- * and set up route mocking so API calls don't fail in tests.
+ * Extended test fixture that provides a signed-in page with a mocked API and collected page errors.
+ * Usage: import { test, expect } from './fixtures/auth';
  */
-async function setupAuth(page: Page) {
-  // Navigate to the base URL first so we can set localStorage on the correct origin
-  await page.goto('/');
-
-  // Set auth tokens in localStorage
-  const fakeToken = createFakeJWT();
-  await page.evaluate(
-    ({ token }) => {
-      localStorage.setItem('idToken', token);
-      localStorage.setItem('refreshToken', 'fake-refresh-token-for-testing');
-    },
-    { token: fakeToken }
-  );
-}
-
-// Mock API responses so the app can render without a real backend.
-// The app uses RTK Query with base URL like:
-//   https://<id>.execute-api.us-east-1.amazonaws.com/tradequt-dev/v1
-// Routes are matched with glob pattern to cover both dev and prod API URLs.
-async function mockAPIRoutes(page: Page) {
-  // Mock the trades endpoint
-  await page.route('**/v1/trades**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: [], message: 'OK' }),
+export const test = base.extend<{ authedPage: Page; pageErrors: string[]; apiCalls: ApiCall[] }>({
+  apiCalls: async ({}, use) => {
+    await use([]);
+  },
+  pageErrors: async ({ page }, use) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => {
+      if (m.type() === 'error' && !/favicon|DevTools|Failed to load resource/.test(m.text())) errors.push(m.text());
     });
-  });
-
-  // Mock accounts endpoint
-  await page.route('**/v1/accounts**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: {
-          accounts: [
-            {
-              id: 'test-account-1',
-              name: 'Demo Account',
-              type: 'DEMO',
-              initialBalance: 10000,
-              currency: 'USD',
-            },
-          ],
-        },
-        message: 'OK',
-      }),
-    });
-  });
-
-  // Mock saved options endpoint
-  await page.route('**/v1/saved-options**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: {}, message: 'OK' }),
-    });
-  });
-
-  // Mock subscription endpoint
-  await page.route('**/v1/subscription**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: { plan: 'free', status: 'active' },
-        message: 'OK',
-      }),
-    });
-  });
-
-  // Mock goals endpoint
-  await page.route('**/v1/goals**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: [], message: 'OK' }),
-    });
-  });
-
-  // Mock rules endpoint
-  await page.route('**/v1/rules**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: [], message: 'OK' }),
-    });
-  });
-
-  // Mock analytics endpoint
-  await page.route('**/v1/analytics**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: {}, message: 'OK' }),
-    });
-  });
-
-  // Mock stats endpoint (used by Dashboard + Analytics views)
-  await page.route('**/v1/stats**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: {
-          totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
-          grossProfit: 0, grossLoss: 0, totalPnl: 0, totalVolume: 0,
-          winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0,
-          expectancy: 0, avgRiskReward: 0, bestTrade: 0, worstTrade: 0,
-          avgHoldingTime: 0, minDuration: 0, maxDuration: 0,
-          consecutiveWins: 0, consecutiveLosses: 0, maxDrawdown: 0, sharpeRatio: 0,
-          durationBuckets: [], symbolDistribution: {}, strategyDistribution: {},
-          sessionDistribution: {}, outcomeDistribution: {},
-          hourlyStats: [], dailyWinRate: [], dailyPnl: [],
-        },
-        message: 'OK',
-      }),
-    });
-  });
-
-  // Mock goals progress endpoint (used by Goals view)
-  await page.route('**/v1/goals/progress**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: {
-          goalProgress: {
-            profit: { current: 0, target: 500, progress: 0, achieved: false },
-            winRate: { current: 0, target: 65, progress: 0, achieved: false },
-            maxDrawdown: { current: 0, target: 3, progress: 0, achieved: true },
-            tradeCount: { current: 0, target: 8, progress: 0, achieved: true },
-          },
-          ruleCompliance: { totalRules: 0, followedCount: 0, brokenRulesCounts: {} },
-          goals: [],
-          rules: [],
-        },
-        message: 'OK',
-      }),
-    });
-  });
-
-  // Mock rules-goals endpoint (used by Goals view for CRUD)
-  await page.route('**/v1/rules-goals**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: { rules: [], goals: [] },
-        message: 'OK',
-      }),
-    });
-  });
-
-  // Mock user profile endpoint
-  await page.route('**/v1/user**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: { id: 'test-user-id-123', name: 'Test User', email: 'test@example.com' },
-        message: 'OK',
-      }),
-    });
-  });
-
-  // Mock token refresh endpoint
-  await page.route('**/v1/auth/refresh', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: { IdToken: createFakeJWT() },
-        message: 'OK',
-      }),
-    });
-  });
-
-  // Catch-all for any other API v1 routes
-  await page.route('**/v1/**', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: null, message: 'OK' }),
-    });
-  });
-}
-
-/**
- * Extended test fixture that provides an authenticated page.
- * Usage: import { test, expect } from '../fixtures/auth';
- */
-export const test = base.extend<{ authedPage: Page }>({
-  authedPage: async ({ page }, use) => {
-    await mockAPIRoutes(page);
-    await setupAuth(page);
+    await use(errors);
+  },
+  authedPage: async ({ page, pageErrors, apiCalls }, use) => {
+    void pageErrors;
+    await mockApi(page, apiCalls);
+    await signIn(page);
     await use(page);
   },
 });

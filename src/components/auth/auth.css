@@ -1,0 +1,1511 @@
+/* Auth pages v2 (DESIGN-AUTH-V2): one full-bleed screen. From 1024 px a form sheet (left, top to bottom) and a stage
+   (the rest); below, the same parts stacked, form first. Every colour is a theme token of index.css. */
+.tq-auth {
+  --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* The theme's overlay-shadow colour (index.css --shadow-overlay). */
+  --shade: 220 30% 2%;
+  --sheet-w: clamp(448px, 36vw, 560px);
+  --sheet-pad: calc((var(--sheet-w) - 384px) / 2);
+  --pad: clamp(32px, 4.2vw, 64px);
+  /* The stage's display size, from the stage's own width (it is the `stage` container). */
+  --display: clamp(34px, 7.6cqi, 68px);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  line-height: 20px;
+}
+/* The app reserves a scrollbar gutter on html; these pages fill the viewport, so the gutter would be an empty stripe. */
+html:has(.tq-auth) {
+  scrollbar-gutter: auto;
+}
+
+/* ---------- Layout, stacked (below 1024 px): top row, head, card, picture, bar, legal ---------- */
+.tq-auth .auth-sheet-bg {
+  display: none;
+}
+.tq-auth .auth-stage {
+  display: contents;
+}
+.tq-auth .auth-top {
+  order: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 20px;
+}
+.tq-auth .auth-head {
+  order: 1;
+  padding: 20px 20px 28px;
+  container: stage / inline-size;
+}
+.tq-auth .auth-main {
+  order: 2;
+  padding: 0 16px;
+  min-width: 0;
+}
+.tq-auth .auth-visual {
+  order: 3;
+  padding: 40px 16px 0;
+  min-width: 0;
+}
+.tq-auth .stage-bar {
+  order: 4;
+  margin: 20px 16px 0;
+}
+.tq-auth .auth-foot {
+  order: 5;
+  padding: 20px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.tq-auth[data-scene='none'] .auth-main {
+  padding-top: 32px;
+}
+@media (min-width: 600px) {
+  .tq-auth .auth-top,
+  .tq-auth .auth-head,
+  .tq-auth .auth-main,
+  .tq-auth .auth-visual,
+  .tq-auth .stage-bar,
+  .tq-auth .auth-foot {
+    width: min(100%, 560px);
+    margin-inline: auto;
+  }
+  .tq-auth .auth-top {
+    min-height: 64px;
+  }
+}
+
+/* The particle field (canvas, lazy). Stacked: a band behind the head. */
+.tq-auth .auth-bg {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto 0;
+  height: 360px;
+  pointer-events: none;
+}
+.tq-auth .auth-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 46%, hsl(var(--background)) 100%);
+}
+.tq-auth .auth-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.tq-auth[data-scene='none'] .auth-bg {
+  inset: 0;
+  height: auto;
+}
+.tq-auth[data-scene='none'] .auth-bg::after {
+  background: radial-gradient(ellipse 60% 55% at 50% 42%, hsl(var(--background) / 0.86), transparent 100%);
+}
+
+/* ---------- Layout, split (from 1024 px) ---------- */
+@media (min-width: 1024px) {
+  .tq-auth:not([data-scene='none']) {
+    grid-template-columns: var(--sheet-w) minmax(0, 1fr);
+    grid-template-rows: 64px minmax(0, 1fr) auto;
+    align-content: stretch;
+  }
+  /* The sheet is a layer behind the top row, the form and the legal row, so those keep the document order. */
+  .tq-auth:not([data-scene='none']) .auth-sheet-bg {
+    display: block;
+    position: relative;
+    z-index: 1;
+    grid-column: 1;
+    grid-row: 1 / -1;
+    background: hsl(var(--card));
+    border-right: 1px solid hsl(var(--border));
+    box-shadow: 32px 0 80px -32px hsl(var(--shade) / 0.95);
+  }
+  /* The sheet's lit edge; it turns emerald while focus is in the form. */
+  .tq-auth .auth-sheet-bg::before,
+  .tq-auth .auth-sheet-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0 -1px 0 auto;
+    width: 1px;
+  }
+  .tq-auth .auth-sheet-bg::before {
+    background: linear-gradient(to bottom, hsl(var(--foreground) / 0.3), hsl(var(--foreground) / 0.06) 38%, hsl(var(--primary) / 0.5));
+  }
+  .tq-auth .auth-sheet-bg::after {
+    opacity: 0;
+    background: hsl(var(--primary) / 0.7);
+    box-shadow: 0 0 32px 2px hsl(var(--primary) / 0.5);
+    transition: opacity var(--dur-3) var(--ease-in);
+  }
+  .tq-auth:has(.auth-card :focus-visible) .auth-sheet-bg::after {
+    opacity: 1;
+  }
+  .tq-auth:not([data-scene='none']) .auth-top,
+  .tq-auth:not([data-scene='none']) .auth-main,
+  .tq-auth:not([data-scene='none']) .auth-foot {
+    z-index: 2;
+    grid-column: 1;
+    width: auto;
+    margin-inline: 0;
+    padding-inline: var(--sheet-pad);
+  }
+  .tq-auth:not([data-scene='none']) .auth-top {
+    grid-row: 1;
+  }
+  .tq-auth:not([data-scene='none']) .auth-main {
+    grid-row: 2;
+    align-self: center;
+    padding-block: 24px 32px;
+  }
+  .tq-auth:not([data-scene='none']) .auth-foot {
+    grid-row: 3;
+    padding-block: 16px 20px;
+  }
+  .tq-auth .auth-stage {
+    position: sticky;
+    top: 0;
+    z-index: 0;
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 0 var(--pad);
+    overflow: hidden;
+    isolation: isolate;
+    container: stage / inline-size;
+  }
+  .tq-auth .auth-stage .auth-bg {
+    inset: 0;
+    height: auto;
+  }
+  /* A lift of the surface behind the picture: the only "light" on the field, from surface tokens. */
+  .tq-auth .auth-stage .auth-bg::after {
+    z-index: -1;
+    background: radial-gradient(ellipse 58% 46% at 50% 56%, hsl(var(--card) / 0.9), transparent 100%);
+  }
+  .tq-auth .auth-stage .auth-head,
+  .tq-auth .auth-stage .auth-visual,
+  .tq-auth .auth-stage .stage-bar {
+    width: auto;
+    margin-inline: 0;
+  }
+  .tq-auth .auth-stage .auth-head {
+    padding: 0;
+    container: none;
+  }
+  .tq-auth .auth-stage .auth-visual {
+    flex: 1;
+    display: grid;
+    align-items: center;
+    padding: 28px 0;
+  }
+  .tq-auth .auth-stage .stage-bar {
+    margin: 0 calc(var(--pad) * -1);
+    padding: 0 var(--pad);
+  }
+}
+/* The account-deleted page: one card in the middle of the field. */
+@media (min-width: 600px) {
+  .tq-auth[data-scene='none'] {
+    grid-template-rows: 64px minmax(0, 1fr) auto;
+    align-content: stretch;
+  }
+  .tq-auth[data-scene='none'] .auth-top {
+    width: auto;
+    margin-inline: 0;
+    padding-inline: var(--pad);
+  }
+  .tq-auth[data-scene='none'] .auth-main {
+    align-self: center;
+    width: min(100%, 512px);
+    padding-block: 24px 40px;
+  }
+  .tq-auth[data-scene='none'] .auth-foot {
+    width: auto;
+    margin-inline: 0;
+    padding-inline: var(--pad);
+  }
+}
+
+/* ---------- The card: chrome when stacked and on the account-deleted page; the sheet takes over in the split ---------- */
+.tq-auth .auth-card {
+  position: relative;
+  padding: 24px 20px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: hsl(var(--card));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.05),
+    0 40px 80px -36px hsl(var(--shade) / 0.95),
+    0 14px 28px -14px hsl(var(--shade) / 0.7);
+}
+.tq-auth .auth-card::before,
+.tq-auth .auth-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+}
+/* Lit edge: a 1 px border that is lighter at the top-left and emerald at the bottom-right. */
+.tq-auth .auth-card::before {
+  padding: 1px;
+  background: linear-gradient(160deg, hsl(var(--foreground) / 0.3), transparent 34%, transparent 66%, hsl(var(--primary) / 0.55));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.tq-auth .auth-card::after {
+  opacity: 0;
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.45), 0 0 56px -12px hsl(var(--primary) / 0.5);
+  transition: opacity var(--dur-3) var(--ease-in);
+}
+.tq-auth .auth-card:has(:focus-visible)::after {
+  opacity: 1;
+}
+@media (min-width: 600px) {
+  .tq-auth .auth-card {
+    padding: 32px;
+  }
+}
+@media (min-width: 1024px) {
+  .tq-auth:not([data-scene='none']) .auth-card {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .tq-auth:not([data-scene='none']) .auth-card::before,
+  .tq-auth:not([data-scene='none']) .auth-card::after {
+    content: none;
+  }
+}
+
+/* ---------- Top row and legal row ---------- */
+.tq-auth .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border-radius: 4px;
+}
+.tq-auth .alt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 20px;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+.tq-auth .auth-foot ul {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -8px;
+}
+.tq-auth .auth-foot a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--muted-foreground));
+  border-radius: 4px;
+}
+.tq-auth .auth-foot a:hover {
+  color: hsl(var(--foreground));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (min-width: 1024px) and (pointer: fine) {
+  .tq-auth .brand {
+    min-height: 32px;
+  }
+  .tq-auth .auth-foot a {
+    min-height: 24px;
+  }
+  .tq-auth .auth-foot ul {
+    gap: 4px;
+  }
+}
+@media (max-width: 359px) {
+  .tq-auth .alt span {
+    display: none;
+  }
+}
+
+/* ---------- Sign-up steps ---------- */
+.tq-auth .steps {
+  display: flex;
+  gap: 4px 18px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: -1px;
+  padding: 0 0 10px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.tq-auth .steps .n {
+  display: inline-flex;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+}
+.tq-auth .steps li[aria-current='step'] {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+  border-bottom-color: hsl(var(--primary));
+}
+.tq-auth .steps li[data-done] .n {
+  color: hsl(var(--profit));
+}
+.tq-auth .steps .ico {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.25;
+}
+
+/* ---------- Task content ---------- */
+.tq-auth .auth-h1 {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+@media (min-width: 768px) {
+  .tq-auth .auth-h1 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}
+.tq-auth .auth-lead {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .auth-lead strong {
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  overflow-wrap: anywhere;
+}
+.tq-auth .stack {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+.tq-auth .ico {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  stroke-width: 1.5;
+}
+.tq-auth .tnum {
+  font-variant-numeric: tabular-nums;
+}
+.tq-auth .spin {
+  animation: tq-auth-spin 0.8s linear infinite;
+}
+@keyframes tq-auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.tq-auth .field {
+  position: relative;
+  display: grid;
+  gap: 6px;
+}
+.tq-auth .label-action {
+  position: absolute;
+  top: -2px;
+  right: 0;
+}
+.tq-auth .label {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.tq-auth .input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid hsl(var(--input));
+  border-radius: 4px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font: inherit;
+  font-size: 14px;
+  transition: border-color var(--dur-1) var(--ease-in), box-shadow var(--dur-2) var(--ease-in);
+}
+.tq-auth .input::placeholder {
+  color: hsl(var(--foreground-faint));
+}
+.tq-auth .input:hover {
+  border-color: hsl(var(--muted-foreground));
+}
+/* Focus keeps the theme's 2 px outline and adds a glow. */
+.tq-auth .input:focus-visible {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 6px hsl(var(--ring) / 0.1), 0 0 28px -4px hsl(var(--ring) / 0.45);
+}
+.tq-auth .input[aria-invalid='true'] {
+  border-color: hsl(var(--error));
+}
+.tq-auth .input[aria-invalid='true']:focus-visible {
+  box-shadow: 0 0 0 6px hsl(var(--error) / 0.1), 0 0 28px -4px hsl(var(--error) / 0.4);
+}
+.tq-auth .input[readonly] {
+  color: hsl(var(--foreground-soft));
+}
+/* Autofill keeps the field's own surface instead of the browser's pale fill. */
+.tq-auth .input:-webkit-autofill,
+.tq-auth .input:-webkit-autofill:focus {
+  -webkit-text-fill-color: hsl(var(--foreground));
+  caret-color: hsl(var(--foreground));
+  box-shadow: 0 0 0 1000px hsl(var(--background)) inset;
+  transition: background-color 9999s;
+}
+.tq-auth .pw {
+  position: relative;
+}
+.tq-auth .pw .input {
+  padding-right: 64px;
+}
+.tq-auth .pw-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 40px;
+  min-width: 56px;
+  padding: 0 12px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  border-radius: 4px;
+}
+.tq-auth .pw-toggle:hover {
+  color: hsl(var(--foreground));
+}
+.tq-auth .link {
+  color: hsl(var(--primary));
+  font-weight: 500;
+  border-radius: 2px;
+  text-underline-offset: 3px;
+}
+.tq-auth .link:hover {
+  text-decoration: underline;
+}
+.tq-auth .auth-lead .link {
+  white-space: nowrap;
+}
+.tq-auth .link-sm {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  font-size: 12px;
+  line-height: 16px;
+}
+.tq-auth .field-error {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--error));
+}
+.tq-auth .field-error .ico {
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+}
+.tq-auth .field-hint {
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .field-hint.warn {
+  display: flex;
+  gap: 6px;
+  color: hsl(var(--warning));
+}
+.tq-auth .field-hint.warn .ico {
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+}
+.tq-auth .field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.tq-auth .field-actions > * {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+/* Buttons: one family (DESIGN-SHARED S4.1); the filled one casts its own light. */
+.tq-auth .btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background-color var(--dur-1) var(--ease-in), border-color var(--dur-1) var(--ease-in), transform var(--dur-1) var(--ease-in), box-shadow var(--dur-2) var(--ease-in);
+}
+.tq-auth .btn:active {
+  transform: scale(0.985);
+}
+.tq-auth .btn-block {
+  width: 100%;
+}
+.tq-auth .btn-primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.22), 0 10px 28px -12px hsl(var(--primary) / 0.7);
+}
+.tq-auth .btn-primary:hover {
+  background: hsl(var(--primary) / 0.9);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.22), 0 12px 32px -10px hsl(var(--primary) / 0.8);
+}
+.tq-auth .btn-outline {
+  border: 1px solid hsl(var(--border-strong));
+  color: hsl(var(--foreground));
+}
+.tq-auth .btn-outline:hover {
+  background: hsl(var(--secondary));
+}
+.tq-auth .btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.tq-auth .btn[disabled],
+.tq-auth .btn[aria-disabled='true'] {
+  pointer-events: none;
+}
+/* Unavailable (a rate-limit wait, another request running) fades; the button whose own request is running stays lit. */
+.tq-auth .btn[disabled],
+.tq-auth .btn[aria-disabled='true']:not([data-busy]) {
+  opacity: 0.5;
+  box-shadow: none;
+}
+.tq-auth .btn[data-busy]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, hsl(0 0% 100% / 0.28) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: tq-auth-sheen 1.3s var(--ease-in) infinite;
+}
+@keyframes tq-auth-sheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+.tq-auth .btn .g {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.tq-auth .btn:focus-visible,
+.tq-auth .link:focus-visible,
+.tq-auth .back:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+.tq-auth .or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .or::before,
+.tq-auth .or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: hsl(var(--border));
+}
+.tq-auth .legal {
+  font-size: 12px;
+  line-height: 18px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .legal a {
+  color: hsl(var(--foreground-soft));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.tq-auth .below {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 20px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  width: fit-content;
+  color: hsl(var(--muted-foreground));
+  border-radius: 4px;
+}
+.tq-auth .back:hover {
+  color: hsl(var(--foreground));
+}
+.tq-auth .back .ico {
+  transition: transform var(--dur-2) var(--ease-in);
+}
+.tq-auth .back:hover .ico {
+  transform: translateX(-2px);
+}
+.tq-auth .textbtn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: hsl(var(--primary));
+  font-weight: 500;
+  border-radius: 2px;
+}
+.tq-auth .textbtn:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.tq-auth .below .textbtn {
+  justify-self: start;
+}
+.tq-auth .actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.tq-auth .actions .center {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .tq-auth .label-action {
+    top: -12px;
+    min-height: 44px;
+  }
+  .tq-auth .input,
+  .tq-auth .btn,
+  .tq-auth .pw-toggle {
+    height: 44px;
+  }
+  .tq-auth .input {
+    font-size: 16px;
+  }
+  .tq-auth .btn-sm {
+    height: 44px;
+  }
+  .tq-auth .back,
+  .tq-auth .textbtn,
+  .tq-auth .link-touch,
+  .tq-auth .actions .center,
+  .tq-auth .field-actions > * {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .tq-auth .below {
+    gap: 0;
+    margin-top: 12px;
+  }
+}
+
+/* ---------- Notice (AuthNotice) and error summary ---------- */
+.tq-auth .notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 4px;
+  background: hsl(var(--popover));
+  font-size: 13px;
+  line-height: 20px;
+  color: hsl(var(--foreground-soft));
+}
+.tq-auth .notice .ico {
+  margin-top: 2px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .notice strong {
+  display: block;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+.tq-auth .notice a,
+.tq-auth .notice .textbtn {
+  color: hsl(var(--primary));
+  font-weight: 500;
+  text-underline-offset: 3px;
+}
+.tq-auth .notice .textbtn {
+  display: inline;
+  min-height: 0;
+}
+.tq-auth .notice a:hover {
+  text-decoration: underline;
+}
+.tq-auth .notice ul {
+  margin-top: 2px;
+}
+.tq-auth .notice.error {
+  border-color: hsl(var(--error) / 0.45);
+  background: hsl(var(--error) / 0.08);
+}
+.tq-auth .notice.error .ico {
+  color: hsl(var(--error));
+}
+.tq-auth .notice.success {
+  border-color: hsl(var(--profit) / 0.4);
+  background: hsl(var(--profit) / 0.08);
+}
+.tq-auth .notice.success .ico {
+  color: hsl(var(--profit));
+}
+.tq-auth .notice.warning {
+  border-color: hsl(var(--warning) / 0.45);
+  background: hsl(var(--warning) / 0.08);
+}
+.tq-auth .notice.warning .ico {
+  color: hsl(var(--warning));
+}
+.tq-auth .notice .timer {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+/* Live regions exist before their text; while empty they leave the grid flow so they add no gap. */
+.tq-auth .live:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ---------- Code input (one input drawn as six slots) ---------- */
+.tq-auth .code {
+  display: flex;
+  gap: 8px;
+}
+.tq-auth .code .slot {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--input));
+  border-radius: 4px;
+  background: hsl(var(--background));
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+  transition: border-color var(--dur-1) var(--ease-in), box-shadow var(--dur-2) var(--ease-in), color var(--dur-2) var(--ease-in);
+}
+.tq-auth .code .slot:nth-child(3) {
+  margin-right: 8px;
+}
+.tq-auth .code .slot.active {
+  border-color: hsl(var(--ring));
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  box-shadow: 0 0 24px -4px hsl(var(--ring) / 0.45);
+}
+.tq-auth .code .slot.filled {
+  border-color: hsl(var(--foreground-soft));
+  animation: tq-auth-slot 180ms var(--lp-ease);
+}
+@keyframes tq-auth-slot {
+  from {
+    transform: scale(0.9);
+    color: hsl(var(--primary));
+  }
+}
+.tq-auth .code .slot.caret::after {
+  content: '';
+  width: 1px;
+  height: 22px;
+  background: hsl(var(--foreground));
+  animation: tq-caret 1s steps(1) infinite;
+}
+.tq-auth .code.invalid .slot {
+  border-color: hsl(var(--error));
+}
+.tq-auth .code.done .slot {
+  border-color: hsl(var(--profit));
+  color: hsl(var(--profit));
+  animation: tq-auth-slot-ok 360ms var(--lp-ease) backwards;
+}
+.tq-auth .code.done .slot:nth-child(2) { animation-delay: 40ms; }
+.tq-auth .code.done .slot:nth-child(3) { animation-delay: 80ms; }
+.tq-auth .code.done .slot:nth-child(4) { animation-delay: 120ms; }
+.tq-auth .code.done .slot:nth-child(5) { animation-delay: 160ms; }
+.tq-auth .code.done .slot:nth-child(6) { animation-delay: 200ms; }
+@keyframes tq-auth-slot-ok {
+  40% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ---------- Password policy checklist ---------- */
+.tq-auth .policy {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .policy li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--dur-2) var(--ease-in);
+}
+.tq-auth .policy .ico {
+  width: 12px;
+  height: 12px;
+  color: hsl(var(--foreground-faint));
+}
+.tq-auth .policy li.met {
+  color: hsl(var(--profit));
+}
+.tq-auth .policy li.met .ico {
+  color: hsl(var(--profit));
+  stroke-width: 2.25;
+}
+.tq-auth .policy li.wide {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Status view: a tinted badge, the heading, the lead, the actions ---------- */
+.tq-auth .status-badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 20px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 9999px;
+  background: hsl(var(--popover));
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .status-badge.ok {
+  border-color: hsl(var(--profit) / 0.4);
+  background: hsl(var(--profit) / 0.1);
+  color: hsl(var(--profit));
+  box-shadow: 0 0 32px -6px hsl(var(--profit) / 0.45);
+}
+.tq-auth .status-badge.bad {
+  border-color: hsl(var(--error) / 0.45);
+  background: hsl(var(--error) / 0.08);
+  color: hsl(var(--error));
+}
+.tq-auth .status-ico {
+  width: 22px;
+  height: 22px;
+}
+/* The tick draws itself once. */
+.tq-auth .status-badge.ok path,
+.tq-auth .status-badge.quiet-ok path {
+  stroke-dasharray: 12;
+  stroke-dashoffset: 12;
+  animation: tq-auth-draw 420ms 140ms var(--lp-ease) forwards;
+}
+@keyframes tq-auth-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---------- Receipt (the account-deleted page) ---------- */
+.tq-auth .receipt {
+  margin-top: 24px;
+  border-top: 1px solid hsl(var(--border));
+}
+.tq-auth .receipt > div {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.tq-auth .receipt dt {
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .receipt dd {
+  color: hsl(var(--foreground-soft));
+}
+
+/* ---------- Stage: head ---------- */
+.tq-auth .auth-display {
+  margin-top: 14px;
+  max-width: 820px;
+  font-size: clamp(30px, 8.6cqi, 44px);
+  line-height: 1.05;
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+.tq-auth .auth-display .dim {
+  color: hsl(var(--muted-foreground));
+}
+@media (min-width: 1024px) {
+  .tq-auth .auth-head .tq-eyebrow {
+    min-height: 64px;
+  }
+  .tq-auth .auth-display {
+    margin-top: 4px;
+    font-size: var(--display);
+  }
+}
+
+/* ---------- Stage: the picture box. Its size is reserved here, so the lazy demos move nothing when they arrive. ---------- */
+.tq-auth .auth-visual {
+  container: demo / inline-size;
+}
+.tq-auth .stage-box {
+  --ratio: 760 / 470;
+  position: relative;
+  width: min(100%, 430px);
+  margin-inline: auto;
+  perspective: 1400px;
+}
+/* Stacked, the demos use their compact designs (CalendarStage 358 × 430, TradeReviewDemo 358 × 460). */
+.tq-auth[data-scene='journal'] .stage-box {
+  aspect-ratio: 358 / 430;
+}
+.tq-auth[data-scene='signup'] .stage-box {
+  aspect-ratio: 358 / 460;
+}
+@media (min-width: 1024px) {
+  .tq-auth .stage-box {
+    /* The height left for the picture: the viewport less the eyebrow row, two display lines, the bar and the paddings. */
+    --bar-h: 84px;
+    --fit-h: calc(100dvh - 64px - 2.1 * var(--display) - 4px - 56px - var(--bar-h));
+    margin-inline: 0;
+    width: min(100%, 988px, max(600px, calc(var(--fit-h) * var(--ratio))));
+    aspect-ratio: var(--ratio);
+  }
+  .tq-auth[data-scene='signup'] .stage-box {
+    --ratio: 760 / 480;
+    width: min(100%, 988px, max(560px, calc(var(--fit-h) * var(--ratio))));
+    aspect-ratio: var(--ratio);
+  }
+  .tq-auth[data-scene='journal'] .stage-box {
+    aspect-ratio: var(--ratio);
+  }
+  /* Below these widths the stages switch to their compact designs (the `below` of each Stage). */
+  @container demo (max-width: 599.98px) {
+    .tq-auth[data-scene='journal'] .stage-box {
+      --ratio: 358 / 430;
+      width: min(100%, 430px, max(300px, calc(var(--fit-h) * var(--ratio))));
+    }
+    .tq-auth:not([data-scene='journal'], [data-scene='signup']) .stage-box {
+      aspect-ratio: auto;
+      width: min(100%, 430px);
+    }
+  }
+  @container demo (max-width: 559.98px) {
+    .tq-auth[data-scene='signup'] .stage-box {
+      --ratio: 358 / 460;
+      width: min(100%, 430px, max(300px, calc(var(--fit-h) * var(--ratio))));
+    }
+  }
+}
+/* The demo comes forward once (the landing page's reveal). */
+.tq-auth .stage-reveal {
+  position: relative;
+  transform-origin: 50% 0;
+  animation: tq-auth-reveal 700ms var(--lp-ease) both;
+}
+@keyframes tq-auth-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(42px) rotateX(22deg) rotateY(-8deg) scale(0.94);
+  }
+}
+/* A soft drop under the demo window. */
+.tq-auth .stage-reveal::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 10% 4% 6%;
+  background: hsl(var(--shade) / 0.9);
+  filter: blur(42px);
+}
+/* The stages run off their bottom edge by design; here that edge fades into the field. */
+.tq-auth .stage-demo {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 72px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 72px), transparent);
+}
+.tq-auth .stage-demo .cs-cell {
+  transition: background-color var(--dur-3) var(--ease-in), box-shadow var(--dur-2) var(--ease-in);
+}
+/* The near layer: the month's broken-rules cost, overlapping the window's top-right corner. */
+.tq-auth .stage-satellite {
+  position: absolute;
+  top: -26px;
+  right: -22px;
+  display: grid;
+  gap: 2px;
+  min-width: 196px;
+  padding: 12px 16px;
+  border: 1px solid hsl(var(--border-strong) / 0.6);
+  border-radius: 6px;
+  background: hsl(var(--popover));
+  box-shadow: 0 24px 56px -20px hsl(var(--shade) / 0.95);
+  font-size: 13px;
+  line-height: 20px;
+  color: hsl(var(--muted-foreground));
+  animation: tq-auth-rise 500ms 520ms var(--lp-ease) both;
+}
+.tq-auth .stage-satellite strong {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 500;
+}
+@container demo (max-width: 599.98px) {
+  .tq-auth .stage-satellite {
+    display: none;
+  }
+}
+@keyframes tq-auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.tq-auth .stage-status {
+  justify-content: center;
+  padding: 8px 0;
+}
+@media (min-width: 1024px) {
+  .tq-auth .stage-status {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 8px;
+  }
+}
+
+/* ---------- Stage: the cards of the views without a product picture ---------- */
+.tq-auth .stage-reveal:has(> .stage-card) {
+  display: grid;
+  place-items: center;
+}
+@media (min-width: 1024px) {
+  @container demo (min-width: 600px) {
+    .tq-auth .stage-reveal:has(> .stage-card) {
+      position: absolute;
+      inset: 0;
+    }
+  }
+}
+.tq-auth .stage-reveal:has(> .stage-card)::before {
+  content: none;
+}
+.tq-auth .stage-card {
+  width: min(100%, 400px);
+  padding: 20px 24px 22px;
+  border: 1px solid hsl(var(--border-strong) / 0.6);
+  border-radius: 6px;
+  background: hsl(var(--popover));
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.05), 0 40px 80px -32px hsl(var(--shade) / 0.95);
+  font-size: 13px;
+  line-height: 20px;
+  color: hsl(var(--foreground-soft));
+}
+.tq-auth .stage-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .stage-card__title .ico {
+  width: 14px;
+  height: 14px;
+  color: hsl(var(--primary));
+}
+.tq-auth .stage-rows {
+  margin-top: 10px;
+  border-top: 1px solid hsl(var(--border));
+}
+.tq-auth .stage-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.tq-auth .stage-rows > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.tq-auth .stage-rows dd {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: hsl(var(--muted-foreground));
+  text-align: right;
+}
+.tq-auth .stage-rows dd[data-new] {
+  color: hsl(var(--primary));
+  font-weight: 500;
+}
+.tq-auth .closed .stage-rows dd {
+  color: hsl(var(--foreground));
+}
+.tq-auth .closed .stage-rows .ico {
+  width: 14px;
+  height: 14px;
+  color: hsl(var(--profit));
+  stroke-width: 2.25;
+}
+.tq-auth .mail__to {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .mail__to strong {
+  min-width: 0;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  overflow-wrap: anywhere;
+}
+.tq-auth .mail__label {
+  margin-top: 16px;
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+.tq-auth .mail__code {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tq-auth .mail__code i {
+  flex: 1 1 0;
+  display: grid;
+  place-items: center;
+  height: 48px;
+  border: 1px solid hsl(var(--border-strong) / 0.7);
+  border-radius: 4px;
+  background: hsl(var(--background));
+  transition: border-color var(--dur-2) var(--ease-in);
+}
+.tq-auth .mail__code i:nth-child(3) {
+  margin-right: 8px;
+}
+.tq-auth .mail__code i::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: hsl(var(--foreground));
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity var(--dur-2) var(--ease-in), transform var(--dur-3) var(--lp-ease), background-color var(--dur-2) var(--ease-in);
+}
+.tq-auth .mail__code i[data-on] {
+  border-color: hsl(var(--foreground-soft));
+}
+.tq-auth .mail__code i[data-on]::after {
+  opacity: 1;
+  transform: none;
+}
+.tq-auth .mail__code[data-done] i {
+  border-color: hsl(var(--profit));
+}
+.tq-auth .mail__code[data-done] i::after {
+  background: hsl(var(--profit));
+}
+.tq-auth .mail__hint {
+  margin-top: 12px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .reset__steps {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .reset__steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+  padding: 0 10px;
+  margin: 0 -10px;
+  border-radius: 4px;
+}
+.tq-auth .reset__steps .n {
+  display: inline-flex;
+  width: 18px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+}
+.tq-auth .reset__steps li[aria-current='step'] {
+  background: hsl(var(--primary) / 0.1);
+  box-shadow: inset 2px 0 0 hsl(var(--primary));
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+.tq-auth .reset__steps li[data-done] .n {
+  color: hsl(var(--profit));
+}
+.tq-auth .reset__steps .ico {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.25;
+}
+
+/* ---------- Stage: the closing bar (note, cells, the pause control) ---------- */
+.tq-auth .stage-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 16px;
+  padding-top: 16px;
+  border-top: 1px solid hsl(var(--border));
+}
+.tq-auth .bar-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .bar-cells {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid hsl(var(--border));
+}
+.tq-auth .bar-cells > div {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 12px 12px 0 0;
+  min-width: 0;
+}
+.tq-auth .bar-cells > div + div {
+  padding-left: 12px;
+  border-left: 1px solid hsl(var(--border));
+}
+.tq-auth .bar-cells dt {
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .bar-cells dd {
+  display: grid;
+  gap: 2px;
+}
+.tq-auth .bar-cells dd span {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+.tq-auth .bar-cells small {
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .bar-cells.facts dt {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+.tq-auth .stage-pause {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -6px;
+  border-radius: 9999px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-auth .stage-pause::before {
+  content: '';
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 1px solid hsl(var(--border-strong) / 0.7);
+  border-radius: inherit;
+  background: hsl(var(--background) / 0.6);
+  transition: border-color var(--dur-1) var(--ease-in);
+}
+.tq-auth .stage-pause:hover {
+  color: hsl(var(--foreground));
+}
+.tq-auth .stage-pause:hover::before {
+  border-color: hsl(var(--muted-foreground));
+}
+.tq-auth .stage-pause svg {
+  position: relative;
+  width: 14px;
+  height: 14px;
+}
+@media (min-width: 1024px) {
+  .tq-auth .stage-bar {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 3fr) auto;
+    align-items: stretch;
+    gap: 0 20px;
+    min-height: 84px;
+    padding-top: 0;
+    background: hsl(var(--background) / 0.82);
+  }
+  .tq-auth .bar-note {
+    align-content: center;
+    padding: 14px 0;
+  }
+  .tq-auth .bar-cells {
+    grid-column: auto;
+    border-top: 0;
+  }
+  .tq-auth .bar-cells > div {
+    align-content: center;
+    padding: 14px 16px;
+    border-left: 1px solid hsl(var(--border));
+  }
+  .tq-auth .bar-cells > div + div {
+    padding-left: 16px;
+  }
+  .tq-auth .stage-bar[data-cells='none'] {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .tq-auth .stage-pause {
+    align-self: center;
+    margin: 0 -6px 0 0;
+  }
+  /* A narrow stage (a 1024 px window): the note takes its own row above the cells. */
+  @container stage (max-width: 620px) {
+    .tq-auth .stage-bar:not([data-cells='none']) {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    /* The taller bar leaves the picture less height (`--fit-h`). */
+    .tq-auth[data-scene='journal'] .stage-box,
+    .tq-auth[data-scene='signup'] .stage-box {
+      --bar-h: 136px;
+    }
+    .tq-auth .stage-bar:not([data-cells='none']) .bar-note {
+      padding: 12px 0 0;
+    }
+    .tq-auth .stage-bar:not([data-cells='none']) .bar-cells {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      margin-top: 10px;
+      border-top: 1px solid hsl(var(--border));
+    }
+    .tq-auth .stage-bar:not([data-cells='none']) .bar-cells > div:first-child {
+      padding-left: 0;
+      border-left: 0;
+    }
+  }
+}
+
+/* ---------- Motion ---------- */
+/* Content that appears after the first paint (a view change, a notice) fades and rises; nothing in the form moves on arrival. */
+.tq-auth .fade {
+  animation: tq-auth-in var(--dur-3) var(--ease-in) both;
+}
+@keyframes tq-auth-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.tq-auth .notice.fade {
+  animation-name: tq-fade;
+  animation-duration: var(--dur-2);
+}
+/* Reduced motion: index.css already cuts every animation and transition to 0.01 ms; these have no end state to jump to. */
+@media (prefers-reduced-motion: reduce) {
+  .tq-auth .stage-pause {
+    display: none;
+  }
+  .tq-auth .btn[data-busy]::after,
+  .tq-auth .code .slot.caret::after {
+    animation: none;
+  }
+}
+@media (forced-colors: active) {
+  .tq-auth .notice,
+  .tq-auth .stage-card,
+  .tq-auth .auth-card {
+    border: 1px solid CanvasText;
+  }
+}

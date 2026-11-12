@@ -1,0 +1,19 @@
+.ds-demo .ss-stage {
+  overflow: hidden;
+}
+/* The app frame is the window (DESIGN-SHARED S8.5): it carries the kit's window class, and its own border, not the kit's hairline. */
+.ds-demo .ds-window {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  background: none;
+  box-shadow: none;
+}
+/* This crop tells the month: both panels share one height and run off the bottom together; recent trades sit below it. */
+.ds-demo .tq-dash__grid {
+  align-items: stretch;
+}
+.ds-demo .tq-panel[data-part='trades'] {
+  display: none;
+}

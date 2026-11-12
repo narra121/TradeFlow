@@ -1,11 +1,12 @@
 import type { Trade } from '@/types/trade';
+import { decodeJwtPayload } from '@/lib/jwt';
 import { openDatabase, deleteSyncKeys } from './trade-cache';
 
 function getUserIdFromToken(): string | null {
   try {
     const token = localStorage.getItem('idToken');
     if (!token) return null;
-    return JSON.parse(atob(token.split('.')[1])).sub ?? null;
+    return decodeJwtPayload(token)?.sub ?? null;
   } catch { return null; }
 }
 

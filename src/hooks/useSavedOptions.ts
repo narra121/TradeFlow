@@ -1,10 +1,10 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useGetSavedOptionsQuery, useUpdateSavedOptionsMutation } from '@/store/api';
 import type { SavedOptions } from '@/store/api';
 import { toast } from 'sonner';
 
-// Default options - used as fallback
-const defaultOptions: SavedOptions = {
+/** Starter lists; Settings › Trade options resets to them. */
+export const defaultOptions: SavedOptions = {
   symbols: [],
   strategies: ['Breakout', 'Support Bounce', 'Resistance Rejection', 'Trend Continuation', 'Range Trade', 'News Trade'],
   sessions: ['Asian', 'London Open', 'London Close', 'NY Open', 'NY PM', 'London/NY Overlap'],
@@ -13,6 +13,7 @@ const defaultOptions: SavedOptions = {
   mistakes: ['FOMO', 'Early Entry', 'Late Entry', 'Early Exit', 'Moved Stop Loss', 'Wrong Position Size', 'Revenge Trade', 'Overtrading', 'No Stop Loss'],
   lessons: [],
   timeframes: [],
+  tags: [],
 };
 
 export function useSavedOptions() {
@@ -34,15 +35,38 @@ export function useSavedOptions() {
       mistakes: apiOptions.mistakes ?? defaultOptions.mistakes,
       lessons: apiOptions.lessons ?? defaultOptions.lessons,
       timeframes: apiOptions.timeframes ?? defaultOptions.timeframes,
+      tags: apiOptions.tags ?? defaultOptions.tags,
     };
   }, [apiOptions]);
 
+  // Edits are applied one after another to the latest value, so two quick edits cannot overwrite each other.
+  const latest = useRef<SavedOptions>(options);
+  latest.current = options;
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+  const pending = useRef(0);
+  const loaded = !!apiOptions;
+
   const updateWithNewOptions = useCallback(
     (updater: (prev: SavedOptions) => SavedOptions) => {
-      const newOptions = updater(options);
-      updateOptions(newOptions);
+      // Never write defaults over saved options that failed to load.
+      if (!loaded) {
+        toast.error('Your saved options are not loaded yet. Reload the page and try again.');
+        return;
+      }
+      const next = updater(latest.current);
+      latest.current = next;
+      const run = () => {
+        const r = updateOptions(next) as unknown as { unwrap?: () => Promise<unknown> } | undefined;
+        return r && typeof r.unwrap === 'function' ? r.unwrap() : Promise.resolve(r);
+      };
+      pending.current += 1;
+      // Each queued edit already contains the earlier ones (computed from `latest`); the first runs at once.
+      const started = pending.current === 1 ? run() : queue.current.then(run);
+      queue.current = started.catch(() => undefined).finally(() => {
+        pending.current -= 1;
+      });
     },
-    [options, updateOptions]
+    [loaded, updateOptions]
   );
 
   const addToCategory = useCallback(
@@ -89,17 +113,28 @@ export function useSavedOptions() {
   const removeMistake = useCallback((s: string) => removeFromCategory('mistakes', s), [removeFromCategory]);
   const addLesson = useCallback((s: string) => addToCategory('lessons', s, 'Lesson'), [addToCategory]);
   const removeLesson = useCallback((s: string) => removeFromCategory('lessons', s), [removeFromCategory]);
+  const addTag = useCallback((s: string) => addToCategory('tags', s, 'Tag'), [addToCategory]);
+  const removeTag = useCallback((s: string) => removeFromCategory('tags', s), [removeFromCategory]);
   const addTimeframe = useCallback((s: string) => addToCategory('timeframes', s, 'Timeframe'), [addToCategory]);
   const removeTimeframe = useCallback((s: string) => removeFromCategory('timeframes', s), [removeFromCategory]);
 
+  /** Resets only the five trade-option lists; symbols, lessons and timeframes are the user's own and stay. */
   const resetToDefaults = useCallback(() => {
-    updateOptions(defaultOptions);
-  }, [updateOptions]);
+    updateWithNewOptions((prev) => ({
+      ...prev,
+      strategies: defaultOptions.strategies,
+      sessions: defaultOptions.sessions,
+      marketConditions: defaultOptions.marketConditions,
+      newsEvents: defaultOptions.newsEvents,
+      mistakes: defaultOptions.mistakes,
+    }));
+  }, [updateWithNewOptions]);
 
   const isLoading = queryLoading || isFetching || isUpdating;
 
   return {
     options,
+    loaded,
     isLoading,
     isUpdating,
     addSymbol,
@@ -118,6 +153,8 @@ export function useSavedOptions() {
     removeLesson,
     addTimeframe,
     removeTimeframe,
+    addTag,
+    removeTag,
     resetToDefaults,
   };
 }

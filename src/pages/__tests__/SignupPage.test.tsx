@@ -13,7 +13,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('@/components/auth/AuthPage', () => ({
-  AuthPage: (props: any) => (
+  AuthPage: (props: { initialView: string; onLogin: () => void }) => (
     <div data-testid="auth-page" data-view={props.initialView}>
       {props.initialView}
       <button data-testid="trigger-login" onClick={() => props.onLogin()}>
@@ -47,7 +47,7 @@ describe('SignupPage', () => {
     renderWithProviders(<SignupPage />);
     const trigger = screen.getByTestId('trigger-login');
     await user.click(trigger);
-    expect(mockNavigate).toHaveBeenCalledWith('/app');
+    expect(mockNavigate).toHaveBeenCalledWith('/app', { replace: true });
   });
 });
 
@@ -86,7 +86,7 @@ describe('SignupPage - extended', () => {
     renderWithProviders(<SignupPage />);
     const trigger = screen.getByTestId('trigger-login');
     await user.click(trigger);
-    expect(mockNavigate).toHaveBeenCalledWith('/app');
+    expect(mockNavigate).toHaveBeenCalledWith('/app', { replace: true });
     expect(mockNavigate).not.toHaveBeenCalledWith('/');
     expect(mockNavigate).not.toHaveBeenCalledWith('/login');
   });

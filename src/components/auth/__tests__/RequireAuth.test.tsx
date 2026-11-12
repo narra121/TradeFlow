@@ -6,12 +6,12 @@ import { HelmetProvider } from 'react-helmet-async';
 
 const mockUseAppSelector = vi.fn();
 vi.mock('@/store/hooks', () => ({
-  useAppSelector: (fn: any) => mockUseAppSelector(fn),
+  useAppSelector: (fn: unknown) => mockUseAppSelector(fn),
   useAppDispatch: () => vi.fn(),
 }));
 
 // Dynamic import to ensure mock is applied
-let RequireAuth: any;
+let RequireAuth: typeof import("../RequireAuth").RequireAuth;
 beforeAll(async () => {
   const mod = await import('../RequireAuth');
   RequireAuth = mod.RequireAuth;

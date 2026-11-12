@@ -1,354 +1,381 @@
-import { useState, useMemo, useRef } from 'react';
-import { AccountCard } from '@/components/account/AccountCard';
-import { AddAccountModal } from '@/components/account/AddAccountModal';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { MoreHorizontal, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { TradingAccount, AccountStatus, AccountType } from '@/types/trade';
-import { Plus, Building2, AlertTriangle, Loader2, Search, X } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
-import { RefreshButton } from '@/components/ui/refresh-button';
-import { AdSlot } from '@/components/ads/AdSlot';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { DataTable, type DataColumn, type DataGroup } from '@/components/ui/data-table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
+import { Input } from '@/components/ui/input';
+import { Money } from '@/components/ui/money';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AccountPane } from '@/components/account/AccountPane';
+import type { AccountPayload } from '@/components/account/accountForm';
+import { DeleteAccountDialog } from '@/components/account/DeleteAccountDialog';
+import { returnFocusByName } from '@/components/account/returnFocus';
+import { SidePaneLayout } from '@/components/calendar/SidePane';
+import { WritableAccounts } from '@/components/billing/WritableAccounts';
+import { FREE_ACCOUNTS } from '@/components/billing/freeLimits';
+import { ScopeBarSlot, usePageChrome } from '@/components/shell/chrome';
+import { accountStatusLabels, accountTypeLabels } from '@/hooks/useAccounts';
+import { useEntitlements } from '@/hooks/useEntitlements';
+import { useScopeTrades } from '@/hooks/useScopeTrades';
+import { useCreateAccountMutation, useDeleteAccountMutation, useGetAccountsQuery, useUpdateAccountMutation, useUpdateAccountStatusMutation } from '@/store/api';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSelectedAccount } from '@/store/slices/accountsSlice';
-import { useGetAccountsQuery, useCreateAccountMutation, useUpdateAccountMutation, useDeleteAccountMutation, useUpdateAccountStatusMutation } from '@/store/api';
-import { AccountCardSkeleton, StatCardSkeleton } from '@/components/ui/loading-skeleton';
-import { accountTypeLabels, accountStatusLabels, accountStatusColors } from '@/hooks/useAccounts';
+import { lastTradeText, netSinceStart, sortAccounts, statusSummary, tallyByAccount, totalsByCurrency, type AccountSortId } from '@/components/account/accountStats';
+import { readOnlyAccountIds } from '@/lib/accountWritable';
+import { emitPlanSignal } from '@/lib/planErrors';
+import { readApiError } from '@/lib/apiError';
+import { formatDateTime, formatPercent } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import type { AccountStatus, AccountType, TradingAccount } from '@/types/trade';
 
-const STATUS_FILTERS: { value: AccountStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'All Statuses' },
-  { value: 'active', label: 'Active' },
-  { value: 'breached', label: 'Breached' },
-  { value: 'passed', label: 'Passed' },
-  { value: 'withdrawn', label: 'Withdrawn' },
-  { value: 'inactive', label: 'Inactive' },
-];
+const STATUSES: AccountStatus[] = ['active', 'passed', 'breached', 'withdrawn', 'inactive'];
+const CONFIRM_STATUS: AccountStatus[] = ['breached', 'withdrawn'];
+const OPEN_ENDED = { startDate: '2000-01-01', endDate: '2099-12-31' } as const;
 
 export function AccountsView() {
   const dispatch = useAppDispatch();
-  const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
-  const { data: accountsData, isLoading, isFetching, refetch } = useGetAccountsQuery();
-  const showSkeleton = isLoading;
-  const isRefreshing = isFetching && !isLoading;
-  const [createAccount] = useCreateAccountMutation();
-  const [updateAccount] = useUpdateAccountMutation();
-  const [deleteAccount] = useDeleteAccountMutation();
-  const [updateAccountStatus] = useUpdateAccountStatusMutation();
-  
-  const accounts = accountsData?.accounts || [];
-  
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
-  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const selectedAccountId = useAppSelector((s) => s.accounts.selectedAccountId);
+  const { data, isLoading, isError, refetch } = useGetAccountsQuery();
+  const [createAccount, { isLoading: creating }] = useCreateAccountMutation();
+  const [updateAccount, { isLoading: updating }] = useUpdateAccountMutation();
+  const [deleteAccount, { isLoading: deletingNow }] = useDeleteAccountMutation();
+  const [updateStatus] = useUpdateAccountStatusMutation();
+  const ent = useEntitlements();
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const accounts = useMemo(() => data?.accounts ?? [], [data]);
+  const everything = useScopeTrades({ accountId: 'ALL', ...OPEN_ENDED }, { skip: accounts.length === 0 });
+  const tally = useMemo(() => tallyByAccount(everything.trades), [everything.trades]);
+  const capped = everything.truncated;
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<AccountStatus | 'all'>('all');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [sort, setSort] = useState<{ id: AccountSortId; dir: 'asc' | 'desc' }>({ id: 'name', dir: 'asc' });
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set(['other']));
+  const [find, setFind] = useState('');
+  const [deleting, setDeleting] = useState<TradingAccount | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const returnName = useRef<string | null>(null);
+  const [statusAsk, setStatusAsk] = useState<{ account: TradingAccount; status: AccountStatus } | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [leaveAsk, setLeaveAsk] = useState(false);
 
-  const filteredAccounts = useMemo(() => {
-    let result = accounts;
-    if (statusFilter !== 'all') {
-      result = result.filter(acc => acc.status === statusFilter);
+  const limited = !!ent.plan && !ent.can('unlimited_accounts');
+  const atLimit = limited && accounts.length >= FREE_ACCOUNTS;
+  const activeCount = accounts.filter((a) => a.status === 'active').length;
+  const readOnlyIds = useMemo(() => readOnlyAccountIds(accounts, ent.writableAccountIds), [accounts, ent.writableAccountIds]);
+
+  usePageChrome({
+    statement: `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} · ${activeCount} active${limited ? ` · ${Math.min(accounts.length, FREE_ACCOUNTS)} of ${FREE_ACCOUNTS} on Free` : ''}`,
+  });
+
+  // `?account=new` or `?account=<id>`; `?new=1` is the link the activation panel uses.
+  const paneParam = params.get('account') ?? (params.get('new') === '1' ? 'new' : null);
+  const editing = paneParam && paneParam !== 'new' ? accounts.find((a) => a.id === paneParam) ?? null : null;
+  const paneOpen = paneParam === 'new' || (!!paneParam && (isLoading || !!editing));
+
+  const setPane = useCallback(
+    (value: string | null, replace = false) => {
+      const next = new URLSearchParams(params);
+      next.delete('new');
+      if (value) next.set('account', value);
+      else next.delete('account');
+      setParams(next, { replace });
+    },
+    [params, setParams],
+  );
+
+  const closePane = useCallback(() => {
+    setDirty(false);
+    setLeaveAsk(false);
+    setSaveError(null);
+    setPane(null, true);
+  }, [setPane]);
+  const requestClose = useCallback(() => (dirty ? setLeaveAsk(true) : closePane()), [dirty, closePane]);
+
+  useEffect(() => {
+    if (paneOpen) headingRef.current?.focus({ preventScroll: true });
+  }, [paneOpen, paneParam]);
+
+  const addAccount = () => {
+    if (atLimit) {
+      emitPlanSignal({ kind: 'mutation', code: 'PLAN_REQUIRED', feature: 'unlimited_accounts', message: `You have ${accounts.length} of ${FREE_ACCOUNTS} accounts on Free. Pro has no account limit.` });
+      return;
     }
-    const q = searchQuery.toLowerCase().trim();
-    if (q) {
-      result = result.filter(acc =>
-        acc.name.toLowerCase().includes(q) ||
-        acc.broker.toLowerCase().includes(q) ||
-        (accountTypeLabels[acc.type as AccountType] || '').toLowerCase().includes(q) ||
-        acc.currency.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [searchQuery, statusFilter, accounts]);
-
-  const hasActiveFilters = searchQuery.trim() !== '' || statusFilter !== 'all';
-
-  const handleDeleteConfirm = async () => {
-    if (deletingAccountId) {
-      setIsDeleting(true);
-      try {
-        await deleteAccount(deletingAccountId).unwrap();
-        if (selectedAccountId === deletingAccountId) {
-          dispatch(setSelectedAccount(null));
-        }
-        setDeletingAccountId(null);
-      } catch (error: any) {
-        // Toast middleware handles error display
-      } finally {
-        setIsDeleting(false);
-      }
-    }
+    setPane('new');
   };
 
-  const handleAddAccount = async (account: Omit<TradingAccount, 'id' | 'createdAt'>) => {
-    setIsSaving(true);
+  const save = async (payload: AccountPayload) => {
+    setSaveError(null);
     try {
-      if (editingAccount) {
-        if (!editingAccount.id) {
-          throw new Error('Account id is missing; cannot update account');
-        }
-        await updateAccount({ id: editingAccount.id, payload: account }).unwrap();
-        setEditingAccount(null);
-      } else {
-        await createAccount(account).unwrap();
-      }
-      setIsAddModalOpen(false);
-    } catch (error) {
-      // Toast middleware handles error display
-    } finally {
-      setIsSaving(false);
+      if (editing) await updateAccount({ id: editing.id, payload }).unwrap();
+      else await createAccount(payload).unwrap();
+      closePane();
+    } catch (e) {
+      const err = readApiError(e);
+      setSaveError(err.status === 402 ? null : `Couldn’t save the account. ${err.message}`);
     }
   };
 
-  const handleEdit = (account: TradingAccount) => {
-    setEditingAccount(account);
-    setIsAddModalOpen(true);
+  const changeStatus = async (a: TradingAccount, status: AccountStatus) => {
+    try {
+      await updateStatus({ id: a.id, status }).unwrap();
+      toast(`${a.name} marked ${accountStatusLabels[status].toLowerCase()}`);
+    } catch {
+      // the failure is reported by the toast middleware
+    }
   };
 
-  const handleStatusChange = async (id: string, status: AccountStatus) => {
-    try { await updateAccountStatus({ id, status }).unwrap(); } catch { /* toast middleware handles */ }
+  const askStatus = (a: TradingAccount, status: AccountStatus) => {
+    returnName.current = `Actions for ${a.name}`;
+    setStatusAsk({ account: a, status });
   };
 
-  const totalBalance = useMemo(
-    () => filteredAccounts.reduce((sum, acc) => sum + acc.balance, 0),
-    [filteredAccounts]
-  );
-  const totalPnl = useMemo(
-    () => filteredAccounts.reduce((sum, acc) => sum + (acc.balance - acc.initialBalance), 0),
-    [filteredAccounts]
-  );
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setDeleteError(null);
+    try {
+      await deleteAccount(deleting.id).unwrap();
+      if (selectedAccountId === deleting.id) dispatch(setSelectedAccount(null));
+      setDeleting(null);
+    } catch (e) {
+      setDeleteError(`Couldn’t delete the account. ${readApiError(e).message}`);
+    }
+  };
+
+  const viewJournal = (a: TradingAccount) => {
+    const previous = selectedAccountId;
+    dispatch(setSelectedAccount(a.id));
+    navigate('/app/dashboard');
+    toast(`Showing ${a.name}`, { action: { label: 'Undo', onClick: () => dispatch(setSelectedAccount(previous)) } });
+  };
+
+  const needle = find.trim().toLowerCase();
+  const visible = useMemo(() => accounts.filter((a) => !needle || a.name.toLowerCase().includes(needle) || (a.broker ?? '').toLowerCase().includes(needle)), [accounts, needle]);
+  const groups: DataGroup<TradingAccount>[] = useMemo(() => {
+    const active = sortAccounts(visible.filter((a) => a.status === 'active'), sort.id, sort.dir, tally);
+    const other = sortAccounts(visible.filter((a) => a.status !== 'active'), sort.id, sort.dir, tally);
+    const out: DataGroup<TradingAccount>[] = [{ key: 'active', label: `Active · ${active.length}`, rows: active }];
+    if (other.length) out.push({ key: 'other', label: `Other · ${other.length}`, rows: other, meta: statusSummary(other, accountStatusLabels) });
+    return out;
+  }, [visible, sort, tally]);
+  const totals = useMemo(() => totalsByCurrency(visible.filter((a) => a.status === 'active')), [visible]);
+  const rows = useMemo(() => groups.flatMap((g) => g.rows), [groups]);
+
+  const onSort = (id: string) => setSort((s) => (s.id === id ? { id: s.id, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { id: id as AccountSortId, dir: id === 'name' || id === 'broker' ? 'asc' : 'desc' }));
+
+  const tradesText = (a: TradingAccount): string => {
+    const n = tally.get(a.id)?.trades ?? 0;
+    return capped ? `${n.toLocaleString('en-US')}+` : n.toLocaleString('en-US');
+  };
+
+  const columns: DataColumn<TradingAccount>[] = [
+    {
+      id: 'name',
+      header: 'Name',
+      sortable: true,
+      cell: (a) => (
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate font-medium">{a.name}{a.status !== 'active' && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{accountStatusLabels[a.status]}</span>}</span>
+          <span className="flex items-baseline gap-1.5 text-xs text-muted-foreground sm:hidden">
+            <Money value={netSinceStart(a).amount} currency={a.currency} className="text-xs" />
+            {netSinceStart(a).pct !== null && <span className="font-mono">{formatPercent(netSinceStart(a).pct, 1, { sign: true })}</span>}
+          </span>
+          {readOnlyIds.has(a.id) && <span className="text-xs text-warning">Read-only on Free</span>}
+        </span>
+      ),
+    },
+    { id: 'broker', header: 'Broker', sortable: true, hideBelow: 'md', cell: (a) => <span className="text-foreground-soft">{a.broker}</span> },
+    { id: 'type', header: 'Type', hideBelow: 'lg', cell: (a) => <span className="text-foreground-soft">{accountTypeLabels[a.type as AccountType] ?? a.type}</span> },
+    { id: 'currency', header: 'Cur', hideBelow: 'sm', cell: (a) => <span className="font-mono text-xs text-foreground-soft">{a.currency}</span> },
+    { id: 'balance', header: 'Balance', align: 'right', sortable: true, cell: (a) => <Money value={a.balance} currency={a.currency} sign={false} neutral /> },
+    {
+      id: 'net',
+      header: 'Net since start',
+      align: 'right',
+      sortable: true,
+      hideBelow: 'sm',
+      cell: (a) => {
+        const n = netSinceStart(a);
+        return (
+          <span className="inline-flex items-baseline gap-1.5">
+            <Money value={n.amount} currency={a.currency} />
+            {n.pct !== null && <span className="font-mono text-xs text-muted-foreground">{formatPercent(n.pct, 1, { sign: true })}</span>}
+          </span>
+        );
+      },
+    },
+    { id: 'trades', header: 'Trades', align: 'right', sortable: true, hideBelow: 'md', cell: (a) => <span className="font-mono tabular-nums">{tradesText(a)}</span> },
+    {
+      id: 'last',
+      header: 'Last trade',
+      sortable: true,
+      hideBelow: 'lg',
+      cell: (a) => {
+        const at = tally.get(a.id)?.lastTradeAt;
+        return <span className="text-foreground-soft" title={at ? formatDateTime(at) : undefined}>{lastTradeText(at)}</span>;
+      },
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      srHeader: true,
+      align: 'right',
+      cell: (a) => (
+        <span className="flex items-center justify-end gap-1">
+          <Button type="button" variant="outline" size="sm" onClick={() => viewJournal(a)} aria-label={`View journal for ${a.name}`} className="max-sm:hidden">View journal</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={`Actions for ${a.name}`}><MoreHorizontal className="h-4 w-4" aria-hidden="true" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => viewJournal(a)} className="sm:hidden">View journal</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setPane(a.id)}>Edit</DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Set status</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {STATUSES.map((s) => (
+                    <DropdownMenuItem key={s} onSelect={() => (s === a.status ? undefined : CONFIRM_STATUS.includes(s) ? askStatus(a, s) : void changeStatus(a, s))} aria-checked={s === a.status} role="menuitemradio">
+                      <span className="mr-2 inline-block w-4 text-primary" aria-hidden="true">{s === a.status ? '✓' : ''}</span>{accountStatusLabels[s]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => { returnName.current = `Actions for ${a.name}`; setDeleteError(null); setDeleting(a); }} className="text-loss focus:text-loss">Delete…</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </span>
+      ),
+    },
+  ];
+
+  const deleteTrades = deleting ? (capped ? null : tally.get(deleting.id)?.trades ?? 0) : 0;
+
+  const body = () => {
+    if (isError) return <ErrorState title="Couldn’t load your accounts." description="Check your connection and try again." onRetry={() => void refetch()} />;
+    if (isLoading) return <div className="space-y-1.5" aria-busy="true">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-11" />)}</div>;
+    if (accounts.length === 0) {
+      return <EmptyState title="Create your first trading account." description="Trades belong to an account, which also sets the currency of your P&L." action={<Button size="sm" onClick={addAccount}>Add account</Button>} />;
+    }
+    if (visible.length === 0) return <EmptyState title="No account matches that." action={<Button size="sm" variant="outline" onClick={() => setFind('')}>Clear search</Button>} />;
+    return (
+      <div className="space-y-3">
+        {limited && accounts.length > FREE_ACCOUNTS && ent.writableAccountIds && (
+          <WritableAccounts accounts={accounts.map((a) => ({ id: a.id, name: a.name, currency: a.currency }))} chosen={ent.writableAccountIds} />
+        )}
+        <div className="overflow-x-auto">
+          <DataTable
+            caption="Trading accounts"
+            rows={rows}
+            columns={columns}
+            getRowId={(a) => a.id}
+            sort={{ id: sort.id, dir: sort.dir }}
+            onSort={onSort}
+            groups={groups}
+            collapsed={collapsed}
+            onToggleGroup={(k) => setCollapsed((c) => { const n = new Set(c); if (n.has(k)) n.delete(k); else n.add(k); return n; })}
+            openId={paneParam}
+            rowClassName={(a) => cn('h-11', selectedAccountId === a.id && 'bg-[hsl(var(--row-selected))]')}
+          />
+        </div>
+        {totals.length > 0 && (
+          <dl className="flex flex-wrap items-baseline gap-x-6 gap-y-1 border-t border-border pt-3 text-13" aria-label="Totals of active accounts">
+            <dt className="text-muted-foreground">Totals, active accounts</dt>
+            {totals.map((t) => (
+              <dd key={t.currency} className="flex items-baseline gap-1.5">
+                <span className="font-mono text-xs text-muted-foreground">{t.currency}</span>
+                <Money value={t.balance} currency={t.currency} sign={false} neutral />
+                <span className="text-muted-foreground">(<Money value={t.net} currency={t.currency} />)</span>
+              </dd>
+            ))}
+          </dl>
+        )}
+        {capped && <p className="text-xs text-muted-foreground">Trade counts cover the newest 5,000 trades.</p>}
+      </div>
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Accounts</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">Add, edit, and monitor your trading accounts</p>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
-          <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline">Add Account</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Search & Status Filter */}
-      {!showSkeleton && accounts.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search accounts..."
-              className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-8 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  inputRef.current?.focus();
-                }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as AccountStatus | 'all')}>
-            <SelectTrigger className="w-full sm:w-[160px] h-9">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_FILTERS.map((sf) => (
-                <SelectItem key={sf.value} value={sf.value}>
-                  <div className="flex items-center gap-2">
-                    {sf.value !== 'all' && (
-                      <span className={cn(
-                        "w-2 h-2 rounded-full shrink-0",
-                        sf.value === 'active' && "bg-success",
-                        sf.value === 'breached' && "bg-destructive",
-                        sf.value === 'passed' && "bg-primary",
-                        sf.value === 'withdrawn' && "bg-warning",
-                        sf.value === 'inactive' && "bg-muted-foreground",
-                      )} />
-                    )}
-                    <span>{sf.label}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {hasActiveFilters && (
-            <span className="text-xs text-muted-foreground whitespace-nowrap self-center">
-              {filteredAccounts.length} of {accounts.length}
-            </span>
-          )}
-        </div>
+    <div>
+      {atLimit && (
+        <ScopeBarSlot side="left">
+          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-13" onClick={() => navigate('/app/settings/billing')}>Upgrade for unlimited accounts</Button>
+        </ScopeBarSlot>
       )}
+      <ScopeBarSlot side="right">
+        {accounts.length > 10 && (
+          <>
+            <label htmlFor="find-account" className="sr-only">Find account</label>
+            <Input id="find-account" data-page-find value={find} onChange={(e) => setFind(e.target.value)} placeholder="Find account" className="h-7 w-44 text-xs" />
+          </>
+        )}
+        <Button type="button" variant="outline" size="sm" onClick={addAccount}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Add account
+        </Button>
+      </ScopeBarSlot>
 
-      {/* Summary Stats */}
-      {showSkeleton ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <StatCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : (
-        <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 transition-opacity duration-200", isRefreshing && "opacity-60")}>
-          <div className="glass-card p-4 sm:p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              <span className="text-xs sm:text-sm text-muted-foreground">Total Accounts</span>
-            </div>
-            <p className="text-xl sm:text-2xl font-bold font-mono text-foreground">{filteredAccounts.length}</p>
-          </div>
-          <div className="glass-card p-4 sm:p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
-              <span className="text-xs sm:text-sm text-muted-foreground">Combined Balance</span>
-            </div>
-            <p className="text-xl sm:text-2xl font-bold font-mono text-foreground truncate">
-              ${totalBalance.toLocaleString()}
-            </p>
-          </div>
-          <div className="glass-card p-4 sm:p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
-              <span className="text-xs sm:text-sm text-muted-foreground">Total P&L</span>
-            </div>
-            <p className={`text-xl sm:text-2xl font-bold font-mono truncate ${totalPnl >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {totalPnl >= 0 ? '+' : ''}${totalPnl.toLocaleString()}
-            </p>
-          </div>
-        </div>
-      )}
+      <SidePaneLayout
+        open={paneOpen}
+        label={editing ? `Edit ${editing.name}` : 'New account'}
+        minMain={760}
+        onClose={requestClose}
+        pane={
+          <AccountPane
+            ref={headingRef}
+            key={paneParam ?? 'none'}
+            account={editing}
+            saving={creating || updating}
+            saveError={saveError}
+            onSubmit={(p) => void save(p)}
+            onRequestClose={requestClose}
+            onDirtyChange={setDirty}
+          />
+        }
+      >
+        {body()}
+      </SidePaneLayout>
 
-      {/* Accounts Grid */}
-      {showSkeleton ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <AccountCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : accounts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-            <Building2 className="w-8 h-8 text-primary/60" />
-          </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">Set up your first trading account</h3>
-          <p className="text-muted-foreground max-w-md mb-8">
-            Create an account to start tracking your trades. You can add prop firm challenges, live accounts, or demo accounts.
-          </p>
-          <div className="flex items-center gap-3">
-            <Button onClick={() => setIsAddModalOpen(true)} size="default" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Account
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {filteredAccounts.length === 0 ? (
-            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-              <Search className="w-8 h-8 text-muted-foreground/40 mb-3" />
-              <p className="text-sm text-muted-foreground">No accounts match your filters</p>
-            </div>
-          ) : filteredAccounts.map((account) => (
-            <AccountCard
-              key={account.id}
-              account={account}
-              isSelected={selectedAccountId === account.id}
-              onSelect={() => dispatch(setSelectedAccount(selectedAccountId === account.id ? null : account.id))}
-              onEdit={() => handleEdit(account)}
-              onDelete={() => setDeletingAccountId(account.id)}
-              onStatusChange={(status) => handleStatusChange(account.id, status)}
-            />
-          ))}
-
-          {/* Add Account Card */}
-          {!hasActiveFilters && (
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="glass-card p-6 border-dashed border-2 flex flex-col items-center justify-center gap-3 min-h-[140px] hover:border-primary/50 hover:bg-primary/5 transition-all group"
-            >
-              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-              <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                Add New Account
-              </span>
-            </button>
-          )}
-        </div>
-      )}
-
-      <AdSlot placementId="accounts-empty-space" className="mt-6" />
-
-      <AddAccountModal
-        open={isAddModalOpen}
-        onOpenChange={(open) => {
-          setIsAddModalOpen(open);
-          if (!open) setEditingAccount(null);
-        }}
-        onAddAccount={handleAddAccount}
-        editAccount={editingAccount}
-        isLoading={isSaving}
+      <DeleteAccountDialog
+        account={deleting}
+        tradeCount={deleteTrades}
+        busy={deletingNow}
+        returnFocusTo={returnName.current ?? undefined}
+        error={deleteError}
+        onCancel={() => setDeleting(null)}
+        onMarkInactive={() => { if (deleting) { void changeStatus(deleting, 'inactive'); setDeleting(null); } }}
+        onConfirm={() => void confirmDelete()}
       />
 
-      <AlertDialog open={!!deletingAccountId} onOpenChange={(open) => !open && setDeletingAccountId(null)}>
-        <AlertDialogContent>
+      <AlertDialog open={!!statusAsk} onOpenChange={(o) => !o && setStatusAsk(null)}>
+        <AlertDialogContent onCloseAutoFocus={(e) => returnFocusByName(returnName.current, e)}>
           <AlertDialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
-              </div>
-              <AlertDialogTitle>Delete Account</AlertDialogTitle>
-            </div>
-            <AlertDialogDescription className="pt-2">
-              Deleting this account will permanently remove all trades associated with it. This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Mark {statusAsk?.account.name} as {statusAsk ? accountStatusLabels[statusAsk.status].toLowerCase() : ''}?</AlertDialogTitle>
+            <AlertDialogDescription>The account moves to Other and stays fully visible. You can set it back to Active at any time.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={(e) => {
-                e.preventDefault();
-                handleDeleteConfirm();
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete Account'
-              )}
-            </AlertDialogAction>
+            <AlertDialogCancel autoFocus>Cancel</AlertDialogCancel>
+            <Button type="button" onClick={() => { if (statusAsk) void changeStatus(statusAsk.account, statusAsk.status); setStatusAsk(null); }}>Mark {statusAsk ? accountStatusLabels[statusAsk.status].toLowerCase() : ''}</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={leaveAsk} onOpenChange={(o) => !o && setLeaveAsk(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save changes to {editing?.name ?? 'this account'}?</AlertDialogTitle>
+            <AlertDialogDescription>You have unsaved changes in the account form.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel autoFocus>Keep editing</AlertDialogCancel>
+            <Button type="button" variant="outline" onClick={closePane}>Discard</Button>
+            <Button type="submit" form="account-pane-form" onClick={() => setLeaveAsk(false)}>Save</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

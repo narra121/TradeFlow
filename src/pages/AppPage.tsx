@@ -1,176 +1,228 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { AddTradeModal } from '@/components/dashboard/AddTradeModal';
-
-const DashboardView = lazy(() => import('@/components/views/DashboardView').then(m => ({ default: m.DashboardView })));
-const TradeLogView = lazy(() => import('@/components/views/TradeLogView').then(m => ({ default: m.TradeLogView })));
-const AnalyticsView = lazy(() => import('@/components/views/AnalyticsView').then(m => ({ default: m.AnalyticsView })));
-const GoalsView = lazy(() => import('@/components/views/GoalsView').then(m => ({ default: m.GoalsView })));
-const ProfileView = lazy(() => import('@/components/views/ProfileView').then(m => ({ default: m.ProfileView })));
-const SettingsView = lazy(() => import('@/components/views/SettingsView').then(m => ({ default: m.SettingsView })));
-const AccountsView = lazy(() => import('@/components/views/AccountsView').then(m => ({ default: m.AccountsView })));
-import { ImportTradesModal } from '@/components/dashboard/ImportTradesModal';
-import { useCreateTradeMutation, useBulkImportTradesMutation, useGetSavedOptionsQuery, useGetSubscriptionQuery } from '@/store/api';
-import { useGetAdConfigQuery } from '@/store/api/adConfigApi';
-import type { CreateTradePayload } from '@/lib/api';
+import { TopBar } from '@/components/shell/TopBar';
+import { ScopeBar } from '@/components/shell/ScopeBar';
+import { NoticeSlot } from '@/components/shell/NoticeSlot';
+import { IncidentBar } from '@/components/shell/IncidentBar';
+import { Helmet } from 'react-helmet-async';
+import { copy } from '@/copy';
+import { useGettingStarted } from '@/components/onboarding/useGettingStarted';
+import { useSyncServerPreferences } from '@/components/settings/usePreferences';
+import { useImportPending } from '@/lib/importFlowStore';
+import { ChromeProvider, useChromeState } from '@/components/shell/chrome';
+import { refreshData } from '@/components/shell/refresh';
+import { shiftRange } from '@/components/shell/ScopePeriod';
+import { focusNextRegion } from '@/lib/regions';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { MobileTabBar } from '@/components/shell/MobileTabBar';
+import { CommandPalette } from '@/components/shell/CommandPalette';
+import { ShortcutsDialog } from '@/components/shell/ShortcutsDialog';
+import { UpgradeDialog } from '@/components/billing/UpgradeDialog';
+import { PlanCard } from '@/components/billing/PlanCard';
+import { PaneHost } from '@/components/trade/PaneHost';
+import { isScopedPath, titleForPath } from '@/components/shell/navItems';
+import { Button } from '@/components/ui/button';
+import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts';
+import { useScopeTrades } from '@/hooks/useScopeTrades';
+import { useTradeParam } from '@/hooks/useTradeParam';
 import { useTradesSync } from '@/hooks/useTradesSync';
+import { useUiState } from '@/hooks/useUiState';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useGetSavedOptionsQuery } from '@/store/api';
 import { cn } from '@/lib/utils';
-import { Menu } from 'lucide-react';
-import type { Trade } from '@/types/trade';
-import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
-import { api } from '@/store/api/baseApi';
-import { useAppDispatch } from '@/store/hooks';
-import { getSubscriptionBannerReason } from '@/lib/subscriptionUtils';
 
-export function AppPage() {
-  const [createTrade] = useCreateTradeMutation();
-  const [bulkImportTrades] = useBulkImportTradesMutation();
-  const location = useLocation();
-  const navigate = useNavigate();
-  
-  // Fetch saved options on initial load (will be cached; global refetch is already disabled)
-  useGetSavedOptionsQuery();
+const DashboardView = lazy(() => import('@/components/views/DashboardView').then((m) => ({ default: m.DashboardView })));
+const TradeLogView = lazy(() => import('@/components/views/TradeLogView').then((m) => ({ default: m.TradeLogView })));
+const CalendarView = lazy(() => import('@/components/views/CalendarView').then((m) => ({ default: m.CalendarView })));
+const AnalyticsView = lazy(() => import('@/components/views/AnalyticsView').then((m) => ({ default: m.AnalyticsView })));
+const GoalsView = lazy(() => import('@/components/views/GoalsView').then((m) => ({ default: m.GoalsView })));
+const SettingsView = lazy(() => import('@/components/views/SettingsView').then((m) => ({ default: m.SettingsView })));
+const AccountsView = lazy(() => import('@/components/views/AccountsView').then((m) => ({ default: m.AccountsView })));
+const ImportView = lazy(() => import('@/components/views/ImportView').then((m) => ({ default: m.ImportView })));
+const InsightsView = lazy(() => import('@/components/insights/InsightsView').then((m) => ({ default: m.InsightsView })));
+const ChatView = lazy(() => import('@/components/chat/ChatView').then((m) => ({ default: m.ChatView })));
 
-  // Fetch subscription status on initial load (will be cached)
-  const { data: subscription } = useGetSubscriptionQuery();
+function RouteFallback() {
+  return (
+    <div className="flex h-64 items-center justify-center" role="status" aria-label="Loading">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
+}
 
-  // Prefetch ad config on app load
-  useGetAdConfigQuery();
-  
-  // Centralized trades sync with account selection
-  useTradesSync();
+/** Old Stripe return URLs and bookmarks: profile and billing live inside Settings now; the query string is kept. */
+function RedirectTo({ to }: { to: string }) {
+  const { search } = useLocation();
+  return <Navigate to={`${to}${search}`} replace />;
+}
+
+function NotFoundInApp() {
+  return (
+    <div className="max-w-md space-y-3 py-10">
+      <h2 className="text-base font-semibold">{copy.frame.notFound.title}</h2>
+      <p className="text-sm text-muted-foreground">{copy.frame.notFound.body}</p>
+      <Button asChild><Link to="/app/dashboard">Go to the dashboard</Link></Button>
+    </div>
+  );
+}
+
+/** Route-level boundary: a broken screen shows a reference id and keeps the frame usable. */
+class RouteErrorBoundary extends Component<{ children: ReactNode; resetKey: string }, { error: Error | null; id: string }> {
+  state = { error: null as Error | null, id: '' };
+  static getDerivedStateFromError(error: Error) {
+    return { error, id: Math.random().toString(36).slice(2, 10) };
+  }
+  componentDidUpdate(prev: { resetKey: string }) {
+    if (prev.resetKey !== this.props.resetKey && this.state.error) this.setState({ error: null });
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    import('@/lib/errorReporter').then((m) => m.reportReactError(error, info)).catch(() => undefined);
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    const id = this.state.id;
+    return (
+      <div role="alert" className="max-w-md space-y-3 py-10">
+        <h2 className="text-base font-semibold">{copy.frame.boundary.title}</h2>
+        <p className="text-sm text-muted-foreground">{copy.frame.boundary.body}</p>
+        <p className="font-mono text-xs text-muted-foreground">Reference {id}</p>
+        <div className="flex gap-2">
+          <Button onClick={() => window.location.reload()}>{copy.frame.boundary.reload}</Button>
+          <Button asChild variant="outline"><a href={`mailto:support@tradequt.com?subject=${encodeURIComponent(`TradeQut error ${id}`)}&body=${encodeURIComponent(`Reference ${id}\nPage ${window.location.pathname}`)}`}>Report this</a></Button>
+        </div>
+      </div>
+    );
+  }
+}
+
+function AppFrame() {
   const isMobile = useIsMobile();
-  const dispatch = useAppDispatch();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [isAddTradeOpen, setIsAddTradeOpen] = useState(false);
-  const [isImportTradesOpen, setIsImportTradesOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const trade = useTradeParam();
+  const [ui, setUi] = useUiState();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
-  const bannerReason = getSubscriptionBannerReason(subscription);
+  useGetSavedOptionsQuery();
+  useTradesSync();
+  const { trades } = useScopeTrades(undefined, { skip: false });
+  const tradesWithoutAccount = useMemo(() => trades.filter((t) => !t.accountId).length, [trades]);
+  const started = useGettingStarted(trades.length);
+  const gettingStarted = started.isLoading || started.complete ? null : { done: started.done, total: started.total };
+  const importInReview = useImportPending();
+  useSyncServerPreferences();
 
+  // The icon rail takes over between 768 and 1279 px regardless of the saved preference.
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1280);
   useEffect(() => {
-    const handler = () => {
-      dispatch(api.util.invalidateTags(['Subscription']));
-    };
-    window.addEventListener('subscription-required', handler);
-    return () => window.removeEventListener('subscription-required', handler);
-  }, [dispatch]);
-
-  // Auto-collapse sidebar on tablet-sized screens (768-1024px)
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      if (width >= 768 && width <= 1024) {
-        setSidebarCollapsed(true);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const onResize = () => setNarrow(window.innerWidth < 1280);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
+  const collapsed = ui.sidebarCollapsed || narrow;
 
-  // Close mobile sidebar when switching away from mobile
+  // Colour-blind safe P&L palette and density live on <html>.
   useEffect(() => {
-    if (!isMobile) {
-      setMobileSidebarOpen(false);
-    }
-  }, [isMobile]);
-  
-  // Derive active view from URL
-  const activeView = location.pathname.split('/')[2] || 'dashboard';
+    document.documentElement.dataset.pnl = ui.pnlPalette;
+    document.documentElement.dataset.density = ui.density;
+  }, [ui.pnlPalette, ui.density]);
 
-  const handleAddTrade = async (newTrade: Omit<Trade, 'id'>) => {
-    // Pass directly as CreateTradePayload — tradesApi.createTrade handles the mapping
-    await createTrade(newTrade as any).unwrap();
-  };
+  // One document title per page, set through Helmet so it outranks the shell's generic `TradeQut` (RequireAuth); on
+  // route change focus moves to the page title, which announces it.
+  const title = titleForPath(location.pathname);
+  useEffect(() => {
+    const h = document.getElementById('page-title');
+    h?.focus({ preventScroll: true });
+  }, [title, location.pathname]);
 
-  const handleImportTrades = async (newTrades: Omit<Trade, 'id'>[]) => {
-    try {
-      // Pass frontend Trade objects directly — bulkImportTrades mutation handles
-      // the frontend→backend field mapping (size→quantity, direction→side, etc.)
-      await bulkImportTrades({ items: newTrades as CreateTradePayload[] }).unwrap();
-      
-      // Close dialog only after successful save
-      setIsImportTradesOpen(false);
-      
-      return { success: true };
-    } catch (error) {
-      // Don't close dialog on error - let user retry or fix issues
-      console.error('Failed to import trades:', error);
-      return { success: false, error };
-    }
-  };
+  const focusSearch = useCallback(() => {
+    const el = document.getElementById('trades-search');
+    if (el) el.focus();
+    else navigate('/app/tradelog?focus=search');
+  }, [navigate]);
 
+  const dispatch = useAppDispatch();
+  const scope = useAppSelector((s) => s.trades.filters);
+  const chrome = useChromeState();
+  const stepPeriod = useCallback(
+    (dir: 1 | -1) => {
+      if (!isScopedPath(location.pathname) || chrome.ownPeriod) return;
+      const next = shiftRange(scope.datePreset, scope.startDate, scope.endDate, dir);
+      if (next) dispatch(setDateRangeFilter({ ...next, datePreset: 'custom' }));
+    },
+    [location.pathname, chrome.ownPeriod, scope.datePreset, scope.startDate, scope.endDate, dispatch],
+  );
 
+  useGlobalShortcuts({
+    onStepPeriod: stepPeriod,
+    onRefresh: () => refreshData(dispatch),
+    onRegion: (dir) => focusNextRegion(dir),
+    onPalette: () => setPaletteOpen(true),
+    onNewTrade: () => trade.openNew(),
+    onShortcuts: () => setShortcutsOpen(true),
+    onSearch: focusSearch,
+    onCollapse: () => setUi({ sidebarCollapsed: !ui.sidebarCollapsed }),
+  });
 
   return (
-    <div className="min-h-screen bg-background bg-glow">
-      <Sidebar
-        activeView={activeView}
-        onViewChange={(view) => navigate(`/app/${view}`)}
-        collapsed={sidebarCollapsed}
-        onCollapsedChange={setSidebarCollapsed}
-        mobileOpen={mobileSidebarOpen}
-        onMobileOpenChange={setMobileSidebarOpen}
-      />
+    <div className="relative min-h-screen overflow-x-clip bg-background">
+      <Helmet>
+        <title>{`${title} · TradeQut`}</title>
+      </Helmet>
+      <a href="#main" className="sr-only z-50 rounded bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:left-2 focus:top-2">
+        Skip to content
+      </a>
+      {!isMobile && (
+        <Sidebar importInReview={importInReview} collapsed={collapsed} onCollapsedChange={(c) => setUi({ sidebarCollapsed: c })} onShowShortcuts={() => setShortcutsOpen(true)} planCard={<PlanCard collapsed={collapsed} />} />
+      )}
 
-      <main className={cn(
-        "transition-all duration-300 min-h-screen",
-        // Padding: smaller on mobile, full on desktop
-        "p-4 md:p-8",
-        // Margin: none on mobile (sidebar overlays), collapsed on tablet, dynamic on desktop
-        isMobile
-          ? "ml-0"
-          : sidebarCollapsed ? "ml-[72px]" : "ml-[240px]"
-      )}>
-        {bannerReason && (
-          <SubscriptionBanner
-            reason={bannerReason}
-            trialEnd={subscription?.trialEnd}
-            onSubscribe={() => navigate('/app/profile')}
-            onDismiss={() => {}}
-          />
-        )}
-        {/* Mobile hamburger button */}
-        {isMobile && (
-          <button
-            onClick={() => setMobileSidebarOpen(true)}
-            className="mb-4 p-2 rounded-lg hover:bg-accent text-foreground/70 hover:text-foreground transition-colors"
-            aria-label="Open sidebar menu"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-        )}
-        <div className="max-w-7xl mx-auto animate-fade-in">
-          <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>}>
-            <Routes>
-              <Route index element={<Navigate to="/app/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />} />
-              <Route path="accounts" element={<AccountsView />} />
-              <Route path="tradelog" element={<TradeLogView onAddTrade={() => setIsAddTradeOpen(true)} onImportTrades={() => setIsImportTradesOpen(true)} />} />
-              <Route path="analytics" element={<AnalyticsView />} />
-              <Route path="goals" element={<GoalsView />} />
-              <Route path="profile" element={<ProfileView />} />
-              <Route path="settings" element={<SettingsView />} />
-              <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
-            </Routes>
-          </Suspense>
-        </div>
-      </main>
+      <div className={cn('flex h-screen min-w-0 flex-col', isMobile ? 'pb-14' : collapsed ? 'ml-14' : 'ml-[232px]')}>
+        <IncidentBar />
+        <TopBar isMobile={isMobile} onOpenPalette={() => setPaletteOpen(true)} onShowShortcuts={() => setShortcutsOpen(true)} />
+        <ScopeBar scoped={isScopedPath(location.pathname)} isMobile={isMobile} />
+        <NoticeSlot tradesWithoutAccount={tradesWithoutAccount} gettingStarted={gettingStarted} />
+        <PaneHost>
+          <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[1440px] p-3 outline-none md:p-6">
+            <RouteErrorBoundary resetKey={location.pathname}>
+              <Suspense fallback={<RouteFallback />}>
+                <Routes>
+                  <Route index element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="dashboard" element={<DashboardView onAddTrade={() => trade.openNew()} onImportTrades={() => navigate('/app/import')} />} />
+                  <Route path="tradelog" element={<TradeLogView />} />
+                  <Route path="calendar" element={<CalendarView />} />
+                  <Route path="analytics" element={<AnalyticsView />} />
+                  <Route path="insights" element={<InsightsView />} />
+                  <Route path="chat" element={<ChatView />} />
+                  <Route path="goals" element={<GoalsView />} />
+                  <Route path="accounts" element={<AccountsView />} />
+                  <Route path="import" element={<ImportView />} />
+                  <Route path="settings/*" element={<SettingsView />} />
+                  <Route path="profile" element={<RedirectTo to="/app/settings/profile" />} />
+                  <Route path="billing" element={<RedirectTo to="/app/settings/billing" />} />
+                  <Route path="*" element={<NotFoundInApp />} />
+                </Routes>
+              </Suspense>
+            </RouteErrorBoundary>
+          </main>
+        </PaneHost>
+      </div>
 
-      <AddTradeModal 
-        open={isAddTradeOpen} 
-        onOpenChange={setIsAddTradeOpen}
-        onAddTrade={handleAddTrade}
-      />
-
-      <ImportTradesModal
-        open={isImportTradesOpen}
-        onOpenChange={setIsImportTradesOpen}
-        onImportTrades={handleImportTrades}
-      />
+      {isMobile && trade.mode === 'closed' && <MobileTabBar onAddTrade={() => trade.openNew()} />}
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} trades={trades} onShowShortcuts={() => setShortcutsOpen(true)} />
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <UpgradeDialog />
     </div>
+  );
+}
+
+export function AppPage() {
+  return (
+    <ChromeProvider>
+      <AppFrame />
+    </ChromeProvider>
   );
 }

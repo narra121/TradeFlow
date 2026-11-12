@@ -1,792 +1,741 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PasswordStrength } from "./PasswordStrength";
-import { OTPInput } from "./OTPInput";
-import { GoogleSignInButton } from "./GoogleSignInButton";
-import { toast } from "sonner";
-import {
-  Zap,
-  Mail,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
-  ArrowLeft,
-  CheckCircle2,
-  Sparkles,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { clearSignupSuccess } from "@/store/slices/authSlice";
-import { useLoginMutation, useSignupMutation, useConfirmSignupMutation, useForgotPasswordMutation, useResetPasswordMutation } from "@/store/api";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, CircleAlert, LoaderCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { SEO } from '@/components/SEO';
+import { AuthFrame, FadeIn } from '@/components/auth/AuthFrame';
+import { AuthNotice, type NoticeIcon, type NoticeTone } from '@/components/auth/AuthNotice';
+import { CodeInput } from '@/components/auth/CodeInput';
+import { FormSummary, type SummaryItem } from '@/components/auth/FormSummary';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { PasswordField } from '@/components/auth/PasswordField';
+import { StatusView } from '@/components/auth/StatusView';
+import { describeAuthError, formatWait, rateLimitBody, type AuthCall, type AuthErrorInfo } from '@/components/auth/authErrors';
+import { isGoogleConfigured } from '@/components/auth/googleConfig';
+import { fallbackName, isValidEmail, missingRulesMessage, unmetRules } from '@/components/auth/passwordRules';
+import type { AuthScene, StageData } from '@/components/auth/scenes';
+import { useAuthArrival } from '@/components/auth/useAuthArrival';
+import { formatClock, spokenWait, useCountdown } from '@/components/auth/useCountdown';
+import { useGoogleSignIn } from '@/components/auth/useGoogleSignIn';
+import { TRIAL_DAYS } from '@/content/product-facts';
+import { useOnline } from '@/hooks/useOnline';
+import { trackLogin, trackSignUp } from '@/lib/analytics';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { clearSignupSuccess } from '@/store/slices/authSlice';
+import { useConfirmSignupMutation, useForgotPasswordMutation, useLoginMutation, useResetPasswordMutation, useSignupMutation } from '@/store/api';
 
-type AuthView =
-  | "login"
-  | "signup"
-  | "forgot"
-  | "otp"
-  | "reset"
-  | "success";
+type AuthView = 'login' | 'signup' | 'forgot' | 'otp' | 'reset';
 
-interface AuthPageProps {
-  onLogin: () => void;
-  initialView?: "login" | "signup";
+export interface AuthSuccess {
+  /** True right after the user verified a new account, so the app opens the first-run page. */
+  newUser: boolean;
 }
 
-export const AuthPage = ({ onLogin, initialView = "login" }: AuthPageProps) => {
+interface AuthPageProps {
+  onLogin: (info: AuthSuccess) => void;
+  initialView?: 'login' | 'signup';
+}
+
+const TITLES: Record<AuthView, string> = {
+  login: 'Log in to TradeQut',
+  signup: 'Create your account',
+  forgot: 'Reset your password',
+  otp: 'Check your email',
+  reset: 'Choose a new password',
+};
+
+const PAGE_TITLES: Record<AuthView, string> = {
+  login: 'Log in – TradeQut',
+  signup: 'Create your account – TradeQut',
+  forgot: 'Reset your password – TradeQut',
+  otp: 'Check your email – TradeQut',
+  reset: 'Choose a new password – TradeQut',
+};
+
+const IDS = { email: 'auth-email', password: 'auth-password', code: 'auth-code' } as const;
+const CALL_OF: Record<AuthView, AuthCall> = { login: 'login', signup: 'signup', forgot: 'forgot', otp: 'confirm', reset: 'reset' };
+
+type Errors = { email?: string; password?: string; code?: string };
+interface Notice {
+  tone: NoticeTone;
+  icon?: NoticeIcon;
+  title?: string;
+  body: string;
+}
+interface Limit {
+  call: AuthCall;
+  email: string;
+  retryAfter?: number;
+}
+
+function Or() {
+  return (
+    <div className="or" role="separator" aria-label="or">
+      or
+    </div>
+  );
+}
+
+/** `Check your connection … see Status.` with `Status` as a link to the status page. */
+function withStatusLink(message: string): React.ReactNode {
+  const at = message.lastIndexOf('Status');
+  if (at < 0) return message;
+  return (
+    <>
+      {message.slice(0, at)}
+      <Link to="/status">Status</Link>
+      {message.slice(at + 'Status'.length)}
+    </>
+  );
+}
+
+export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, signupSuccess } = useAppSelector((state) => state.auth);
-  const [login, { isLoading: loginLoading, error: loginError }] = useLoginMutation();
-  const [signup, { isLoading: signupLoading, error: signupError }] = useSignupMutation();
-  const [confirmSignup, { isLoading: confirmLoading, error: confirmError }] = useConfirmSignupMutation();
-  const [forgotPassword, { isLoading: forgotLoading, error: forgotError }] = useForgotPasswordMutation();
-  const [resetPassword, { isLoading: resetLoading, error: resetError }] = useResetPasswordMutation();
-  
+  const [params] = useSearchParams();
+  const { destination, arrival, state: carried } = useAuthArrival();
+  const online = useOnline();
+  const { isAuthenticated, signupSuccess } = useAppSelector((s) => s.auth);
+  const [login, { isLoading: loginLoading }] = useLoginMutation();
+  const [signup, { isLoading: signupLoading }] = useSignupMutation();
+  const [confirmSignup, { isLoading: confirmLoading }] = useConfirmSignupMutation();
+  const [forgotPassword, { isLoading: forgotLoading }] = useForgotPasswordMutation();
+  const [resetPassword, { isLoading: resetLoading }] = useResetPasswordMutation();
+
+  const requested = params.get('view');
+  const wanted: AuthView = requested === 'forgot' || requested === 'otp' || requested === 'reset' ? requested : initialView;
+  /** The view that opened the verify screen, so Back returns there. */
+  const [origin, setOrigin] = useState<'login' | 'signup'>(initialView);
+  const [email, setEmail] = useState(carried.email ?? '');
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [errors, setErrors] = useState<Errors>({});
+  const [showSummary, setShowSummary] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+  const [formError, setFormError] = useState<AuthErrorInfo | null>(null);
+  const [emailExists, setEmailExists] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(
+    arrival ? { tone: 'info', icon: arrival.icon, title: arrival.title, body: arrival.message } : null,
+  );
+  const [limit, setLimit] = useState<Limit | null>(null);
+  const [backOnline, setBackOnline] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  // A reload keeps `?view=` but not the email: fall back to the form that asks for it.
+  const view: AuthView = (wanted === 'otp' || wanted === 'reset') && !email ? (wanted === 'reset' ? 'forgot' : initialView) : wanted;
+  const setView = useCallback(
+    (next: AuthView) => navigate({ pathname: location.pathname, search: next === 'login' || next === 'signup' ? '' : `?view=${next}` }, { state: { ...(location.state as object | null), email: undefined, focus: undefined } }),
+    [navigate, location.pathname, location.state],
+  );
+  const justSignedUp = useRef(false);
+  const passwordChanged = useRef(false);
+  const summary = useRef<HTMLDivElement>(null);
+  const resend = useCountdown(30);
+  const cooldown = useCountdown(0);
+  const googleOn = isGoogleConfigured();
   const loading = loginLoading || signupLoading || confirmLoading || forgotLoading || resetLoading;
-  const error = loginError || signupError || confirmError || forgotError || resetError;
-  
-  const [view, setView] = useState<AuthView>(initialView);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [name, setName] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
 
-  const validateEmail = (value: string) => {
-    if (!value) {
-      setEmailError("");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setEmailError(emailRegex.test(value) ? "" : "Please enter a valid email address");
-  };
+  const failGoogle = useCallback(() => {
+    setFormError({ kind: 'other', title: "Couldn't open Google sign-in", message: 'Try again, or use your email and password.' });
+    window.setTimeout(() => summary.current?.focus(), 0);
+  }, []);
+  const google = useGoogleSignIn(destination === '/app' ? null : destination, failGoogle);
+  const busy = loading || google.busy || verified;
 
-  const validatePassword = (value: string) => {
-    if (!value) {
-      setPasswordError("");
-      return;
-    }
-    setPasswordError(value.length < 8 ? "Password must be at least 8 characters" : "");
-  };
-
-  // Handle authentication success
   useEffect(() => {
-    if (isAuthenticated) {
-      toast.success("Welcome back!");
-      onLogin();
-    }
+    if (!isAuthenticated) return;
+    trackLogin('email');
+    if (passwordChanged.current) toast.success('Password changed');
+    onLogin({ newUser: justSignedUp.current });
   }, [isAuthenticated, onLogin]);
 
-  // Handle signup success
   useEffect(() => {
-    if (signupSuccess) {
-      toast.success("Verification code sent to your email");
-      setView("otp");
-      dispatch(clearSignupSuccess());
-    }
+    if (signupSuccess) dispatch(clearSignupSuccess());
   }, [signupSuccess, dispatch]);
 
-  // Handle errors
   useEffect(() => {
-    if (error) {
-      const errorData = (error as any)?.data;
+    if (online) return;
+    setBackOnline(false);
+    const onBack = () => {
+      setBackOnline(true);
+      window.setTimeout(() => setBackOnline(false), 5000);
+    };
+    window.addEventListener('online', onBack, { once: true });
+    return () => window.removeEventListener('online', onBack);
+  }, [online]);
 
-      const errorCode =
-        (typeof errorData === 'object' && errorData !== null
-          ? (errorData as any).errorCode || (errorData as any).code || (errorData as any).error
-          : undefined) ||
-        (error as any)?.errorCode ||
-        (error as any)?.code;
+  useEffect(() => {
+    if (limit?.retryAfter && cooldown.left === 0) {
+      setLimit(null);
+      setNotice({ tone: 'info', body: 'You can try again now.' });
+    }
+  }, [limit, cooldown.left]);
 
-      const errorMessage =
-        (typeof errorData === 'string'
-          ? errorData
-          : typeof errorData === 'object' && errorData !== null
-            ? (errorData as any).message || (errorData as any).error
-            : undefined) ||
-        (error as any)?.message ||
-        'An error occurred';
-      
-      // Check if user's email is not verified
-      if (errorCode === 'EMAIL_NOT_VERIFIED') {
-        toast.error(errorMessage);
-        setView("otp"); // Redirect to OTP verification page
+  const clearFeedback = () => {
+    setErrors({});
+    setShowSummary(false);
+    setFormError(null);
+    setEmailExists(false);
+    setNotice(null);
+  };
+
+  const go = useCallback(
+    (next: AuthView, nextNotice: Notice | null = null) => {
+      setErrors({});
+      setShowSummary(false);
+      setFormError(null);
+      setEmailExists(false);
+      setCode('');
+      setAttempted(false);
+      setLimit(null);
+      setNotice(nextNotice);
+      setView(next);
+    },
+    [setView],
+  );
+
+  const focusSummary = () => window.setTimeout(() => summary.current?.focus(), 0);
+  const focusCode = () => window.setTimeout(() => document.getElementById(IDS.code)?.focus(), 0);
+
+  const failFields = (next: Errors) => {
+    setErrors(next);
+    setShowSummary(true);
+    setAttempted(true);
+    focusSummary();
+  };
+
+  /** One reading of a failed call: a field message, the rate-limit countdown, or a form-level notice. */
+  const failServer = (err: unknown, call: AuthCall) => {
+    const info = describeAuthError(err, call);
+    if (info.kind === 'rate') {
+      setLimit({ call, email: email.trim(), retryAfter: info.retryAfter });
+      if (info.retryAfter) cooldown.restart(info.retryAfter);
+      focusSummary();
+      return info;
+    }
+    if (info.field === 'code') {
+      setErrors({ code: info.message });
+      setCode('');
+      if (info.kind === 'code-invalid' || info.kind === 'code-expired') resend.restart(0);
+      focusCode();
+    } else if (info.kind === 'exists') {
+      setErrors({ email: info.message });
+      setEmailExists(true);
+      setShowSummary(true);
+      focusSummary();
+    } else if (info.field === 'password') {
+      setErrors({ password: info.message });
+      window.setTimeout(() => document.getElementById(IDS.password)?.focus(), 0);
+    } else {
+      setFormError(info);
+      focusSummary();
+    }
+    return info;
+  };
+
+  const emailError = () => (!email.trim() ? 'Enter your email address.' : !isValidEmail(email) ? 'Enter a valid email address, like name@example.com.' : undefined);
+  const policyError = () => (!password ? 'Enter a password.' : unmetRules(password).length ? missingRulesMessage(unmetRules(password)) : undefined);
+
+  const blocked = (call: AuthCall) => !!limit && !!limit.retryAfter && cooldown.left > 0 && limit.call === call && limit.email === email.trim();
+
+  const items = (): SummaryItem[] =>
+    showSummary
+      ? ([
+          errors.email && { fieldId: IDS.email, label: 'Email', message: errors.email },
+          errors.password && { fieldId: IDS.password, label: view === 'reset' ? 'New password' : 'Password', message: errors.password },
+          errors.code && view === 'reset' && { fieldId: IDS.code, label: 'Code', message: errors.code },
+        ].filter(Boolean) as SummaryItem[])
+      : [];
+
+  const submitLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy || blocked('login')) return;
+    const next: Errors = { email: emailError(), password: password ? undefined : 'Enter your password.' };
+    if (next.email || next.password) return failFields(next);
+    clearFeedback();
+    try {
+      await login({ email: email.trim(), password }).unwrap();
+    } catch (err) {
+      const info = describeAuthError(err, 'login');
+      if (info.kind === 'unverified') {
+        // Signing up again with the same address resends the code.
+        try {
+          await signup({ name: fallbackName(email), email: email.trim(), password }).unwrap();
+        } catch {
+          // the code may already have been sent; the verify screen has its own resend
+        }
+        setOrigin('login');
+        go('otp', { tone: 'info', title: "This email isn't verified yet", body: 'Enter the new code we just sent to finish setting up your account.' });
+        resend.restart();
         return;
       }
-      
-      toast.error(errorMessage);
+      failServer(err, 'login');
     }
-  }, [error]);
+  };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const submitSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
-      return;
-    }
+    if (busy || blocked('signup')) return;
+    const next: Errors = { email: emailError(), password: policyError() };
+    if (next.email || next.password) return failFields(next);
+    clearFeedback();
     try {
-      await login({ email, password }).unwrap();
-    } catch (err: any) {
-      // Check if email is not verified
-      const errData = err?.data;
-      const errorCode =
-        (typeof errData === 'object' && errData !== null
-          ? errData.errorCode || errData.code || errData.error
-          : undefined) ||
-        err?.errorCode ||
-        err?.code;
-      if (errorCode === 'EMAIL_NOT_VERIFIED') {
-        setView("otp");
-      }
+      await signup({ name: fallbackName(email), email: email.trim(), password }).unwrap();
+      justSignedUp.current = true;
+      trackSignUp('email');
+      setOrigin('signup');
+      go('otp');
+      resend.restart();
+    } catch (err) {
+      failServer(err, 'signup');
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const verify = async (value: string) => {
+    if (value.length !== 6 || busy) return;
+    setErrors({});
+    try {
+      await confirmSignup({ email: email.trim(), code: value }).unwrap();
+    } catch (err) {
+      const info = describeAuthError(err, 'confirm');
+      if (info.kind === 'confirmed') return goVerifiedLogin();
+      failServer(err, 'confirm');
+      return;
+    }
+    justSignedUp.current = true;
+    if (!password) return goVerifiedLogin();
+    setVerified(true);
+    try {
+      await login({ email: email.trim(), password }).unwrap();
+    } catch {
+      setVerified(false);
+      goVerifiedLogin();
+    }
+  };
+
+  const goVerifiedLogin = () => {
+    setPassword('');
+    go('login', { tone: 'success', title: 'Email verified', body: 'Log in to continue.' });
+  };
+
+  const resendCode = async () => {
+    if (resend.left > 0 || busy) return;
+    try {
+      if (view === 'reset') await forgotPassword({ email: email.trim() }).unwrap();
+      else await signup({ name: fallbackName(email), email: email.trim(), password }).unwrap();
+      resend.restart();
+      setErrors({});
+      setCode('');
+      setNotice({ tone: 'success', body: `New code sent to ${email.trim()}.` });
+      focusCode();
+    } catch (err) {
+      const info = describeAuthError(err, 'resend');
+      if (info.kind === 'attempts') {
+        setErrors({ code: info.message });
+        resend.restart(60);
+      } else if (info.kind === 'rate') {
+        setErrors({ code: rateLimitBody(view === 'reset' ? 'forgot' : 'signup', info.retryAfter ? formatWait(info.retryAfter) : null) });
+        resend.restart(info.retryAfter ?? 60);
+      } else failServer(err, 'resend');
+    }
+  };
+
+  const submitForgot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password || !confirmPassword) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return;
-    }
+    if (busy || blocked('forgot')) return;
+    const m = emailError();
+    if (m) return failFields({ email: m });
+    clearFeedback();
     try {
-      const response = await signup({ name, email, password }).unwrap();
-      // Check if this was a resend scenario (user already exists but unverified)
-      if ((response as any)?.resent) {
-        toast.success((response as any)?.message || "Verification code resent to your email");
-        setView("otp");
-      }
-    } catch (err: any) {
-      // Error is handled by useEffect
+      await forgotPassword({ email: email.trim() }).unwrap();
+      go('reset');
+      resend.restart();
+    } catch (err) {
+      failServer(err, 'forgot');
     }
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
+  const submitReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      toast.error("Please enter your email");
+    if (busy || blocked('reset')) return;
+    const next: Errors = { code: code.length === 6 ? undefined : 'Enter the 6-digit code from your email.', password: policyError() };
+    if (next.code || next.password) return failFields(next);
+    clearFeedback();
+    try {
+      await resetPassword({ email: email.trim(), code, newPassword: password }).unwrap();
+    } catch (err) {
+      failServer(err, 'reset');
       return;
     }
+    passwordChanged.current = true;
+    setFinishing(true);
     try {
-      await forgotPassword({ email }).unwrap();
-      setView("reset");
-    } catch (error) {
-      // Error toast is handled by useEffect
+      await login({ email: email.trim(), password }).unwrap();
+    } catch {
+      passwordChanged.current = false;
+      setFinishing(false);
+      setPassword('');
+      go('login', { tone: 'success', title: 'Password changed', body: 'Log in with your new password.' });
     }
   };
 
-  const handleOTPComplete = async (otp: string) => {
-    setOtpCode(otp);
-    try {
-      await confirmSignup({ email, code: otp }).unwrap();
-      toast.success("Email verified successfully!");
-      // Auto-login after verification
-      await login({ email, password }).unwrap();
-    } catch (error) {
-      // Error toast is handled by useEffect
+  const rate = limit && limit.call === CALL_OF[view] ? limit : null;
+  const formAlert = (() => {
+    if (rate) {
+      const [pre, post] = rateLimitBody(rate.call, '\u0001').split('\u0001');
+      const running = !!rate.retryAfter && cooldown.left > 0;
+      return (
+        <FormSummary
+          ref={summary}
+          icon="clock"
+          title="Too many attempts"
+          message={
+            <>
+              {pre}
+              {running ? (
+                <>
+                  <span className="timer tnum" aria-hidden="true">
+                    {cooldown.left >= 3600 ? 'about 1 hour' : formatClock(cooldown.left)}
+                  </span>
+                  <span className="sr-only">{spokenWait(cooldown.left)}</span>
+                </>
+              ) : (
+                'a few minutes'
+              )}
+              {post}
+            </>
+          }
+          items={[]}
+        />
+      );
     }
-  };
+    if (formError) {
+      return (
+        <FormSummary
+          ref={summary}
+          title={formError.title ?? formError.message}
+          message={
+            formError.kind === 'credentials' ? (
+              <>
+                Try again or{' '}
+                <button type="button" className="textbtn" onClick={() => go('forgot')}>
+                  reset your password
+                </button>
+                .{googleOn ? ' If you signed up with Google, use Continue with Google.' : ''}
+              </>
+            ) : formError.title ? (
+              withStatusLink(formError.message)
+            ) : undefined
+          }
+          items={[]}
+        />
+      );
+    }
+    return <FormSummary ref={summary} items={items()} />;
+  })();
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!password || !confirmPassword) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-    if (!otpCode) {
-      toast.error("Please enter the reset code from your email");
-      return;
-    }
-    try {
-      await resetPassword({ email, code: otpCode, newPassword: password }).unwrap();
-      setView("success");
-    } catch (error) {
-      // Error toast is handled by useEffect
-    }
-  };
+  const offlineCopy = view === 'login' ? 'Reconnect to log in.' : view === 'signup' ? 'Reconnect to create your account.' : 'Reconnect to continue.';
+  const liveNotice = !online ? (
+    <AuthNotice tone="warning" title="You're offline">
+      {offlineCopy}
+    </AuthNotice>
+  ) : backOnline ? (
+    <AuthNotice tone="info">You&apos;re back online.</AuthNotice>
+  ) : notice ? (
+    <AuthNotice tone={notice.tone} icon={notice.icon} title={notice.title}>
+      {notice.body}
+    </AuthNotice>
+  ) : null;
+  const slots = (
+    <div role="status" className="live">
+      {liveNotice}
+    </div>
+  );
+  const alertSlot = (
+    <div role="alert" className="live">
+      {formAlert}
+    </div>
+  );
+  const googleBlock = googleOn && (
+    <>
+      <GoogleSignInButton google={google} />
+      <Or />
+    </>
+  );
 
-  const resetForm = () => {
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-    setName("");
-    setOtpCode("");
-    setEmailError("");
-    setPasswordError("");
-  };
+  const submit = (label: string, runningLabel: string, running: boolean, off = false) => (
+    <button type="submit" className="btn btn-primary btn-block" aria-disabled={busy || off || undefined} data-busy={running || undefined}>
+      {running && <LoaderCircle className="ico spin" aria-hidden="true" />}
+      {running ? runningLabel : label}
+    </button>
+  );
+
+  const emailField = (autoFocus = !email) => (
+    <div className="field">
+      <label htmlFor={IDS.email} className="label">
+        Email
+      </label>
+      <input
+        id={IDS.email}
+        className="input"
+        type="email"
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (limit && e.target.value.trim() !== limit.email) setLimit(null);
+        }}
+        autoComplete="email"
+        inputMode="email"
+        autoCapitalize="none"
+        spellCheck={false}
+        autoFocus={autoFocus}
+        readOnly={busy}
+        aria-invalid={errors.email ? true : undefined}
+        aria-describedby={errors.email ? `${IDS.email}-error` : undefined}
+        aria-required
+      />
+      {errors.email && (
+        <p id={`${IDS.email}-error`} className="field-error">
+          <CircleAlert className="ico" aria-hidden="true" />
+          <span>{errors.email}</span>
+        </p>
+      )}
+      {emailExists && (
+        <>
+          <p className="field-actions">
+            <Link to="/login" state={{ ...(location.state as object | null), email: email.trim(), focus: 'password' }} className="link link-touch">
+              Log in instead
+            </Link>
+            <Link to="/login?view=forgot" state={{ ...(location.state as object | null), email: email.trim() }} className="link link-touch">
+              Reset password
+            </Link>
+          </p>
+          {googleOn && <p className="field-hint">If you signed up with Google, use Continue with Google.</p>}
+        </>
+      )}
+    </div>
+  );
+
+  const resendLine = (
+    <p>
+      {resend.left > 0 ? (
+        <span>
+          Resend code in <span className="tnum">{formatClock(resend.left)}</span>
+        </span>
+      ) : (
+        <button type="button" className="textbtn" onClick={() => void resendCode()}>
+          Resend code
+        </button>
+      )}{' '}
+      · Check your spam folder too.
+      <span className="sr-only" role="status">
+        {resend.left === 0 ? 'You can resend the code now.' : ''}
+      </span>
+    </p>
+  );
+  const backLink = (to: AuthView, label: string) => (
+    <button type="button" className="back" onClick={() => go(to)}>
+      <ArrowLeft className="ico" aria-hidden="true" />
+      {label}
+    </button>
+  );
+
+  const alternate =
+    view === 'login'
+      ? { prompt: 'New here?', label: 'Create account', to: '/signup', state: { ...(location.state as object | null), email: email.trim() || undefined } }
+      : view === 'signup'
+        ? { prompt: 'Have an account?', label: 'Log in', to: '/login', state: { ...(location.state as object | null), email: email.trim() || undefined } }
+        : undefined;
+  const fromSignup = origin === 'signup';
+  const scene: AuthScene = view === 'login' ? 'journal' : view === 'signup' ? 'signup' : view === 'otp' ? 'mail' : 'reset';
+  const stage: StageData =
+    view === 'otp'
+      ? { email: email.trim(), codeLength: code.length, verified, facts: fromSignup }
+      : view === 'signup'
+        ? { facts: true }
+        : { resetStep: view === 'reset' ? 2 : 1 };
+  const step = view === 'signup' ? 1 : view === 'otp' && fromSignup ? 2 : undefined;
+  const indexable = view === 'login' || view === 'signup';
+  const emailStrong = <strong>{email}</strong>;
+
+  if (finishing) {
+    return (
+      <AuthFrame scene="reset" stage={{ resetStep: 3 }}>
+        <SEO title="Password changed – TradeQut" description="Your TradeQut password was changed." path={location.pathname} noindex />
+        <StatusView
+          icon="ok"
+          live
+          title="Password changed"
+          lead="Logging you in…"
+          actions={
+            <button type="button" className="btn btn-primary btn-block" aria-disabled="true" data-busy>
+              <LoaderCircle className="ico spin" aria-hidden="true" />
+              Opening your journal
+            </button>
+          }
+        />
+      </AuthFrame>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
-        
-        {/* Animated grid */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `linear-gradient(hsl(var(--primary) / 0.1) 1px, transparent 1px),
-                             linear-gradient(90deg, hsl(var(--primary) / 0.1) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px'
-          }} />
-        </div>
-
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Zap className="w-7 h-7 text-primary-foreground" />
-            </div>
-            <span className="text-2xl font-bold text-foreground">TradeQut</span>
-          </div>
-          
-          <h1 className="text-4xl xl:text-5xl font-bold text-foreground mb-6 leading-tight">
-            Master Your
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-              Trading Journey
-            </span>
-          </h1>
-          
-          <p className="text-lg text-muted-foreground mb-8 max-w-md">
-            Track, analyze, and improve your trading performance with our professional journaling platform.
+    <AuthFrame scene={scene} stage={stage} step={step} alternate={alternate}>
+      <SEO
+        title={PAGE_TITLES[view]}
+        description={view === 'signup' ? 'Create your TradeQut account. 14-day Pro trial, no card.' : 'Log in to your TradeQut trading journal.'}
+        path={location.pathname}
+        noindex={!indexable}
+      />
+      <FadeIn key={view}>
+        <h1 className="auth-h1">{TITLES[view]}</h1>
+        {view === 'signup' && <p className="auth-lead">{TRIAL_DAYS}-day Pro trial. No card.</p>}
+        {view === 'forgot' && <p className="auth-lead">Enter your account email and we&apos;ll send a 6-digit code.</p>}
+        {view === 'otp' && (
+          <p className="auth-lead">
+            We sent a 6-digit code to {emailStrong}.{' '}
+            <button type="button" className="link" onClick={() => go(origin)}>
+              Change email
+            </button>
           </p>
+        )}
+        {view === 'reset' && (
+          <p className="auth-lead">
+            If an account exists for {emailStrong}, a 6-digit code is on its way.{' '}
+            <button type="button" className="link" onClick={() => go('forgot')}>
+              Change email
+            </button>
+          </p>
+        )}
 
-          <div className="space-y-4">
-            {[
-              "Detailed trade analytics & performance tracking",
-              "Performance tracking & goal setting",
-              "Calendar view with P&L visualization",
-            ].map((feature, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-muted-foreground">{feature}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {view === 'login' && (
+          <form onSubmit={submitLogin} noValidate className="stack" aria-busy={busy || undefined}>
+            {slots}
+            {googleBlock}
+            {alertSlot}
+            {emailField(!email)}
+            <PasswordField
+              id={IDS.password}
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+              error={errors.password}
+              readOnly={busy}
+              autoFocus={!!email}
+              labelAction={
+                <button type="button" className="link link-sm label-action" onClick={() => go('forgot')}>
+                  Forgot password?
+                </button>
+              }
+            />
+            {submit('Log in', 'Logging in…', loginLoading, blocked('login'))}
+          </form>
+        )}
 
-        {/* Decorative elements */}
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-primary/20 to-transparent rounded-full blur-3xl" />
-        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-bl from-accent/20 to-transparent rounded-full blur-3xl" />
-      </div>
+        {view === 'signup' && (
+          <form onSubmit={submitSignup} noValidate className="stack" aria-busy={busy || undefined}>
+            {slots}
+            {googleBlock}
+            {alertSlot}
+            {emailField(!email)}
+            <PasswordField id={IDS.password} label="Password" value={password} onChange={setPassword} autoComplete="new-password" error={errors.password} checklist revealChecklist={attempted} readOnly={busy} />
+            {submit('Create account', 'Creating account…', signupLoading, blocked('signup'))}
+            <p className="legal">
+              By creating an account you agree to the <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy policy</Link>.
+            </p>
+          </form>
+        )}
 
-      {/* Right Panel - Auth Forms */}
-      <div className="flex-1 flex items-center justify-center px-4 py-6 sm:p-6 lg:p-12">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Zap className="w-6 h-6 text-primary-foreground" />
+        {view === 'otp' && (
+          <>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void verify(code);
+              }}
+              noValidate
+              className="stack"
+              aria-busy={busy || undefined}
+            >
+              {slots}
+              <CodeInput
+                id={IDS.code}
+                value={code}
+                onChange={(v) => {
+                  setCode(v);
+                  setErrors({});
+                }}
+                onComplete={(v) => void verify(v)}
+                help="6 digits. The form submits when the last digit is entered."
+                error={errors.code}
+                accepted={verified}
+                readOnly={busy}
+                autoFocus
+              />
+              {submit('Verify email', 'Verifying…', confirmLoading)}
+              {verified && (
+                <span className="sr-only" role="status">
+                  Email verified. Logging you in…
+                </span>
+              )}
+            </form>
+            <div className="below">
+              {resendLine}
+              {backLink(origin, origin === 'signup' ? 'Back to sign up' : 'Back to log in')}
             </div>
-            <span className="text-xl font-bold text-foreground">TradeQut</span>
-          </div>
+          </>
+        )}
 
-          {/* Login View */}
-          {view === "login" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="text-center lg:text-left">
-                <h2 className="text-2xl font-bold text-foreground mb-2">Welcome back</h2>
-                <p className="text-muted-foreground">Sign in to continue your trading journey</p>
-              </div>
+        {view === 'forgot' && (
+          <>
+            <form onSubmit={submitForgot} noValidate className="stack" aria-busy={busy || undefined}>
+              {slots}
+              {alertSlot}
+              {emailField(true)}
+              {submit('Send code', 'Sending…', forgotLoading, blocked('forgot'))}
+            </form>
+            <div className="below">{backLink('login', 'Back to log in')}</div>
+          </>
+        )}
 
-              <form onSubmit={handleLogin} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-foreground">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => { setEmail(e.target.value); if (emailError) validateEmail(e.target.value); }}
-                      onBlur={(e) => validateEmail(e.target.value)}
-                      className={cn("pl-11 h-12 bg-card border-border", emailError && "border-red-500 focus-visible:ring-red-500")}
-                      required
-                    />
-                  </div>
-                  {emailError && <p className="text-xs text-red-500">{emailError}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-foreground">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); if (passwordError) validatePassword(e.target.value); }}
-                      onBlur={(e) => validatePassword(e.target.value)}
-                      className={cn("pl-11 pr-11 h-12 bg-card border-border", passwordError && "border-red-500 focus-visible:ring-red-500")}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary accent-primary"
-                    />
-                    Remember me
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => { resetForm(); setView("forgot"); }}
-                    className="text-sm text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Forgot password?
+        {view === 'reset' && (
+          <>
+            <form onSubmit={submitReset} noValidate className="stack" aria-busy={busy || undefined}>
+              {slots}
+              {alertSlot}
+              <CodeInput
+                id={IDS.code}
+                label="Code from the email"
+                value={code}
+                onChange={(v) => {
+                  setCode(v);
+                  setErrors((er) => ({ ...er, code: undefined }));
+                }}
+                onComplete={() => document.getElementById(IDS.password)?.focus()}
+                help="6 digits. Focus moves to the new password when the last digit is entered."
+                error={errors.code}
+                readOnly={busy}
+                autoFocus
+              />
+              <PasswordField id={IDS.password} label="New password" value={password} onChange={setPassword} autoComplete="new-password" error={errors.password} checklist revealChecklist={attempted} readOnly={busy} />
+              {submit('Update password', 'Updating…', resetLoading, blocked('reset'))}
+            </form>
+            <div className="below">
+              {resendLine}
+              {googleOn && (
+                <p>
+                  Signed up with Google? There is no password to reset.{' '}
+                  <button type="button" className="link" onClick={google.start}>
+                    Continue with Google
                   </button>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full h-12 text-base font-semibold"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Signing in...
-                    </div>
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
-              </form>
-
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">or</span>
-                </div>
-              </div>
-
-              <GoogleSignInButton />
-
-              <p className="text-center text-muted-foreground">
-                Don't have an account?{" "}
-                <Link
-                  to="/signup"
-                  className="text-primary hover:text-primary/80 font-semibold transition-colors"
-                >
-                  Create one
-                </Link>
-              </p>
-            </div>
-          )}
-
-          {/* Signup View */}
-          {view === "signup" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="text-center lg:text-left">
-                <h2 className="text-2xl font-bold text-foreground mb-2">Create account</h2>
-                <p className="text-muted-foreground">Start your professional trading journey</p>
-              </div>
-
-              <form onSubmit={handleSignup} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-foreground">Full Name</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="John Doe"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="pl-11 h-12 bg-card border-border"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-foreground">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => { setEmail(e.target.value); if (emailError) validateEmail(e.target.value); }}
-                      onBlur={(e) => validateEmail(e.target.value)}
-                      className={cn("pl-11 h-12 bg-card border-border", emailError && "border-red-500 focus-visible:ring-red-500")}
-                      required
-                    />
-                  </div>
-                  {emailError && <p className="text-xs text-red-500">{emailError}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password" className="text-foreground">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); if (passwordError) validatePassword(e.target.value); }}
-                      onBlur={(e) => validatePassword(e.target.value)}
-                      className={cn("pl-11 pr-11 h-12 bg-card border-border", passwordError && "border-red-500 focus-visible:ring-red-500")}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <PasswordStrength password={password} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password" className="text-foreground">Confirm Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="confirm-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className={cn(
-                        "pl-11 pr-11 h-12 bg-card border-border",
-                        confirmPassword && password !== confirmPassword && "border-red-500 focus-visible:ring-red-500"
-                      )}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  {confirmPassword && password !== confirmPassword && (
-                    <p className="text-xs text-red-500">Passwords do not match</p>
-                  )}
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full h-12 text-base font-semibold"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Creating account...
-                    </div>
-                  ) : (
-                    "Create Account"
-                  )}
-                </Button>
-              </form>
-
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">or</span>
-                </div>
-              </div>
-
-              <GoogleSignInButton />
-
-              <p className="text-center text-muted-foreground">
-                Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="text-primary hover:text-primary/80 font-semibold transition-colors"
-                >
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          )}
-
-          {/* Forgot Password View */}
-          {view === "forgot" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <button
-                onClick={() => { resetForm(); setView("login"); }}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to login
-              </button>
-
-              <div className="text-center lg:text-left">
-                <h2 className="text-2xl font-bold text-foreground mb-2">Forgot password?</h2>
-                <p className="text-muted-foreground">No worries, we'll send you reset instructions</p>
-              </div>
-
-              <form onSubmit={handleForgotPassword} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email" className="text-foreground">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-11 h-12 bg-card border-border"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full h-12 text-base font-semibold"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Sending...
-                    </div>
-                  ) : (
-                    "Send Reset Code"
-                  )}
-                </Button>
-              </form>
-            </div>
-          )}
-
-          {/* OTP Verification View */}
-          {view === "otp" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <button
-                onClick={() => setView("signup")}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </button>
-
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                  <Mail className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Check your email</h2>
-                <p className="text-muted-foreground break-words">
-                  We sent a verification code to
-                  <br />
-                  <span className="text-foreground font-medium break-all">{email || "your email"}</span>
                 </p>
-              </div>
-
-              <div className="py-4 relative">
-                <OTPInput onComplete={handleOTPComplete} disabled={loading} />
-                {loading && (
-                  <div className="flex items-center justify-center gap-2 mt-4">
-                    <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    <span className="text-sm text-muted-foreground">Verifying...</span>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-center text-sm text-muted-foreground">
-                Didn't receive the code?{" "}
-                <button
-                  onClick={async () => {
-                    try {
-                      await signup({ name, email, password }).unwrap();
-                      toast.success("Verification code resent to your email");
-                    } catch {
-                      toast.error("Failed to resend code. Please try again.");
-                    }
-                  }}
-                  disabled={loading}
-                  className="text-primary hover:text-primary/80 font-semibold transition-colors disabled:opacity-50"
-                >
-                  Resend
-                </button>
-              </p>
+              )}
+              {backLink('login', 'Back to log in')}
             </div>
-          )}
-
-          {/* Reset Password View */}
-          {view === "reset" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <button
-                onClick={() => { resetForm(); setView("forgot"); }}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </button>
-
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                  <Mail className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Enter reset code</h2>
-                <p className="text-muted-foreground break-words">
-                  We sent a code to
-                  <br />
-                  <span className="text-foreground font-medium break-all">{email || "your email"}</span>
-                </p>
-              </div>
-
-              <div className="py-4">
-                <OTPInput onComplete={(otp) => setOtpCode(otp)} />
-              </div>
-
-              <div className="text-center lg:text-left">
-                <h3 className="text-lg font-bold text-foreground mb-2">Set new password</h3>
-                <p className="text-muted-foreground text-sm">Your new password must be different from previous passwords</p>
-              </div>
-
-              <form onSubmit={handleResetPassword} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="new-password" className="text-foreground">New Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="new-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-11 pr-11 h-12 bg-card border-border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <PasswordStrength password={password} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-new-password" className="text-foreground">Confirm Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="confirm-new-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-11 pr-11 h-12 bg-card border-border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full h-12 text-base font-semibold"
-                  disabled={loading || !otpCode}
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Resetting...
-                    </div>
-                  ) : (
-                    "Reset Password"
-                  )}
-                </Button>
-              </form>
-
-              <p className="text-center text-sm text-muted-foreground">
-                Didn't receive the code?{" "}
-                <button
-                  onClick={async () => {
-                    try {
-                      await forgotPassword({ email }).unwrap();
-                      toast.success("Reset code resent to your email");
-                    } catch {
-                      toast.error("Failed to resend code. Please try again.");
-                    }
-                  }}
-                  disabled={loading}
-                  className="text-primary hover:text-primary/80 font-semibold transition-colors disabled:opacity-50"
-                >
-                  Resend
-                </button>
-              </p>
-            </div>
-          )}
-
-          {/* Success View */}
-          {view === "success" && (
-            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300 text-center">
-              <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-              </div>
-              
-              <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Password reset successful!</h2>
-                <p className="text-muted-foreground">Your password has been updated successfully</p>
-              </div>
-
-              <Button
-                onClick={() => { resetForm(); setView("login"); }}
-                className="w-full h-12 text-base font-semibold"
-              >
-                Back to Login
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+          </>
+        )}
+      </FadeIn>
+    </AuthFrame>
   );
 };

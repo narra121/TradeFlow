@@ -1,25 +1,19 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AuthPage } from '@/components/auth/AuthPage';
-import { SEO } from '@/components/SEO';
+import { useAuthArrival } from '@/components/auth/useAuthArrival';
 import { useAppSelector } from '@/store/hooks';
 
 export function SignupPage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
-
-  if (isAuthenticated) {
-    return <Navigate to="/app" replace />;
-  }
+  const { destination } = useAuthArrival();
+  const startedLoggedIn = useRef(useAppSelector((state) => state.auth.isAuthenticated)).current;
 
   const handleAuthSuccess = useCallback(() => {
-    navigate('/app');
-  }, [navigate]);
+    navigate(destination, { replace: true });
+  }, [navigate, destination]);
 
-  return (
-    <>
-      <SEO title="Sign Up for TradeQut - Free Trading Journal" description="Create your free TradeQut account." path="/signup" />
-      <AuthPage initialView="signup" onLogin={handleAuthSuccess} />
-    </>
-  );
+  if (startedLoggedIn) return <Navigate to={destination} replace />;
+
+  return <AuthPage initialView="signup" onLogin={handleAuthSuccess} />;
 }

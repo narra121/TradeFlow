@@ -1,0 +1,275 @@
+/* TradeReviewDemo: wide 760 × 480 (frame inset 24 / 64, off the bottom; satellite straddles the frame's top edge
+   over its title row), compact 358 × 460 (no rail, full-width pane). */
+.tr-demo .ss-stage {
+  overflow: hidden;
+}
+.tr-demo .tr-frame {
+  left: 24px;
+  top: 64px;
+  width: 712px;
+  height: 480px;
+}
+.tr-demo .ss-stage[data-layout='compact'] .tr-frame {
+  left: 16px;
+  top: 60px;
+  width: 326px;
+  height: 460px;
+}
+
+.tr-demo .tr-table {
+  flex: 1;
+  min-height: 0;
+}
+.tr-demo .tr-row {
+  display: grid;
+  grid-template-columns: 120px 84px 80px 96px 68px 1fr;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground-soft));
+  white-space: nowrap;
+  transition: background-color var(--dur-2) var(--ease-in);
+}
+.tr-demo .ss-stage[data-layout='compact'] .tr-row {
+  grid-template-columns: 1fr 96px 64px;
+}
+.tr-demo .tr-row--head {
+  height: 32px;
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+.tr-demo .tr-row[data-hover] {
+  background: hsl(var(--row-hover));
+}
+.tr-demo .tr-row[data-selected] {
+  background: hsl(var(--row-selected-solid));
+  box-shadow: inset 2px 0 0 hsl(var(--primary));
+}
+.tr-demo .tr-row--filler i {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: hsl(var(--foreground) / 0.08);
+}
+.tr-demo .tr-r {
+  text-align: right;
+}
+.tr-demo .tr-sym {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+.tr-demo .tr-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: hsl(var(--foreground-soft));
+}
+.tr-demo .tr-side svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.5;
+}
+
+/* The trade pane docks over the right of the table, under the title row, as the app's pane does. */
+.tr-demo .tr-pane {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  bottom: 0;
+  width: 331px;
+  display: flex;
+  flex-direction: column;
+  background: hsl(var(--background));
+  border-left: 1px solid hsl(var(--border));
+  transform: translateX(101%);
+  transition: transform var(--dur-3) var(--ease-in);
+}
+.tr-demo .ss-stage[data-layout='compact'] .tr-pane {
+  width: 100%;
+  border-left: 0;
+}
+.tr-demo .tr-pane[data-open] {
+  transform: none;
+}
+/* Closed, the pane is hidden once it has slid out, so the loop's reset happens out of sight. */
+.tr-demo .tr-pane:not([data-open]) {
+  visibility: hidden;
+  transition: transform var(--dur-3) var(--ease-in) var(--dur-1), visibility 0s linear calc(var(--dur-3) + var(--dur-1));
+}
+.tr-demo .tr-pane,
+.tr-demo .tr-sat {
+  will-change: transform;
+}
+/* The words fade in behind the sliding edge, so the frame's edge never slices them. */
+.tr-demo .tr-pane > * {
+  opacity: 0;
+  transition: opacity var(--dur-1) var(--ease-in);
+}
+.tr-demo .tr-pane[data-open] > * {
+  opacity: 1;
+  transition-delay: var(--dur-3);
+}
+.tr-demo .tr-none {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+}
+.tr-demo .tr-pane__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  flex: none;
+  padding: 0 16px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.tr-demo .tr-pane__sym {
+  font-size: 14px;
+  font-weight: 600;
+}
+.tr-demo .tr-pane__close {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: hsl(var(--muted-foreground));
+}
+.tr-demo .tr-pane__close svg {
+  width: 14px;
+  height: 14px;
+}
+.tr-demo .tr-pane__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.tr-demo .tr-pane__result {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  white-space: nowrap;
+}
+.tr-demo .tr-pane__pnl {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}
+.tr-demo .tr-pane__grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+  line-height: 16px;
+}
+.tr-demo .tr-pane__label {
+  margin-bottom: -6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+.tr-demo .tr-shot {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  font-size: 12px;
+}
+.tr-demo .tr-thumb {
+  box-sizing: border-box;
+  width: 120px;
+  height: 52px;
+  padding: 6px 4px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 4px;
+  background: hsl(var(--card));
+}
+.tr-demo .tr-thumb line,
+.tr-demo .tr-thumb rect {
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.tr-demo .tr-thumb__up line {
+  stroke: hsl(var(--profit) / 0.8);
+}
+.tr-demo .tr-thumb__up rect {
+  fill: hsl(var(--profit) / 0.8);
+}
+.tr-demo .tr-thumb__down line {
+  stroke: hsl(var(--loss) / 0.8);
+}
+.tr-demo .tr-thumb__down rect {
+  fill: hsl(var(--loss) / 0.8);
+}
+.tr-demo .tr-thumb__level {
+  stroke: hsl(var(--muted-foreground) / 0.6);
+  stroke-dasharray: 2 2;
+}
+.tr-demo .tr-field {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  min-height: 32px;
+  margin: 0 -8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: background-color var(--dur-2) var(--ease-in);
+}
+.tr-demo .tr-field[data-hover],
+.tr-demo .tr-field[data-open] {
+  background: hsl(var(--secondary));
+}
+.tr-demo .tr-rules {
+  position: relative;
+  z-index: 2;
+}
+.tr-demo .tr-menu {
+  top: calc(100% + 4px);
+  left: 84px;
+  width: 230px;
+  padding: 4px;
+  font-size: 13px;
+}
+.tr-demo .ss-stage[data-layout='compact'] .tr-menu {
+  left: auto;
+  right: -8px;
+}
+.tr-demo .tr-menu .ss-menu__item {
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+/* The satellite: the month's broken-rules cost, straddling the frame's top edge over its title row. */
+.tr-demo .tr-sat {
+  top: 18px;
+  right: 48px;
+  width: 214px;
+  padding: 12px 14px;
+  transition: opacity 0.45s var(--ease-in), transform 0.45s var(--ease-in);
+}
+.tr-demo .ss-stage[data-layout='compact'] .tr-sat {
+  top: 16px;
+  right: 16px;
+  width: 196px;
+}
+.tr-demo .tr-sat[data-out] {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.tr-demo .tr-sat__label,
+.tr-demo .tr-sat__hint {
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--muted-foreground));
+}
+.tr-demo .tr-sat__value {
+  display: block;
+  margin: 4px 0 2px;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}

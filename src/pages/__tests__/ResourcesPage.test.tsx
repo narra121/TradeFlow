@@ -5,14 +5,14 @@ import { ResourcesPage } from '../resources/ResourcesPage';
 describe('ResourcesPage', () => {
   it('renders the page title', () => {
     renderWithProviders(<ResourcesPage />);
-    expect(screen.getByText('Trading Tools & Calculators')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Trading calculators' })).toBeInTheDocument();
   });
 
   it('renders calculator cards', () => {
     renderWithProviders(<ResourcesPage />);
-    expect(screen.getByText('Position Size Calculator')).toBeInTheDocument();
-    expect(screen.getByText('Risk-Reward Calculator')).toBeInTheDocument();
-    expect(screen.getByText('Pip Value Calculator')).toBeInTheDocument();
+    expect(screen.getByText('Position size calculator')).toBeInTheDocument();
+    expect(screen.getByText('Risk-reward calculator')).toBeInTheDocument();
+    expect(screen.getByText('Pip value calculator')).toBeInTheDocument();
   });
 
   it('has links to calculator pages', () => {
@@ -43,7 +43,7 @@ describe('ResourcesPage', () => {
   it('renders the subtitle text', () => {
     renderWithProviders(<ResourcesPage />);
     expect(
-      screen.getByText(/Free tools to help you manage risk, size positions, and plan trades/)
+      screen.getByText(/Free tools to size positions, check risk-reward and value a pip/)
     ).toBeInTheDocument();
   });
 });

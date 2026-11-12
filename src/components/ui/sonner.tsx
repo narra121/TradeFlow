@@ -11,6 +11,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       visibleToasts={1}
+      position={typeof window !== "undefined" && window.innerWidth < 768 ? "top-center" : "bottom-left"}
       toastOptions={{
         classNames: {
           toast:

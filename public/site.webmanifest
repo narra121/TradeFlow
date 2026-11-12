@@ -1,21 +1,28 @@
 {
   "name": "TradeQut",
   "short_name": "TradeQut",
-  "description": "Free trading journal for stocks, forex, crypto, and options",
-  "start_url": "/",
+  "description": "Trading journal with broker import, net P&L after charges and rule tracking",
+  "id": "/",
+  "start_url": "/app/dashboard",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0c0a09",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "categories": ["finance", "productivity"],
+  "background_color": "#0e1117",
   "theme_color": "#10b981",
   "icons": [
     {
       "src": "/favicon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/favicon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

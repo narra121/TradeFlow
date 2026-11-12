@@ -5,12 +5,8 @@
  * delegate to this single function so concurrent 401 handlers never fire
  * independent refresh requests.
  */
+import { API_BASE_URL } from '@/lib/api/config';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.MODE === 'production'
-    ? 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradequt-prod/v1'
-    : 'https://wastpecoi2.execute-api.us-east-1.amazonaws.com/tradequt-dev/v1');
 
 let refreshPromise: Promise<string> | null = null;
 

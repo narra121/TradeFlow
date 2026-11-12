@@ -185,26 +185,27 @@ export default function TradingJournalTemplate() {
       </p>
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
-        Using a Template in TradeQut
+        Using the template in TradeQut
       </h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        TradeQut's trade entry form implements every field discussed in this article. When you add a
-        trade, the form prompts you for the symbol, direction, entry and exit prices, position size,
-        date, strategy, and notes — with dropdowns for commonly used values so you are never typing
-        the same strategy name twice.
+        TradeQut's trade pane has every field discussed in this article. When you add a trade, it asks
+        for the account, symbol, direction, entry and exit prices, stop loss, size, open and close
+        times and fees, then the journal fields: strategy, session, mistakes, broken rules, a key
+        lesson, notes and screenshots.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         The mistake and lesson fields are built directly into the trade form, making them first-class
         data points rather than afterthoughts buried in a notes section. You can attach chart
-        screenshots, tag trades with your{' '}
-        <Link to="/glossary#trading-rules" className="text-primary hover:text-primary/80">
+        screenshots, add tags, and mark which of your{' '}
+        <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">
           trading rules
         </Link>
-        , and mark which rules you followed or broke.
+        {' '}a trade broke.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        Your saved symbols, strategies, and setups are remembered across sessions, so repeated
-        entries become even faster. For a full walkthrough of the trade entry process, see the{' '}
+        Strategies, sessions and mistakes come from pick lists you edit in Settings, so the same
+        value is spelled the same way every time and can be grouped later. For a full walkthrough of
+        the trade entry process, see the{' '}
         <Link to="/guide" className="text-primary hover:text-primary/80">
           TradeQut User Guide
         </Link>

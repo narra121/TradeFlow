@@ -165,8 +165,8 @@ export default function HowToKeepTradingJournal() {
         <Link to="/blog/how-to-review-trades" className="text-primary hover:text-primary/80">
           weekly review routine
         </Link>{' '}
-        is the closest thing to a guaranteed edge in trading. The data does not lie, and patterns
-        will emerge that you cannot see in real time.
+        is one of the most practical ways to learn what is working for you. It makes no promise about
+        results, but it records what you actually did, and patterns can emerge that you cannot see in real time.
       </p>
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Getting Started</h2>
@@ -185,9 +185,9 @@ export default function HowToKeepTradingJournal() {
         <Link to="/glossary#profit-factor" className="text-primary hover:text-primary/80">
           profit factor
         </Link>{' '}
-        calculations — everything covered in this guide, available from day one. The free tier
-        includes unlimited trade logging and full analytics, so there is no barrier to getting
-        started.
+        calculations, covering everything in this guide. The Free plan includes unlimited manual
+        trades, the calendar, goals and rules; advanced analytics are part of Pro, and every account
+        starts with a 14-day Pro trial without a card.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-6">
         The traders who improve are the ones who measure. The ones who measure are the ones who

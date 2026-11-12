@@ -4,6 +4,8 @@ import authReducer from './slices/authSlice';
 import accountsReducer from './slices/accountsSlice';
 import tradesReducer from './slices/tradesSlice';
 import { toastMiddleware } from './middleware/toastMiddleware';
+import { sessionResetMiddleware } from './middleware/sessionResetMiddleware';
+import { saveScope } from '@/lib/scope';
 
 export const store = configureStore({
   reducer: {
@@ -38,8 +40,24 @@ export const store = configureStore({
       },
     })
       .concat(api.middleware)
-      .concat(toastMiddleware),
+      .concat(toastMiddleware)
+      .concat(sessionResetMiddleware),
   devTools: import.meta.env.MODE !== 'production',
+});
+
+let lastScope = '';
+store.subscribe(() => {
+  const { accounts, trades } = store.getState();
+  const f = trades.filters;
+  const next = JSON.stringify([accounts.selectedAccountId, f.datePreset, f.customFrom, f.customTo]);
+  if (next === lastScope) return;
+  lastScope = next;
+  saveScope({
+    accountId: accounts.selectedAccountId,
+    datePreset: f.datePreset,
+    customFrom: f.customFrom,
+    customTo: f.customTo,
+  });
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

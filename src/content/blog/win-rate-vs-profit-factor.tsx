@@ -8,7 +8,7 @@ export default function WinRateVsProfitFactor() {
         <Link to="/glossary#win-rate" className="text-primary hover:text-primary/80">Win rate</Link> is the
         percentage of trades that end in profit. The formula is straightforward:
       </p>
-      <div className="bg-card rounded-xl border border-border/50 p-4 mb-6">
+      <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
           Win Rate = (Number of Winning Trades / Total Number of Trades) x 100
         </p>
@@ -27,7 +27,7 @@ export default function WinRateVsProfitFactor() {
         <Link to="/glossary#profit-factor" className="text-primary hover:text-primary/80">Profit factor</Link> measures
         the ratio between the money you make and the money you lose. The formula is:
       </p>
-      <div className="bg-card rounded-xl border border-border/50 p-4 mb-6">
+      <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
           Profit Factor = Gross Profit / Gross Loss
         </p>

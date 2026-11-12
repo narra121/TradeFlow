@@ -23,7 +23,7 @@ const mockSelectedAccountId = vi.fn<() => string | null>(() => null);
 
 vi.mock('@/store/hooks', () => ({
   useAppDispatch: () => mockDispatch,
-  useAppSelector: (selector: any) =>
+  useAppSelector: (selector: (state: { accounts: { selectedAccountId: string | null } }) => unknown) =>
     selector({ accounts: { selectedAccountId: mockSelectedAccountId() } }),
 }));
 
@@ -78,6 +78,19 @@ describe('useAccounts', () => {
 
     expect(result.current.accounts).toEqual(mockAccounts);
     expect(result.current.accounts).toHaveLength(2);
+  });
+
+  it('passes on the loading and error state of the accounts query with a way to retry', () => {
+    const refetch = vi.fn();
+    mockGetAccountsQuery.mockReturnValue({ data: undefined, isLoading: true, isError: false, refetch });
+    const { result, rerender } = renderHook(() => useAccounts());
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isError).toBe(false);
+    mockGetAccountsQuery.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch });
+    rerender();
+    expect(result.current.isError).toBe(true);
+    result.current.refetch();
+    expect(refetch).toHaveBeenCalled();
   });
 
   it('returns empty array when no accounts data', () => {
@@ -251,8 +264,8 @@ describe('useAccounts', () => {
 
 describe('accountTypeLabels', () => {
   it('maps all account types to labels', () => {
-    expect(accountTypeLabels.prop_challenge).toBe('Prop Challenge');
-    expect(accountTypeLabels.prop_funded).toBe('Funded Account');
+    expect(accountTypeLabels.prop_challenge).toBe('Prop challenge');
+    expect(accountTypeLabels.prop_funded).toBe('Funded');
     expect(accountTypeLabels.personal).toBe('Personal');
     expect(accountTypeLabels.demo).toBe('Demo');
   });

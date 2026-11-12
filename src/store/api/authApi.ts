@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { api } from './baseApi';
+import { decodeJwtPayload } from '@/lib/jwt';
 import type { 
   LoginPayload, 
   SignupPayload, 
@@ -78,6 +80,11 @@ export const authApi = api.injectEndpoints({
     
     logout: builder.mutation<void, void>({
       queryFn: async () => {
+        const userId = decodeJwtPayload(localStorage.getItem('idToken'))?.sub;
+        if (userId) {
+          const { clearDatabase } = await import('@/lib/cache/trade-cache');
+          await clearDatabase(userId).catch(() => undefined);
+        }
         localStorage.removeItem('idToken');
         localStorage.removeItem('refreshToken');
         // Clear persisted image cache so another user doesn't see stale images

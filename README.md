@@ -84,16 +84,23 @@ Go to Actions -> "Deploy to Production" -> Run workflow.
 - `VITE_COGNITO_CLIENT_ID_DEV` / `_PROD`
 - `VITE_EXTRACT_TRADES_URL_DEV` / `_PROD`, `VITE_GENERATE_INSIGHTS_URL_DEV` / `_PROD`
 - `CF_DISTRIBUTION_ID_DEV` / `_PROD`
+- Optional: `VITE_GA_MEASUREMENT_ID_DEV` / `_PROD`, `VITE_GSC_VERIFICATION`, `VITE_BING_VERIFICATION`
 
 ### Build Pipeline
 
+`bun run build` (production) and `bun run build:dev` (every page `noindex`) run, in order:
+
 ```bash
-bun run build          # vite build
-node scripts/prerender-routes.js   # SEO pre-rendering (8 public routes)
-node scripts/generate-sitemap.js   # sitemap.xml
-node scripts/generate-og-image.js  # OG images (1200x630)
-node scripts/convert-images.js     # WebP conversion
+vite build                          # app bundle
+bun scripts/seo/manifest.ts         # route registry -> dist/_seo/routes.json
+node scripts/prerender-routes.js    # prerender every public route to dist/<path>/index.html
+node scripts/generate-og-image.js   # OG image (1200x630)
+bun scripts/seo/postbuild.ts        # sitemap.xml, llms.txt, llms-full.txt, then verify-dist (fails the build on a bad page)
 ```
+
+The public routes live in `src/content/route-registry.ts`. Serving (CloudFront Function, 404s, indexing, IndexNow) is
+documented in `docs/growth/SEO-RUNBOOK.md`. Optional secrets: `VITE_GA_MEASUREMENT_ID_DEV` / `_PROD`,
+`VITE_GSC_VERIFICATION`, `VITE_BING_VERIFICATION` (empty = off).
 
 ## Project Structure
 

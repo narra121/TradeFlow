@@ -5,55 +5,74 @@ test.describe('Authentication - Login Page', () => {
     await page.goto('/login');
   });
 
-  test('renders the login form with all required elements', async ({ page }) => {
-    // Check heading
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+  test('renders the login form with the landmarks and gate selectors', async ({ page }) => {
+    await expect(page.getByRole('heading', { level: 1, name: 'Log in to TradeQut' })).toBeVisible();
+    await expect(page.getByRole('banner')).toBeVisible();
+    await expect(page.getByRole('main')).toBeVisible();
 
-    // Check email and password fields
-    await expect(page.getByLabel('Email')).toBeVisible();
-    await expect(page.getByLabel('Password')).toBeVisible();
+    await expect(page.locator('input[type=email]')).toBeVisible();
+    await expect(page.locator('input[type=password]')).toBeVisible();
+    await expect(page.locator('button[type=submit]')).toHaveText('Log in');
 
-    // Check Sign In button
-    await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible();
-
-    // Check forgot password link
-    await expect(page.getByText('Forgot password?')).toBeVisible();
-
-    // Check link to signup
-    await expect(page.getByText("Don't have an account?")).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Create one' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Forgot password?' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Create account' })).toBeVisible();
   });
 
-  test('shows email and password input fields that accept input', async ({ page }) => {
-    const emailInput = page.getByLabel('Email');
-    const passwordInput = page.getByLabel('Password');
-
-    await emailInput.fill('user@test.com');
-    await passwordInput.fill('testpassword123');
-
-    await expect(emailInput).toHaveValue('user@test.com');
-    await expect(passwordInput).toHaveValue('testpassword123');
+  test('has no Remember me control; the sample dashboard sits beside the form at desktop width', async ({ page }) => {
+    await expect(page.getByText(/remember me/i)).toHaveCount(0);
+    await expect(page.getByRole('complementary', { name: 'What TradeQut looks like' }).getByText('Sample data')).toBeVisible();
   });
 
-  test('has a password visibility toggle', async ({ page }) => {
-    const passwordInput = page.getByLabel('Password');
-    await expect(passwordInput).toHaveAttribute('type', 'password');
-
-    // Click the visibility toggle (the eye icon button near the password field)
-    // The toggle is the button inside the password field's container
-    const toggleButton = page.locator('#password').locator('..').getByRole('button');
-    await toggleButton.click();
-
-    await expect(passwordInput).toHaveAttribute('type', 'text');
+  test('email and password fields accept input', async ({ page }) => {
+    await page.locator('input[type=email]').fill('user@test.com');
+    await page.locator('input[type=password]').fill('testpassword123');
+    await expect(page.locator('input[type=email]')).toHaveValue('user@test.com');
+    await expect(page.locator('input[type=password]')).toHaveValue('testpassword123');
   });
 
-  test('navigates to signup page when "Create one" is clicked', async ({ page }) => {
-    await page.getByRole('link', { name: 'Create one' }).click();
+  test('the Show button reveals the password', async ({ page }) => {
+    const password = page.getByRole('textbox', { name: 'Password' });
+    await expect(page.locator('input[type=password]')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Show password' }).click();
+    await expect(password).toHaveAttribute('type', 'text');
+    await expect(page.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('an empty submit shows a summary and inline errors', async ({ page }) => {
+    await page.locator('button[type=submit]').click();
+    await expect(page.getByRole('alert')).toContainText('2 fields need attention');
+    await expect(page.locator('input[type=email]')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  test('Create account in the header opens signup', async ({ page }) => {
+    await page.getByRole('link', { name: 'Create account' }).click();
     await expect(page).toHaveURL(/\/signup/);
   });
 
-  test('shows the TradeQut branding', async ({ page }) => {
-    await expect(page.getByText('TradeQut').first()).toBeVisible();
+  test('the logo links to the site and the footer has the legal links', async ({ page }) => {
+    await expect(page.getByRole('link', { name: 'TradeQut home' })).toHaveAttribute('href', '/');
+    for (const name of ['Privacy', 'Terms', 'Security', 'Status']) {
+      await expect(page.getByRole('navigation', { name: 'Legal and status' }).getByRole('link', { name })).toBeVisible();
+    }
+  });
+
+  test('shows the session-ended notice after a forced logout', async ({ page }) => {
+    await page.goto('/login?reason=session-ended');
+    await expect(page.getByRole('status').first()).toContainText('You were logged out because your session ended.');
+  });
+
+  test('the signed-out view confirms the log out and offers Log in again', async ({ page }) => {
+    await page.goto('/login?view=logged-out');
+    await expect(page.getByRole('heading', { level: 1, name: "You're logged out" })).toBeFocused();
+    await page.getByRole('link', { name: 'Log in again' }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.locator('input[type=email]')).toBeFocused();
+  });
+
+  test('a cancelled Google sign-in says so and prints nothing from the URL', async ({ page }) => {
+    await page.goto('/auth/callback?error=access_denied&error_description=CALL+0800+123');
+    await expect(page.getByRole('heading', { level: 1, name: 'Google sign-in was cancelled' })).toBeVisible();
+    await expect(page.getByText('0800')).toHaveCount(0);
   });
 });
 
@@ -62,54 +81,40 @@ test.describe('Authentication - Signup Page', () => {
     await page.goto('/signup');
   });
 
-  test('renders the signup form with all required fields', async ({ page }) => {
-    // Check heading
-    await expect(page.getByRole('heading', { name: 'Create account' })).toBeVisible();
-
-    // Check all form fields
-    await expect(page.getByLabel('Full Name')).toBeVisible();
-    await expect(page.getByLabel('Email')).toBeVisible();
-    await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
-    await expect(page.getByLabel('Confirm Password')).toBeVisible();
-
-    // Check Create Account button
-    await expect(page.getByRole('button', { name: 'Create Account' })).toBeVisible();
-
-    // Check link to login
-    await expect(page.getByText('Already have an account?')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  test('asks for email and password only, beside the sample-data panel', async ({ page }) => {
+    await expect(page.getByRole('heading', { level: 1, name: 'Create your account' })).toBeVisible();
+    await expect(page.locator('input[type=email]')).toBeVisible();
+    await expect(page.locator('input[type=password]')).toBeVisible();
+    await expect(page.getByLabel('Full name')).toHaveCount(0);
+    await expect(page.getByLabel('Confirm password')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Create account' })).toBeVisible();
+    await expect(page.getByRole('complementary').getByText('Sample data')).toBeVisible();
+    await expect(page.getByText('14-day Pro trial. No card.')).toBeVisible();
   });
 
-  test('navigates to login page when "Sign in" is clicked', async ({ page }) => {
-    await page.getByRole('link', { name: 'Sign in' }).click();
+  test('Log in in the header opens login', async ({ page }) => {
+    await page.getByRole('link', { name: 'Log in' }).click();
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('shows password strength indicator when typing password', async ({ page }) => {
-    const passwordInput = page.getByLabel('Password', { exact: true });
-    await passwordInput.fill('StrongP@ss123');
-
-    // The PasswordStrength component should render strength bars/text
-    await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
+  test('shows the real password policy as a checklist that ticks while typing', async ({ page }) => {
+    await page.locator('input[type=password]').fill('abcdefgh');
+    const list = page.getByRole('list', { name: 'Password requirements' });
+    await expect(list).toContainText('At least 8 characters (met)');
+    await expect(list).toContainText('A symbol, like ! or # (not met yet)');
   });
 
-  test('shows mismatch warning when passwords do not match', async ({ page }) => {
-    const passwordInput = page.getByLabel('Password', { exact: true });
-    const confirmInput = page.getByLabel('Confirm Password');
-
-    await passwordInput.fill('Password123!');
-    await confirmInput.fill('DifferentPassword');
-
-    await expect(page.getByText('Passwords do not match')).toBeVisible();
+  test('blocks a password without a symbol and names the unmet rule', async ({ page }) => {
+    await page.locator('input[type=email]').fill('trader@example.com');
+    await page.locator('input[type=password]').fill('Passw0rd');
+    await page.getByRole('button', { name: 'Create account' }).click();
+    await expect(page.getByRole('alert')).toContainText('add a symbol, like ! or #');
   });
 });
 
 test.describe('Authentication - Redirect', () => {
   test('redirects to login when accessing protected route without auth', async ({ page }) => {
-    // Try to access the app without being logged in
     await page.goto('/app/dashboard');
-
-    // Should be redirected to login page
     await expect(page).toHaveURL(/\/login/);
   });
 

@@ -15,14 +15,31 @@ export default {
     extend: {
       fontFamily: {
         sans: ["DM Sans", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
+        mono: ["JetBrains Mono", "DM Sans", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        foreground: {
+          DEFAULT: "hsl(var(--foreground))",
+          soft: "hsl(var(--foreground-soft))",
+          faint: "hsl(var(--foreground-faint))",
+        },
+        profit: "hsl(var(--profit))",
+        loss: "hsl(var(--loss))",
+        error: "hsl(var(--error))",
+        tint: {
+          "profit-1": "hsl(var(--tint-profit-1))",
+          "profit-2": "hsl(var(--tint-profit-2))",
+          "profit-3": "hsl(var(--tint-profit-3))",
+          "loss-1": "hsl(var(--tint-loss-1))",
+          "loss-2": "hsl(var(--tint-loss-2))",
+          "loss-3": "hsl(var(--tint-loss-3))",
+        },
+        scrim: "hsl(var(--scrim))",
+        "border-strong": "hsl(var(--border-strong))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -54,6 +71,7 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          text: "hsl(var(--accent-text))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -81,6 +99,11 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      fontSize: {
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }],
+        "13": ["0.8125rem", { lineHeight: "1.25rem" }],
+      },
+      zIndex: { sticky: "10", bar: "20", scrim: "30", popover: "40", dialog: "50", toast: "60", tooltip: "70" },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -95,31 +118,10 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "fade-in": {
-          from: { opacity: "0", transform: "translateY(10px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
-        "slide-in-right": {
-          from: { opacity: "0", transform: "translateX(20px)" },
-          to: { opacity: "1", transform: "translateX(0)" },
-        },
-        "scale-in": {
-          from: { opacity: "0", transform: "scale(0.95)" },
-          to: { opacity: "1", transform: "scale(1)" },
-        },
-        "number-tick": {
-          "0%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-5px)" },
-          "100%": { transform: "translateY(0)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.5s ease-out forwards",
-        "slide-in-right": "slide-in-right 0.4s ease-out forwards",
-        "scale-in": "scale-in 0.3s ease-out forwards",
-        "number-tick": "number-tick 0.3s ease-out",
       },
     },
   },

@@ -100,12 +100,12 @@ export default function ForexTradingJournal() {
         <li><strong className="text-foreground">Correlation check:</strong> Note whether you had another open position on a correlated pair (e.g., long EUR/USD and long GBP/USD simultaneously doubles your dollar exposure).</li>
       </ul>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        With these fields populated, TradeQut can generate forex-specific insights during your weekly review. You will
-        see which sessions produce your best trades, which pairs consistently underperform, and whether your swap
-        costs are eating into your profits. These details are the difference between a generic journal and one that
-        actually helps a forex trader improve. Import your trades via{' '}
-        <Link to="/blog/importing-trades-from-broker" className="text-primary hover:text-primary/80">CSV or screenshot extraction</Link>{' '}
-        to populate your journal quickly and start analyzing within minutes.
+        With these fields filled in, a weekly review can answer forex-specific questions: which sessions produce your
+        best trades, which pairs keep underperforming, and how much commission and swap take from your results. In
+        TradeQut, MetaTrader 4 and 5 reports import with their commission and swap columns, and Analytics breaks results
+        down by symbol, session and hour. Import your history through a{' '}
+        <Link to="/blog/importing-trades-from-broker" className="text-primary hover:text-primary/80">MetaTrader report, a CSV or screenshots</Link>{' '}
+        and the review starts from real numbers.
       </p>
     </>
   );

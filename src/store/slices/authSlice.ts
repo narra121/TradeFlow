@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { authApi } from '../api/authApi';
 

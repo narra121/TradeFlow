@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { ChevronDown, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { Plus } from 'lucide-react';
 
 interface SmartInputProps {
   value: string;
@@ -10,8 +10,15 @@ interface SmartInputProps {
   onAddNew: (value: string) => void;
   placeholder?: string;
   className?: string;
+  id?: string;
+  inputRef?: React.RefObject<HTMLInputElement>;
+  onBlur?: () => void;
+  'aria-invalid'?: boolean;
+  'aria-describedby'?: string;
+  'aria-required'?: boolean;
 }
 
+/** Type-to-filter combobox over saved values; Enter on the typed text creates it. */
 export function SmartInput({
   value,
   onChange,
@@ -19,86 +26,118 @@ export function SmartInput({
   onAddNew,
   placeholder,
   className,
+  id,
+  inputRef,
+  onBlur,
+  ...aria
 }: SmartInputProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [active, setActive] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
+
+  const typed = value.trim();
+  const filtered = useMemo(
+    () => (typed ? suggestions.filter((s) => s.toLowerCase().includes(typed.toLowerCase())) : suggestions.slice(0, 8)),
+    [typed, suggestions],
+  );
+  const showAddNew = !!typed && !suggestions.some((s) => s.toLowerCase() === typed.toLowerCase());
+  const rows = [...filtered, ...(showAddNew ? [`__new__${typed}`] : [])];
 
   useEffect(() => {
-    if (value.trim()) {
-      const filtered = suggestions.filter((s) =>
-        s.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredSuggestions(filtered);
-    } else {
-      setFilteredSuggestions(suggestions.slice(0, 5));
-    }
-  }, [value, suggestions]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+    const onDown = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
   }, []);
 
-  const handleSelect = (suggestion: string) => {
-    onChange(suggestion);
+  useEffect(() => setActive(-1), [typed]);
+
+  const pick = (row: string) => {
+    if (row.startsWith('__new__')) onAddNew(typed);
+    else onChange(row);
     setIsOpen(false);
   };
 
-  const handleAddNew = () => {
-    if (value.trim() && !suggestions.includes(value.trim())) {
-      onAddNew(value.trim());
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setIsOpen(true);
+      setActive((a) => Math.min(rows.length - 1, a + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive((a) => Math.max(0, a - 1));
+    } else if (e.key === 'Enter' && isOpen && active >= 0) {
+      e.preventDefault();
+      pick(rows[active]);
+    } else if (e.key === 'Escape' && isOpen) {
+      e.stopPropagation();
+      setIsOpen(false);
     }
-    setIsOpen(false);
   };
-
-  const showAddNew = value.trim() && !suggestions.some(
-    (s) => s.toLowerCase() === value.toLowerCase()
-  );
 
   return (
     <div ref={containerRef} className="relative">
       <Input
+        id={id}
         ref={inputRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setIsOpen(true)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setIsOpen(true);
+        }}
+        onBlur={onBlur}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
-        className={cn('font-sans', className)}
+        role="combobox"
+        aria-expanded={isOpen && rows.length > 0}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
+        autoComplete="off"
+        className={cn('pr-9 font-sans', className)}
+        {...aria}
       />
-      
-      {isOpen && (filteredSuggestions.length > 0 || showAddNew) && (
-        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden max-w-[calc(100vw-2rem)]">
-          <div className="max-h-40 sm:max-h-48 overflow-y-auto">
-            {filteredSuggestions.map((suggestion) => (
-              <button
-                key={suggestion}
-                type="button"
-                onClick={() => handleSelect(suggestion)}
-                className="w-full px-3 py-2 text-left text-xs sm:text-sm hover:bg-accent/50 transition-colors truncate"
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Show suggestions"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => {
+          setIsOpen((o) => !o);
+          inputRef?.current?.focus();
+        }}
+        className="absolute right-0 top-0 flex h-full w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+      >
+        <ChevronDown className="h-4 w-4" aria-hidden="true" />
+      </button>
+      {isOpen && rows.length > 0 && (
+        <ul id={listId} role="listbox" className="absolute z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-overlay">
+          {rows.map((row, i) => {
+            const isNew = row.startsWith('__new__');
+            return (
+              <li
+                key={row}
+                id={`${listId}-${i}`}
+                role="option"
+                aria-selected={active === i}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pick(row)}
+                className={cn('flex min-h-9 cursor-pointer items-center gap-2 px-3 text-sm hover:bg-muted [@media(pointer:coarse)]:min-h-11', active === i && 'bg-muted', isNew && 'border-t border-border text-primary')}
               >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-
-          {showAddNew && (
-            <button
-              type="button"
-              onClick={handleAddNew}
-              className="w-full px-3 py-2 text-left text-xs sm:text-sm border-t border-border bg-secondary/50 hover:bg-secondary transition-colors flex items-center gap-2 text-primary"
-            >
-              <Plus className="w-4 h-4 shrink-0" />
-              <span className="truncate">Create "{value.trim()}"</span>
-            </button>
-          )}
-        </div>
+                {isNew ? (
+                  <>
+                    <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">Create "{typed}"</span>
+                  </>
+                ) : (
+                  <span className="truncate">{row}</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

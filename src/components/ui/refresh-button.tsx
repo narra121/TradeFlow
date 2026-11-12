@@ -18,6 +18,7 @@ export function RefreshButton({ onRefresh, isFetching, className }: RefreshButto
           size="icon"
           onClick={onRefresh}
           disabled={isFetching}
+          aria-label={isFetching ? 'Refreshing' : 'Refresh data'}
           className={cn("h-9 w-9", className)}
         >
           <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />

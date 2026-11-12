@@ -7,7 +7,7 @@ import { useGetAccountsQuery, useCreateAccountMutation, useUpdateAccountMutation
 export function useAccounts() {
   const dispatch = useAppDispatch();
   const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
-  const { data: accountsData, isLoading: loading, error } = useGetAccountsQuery();
+  const { data: accountsData, isLoading: loading, isError, refetch } = useGetAccountsQuery();
   const [createAccountMutation] = useCreateAccountMutation();
   const [updateAccountMutation] = useUpdateAccountMutation();
   const [deleteAccountMutation] = useDeleteAccountMutation();
@@ -40,6 +40,9 @@ export function useAccounts() {
 
   return {
     accounts,
+    isLoading: loading,
+    isError,
+    refetch,
     selectedAccountId,
     selectedAccount,
     setSelectedAccountId,
@@ -51,8 +54,8 @@ export function useAccounts() {
 }
 
 export const accountTypeLabels: Record<AccountType, string> = {
-  prop_challenge: 'Prop Challenge',
-  prop_funded: 'Funded Account',
+  prop_challenge: 'Prop challenge',
+  prop_funded: 'Funded',
   personal: 'Personal',
   demo: 'Demo',
 };

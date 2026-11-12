@@ -1,62 +1,67 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { DatePreset } from '@/components/filters/DateRangeFilter';
-import { startOfWeek } from 'date-fns/startOfWeek';
-import { endOfWeek } from 'date-fns/endOfWeek';
-import { endOfDay } from 'date-fns/endOfDay';
-import { formatLocalDateOnly } from '@/lib/dateUtils';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { DatePreset, loadScope, resolveRange } from '@/lib/scope';
+import { readUiState } from '@/hooks/useUiState';
 
 export interface TradesState {
   filters: {
     accountId: string;
     startDate: string;
     endDate: string;
-    datePreset: DatePreset; // Store the preset selection
+    datePreset: DatePreset;
+    customFrom?: string;
+    customTo?: string;
   };
 }
 
-// Default to all time (backend requires startDate/endDate)
-const getDefaultDateRange = () => {
-  return {
-    startDate: '2000-01-01',
-    endDate: new Date().toISOString().slice(0, 10),
-  };
-};
+function buildFilters(accountId: string, preset: DatePreset, customFrom?: string, customTo?: string): TradesState['filters'] {
+  const base = { accountId, datePreset: preset, ...resolveRange(preset, customFrom, customTo) };
+  return preset === 'custom' && customFrom && customTo ? { ...base, customFrom, customTo } : base;
+}
 
-const initialState: TradesState = {
-  filters: {
-    accountId: 'ALL',
-    datePreset: 'all',
-    ...getDefaultDateRange()
-  },
-};
+function initialFilters(): TradesState['filters'] {
+  const saved = loadScope();
+  if (!saved) return buildFilters('ALL', readUiState().defaultPeriod);
+  return buildFilters(saved.accountId || 'ALL', saved.datePreset, saved.customFrom, saved.customTo);
+}
 
-// Slice
 const tradesSlice = createSlice({
   name: 'trades',
-  initialState,
+  initialState: (): TradesState => ({ filters: initialFilters() }),
   reducers: {
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
     },
-    setAccountFilter: (state, action) => {
+    setAccountFilter: (state, action: PayloadAction<string | null | undefined>) => {
       state.filters.accountId = action.payload || 'ALL';
     },
-    setDateRangeFilter: (state, action) => {
+    setDateRangeFilter: (
+      state,
+      action: PayloadAction<{ startDate: string; endDate: string; datePreset?: DatePreset }>,
+    ) => {
       state.filters.startDate = action.payload.startDate;
       state.filters.endDate = action.payload.endDate;
       if (action.payload.datePreset !== undefined) {
         state.filters.datePreset = action.payload.datePreset;
+        if (action.payload.datePreset === 'custom') {
+          state.filters.customFrom = action.payload.startDate;
+          state.filters.customTo = action.payload.endDate;
+        }
+      }
+    },
+    /** Recomputes relative presets so a tab left open past midnight does not keep yesterday's end date. */
+    rollDate: (state) => {
+      const { datePreset, customFrom, customTo } = state.filters;
+      const next = resolveRange(datePreset, customFrom, customTo);
+      if (next.endDate !== state.filters.endDate || next.startDate !== state.filters.startDate) {
+        state.filters.startDate = next.startDate;
+        state.filters.endDate = next.endDate;
       }
     },
     clearFilters: (state) => {
-      state.filters = {
-        accountId: 'ALL',
-        datePreset: 'all',
-        ...getDefaultDateRange()
-      };
+      state.filters = buildFilters('ALL', 'all');
     },
   },
 });
 
-export const { setFilters, setAccountFilter, setDateRangeFilter, clearFilters } = tradesSlice.actions;
+export const { setFilters, setAccountFilter, setDateRangeFilter, rollDate, clearFilters } = tradesSlice.actions;
 export default tradesSlice.reducer;

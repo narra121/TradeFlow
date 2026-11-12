@@ -1,13 +1,12 @@
-// API base URL (same as used in the app)
-const API_BASE_URL = import.meta.env.VITE_API_URL ||
-  (import.meta.env.MODE === 'production'
-    ? 'https://api.tradequt.com/v1'
-    : 'https://api-dev.tradequt.com/v1');
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
+import { API_BASE_URL } from '@/lib/api/config';
+import { decodeJwtPayload } from '@/lib/jwt';
 
 const REPORT_URL = `${API_BASE_URL}/errors/report`;
 const MAX_CONSOLE_LOGS = 50;
 const MAX_API_CALLS = 20;
 const MAX_PAYLOAD_BYTES = 200 * 1024; // 200KB
+const KEEPALIVE_LIMIT_BYTES = 60 * 1024; // fetch keepalive bodies are capped at 64 KiB by browsers
 const DEDUP_WINDOW_MS = 60000; // 60 seconds
 
 // Keep reference to original fetch before patching
@@ -36,6 +35,29 @@ interface ApiCallEntry {
 const consoleLogs: ConsoleLogEntry[] = [];
 const apiCalls: ApiCallEntry[] = [];
 const recentFingerprints = new Map<string, number>();
+
+// ─── Redaction ──────────────────────────────────────────
+
+const SENSITIVE_HEADERS = /^(authorization|cookie|set-cookie|x-api-key|x-amz-security-token)$/i;
+const SENSITIVE_KEYS = 'IdToken|AccessToken|RefreshToken|id_token|access_token|refresh_token|token|password|currentPassword|newPassword|code';
+
+/** Removes bearer tokens and token / password fields from anything that leaves the browser in an error report. */
+export function redactSecrets(text: string): string;
+export function redactSecrets(text: string | null): string | null;
+export function redactSecrets(text: string | null): string | null {
+  if (!text) return text;
+  return text
+    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [redacted]')
+    .replace(new RegExp(`("(?:${SENSITIVE_KEYS})"\\s*:\\s*)"[^"]*"`, 'g'), '$1"[redacted]"')
+    .replace(new RegExp(`((?:${SENSITIVE_KEYS})=)[^&\\s"']+`, 'g'), '$1[redacted]')
+    .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*/g, '[redacted-jwt]');
+}
+
+function redactHeaders(headers: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(headers)) out[k] = SENSITIVE_HEADERS.test(k) ? '[redacted]' : v;
+  return out;
+}
 
 // ─── Safe Stringify ─────────────────────────────────────
 
@@ -72,7 +94,7 @@ function patchConsole() {
       original(...args);
       pushToRing(consoleLogs, {
         level,
-        message: safeStringify(args).slice(0, 1000),
+        message: redactSecrets(safeStringify(args).slice(0, 1000)),
         timestamp: new Date().toISOString(),
       }, MAX_CONSOLE_LOGS);
     };
@@ -110,14 +132,14 @@ function extractHeaders(input: RequestInfo | URL, init?: RequestInit): Record<st
       Object.assign(headers, src);
     }
   }
-  return headers;
+  return redactHeaders(headers);
 }
 
 function extractBody(input: RequestInfo | URL, init?: RequestInit): string | null {
   const body = init?.body || (typeof input !== 'string' && !(input instanceof URL) ? input.body : null);
   if (!body) return null;
-  if (typeof body === 'string') return truncate(body, 2000);
-  try { return truncate(JSON.stringify(body), 2000); } catch { return '[body]'; }
+  if (typeof body === 'string') return truncate(redactSecrets(body), 2000);
+  try { return truncate(redactSecrets(JSON.stringify(body)), 2000); } catch { return '[body]'; }
 }
 
 function buildCurlCommand(url: string, method: string, headers: Record<string, string>, body: string | null): string {
@@ -162,7 +184,7 @@ function patchFetch() {
       try {
         const cloned = response.clone();
         const text = await cloned.text();
-        responseBody = truncate(text, 2000);
+        responseBody = truncate(redactSecrets(text), 2000);
       } catch { /* ignore */ }
 
       pushToRing(apiCalls, {
@@ -231,15 +253,14 @@ function reportError(errorData: ErrorData) {
     try {
       const token = localStorage.getItem('idToken');
       if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        userId = payload.sub || null;
+        userId = decodeJwtPayload(token)?.sub || null;
       }
     } catch { /* ignore */ }
 
     const payload = {
       error: {
-        message: errorData.message.slice(0, 2000),
-        stack: errorData.stack ? errorData.stack.slice(0, 10000) : null,
+        message: redactSecrets(errorData.message.slice(0, 2000)),
+        stack: errorData.stack ? redactSecrets(errorData.stack.slice(0, 10000)) : null,
         componentStack: errorData.componentStack ? errorData.componentStack.slice(0, 5000) : null,
         type: errorData.type,
       },
@@ -274,6 +295,12 @@ function reportError(errorData: ErrorData) {
         responseBody: call.responseBody ? call.responseBody.slice(0, 500) : null,
         curl: null,
       }));
+      body = JSON.stringify(payload);
+    }
+
+    if (body.length > KEEPALIVE_LIMIT_BYTES) {
+      payload.consoleLogs = payload.consoleLogs.slice(-10);
+      payload.recentApiCalls = payload.recentApiCalls.slice(-5).map((call) => ({ ...call, requestBody: null, responseBody: call.responseBody ? call.responseBody.slice(0, 300) : null, curl: null }));
       body = JSON.stringify(payload);
     }
 

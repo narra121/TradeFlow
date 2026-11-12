@@ -1,346 +1,233 @@
-import { useEffect, useMemo, useState } from 'react';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { TradeList } from '@/components/dashboard/TradeList';
-import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
-import { WinRateRing } from '@/components/dashboard/WinRateRing';
-import { QuickStats } from '@/components/dashboard/QuickStats';
-import { AccountFilter } from '@/components/account/AccountFilter';
-import { DateRangeFilter, DatePreset, getDateRangeFromPreset } from '@/components/filters/DateRangeFilter';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Import, DollarSign, TrendingUp, Activity, BarChart3, Info, AlertTriangle } from 'lucide-react';
-import { RefreshButton } from '@/components/ui/refresh-button';
-import { useNavigate } from 'react-router-dom';
+import { Money, RMultiple } from '@/components/ui/money';
+import { ErrorState } from '@/components/ui/error-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ScopeBarSlot } from '@/components/shell/chrome';
+import { EquityChart } from '@/components/dashboard/EquityChart';
+import { GoalsSummary } from '@/components/dashboard/GoalsSummary';
+import { MonthHeat } from '@/components/dashboard/MonthHeat';
+import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
+import { RecentTrades } from '@/components/dashboard/RecentTrades';
+import { TodayStrip } from '@/components/dashboard/TodayStrip';
+import { useWeekGoals } from '@/components/dashboard/useWeekGoals';
+import { FirstRunPage } from '@/components/onboarding/FirstRunPage';
+import { CompareSwitch } from '@/components/stats/CompareSwitch';
+import { CurrencySwitch } from '@/components/stats/CurrencySwitch';
+import { useCurrencyView } from '@/components/stats/useCurrencyView';
+import { Delta } from '@/components/stats/Delta';
+import { StatCell, StatStrip } from '@/components/stats/StatStrip';
+import { usePeriodStats } from '@/components/stats/usePeriodStats';
+import { useScopeCapital } from '@/components/stats/useScopeCapital';
+import { useScopeTrades } from '@/hooks/useScopeTrades';
+import { useTradeParam } from '@/hooks/useTradeParam';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { equitySeries, needsAttention, todaySummary } from '@/lib/dashboard';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { cn } from '@/lib/utils';
-import { AdSlot } from '@/components/ads/AdSlot';
-import { getEligibleTrades } from '@/lib/tradeCalculations';
-import { useGetTradesPaginatedQuery, useGetStatsQuery, useGetAccountsQuery } from '@/store/api';
-import { skipToken } from '@reduxjs/toolkit/query/react';
-import { 
-  DashboardStatsSkeleton, 
-  ChartSkeleton, 
-  WinRateRingSkeleton, 
-  RecentTradesListSkeleton, 
-  QuickStatsSkeleton 
-} from '@/components/ui/loading-skeleton';
-
-const EMPTY_STATS = {
-  totalPnl: 0, winRate: 0, totalTrades: 0, wins: 0, losses: 0, breakeven: 0,
-  avgWin: 0, avgLoss: 0, profitFactor: 0, bestTrade: 0, worstTrade: 0,
-  maxDrawdown: 0, avgRiskReward: 0, consecutiveWins: 0, consecutiveLosses: 0,
-  grossProfit: 0, grossLoss: 0, expectancy: 0, sharpeRatio: 0, avgHoldingTime: 0,
-  totalVolume: 0, dailyPnl: [] as Array<{ date: string; pnl: number; cumulativePnl: number }>,
-};
+import { formatPercent, formatProfitFactor, formatR, parseLocalDate } from '@/lib/format';
+import { getDateRangeFromPreset } from '@/lib/scope';
 
 interface DashboardViewProps {
-  onAddTrade: () => void;
-  onImportTrades: () => void;
+  onAddTrade?: () => void;
+  onImportTrades?: () => void;
 }
 
-export function DashboardView({ onAddTrade, onImportTrades }: DashboardViewProps) {
+const MAX_CURRENCY_LINES = 2;
+
+export function DashboardView(_props: DashboardViewProps = {}) {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const filters = useAppSelector((state) => state.trades.filters);
-  const [customRange, setCustomRange] = useState<{ from: Date; to: Date }>(
-    { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() }
+  const filters = useAppSelector((s) => s.trades.filters);
+  const { accounts, selectedAccountId, accountsLoading, accountsError } = useScopeCapital();
+  const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+  const trade = useTradeParam();
+  const scope = useScopeTrades();
+  const { trades } = scope;
+  const ps = usePeriodStats({ includeEquityCurve: true });
+  const { stats, prev, prevRange } = ps;
+
+  const todayKey = formatLocalDateOnly(new Date());
+  const todayScope = useScopeTrades({ accountId: filters.accountId, startDate: todayKey, endDate: todayKey });
+  const week = useWeekGoals();
+
+  const view = useCurrencyView(stats, prev);
+  const byCurrency = (stats as { byCurrency?: Record<string, { totalPnl: number; totalTrades: number; profitFactor: number | null; wins: number }> } | undefined)?.byCurrency;
+  const currencies = useMemo(
+    () => (view.currencies.length > 1 ? view.currencies.map((c) => ({ currency: c, net: byCurrency?.[c]?.totalPnl ?? 0, trades: byCurrency?.[c]?.totalTrades ?? 0, profitFactor: byCurrency?.[c]?.profitFactor ?? null, wins: byCurrency?.[c]?.wins ?? 0 })).sort((a, b) => b.trades - a.trades) : []),
+    [view.currencies, byCurrency],
   );
-  
-  // Get accounts for balance calculations (direct query, avoids unused CRUD mutations)
-  const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
-  const { data: accountsData, isLoading: accountsLoading } = useGetAccountsQuery();
-  const accounts = accountsData?.accounts || [];
+  const mixed = currencies.length > 1;
+  const selectedAccount = selectedAccountId ? accountMap.get(selectedAccountId) : undefined;
+  const currency = mixed ? undefined : view.currency ?? selectedAccount?.currency;
+  const chartCurrency = mixed ? view.currency : currency;
+  const today = useMemo(() => todaySummary(todayScope.trades, accountMap), [todayScope.trades, accountMap]);
+  const attention = useMemo(() => needsAttention(trades), [trades]);
+  const points = useMemo(() => equitySeries((mixed ? view.stats : stats)?.dailyPnl, (d) => d), [mixed, view.stats, stats]);
+  const heatAnchor = useMemo(() => {
+    const end = parseLocalDate(filters.endDate);
+    return Number.isNaN(end.getTime()) || end > new Date() ? new Date() : end;
+  }, [filters.endDate]);
 
-  // Debounce filter changes to avoid firing multiple API calls during rapid changes
-  const [debouncedFilters, setDebouncedFilters] = useState(filters);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedFilters(filters), 300);
-    return () => clearTimeout(timer);
-  }, [filters]);
-
-  // Prepare query params using debounced filters
-  const queryParams = useMemo(() => ({
-    accountId: debouncedFilters.accountId,
-    startDate: debouncedFilters.startDate,
-    endDate: debouncedFilters.endDate,
-  }), [debouncedFilters.accountId, debouncedFilters.startDate, debouncedFilters.endDate]);
-
-  const { data: paginatedData, isLoading, isFetching, refetch } = useGetTradesPaginatedQuery({
-    ...queryParams,
-    limit: 5,
-  });
-  const trades = paginatedData?.trades ?? [];
-
-  const handleDatePresetChange = (preset: DatePreset) => {
-    const range = getDateRangeFromPreset(preset, customRange);
-    dispatch(setDateRangeFilter({
-      startDate: formatLocalDateOnly(range.from),
-      endDate: formatLocalDateOnly(range.to),
-      datePreset: preset
-    }));
-    if (preset === 'custom') {
-      setCustomRange(range);
-    }
+  const showAllTime = () => {
+    const range = getDateRangeFromPreset('all');
+    dispatch(setDateRangeFilter({ startDate: formatLocalDateOnly(range.from), endDate: formatLocalDateOnly(range.to), datePreset: 'all' }));
   };
 
-  const filteredTrades = useMemo(() => getEligibleTrades(trades), [trades]);
+  if (accountsError) return <ErrorState title="Couldn't load your accounts." description="Your data is safe." onRetry={() => window.location.reload()} />;
+  if (!accountsLoading && accounts.length === 0) return <FirstRunPage tradeCount={0} />;
 
-  // Calculate total capital based on selected accounts
-  const totalCapital = useMemo(() => {
-    const accountId = selectedAccountId || 'ALL';
-    if (accountId === 'ALL') {
-      // Sum up initial balances from all accounts (excluding accountId -1 or undefined)
-      return accounts
-        .filter(acc => acc.id && acc.id !== '-1')
-        .reduce((sum, acc) => sum + (acc.initialBalance || 0), 0);
-    } else {
-      // Get balance for specific account
-      const account = accounts.find(acc => acc.id === accountId);
-      return account?.initialBalance || 0;
-    }
-  }, [selectedAccountId, accounts]);
+  const compareSlot = ps.canCompare ? (
+    <ScopeBarSlot side="right">
+      <CompareSwitch />
+    </ScopeBarSlot>
+  ) : null;
 
-  // Fetch aggregated stats from backend — skip until accounts are loaded to avoid
-  // a wasted first request with totalCapital=0 that returns incorrect percentages
-  const statsQueryParams = useMemo(() => ({
-    accountId: debouncedFilters.accountId,
-    startDate: debouncedFilters.startDate,
-    endDate: debouncedFilters.endDate,
-    totalCapital,
-  }), [debouncedFilters.accountId, debouncedFilters.startDate, debouncedFilters.endDate, totalCapital]);
+  const statsLoading = ps.isLoading || !ps.accountsReady;
+  const noTradesInPeriod = !scope.isLoading && !scope.isError && trades.length === 0;
 
-  const { data: statsData, isLoading: statsLoading, isFetching: statsFetching } =
-    useGetStatsQuery(accountsLoading ? skipToken : statsQueryParams);
+  const quiet = noTradesInPeriod && !statsLoading;
+  if (quiet && filters.datePreset === 'all' && filters.accountId === 'ALL') return <FirstRunPage tradeCount={0} />;
+  const emptyPeriod = (
+    <div className="flex flex-col items-start gap-2 py-2">
+      <p className="text-sm text-muted-foreground">{filters.datePreset === 'all' ? 'No trades for this account yet.' : 'No trades in this period.'}</p>
+      {filters.datePreset !== 'all' && <Button size="sm" variant="outline" onClick={showAllTime}>Show all time</Button>}
+    </div>
+  );
 
-  const stats = { ...EMPTY_STATS, ...statsData };
+  const s = stats;
+  const wins = s?.wins ?? 0;
+  const total = s?.totalTrades ?? 0;
+  const hasRealisedR = typeof s?.avgR === 'number';
+  const avgR = hasRealisedR ? (s?.avgR as number) : undefined;
+  const prevAvgR = prev && typeof prev.avgR === 'number' ? (prev.avgR as number) : undefined;
+  const name = prevRange?.name ?? '';
+  const spoken = prevRange?.spokenName;
 
-  const hasUnmappedTrades = trades.length > filteredTrades.length ||
-    (stats.totalTrades > 0 && filteredTrades.length === 0);
+  const deltaProps = { name, spokenName: spoken };
+  const sinceStart = selectedAccount && selectedAccount.initialBalance > 0 ? ((selectedAccount.balance - selectedAccount.initialBalance) / selectedAccount.initialBalance) * 100 : null;
 
-  const totalPnlTrend = useMemo(() => ({
-    value: totalCapital > 0 ? Math.abs((stats.totalPnl / totalCapital) * 100) : 0,
-    isPositive: stats.totalPnl >= 0,
-  }), [stats.totalPnl, totalCapital]);
-  const showSkeleton = isLoading || statsLoading;           // first-time load only
-  const isRefreshing = isFetching || statsFetching;          // background refetch, keep stale data visible
-  const isFilterPending =
-    debouncedFilters.accountId !== filters.accountId ||
-    debouncedFilters.startDate !== filters.startDate ||
-    debouncedFilters.endDate !== filters.endDate;
-
-  // All trades are closed - no open trades section needed
+  const strip = ps.isError ? (
+    <ErrorState title="Couldn't load your statistics." description="Your data is safe." onRetry={ps.refetch} />
+  ) : quiet ? (
+    <StatStrip label="Period statistics" className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
+      {(['netPnl', 'winRate', 'profitFactor', 'plannedRR', 'maxDrawdown'] as const).map((m) => <StatCell key={m} metric={m} value="—" />)}
+    </StatStrip>
+  ) : (
+    <StatStrip label="Period statistics" className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
+      {selectedAccount && (
+        <StatCell
+          metric="balance"
+          value={<Money value={selectedAccount.balance} currency={selectedAccount.currency} sign={false} neutral />}
+          hint={sinceStart === null ? undefined : `${formatPercent(sinceStart, 1, { sign: true })} since start`}
+        />
+      )}
+      <StatCell
+        metric="netPnl"
+        to="/app/analytics"
+        className={mixed ? 'col-span-2 sm:col-span-1' : undefined}
+        value={
+          statsLoading ? <Skeleton className="h-5 w-24" /> : mixed ? (
+            <span className="flex flex-col text-sm leading-5">
+              {currencies.slice(0, MAX_CURRENCY_LINES).map((c) => <Money key={c.currency} value={c.net} currency={c.currency} />)}
+              {currencies.length > MAX_CURRENCY_LINES && <span className="text-xs text-muted-foreground">+{currencies.length - MAX_CURRENCY_LINES} more</span>}
+            </span>
+          ) : (
+            <Money value={s?.totalPnl ?? 0} currency={currency} />
+          )
+        }
+        hint={mixed ? 'One line per currency' : undefined}
+        delta={!mixed && prev ? <Delta kind="money" current={s?.totalPnl} previous={prev.totalPnl} currency={currency} {...deltaProps} /> : undefined}
+      />
+      <StatCell
+        metric="winRate"
+        to="/app/analytics"
+        value={statsLoading ? <Skeleton className="h-5 w-16" /> : formatPercent(s?.winRate ?? 0)}
+        hint={statsLoading ? undefined : `${wins}W · ${s?.losses ?? 0}L · ${total} ${total === 1 ? 'trade' : 'trades'}`}
+        sample={`${total} trades`}
+        delta={prev ? <Delta kind="pts" current={s?.winRate} previous={prev.winRate} {...deltaProps} /> : undefined}
+      />
+      <StatCell
+        metric="profitFactor"
+        to="/app/analytics"
+        value={
+          statsLoading ? <Skeleton className="h-5 w-12" /> : mixed ? (
+            <span className="flex flex-col text-sm leading-5">
+              {currencies.slice(0, MAX_CURRENCY_LINES).map((c) => <span key={c.currency}><span className="text-xs text-muted-foreground">{c.currency}</span> {formatProfitFactor(c.profitFactor, c.wins, c.trades)}</span>)}
+            </span>
+          ) : formatProfitFactor(s?.profitFactor, wins, total)
+        }
+        hint={mixed ? 'One line per currency' : undefined}
+        delta={!mixed && prev ? <Delta kind="ratio" current={s?.profitFactor} previous={prev.profitFactor} {...deltaProps} /> : undefined}
+      />
+      <StatCell
+        metric={hasRealisedR ? 'avgR' : 'plannedRR'}
+        to="/app/analytics?tab=risk"
+        value={statsLoading ? <Skeleton className="h-5 w-12" /> : hasRealisedR ? <RMultiple value={avgR} /> : s?.avgRiskReward ? s.avgRiskReward.toFixed(2) : '—'}
+        hint={hasRealisedR ? undefined : 'Planned, not realised'}
+        delta={prev ? (hasRealisedR ? <Delta kind="r" current={avgR} previous={prevAvgR} {...deltaProps} /> : <Delta kind="ratio" current={s?.avgRiskReward} previous={prev.avgRiskReward} {...deltaProps} />) : undefined}
+      />
+      <StatCell
+        metric="maxDrawdown"
+        to="/app/analytics?tab=risk"
+        value={statsLoading ? <Skeleton className="h-5 w-12" /> : mixed ? '—' : formatPercent(s?.maxDrawdown ?? 0)}
+        hint={mixed ? 'Per account only' : undefined}
+        delta={!mixed && prev ? <Delta kind="pts" current={s?.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...deltaProps} /> : undefined}
+      />
+    </StatStrip>
+  );
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="space-y-3 sm:space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">Your trading performance at a glance</p>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <RefreshButton onRefresh={refetch} isFetching={isFetching} />
-            <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
-              <Import className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">Import</span>
-            </Button>
-            <Button onClick={onAddTrade} size="default" className="gap-2">
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">Add Trade</span>
-            </Button>
-          </div>
+    <div className="space-y-4">
+      {compareSlot}
+      <TodayStrip today={today} todayLoading={todayScope.isLoading} week={week} todayKey={todayKey} />
+      {strip}
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12 [&>*]:min-w-0">
+        <section className={`flex flex-col rounded-lg border border-border bg-card p-4 max-md:order-1 xl:col-span-7`}>
+          {ps.isError ? (
+            <ErrorState title="Couldn't load your statistics." onRetry={ps.refetch} />
+          ) : statsLoading ? (
+            <Skeleton className="h-[320px]" aria-busy="true" />
+          ) : quiet ? (
+            <>
+              <h3 className="mb-2 text-[13px] font-semibold">Equity</h3>
+              {emptyPeriod}
+            </>
+          ) : mixed ? (
+            <>
+              <div className="mb-2"><CurrencySwitch currencies={view.currencies} value={view.currency ?? view.currencies[0]} onChange={view.select} /></div>
+              <EquityChart points={points} currency={chartCurrency} fill />
+            </>
+          ) : (
+            <EquityChart points={points} currency={currency} fill />
+          )}
+        </section>
+
+        <div className="grid grid-cols-1 gap-4 max-md:order-4 md:grid-cols-2 xl:col-span-5 xl:grid-cols-1 [&>*]:min-w-0">
+          <MonthHeat accountId={filters.accountId} accounts={accountMap} anchor={heatAnchor} />
+          <GoalsSummary week={week} currency={currency} mixed={mixed} />
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 sm:flex-wrap">
-          <AccountFilter />
-          <DateRangeFilter
-            selectedPreset={filters.datePreset}
-            onPresetChange={handleDatePresetChange}
-            customRange={customRange}
-            onCustomRangeChange={setCustomRange}
-            showCustomPicker
-          />
+
+        <div className="max-md:order-3 xl:col-span-7">
+          {scope.isError ? (
+            <ErrorState title="Couldn't load your trades." onRetry={() => void scope.refetch()} />
+          ) : scope.isLoading ? (
+            <Skeleton className="h-64" aria-busy="true" />
+          ) : quiet ? (
+            <section className="rounded-lg border border-border bg-card p-4">
+              <h2 className="mb-2 text-sm font-semibold">Recent trades</h2>
+              {emptyPeriod}
+            </section>
+          ) : (
+            <RecentTrades trades={trades} accounts={accountMap} onOpen={(id) => trade.openTrade(id)} />
+          )}
+        </div>
+
+        <div className="max-md:order-2 xl:col-span-5">
+          {scope.isLoading ? <Skeleton className="h-64" /> : <NeedsAttention rows={attention} truncated={scope.truncated} accountId={filters.accountId} noTrades={quiet} />}
         </div>
       </div>
 
-      {/* Empty State - shown when not loading and no trades */}
-      {!showSkeleton && filteredTrades.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-24 px-4 text-center animate-in fade-in-0 zoom-in-95 duration-300">
-          {hasUnmappedTrades ? (
-            <>
-              <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mb-6">
-                <AlertTriangle className="w-8 h-8 text-warning/60" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                Unmapped trades found
-              </h3>
-              <p className="text-muted-foreground max-w-md mb-8">
-                You have trades that aren't assigned to any account. Map them to accounts in the Trade Log so they show up in your stats.
-              </p>
-              <div className="flex items-center gap-3">
-                <Button onClick={() => navigate('/app/tradelog')} size="default" className="gap-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  Go to Trade Log
-                </Button>
-                <Button onClick={onAddTrade} variant="outline" size="default" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Trade
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                <BarChart3 className="w-8 h-8 text-primary/60" />
-              </div>
-              {filters.datePreset === 'all' ? (
-                <>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to TradeQut!</h3>
-                  <p className="text-muted-foreground max-w-md mb-8">
-                    Start by adding your first trade to see your performance dashboard come to life.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Button onClick={onAddTrade} size="default" className="gap-2">
-                      <Plus className="w-4 h-4" />
-                      Add Your First Trade
-                    </Button>
-                    <Button onClick={onImportTrades} variant="outline" size="default" className="gap-2">
-                      <Import className="w-4 h-4" />
-                      Import Trades
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">No trades in this period</h3>
-                  <p className="text-muted-foreground max-w-md mb-8">
-                    Try selecting a different date range or account filter to see your trades.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="default"
-                      className="gap-2"
-                      onClick={() => handleDatePresetChange('all')}
-                    >
-                      View All Time
-                    </Button>
-                    <Button onClick={onAddTrade} size="default" className="gap-2">
-                      <Plus className="w-4 h-4" />
-                      Add Trade
-                    </Button>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      ) : (
-        <div className={cn('transition-opacity duration-200 space-y-4 sm:space-y-6', (isRefreshing || isFilterPending) && 'opacity-60')}>
-          {/* Stats Grid */}
-          {showSkeleton ? (
-            <DashboardStatsSkeleton />
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <StatCard
-                title="Total P&L"
-                value={`${(stats.totalPnl ?? 0) >= 0 ? '+' : ''}${(stats.totalPnl ?? 0).toFixed(2)}`}
-                prefix="$"
-                icon={DollarSign}
-                variant={(stats.totalPnl ?? 0) >= 0 ? 'success' : 'danger'}
-                trend={totalPnlTrend}
-                showArrow
-                className="stagger-1"
-              />
-              <StatCard
-                title="Win Rate"
-                value={(stats.winRate ?? 0).toFixed(1)}
-                suffix="%"
-                icon={TrendingUp}
-                variant="success"
-                className="stagger-2"
-              />
-              <StatCard
-                title="Total Trades"
-                value={stats.totalTrades ?? 0}
-                icon={Activity}
-                variant="default"
-                className="stagger-3"
-              />
-              <StatCard
-                title="Profit Factor"
-                value={stats.profitFactor == null || !isFinite(stats.profitFactor) ? '—' : stats.profitFactor.toFixed(2)}
-                icon={BarChart3}
-                variant="accent"
-                className="stagger-4"
-              />
-            </div>
-          )}
-
-          {/* Unmapped Trades Banner */}
-          {!showSkeleton && hasUnmappedTrades && (
-            <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-warning/8 border-l-2 border-warning animate-fade-in">
-              <Info className="w-4 h-4 text-warning mt-0.5 shrink-0" />
-              <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                <p className="text-sm text-muted-foreground">
-                  Some trades are not mapped to any account and are excluded from stats.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Main Content Grid */}
-          {showSkeleton ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-              <div className="lg:col-span-2">
-                <ChartSkeleton height="h-[280px]" />
-              </div>
-              <WinRateRingSkeleton />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-              {/* Chart - spans 2 columns */}
-              <div className="lg:col-span-2 min-w-0">
-                <PerformanceChart dailyPnl={stats?.dailyPnl} />
-              </div>
-
-              {/* Win Rate Ring */}
-              <div>
-                <WinRateRing
-                  winRate={stats.winRate}
-                  wins={stats.wins}
-                  losses={stats.losses}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Grid */}
-          {showSkeleton ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-              <div className="lg:col-span-2">
-                <RecentTradesListSkeleton />
-              </div>
-              <QuickStatsSkeleton />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-              {/* Recent Trades - spans 2 columns */}
-              <div className="lg:col-span-2 min-w-0">
-                <TradeList trades={filteredTrades} limit={5} />
-              </div>
-
-              {/* Quick Stats */}
-              <div>
-                <QuickStats stats={stats} />
-              </div>
-            </div>
-          )}
-
-          <AdSlot placementId="dashboard-bottom" className="mt-6" />
-        </div>
-      )}
     </div>
   );
 }

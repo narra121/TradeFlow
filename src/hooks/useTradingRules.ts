@@ -11,6 +11,8 @@ export function useTradingRules() {
 
   return {
     rules: uniqueRules,
+    /** Every stored rule, one per period; trades reference these ids. */
+    allRules: rules,
     loading,
   };
 }

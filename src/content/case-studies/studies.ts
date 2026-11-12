@@ -1,76 +1,86 @@
 import type { ComponentType } from 'react';
 
+/** Every entry is an illustrative scenario with hypothetical data, never a real customer or an outcome claim. */
 export interface CaseStudy {
   slug: string;
   title: string;
   description: string;
+  /** Kind of trader the scenario is about. */
   traderType: string;
   market: string;
+  /** Review window the example assumes. */
   duration: string;
-  keyResult: string;
+  /** The analysis the scenario demonstrates. */
+  method: string;
   publishedAt: string;
+  updatedAt?: string;
   content: () => Promise<{ default: ComponentType }>;
 }
 
 export const CASE_STUDIES: CaseStudy[] = [
   {
     slug: 'day-trader-win-rate',
-    title: 'How a Day Trader Went from 40% to 62% Win Rate in 3 Months',
+    title: 'Scenario: finding the hours that lose money',
     description:
-      'A US equities day trader struggling with consistency discovers that lunchtime overtrading was destroying performance.',
-    traderType: 'Day Trader',
-    market: 'US Stocks',
-    duration: '3 months',
-    keyResult: '40% → 62% win rate',
+      'An illustrative walk-through of grouping day trades by entry time to see which hours cost money, using hypothetical data.',
+    traderType: 'Day trader',
+    market: 'US stocks',
+    duration: '100+ trades',
+    method: 'Group trades by entry window',
     publishedAt: '2026-04-25',
+    updatedAt: '2026-11-11',
     content: () => import('./day-trader-win-rate'),
   },
   {
     slug: 'ftmo-challenge-journal',
-    title: "Passing the FTMO Challenge: A Prop Trader's Journal Strategy",
+    title: 'Scenario: tracking prop-firm loss limits in a journal',
     description:
-      'After failing two challenges, a forex prop trader uses disciplined journaling to pass FTMO in 18 trading days.',
-    traderType: 'Prop Trader',
+      'An illustrative walk-through of tracking daily and overall loss limits trade by trade during a prop-firm evaluation, using hypothetical data.',
+    traderType: 'Prop trader',
     market: 'Forex',
-    duration: '18 trading days',
-    keyResult: 'Passed FTMO on 3rd attempt',
+    duration: 'One evaluation',
+    method: 'Rules and room-to-limit log',
     publishedAt: '2026-04-26',
+    updatedAt: '2026-11-11',
     content: () => import('./ftmo-challenge-journal'),
   },
   {
     slug: 'revenge-trading-to-discipline',
-    title: "From Revenge Trading to Discipline: A Swing Trader's Journey",
+    title: 'Scenario: spotting revenge trades with tags and a cooling-off rule',
     description:
-      'A crypto swing trader breaks the revenge trading cycle by logging emotional states and creating a cooling-off rule.',
-    traderType: 'Swing Trader',
+      'An illustrative walk-through of tagging emotions and after-loss entries to see whether revenge trading shows up, using hypothetical data.',
+    traderType: 'Swing trader',
     market: 'Crypto',
-    duration: '4 months',
-    keyResult: 'Revenge trades: 30% → 5%',
+    duration: '100+ trades',
+    method: 'Emotion tag + after-loss flag',
     publishedAt: '2026-04-27',
+    updatedAt: '2026-11-11',
     content: () => import('./revenge-trading-to-discipline'),
   },
   {
     slug: 'multi-account-management',
-    title: 'Multi-Account Management: Tracking 3 Funded Accounts',
+    title: 'Scenario: keeping several accounts separate in one journal',
     description:
-      'A funded forex trader consolidates tracking for FTMO, MFF, and personal accounts into a single journal.',
-    traderType: 'Funded Trader',
+      'An illustrative layout for tracking a personal account and two prop accounts with different rules and currencies, using hypothetical data.',
+    traderType: 'Multi-account trader',
     market: 'Forex',
-    duration: '6 months',
-    keyResult: '3 accounts tracked in 1 journal',
+    duration: 'Ongoing',
+    method: 'One journal account per real account',
     publishedAt: '2026-04-28',
+    updatedAt: '2026-11-11',
     content: () => import('./multi-account-management'),
   },
   {
     slug: 'forex-session-edge',
-    title: 'How Analytics Revealed a Hidden Edge in Forex Sessions',
+    title: 'Scenario: comparing forex sessions with hourly analytics',
     description:
-      'A forex trader with a flat equity curve discovers a 73% win rate during London/NY overlap using hourly analytics.',
-    traderType: 'Forex Trader',
+      'An illustrative walk-through of comparing Asia, London and New York sessions and checking whether the sample is large enough, using hypothetical data.',
+    traderType: 'Forex trader',
     market: 'Forex',
-    duration: '2 months',
-    keyResult: '41% → 73% win rate (session-filtered)',
+    duration: '100+ trades',
+    method: 'Session tag + sample-size check',
     publishedAt: '2026-04-29',
+    updatedAt: '2026-11-11',
     content: () => import('./forex-session-edge'),
   },
 ];

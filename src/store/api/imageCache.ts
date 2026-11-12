@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { api } from './baseApi';
 import { refreshToken } from '@/lib/api/tokenRefresh';
+import { API_BASE_URL } from '@/lib/api/config';
 
 const CACHE_NAME = 'tradequt-images-v1';
 
@@ -163,11 +165,7 @@ export const imageApi = api.injectEndpoints({
 // Network fetch + cache population
 // ---------------------------------------------------------------------------
 async function fetchImage(imageId: string, queryApi: any): Promise<string> {
-  const baseUrl =
-    import.meta.env.VITE_API_URL ||
-    (import.meta.env.MODE === 'production'
-      ? 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradequt-prod/v1'
-      : 'https://wastpecoi2.execute-api.us-east-1.amazonaws.com/tradequt-dev/v1');
+  const baseUrl = API_BASE_URL;
 
   const cleanImageId = imageId.startsWith('images/')
     ? imageId.substring('images/'.length)

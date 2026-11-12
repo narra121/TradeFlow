@@ -1,598 +1,360 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowDown, ArrowRight } from 'lucide-react';
 import { SEO } from '@/components/SEO';
-import { LANDING_PAGE_SCHEMA, FAQ_ITEMS } from '@/config/seo';
+import { PublicLayout } from '@/components/public/PublicLayout';
+import { PricingTable } from '@/components/public/PricingTable';
 import { Button } from '@/components/ui/button';
-import {
-  BarChart3,
-  Calendar,
-  Target,
-  Shield,
-  TrendingUp,
-  BookOpen,
-  Camera,
-  Users,
-  ArrowRight,
-  Star,
-  ChevronRight,
-  Play,
-  Building2,
-  PieChart,
-  Clock,
-  Award,
-  Menu,
-  X
-} from 'lucide-react';
-import { Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { PricingCards } from '@/components/subscription/PricingCards';
+import { LANDING_PAGE_SCHEMA, faqSchema } from '@/config/seo';
+import { IMPORT_SOURCES, PRODUCT_FAQ, TRIAL_DAYS, type FaqItem } from '@/content/product-facts';
+import { HEADLINE_PARTS } from '@/components/showcase/copy';
+import { Eyebrow } from '@/components/showcase/Eyebrow';
+import { SampleDataChip } from '@/components/showcase/SampleDataChip';
+import { TradeReviewDemo } from '@/components/showcase/TradeReviewDemo';
+import { BehaviourCostCard, ImportReviewDemo, InsightsAnswerDemo } from '@/components/showcase/AnswerCards';
+import { AccountsStill, IndiaChargesStill, PhoneDashboard, PropLimitsStill } from '@/components/showcase/SegmentStills';
+import { LandingMotionProvider, MotionToggle, PageProgress, useLandingMotion } from '@/components/landing/motion';
+import { ParticleAssembly } from '@/components/landing/ParticleAssembly';
+import { Manifesto } from '@/components/landing/Manifesto';
+import { StorySection } from '@/components/landing/StorySection';
+import { LandingFaq } from '@/components/landing/LandingFaq';
+import '@/components/landing/landing.css';
+
+const COMPARISON = [
+  { topic: 'Getting trades in', sheet: 'Type every fill by hand', app: 'Import the broker file; duplicates are skipped' },
+  { topic: 'P&L and R', sheet: 'Your own formulas', app: 'Computed per asset class, fees included' },
+  { topic: 'Review', sheet: 'Screenshots in a folder', app: 'Notes, tags and screenshots on the trade' },
+  { topic: 'Discipline', sheet: 'Not tracked', app: 'Rules, and a record of when you broke them' },
+] as const;
+
+const ANSWERS = [
+  {
+    question: 'What did each trade really make?',
+    answer:
+      'Import the Zerodha, Dhan, Upstox, Angel One, Groww or MetaTrader file and review it before saving. Trades from Indian brokers get estimated charges (brokerage, STT, exchange fees, SEBI fee, stamp duty, GST) at the rates in force on the trade date, so P&L is net.',
+    figure: 'Import review',
+    pro: false,
+    Visual: ImportReviewDemo,
+    alt: 'Sample data: a Zerodha tradebook in the import review, two NIFTY and BANKNIFTY option trades with their estimated charges and net P&L, one duplicate skipped.',
+  },
+  {
+    question: 'Which habits cost money?',
+    answer:
+      'Tag mistakes and mark broken rules on each trade. Analytics totals what each mistake and each broken rule cost, and Goals & rules shows every rule week by week.',
+    figure: 'Analytics · Behaviour',
+    pro: true,
+    Visual: BehaviourCostCard,
+    alt: 'Sample data: Analytics, Behaviour tab, listing two broken rules and what each cost this month.',
+  },
+  {
+    question: 'Where is my edge, and where is the leak?',
+    answer:
+      'Results by strategy, session, weekday and hour, with the number of trades beside each. AI reports and chat explain your own trades in plain words. They never suggest a trade.',
+    figure: 'Insights · Chat',
+    pro: false,
+    Visual: InsightsAnswerDemo,
+    alt: 'Sample data: Insights chat answering which session lost money in November with the net P&L of each session.',
+  },
+] as const;
+
+const SEGMENTS = [
+  { who: 'Indian F&O and intraday traders', what: 'Tradebook import, charges per trade, INR pricing.', Visual: IndiaChargesStill, alt: 'Sample data: one NIFTY option trade with gross P&L, each estimated charge and net P&L in rupees.' },
+  { who: 'Prop-firm challengers', what: 'MT4 and MT5 reports, trade-count and drawdown limits as weekly or monthly goals.', Visual: PropLimitsStill, alt: 'Sample data: a weekly trade-count goal and a monthly drawdown goal with their progress.' },
+  { who: 'Forex traders with several accounts', what: 'One row per account, totals kept per currency.', Visual: AccountsStill, alt: 'Sample data: three accounts in USD, INR and EUR, each with its own total.' },
+] as const;
+
+const SERVICES = [
+  'Stripe processes subscription payments; TradeQut never sees your card number.',
+  'Amazon Web Services hosts the app and stores your trades, encrypted.',
+  'AI reports and chat send trade figures, never notes, screenshots, names or email, to Google Gemini, and only when you use them. Screenshot import sends the images you upload.',
+  'Google Analytics runs only after your cookie choice where the law requires it.',
+];
+
+/** Landing-only questions (CONTENT-AUDIT §6.7); they join the FAQPage JSON-LD word for word. */
+const LANDING_FAQ: FaqItem[] = [
+  ...PRODUCT_FAQ,
+  {
+    question: 'Do I need to connect my broker account?',
+    answer: 'No. You download the trade file from your broker or MetaTrader and upload it. TradeQut never asks for your broker login. Automatic sync is planned, not available.',
+  },
+  {
+    question: 'What happens when the Pro trial ends?',
+    answer: `The ${TRIAL_DAYS}-day Pro trial needs no card. When it ends you move to the Free plan and nothing is charged. Your trades stay in your account.`,
+  },
+];
+
+const JSON_LD = {
+  ...LANDING_PAGE_SCHEMA,
+  '@graph': LANDING_PAGE_SCHEMA['@graph'].map((node) => ('@type' in node && node['@type'] === 'FAQPage' ? faqSchema(LANDING_FAQ) : node)),
+};
+
+const TRIAL = `${TRIAL_DAYS}-day Pro trial. No card.`;
+
+function LandingBody() {
+  const { still } = useLandingMotion();
+  return (
+    <div className="lp" data-still={still}>
+      <PageProgress />
+
+      <section className="lp-hero" aria-labelledby="hero-heading">
+        <div className="lp-hero__top">
+          <a href="#import" className="lp-announce">
+            <span className="lp-announce__tag">Import</span>
+            Zerodha, Dhan, Upstox, Angel One, Groww, MetaTrader and any CSV
+            <ArrowRight aria-hidden="true" />
+          </a>
+          <h1 id="hero-heading" className="lp-h1">
+            <span className="lp-muted-line">{HEADLINE_PARTS[0]}</span> {HEADLINE_PARTS[1]}
+          </h1>
+        </div>
+        <div className="lp-hero__copy">
+          <p className="lp-lead">
+            Import your broker or MetaTrader file, journal each trade, and see which strategies, hours, mistakes and broken rules
+            make or lose money, net of fees.
+          </p>
+          <div className="lp-cta-row">
+            <Button size="lg" asChild className="lp-cta">
+              <Link to="/signup">
+                Start free
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            </Button>
+            <Link to="/pricing" className="lp-link">
+              See pricing
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+          <p className="lp-trial">{TRIAL}</p>
+        </div>
+        <figure className="lp-hero__demo">
+          <div role="img" aria-label="Sample data: in Trades, a losing GBPUSD short is opened and marked as breaking the rule Trade with the 1-hour trend; the month's broken-rules cost goes from −$118.25 over 6 trades to −$140.05 over 7 trades.">
+            <div aria-hidden="true">
+              <TradeReviewDemo play={!still} />
+            </div>
+          </div>
+          <figcaption>Sample data</figcaption>
+        </figure>
+        <div className="lp-hero__foot">
+          <a href="#how" className="lp-scroll-cue">
+            <span>
+              <ArrowDown aria-hidden="true" />
+            </span>
+            See a month come together
+          </a>
+          <span className="lp-data-note">
+            <SampleDataChip />
+            One sample account, November 2026
+          </span>
+        </div>
+      </section>
+
+      <section id="import" aria-labelledby="import-heading" className="lp-import lp-rule">
+        <div className="lp-wrap lp-import__grid">
+          <h2 id="import-heading">Import from your broker</h2>
+          <ul className="lp-chips">
+            {IMPORT_SOURCES.map((s) => (
+              <li key={s.id}>{s.id === 'generic_csv' ? 'Any CSV' : s.name}</li>
+            ))}
+          </ul>
+          <p className="lp-small">File import today. Automatic sync is planned.</p>
+        </div>
+      </section>
+
+      <ParticleAssembly />
+
+      <section id="answers" aria-labelledby="answers-heading" className="lp-answers lp-wrap">
+        <div className="lp-head">
+          <div>
+            <Eyebrow>Three questions, your own numbers</Eyebrow>
+            <h2 id="answers-heading" className="lp-h2">
+              What TradeQut answers
+            </h2>
+          </div>
+          <p>Every figure comes from your trades. The pictures use one sample account.</p>
+        </div>
+        <ul className="lp-cards">
+          {ANSWERS.map(({ question, answer, figure, pro, Visual, alt }, i) => (
+            <li key={question} className="lp-card">
+              <figure className="lp-card__art">
+                <figcaption>
+                  <span>
+                    Fig. 0{i + 1} · {figure}
+                  </span>
+                  <span>
+                    {pro && <span className="lp-pro">Pro</span>} <SampleDataChip />
+                  </span>
+                </figcaption>
+                <div role="img" aria-label={alt}>
+                  <div aria-hidden="true">
+                    <Visual {...(Visual === BehaviourCostCard ? {} : { play: !still })} />
+                  </div>
+                </div>
+              </figure>
+              <h3>{question}</h3>
+              <p>{answer}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <Manifesto />
+
+      <StorySection />
+
+      <section aria-labelledby="built-heading" className="lp-built lp-rule">
+        <div className="lp-wrap">
+          <div className="lp-head">
+            <div>
+              <Eyebrow>Who it is for</Eyebrow>
+              <h2 id="built-heading" className="lp-h2">
+                Built for
+              </h2>
+            </div>
+            <p>Three kinds of trader, one journal.</p>
+          </div>
+          <ul className="lp-figs">
+            {SEGMENTS.map(({ who, what, Visual, alt }, i) => (
+              <li key={who} className="lp-fig">
+                <div className="lp-fig__label">
+                  <span>Fig. 0{i + 1}</span>
+                  <SampleDataChip />
+                </div>
+                <figure className="lp-fig__art" role="img" aria-label={alt}>
+                  <div aria-hidden="true">
+                    <Visual />
+                  </div>
+                </figure>
+                <h3>{who}</h3>
+                <p>{what}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="compare-heading" className="lp-compare lp-rule">
+        <div className="lp-wrap">
+          <div className="lp-head">
+            <div>
+              <Eyebrow>Before and after</Eyebrow>
+              <h2 id="compare-heading" className="lp-h2">
+                Spreadsheet vs TradeQut
+              </h2>
+            </div>
+          </div>
+          <table className="lp-table">
+            <thead>
+              <tr>
+                <th scope="col">
+                  <span className="sr-only">Topic</span>
+                </th>
+                <th scope="col">Spreadsheet</th>
+                <th scope="col">TradeQut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARISON.map((r) => (
+                <tr key={r.topic}>
+                  <th scope="row">{r.topic}</th>
+                  <td data-label="Spreadsheet">{r.sheet}</td>
+                  <td data-label="TradeQut">{r.app}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="pricing" aria-labelledby="pricing-heading" className="lp-pricing lp-band lp-rule">
+        <div className="lp-wrap">
+          <div className="lp-head">
+            <div>
+              <Eyebrow>Free and Pro</Eyebrow>
+              <h2 id="pricing-heading" className="lp-h2">
+                Pricing
+              </h2>
+            </div>
+            <p>Monthly or yearly, in USD or INR.</p>
+          </div>
+          <PricingTable headingLevel={3} />
+          <div className="lp-pricing__links">
+            <Link to="/pricing" className="lp-link">
+              See full pricing
+              <ArrowRight aria-hidden="true" />
+            </Link>
+            <Link to="/pricing#faq" className="lp-link">
+              Billing questions: trial, currency, cancelling
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <LandingFaq items={LANDING_FAQ} />
+
+      <section aria-labelledby="services-heading" className="lp-services">
+        <div className="lp-wrap lp-services__grid">
+          <h2 id="services-heading">Services that handle your data</h2>
+          <div>
+            <ul>
+              {SERVICES.map((s) => (
+                <li key={s}>{s}</li>
+              ))}
+            </ul>
+            <p className="lp-small" style={{ marginTop: 16 }}>
+              Details are in the{' '}
+              <Link to="/privacy" className="lp-link" style={{ display: 'inline', fontSize: 13 }}>
+                privacy policy
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="final-heading" className="lp-final lp-rule">
+        <div className="lp-wrap lp-final__grid">
+          <div className="lp-final__copy">
+            <Eyebrow>Your journal</Eyebrow>
+            <h2 id="final-heading">Start your journal today.</h2>
+            <p className="lp-lead" style={{ marginTop: 20 }}>
+              {TRIAL}
+            </p>
+            <div className="lp-cta-row">
+              <Button size="lg" asChild className="lp-cta">
+                <Link to="/signup">
+                  Start free
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+          <figure className="lp-final__art" role="img" aria-label="Sample data: the TradeQut dashboard on a phone, with net P&L, win rate, best day, broken rules and the November calendar.">
+            <div aria-hidden="true">
+              <PhoneDashboard />
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <MotionToggle />
+    </div>
+  );
+}
 
 export function LandingPage() {
-  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const features = [
-    {
-      icon: BarChart3,
-      title: 'Advanced Analytics',
-      description: 'Deep dive into your trading performance with comprehensive charts, win rate analysis, and P&L breakdowns.',
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-    },
-    {
-      icon: Calendar,
-      title: 'Calendar View',
-      description: 'Visualize your trading activity with daily P&L, weekly summaries, and monthly performance at a glance.',
-      color: 'text-success',
-      bgColor: 'bg-success/10',
-    },
-    {
-      icon: Building2,
-      title: 'Multi-Account Support',
-      description: 'Manage multiple trading accounts, prop challenges, and funded accounts all in one place.',
-      color: 'text-accent',
-      bgColor: 'bg-accent/10',
-    },
-    {
-      icon: Target,
-      title: 'Goals & Rules',
-      description: 'Set trading goals, track your progress, and maintain discipline with customizable trading rules.',
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
-    },
-    {
-      icon: Camera,
-      title: 'Screenshot Import',
-      description: 'Import trades directly from screenshots using AI-powered extraction. Save time on manual entry.',
-      color: 'text-info',
-      bgColor: 'bg-info/10',
-    },
-    {
-      icon: BookOpen,
-      title: 'Trade Journal',
-      description: 'Document every trade with notes, mistakes, lessons learned, and visual evidence for continuous improvement.',
-      color: 'text-destructive',
-      bgColor: 'bg-destructive/10',
-    },
-  ];
-
-  const howItWorks = [
-    {
-      step: '01',
-      title: 'Create Your Account',
-      description: 'Sign up in seconds and set up your trading accounts — prop challenges, live accounts, or demo.',
-    },
-    {
-      step: '02',
-      title: 'Log Your Trades',
-      description: 'Add trades manually or import from screenshots. Track entry, exit, P&L, and your reasoning.',
-    },
-    {
-      step: '03',
-      title: 'Analyze & Improve',
-      description: 'Review your analytics, identify patterns, and continuously improve your trading strategy.',
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: 'Marcus Chen',
-      role: 'Prop Trader',
-      avatar: 'MC',
-      content: 'TradeQut helped me pass my FTMO challenge. The analytics showed me exactly where I was leaking money.',
-      rating: 5,
-    },
-    {
-      name: 'Sarah Johnson',
-      role: 'Forex Trader',
-      avatar: 'SJ',
-      content: 'The calendar view is a game-changer. I can instantly see my best and worst trading days.',
-      rating: 5,
-    },
-    {
-      name: 'David Kim',
-      role: 'Day Trader',
-      avatar: 'DK',
-      content: 'Finally, a trading journal that looks modern and is actually enjoyable to use. Highly recommended!',
-      rating: 5,
-    },
-  ];
-
-  const stats = [
-    { value: '10,000+', label: 'Active Traders' },
-    { value: '500K+', label: 'Trades Logged' },
-    { value: '65%', label: 'Avg. Win Rate Improvement' },
-    { value: '4.9/5', label: 'User Rating' },
-  ];
-
   return (
     <>
       <SEO
-        title="TradeQut - Professional Trading Journal"
-        description="Track, analyze, and improve your trading performance with TradeQut. The modern trading journal for serious traders."
+        title="TradeQut - Trading Journal with Broker Import and Rule Tracking"
+        description={`Trading journal with Zerodha, Dhan, Upstox and MT5 import, net P&L after charges, and the cost of every broken rule. Free plan; ${TRIAL_DAYS}-day Pro trial, no card.`}
         path="/"
-        jsonLd={LANDING_PAGE_SCHEMA}
+        jsonLd={JSON_LD}
       />
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
-      >
-        Skip to content
-      </a>
-    <div className="min-h-screen bg-background overflow-hidden">
-      {/* Navigation */}
-      <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-3 cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">TradeQut</span>
-          </button>
-
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Features</a>
-            <a href="#how-it-works" className="text-foreground/70 hover:text-foreground font-medium transition-colors">How it Works</a>
-            <a href="#testimonials" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Testimonials</a>
-            <a href="#pricing" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Pricing</a>
-            <Link to="/guide" className="text-foreground/70 hover:text-foreground font-medium transition-colors">Guide</Link>
-          </div>
-
-          <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link to="/login">Log In</Link>
-            </Button>
-            <Button asChild className="gap-2">
-              <Link to="/signup">
-                Get Started
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-          </div>
-
-          {/* Mobile hamburger button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-foreground hover:text-primary transition-colors"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl">
-            <div className="px-4 py-4 space-y-3">
-              <a
-                href="#features"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
-              >
-                Features
-              </a>
-              <a
-                href="#how-it-works"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
-              >
-                How it Works
-              </a>
-              <a
-                href="#testimonials"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
-              >
-                Testimonials
-              </a>
-              <a
-                href="#pricing"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
-              >
-                Pricing
-              </a>
-              <Link
-                to="/guide"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-foreground/70 hover:text-foreground font-medium transition-colors"
-              >
-                Guide
-              </Link>
-              <div className="pt-3 border-t border-border/50 flex flex-col gap-2">
-                <Button variant="ghost" asChild className="w-full justify-center">
-                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Log In</Link>
-                </Button>
-                <Button asChild className="w-full justify-center gap-2">
-                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
-                    Get Started
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </nav>
-
-      <main id="main-content">
-      {/* Hero Section */}
-      <section className="relative pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
-        {/* Background effects */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background" />
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-1/4 w-64 h-64 bg-accent/20 rounded-full blur-3xl" />
-        
-        <div className="relative max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 max-w-full">
-            <Zap className="w-4 h-4 text-primary shrink-0" />
-            <span className="text-xs sm:text-sm text-primary font-medium truncate">The #1 Trading Journal for Serious Traders</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
-            Master Your
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
-              Trading Performance
-            </span>
-          </h1>
-
-          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-            Track, analyze, and improve your trades with the most powerful trading journal. 
-            Built for prop traders, forex traders, and anyone serious about consistent profits.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Button size="lg" asChild className="gap-2 h-14 px-8 text-lg">
-              <Link to="/signup">
-                Get Started Free
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </Button>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-1">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Dashboard Preview */}
-        <div className="relative max-w-6xl mx-auto mt-20">
-          <div className="relative rounded-2xl overflow-hidden border border-border/50 shadow-2xl shadow-primary/10">
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10" />
-            <div className="bg-card p-4 sm:p-8">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
-                {[
-                  { label: 'Total P&L', value: '+₹12,637', color: 'text-success' },
-                  { label: 'Win Rate', value: '67.4%', color: 'text-primary' },
-                  { label: 'Total Trades', value: '156', color: 'text-foreground' },
-                  { label: 'Best Trade', value: '+₹2,450', color: 'text-success' },
-                ].map((stat, i) => (
-                  <div key={i} className="bg-secondary/50 rounded-xl p-3 sm:p-4">
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">{stat.label}</div>
-                    <div className={cn("text-lg sm:text-2xl font-bold font-mono", stat.color)}>{stat.value}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="h-48 bg-secondary/30 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-16 h-16 text-primary/30" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-16 sm:py-24 px-4 sm:px-6 bg-secondary/20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Everything You Need to
-              <span className="text-primary"> Trade Better</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Powerful features designed by traders, for traders. Track every aspect of your trading journey.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <div
-                  key={index}
-                  onMouseEnter={() => setHoveredFeature(index)}
-                  onMouseLeave={() => setHoveredFeature(null)}
-                  className={cn(
-                    "group p-6 sm:p-8 rounded-2xl border transition-all duration-300 cursor-default",
-                    hoveredFeature === index 
-                      ? "bg-card border-primary/50 shadow-xl shadow-primary/10 scale-[1.02]" 
-                      : "bg-card/50 border-border/50 hover:border-primary/30"
-                  )}
-                >
-                  <div className={cn(
-                    "w-14 h-14 rounded-xl flex items-center justify-center mb-6 transition-colors",
-                    feature.bgColor
-                  )}>
-                    <Icon className={cn("w-7 h-7", feature.color)} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-3">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-16 sm:py-24 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Start Improving in
-              <span className="text-primary"> 3 Simple Steps</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Get started in minutes and begin your journey to consistent profitability.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connecting lines - positioned behind circles */}
-            <div className="hidden md:flex absolute top-12 left-0 right-0 items-center justify-center px-[16.67%]">
-              <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-primary/40 mx-12" />
-              <div className="w-24 shrink-0" /> {/* Space for middle circle */}
-              <div className="flex-1 h-[2px] bg-gradient-to-l from-transparent via-primary/40 to-primary/40 mx-12" />
-            </div>
-            
-            {howItWorks.map((item, index) => (
-              <div key={index} className="relative z-10">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-background border-2 border-primary/30 mb-6 relative">
-                    <div className="absolute inset-1 rounded-full bg-primary/10" />
-                    <span className="text-3xl font-bold text-primary relative z-10">{item.step}</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-3">{item.title}</h3>
-                  <p className="text-muted-foreground">{item.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button size="lg" asChild className="gap-2">
-              <Link to="/signup">
-                Get Started Now
-                <ChevronRight className="w-5 h-5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-16 sm:py-24 px-4 sm:px-6 bg-secondary/20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Loved by
-              <span className="text-primary"> Thousands of Traders</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              See what our community has to say about TradeQut.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-card rounded-2xl p-6 sm:p-8 border border-border/50">
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-warning text-warning" />
-                  ))}
-                </div>
-                <p className="text-foreground mb-6 text-base sm:text-lg leading-relaxed">"{testimonial.content}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-foreground">{testimonial.name}</div>
-                    <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-16 sm:py-24 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Simple,
-              <span className="text-primary"> Transparent Pricing</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              All core features are free forever. Upgrade for an ad-free experience.
-            </p>
-          </div>
-          <PricingCards context="landing" />
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-accent/20 rounded-full blur-3xl" />
-        
-        <div className="relative max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Ready to Transform Your Trading?
-          </h2>
-          <p className="text-base sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Join thousands of traders who are already using TradeQut to track, analyze, and improve their performance.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" asChild className="gap-2 h-14 px-8 text-lg">
-              <Link to="/signup">
-                Get Started Free
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </Button>
-            <p className="text-sm text-muted-foreground">Free forever • No credit card required</p>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" className="py-16 sm:py-20 bg-muted/30">
-        <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <h2 className="mb-10 text-center text-2xl font-bold sm:text-3xl">
-            Frequently Asked Questions
-          </h2>
-          <div className="space-y-6">
-            {FAQ_ITEMS.map((item) => (
-              <div key={item.question} className="rounded-lg border bg-card p-6">
-                <h3 className="mb-2 text-lg font-semibold">{item.question}</h3>
-                <p className="text-muted-foreground">{item.answer}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/50 py-12 sm:py-16 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 sm:gap-12 mb-12">
-            <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-                  <Zap className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-bold text-foreground">TradeQut</span>
-              </div>
-              <p className="text-muted-foreground text-sm">
-                The professional trading journal for serious traders. Track, analyze, and improve your trading performance.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Product</h4>
-              <ul className="space-y-3">
-                {['Features', 'Pricing'].map((item) => (
-                  <li key={item}>
-                    <a href={`#${item.toLowerCase()}`} className="text-muted-foreground hover:text-foreground transition-colors text-sm">{item}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Resources</h4>
-              <ul className="space-y-3">
-                <li>
-                  <Link to="/blog" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Blog</Link>
-                </li>
-                <li>
-                  <Link to="/guide" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Guide</Link>
-                </li>
-                <li>
-                  <Link to="/glossary" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Glossary</Link>
-                </li>
-                <li>
-                  <Link to="/resources" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Calculators</Link>
-                </li>
-                <li>
-                  <Link to="/case-studies" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Case Studies</Link>
-                </li>
-                <li>
-                  <Link to="/changelog" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Changelog</Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Company</h4>
-              <ul className="space-y-3">
-                <li>
-                  <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors text-sm">About Us</Link>
-                </li>
-                <li>
-                  <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Contact Us</Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">Legal</h4>
-              <ul className="space-y-3">
-                <li>
-                  <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Privacy Policy</Link>
-                </li>
-                <li>
-                  <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Terms of Service</Link>
-                </li>
-                <li>
-                  <Link to="/refund" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Refund Policy</Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground text-center md:text-left">
-              © {new Date().getFullYear()} TradeQut. All rights reserved.
-            </p>
-            <div className="flex items-center gap-4 sm:gap-6">
-              <span className="text-muted-foreground" aria-label="Twitter">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
-              </span>
-              <span className="text-muted-foreground" aria-label="GitHub">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-              </span>
-              <span className="text-muted-foreground" aria-label="Discord">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-              </span>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <PublicLayout>
+        <LandingMotionProvider>
+          <LandingBody />
+        </LandingMotionProvider>
+      </PublicLayout>
     </>
   );
 }

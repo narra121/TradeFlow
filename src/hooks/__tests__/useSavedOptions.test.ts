@@ -4,10 +4,11 @@ import { useSavedOptions } from '../useSavedOptions';
 
 // Mock sonner toast
 const mockToastWarning = vi.fn();
+const mockToastError = vi.fn();
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
-    error: vi.fn(),
+    error: (...args: any[]) => mockToastError(...args),
     warning: (...args: any[]) => mockToastWarning(...args),
   },
 }));
@@ -30,6 +31,7 @@ const defaultOptions = {
   mistakes: ['FOMO', 'Early Entry', 'Late Entry', 'Early Exit', 'Moved Stop Loss', 'Wrong Position Size', 'Revenge Trade', 'Overtrading', 'No Stop Loss'],
   lessons: [],
   timeframes: [],
+  tags: [],
 };
 
 const customOptions = {
@@ -41,6 +43,7 @@ const customOptions = {
   mistakes: ['FOMO'],
   lessons: ['Always use stops'],
   timeframes: ['1H', '4H'],
+  tags: ['A+ setup'],
 };
 
 describe('useSavedOptions', () => {
@@ -468,7 +471,13 @@ describe('useSavedOptions', () => {
         result.current.resetToDefaults();
       });
 
-      expect(mockUpdateOptions).toHaveBeenCalledWith(defaultOptions);
+      expect(mockUpdateOptions).toHaveBeenCalledWith({
+        ...defaultOptions,
+        symbols: customOptions.symbols,
+        lessons: customOptions.lessons,
+        timeframes: customOptions.timeframes,
+        tags: customOptions.tags,
+      });
     });
   });
 
@@ -551,7 +560,11 @@ describe('useSavedOptions - Error States', () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it('addSymbol still works when in error state', () => {
+  it.each([
+    ['addSymbol', (r: any) => r.addSymbol('EURUSD')],
+    ['addStrategy', (r: any) => r.addStrategy('New Strategy')],
+    ['resetToDefaults', (r: any) => r.resetToDefaults()],
+  ])('%s never writes defaults over options that failed to load', (_name, act_) => {
     mockUseGetSavedOptionsQuery.mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -560,137 +573,35 @@ describe('useSavedOptions - Error States', () => {
     });
 
     const { result } = renderHook(() => useSavedOptions());
+    expect(result.current.loaded).toBe(false);
 
     act(() => {
-      result.current.addSymbol('EURUSD');
+      act_(result.current);
     });
 
-    expect(mockUpdateOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        symbols: ['EURUSD'],
-      })
-    );
-  });
-
-  it('addStrategy still works when in error state (non-duplicate value)', () => {
-    mockUseGetSavedOptionsQuery.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isFetching: false,
-      error: { status: 500, data: 'Server error' },
-    });
-
-    const { result } = renderHook(() => useSavedOptions());
-
-    act(() => {
-      result.current.addStrategy('New Strategy');
-    });
-
-    expect(mockUpdateOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        strategies: [...defaultOptions.strategies, 'New Strategy'],
-      })
-    );
-  });
-
-  it('resetToDefaults still works when in error state', () => {
-    mockUseGetSavedOptionsQuery.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isFetching: false,
-      error: { status: 500, data: 'Server error' },
-    });
-
-    const { result } = renderHook(() => useSavedOptions());
-
-    act(() => {
-      result.current.resetToDefaults();
-    });
-
-    expect(mockUpdateOptions).toHaveBeenCalledWith(defaultOptions);
-  });
-});
-
-describe('useSavedOptions - Validation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseGetSavedOptionsQuery.mockReturnValue({
-      data: customOptions,
-      isLoading: false,
-      isFetching: false,
-    });
-  });
-
-  it('shows toast warning and blocks update when adding empty symbol', () => {
-    const { result } = renderHook(() => useSavedOptions());
-
-    act(() => {
-      result.current.addSymbol('');
-    });
-
-    expect(mockToastWarning).toHaveBeenCalledWith('Symbol cannot be empty');
     expect(mockUpdateOptions).not.toHaveBeenCalled();
+    expect(mockToastError).toHaveBeenCalled();
   });
 
-  it('shows toast warning and blocks update when adding whitespace-only value', () => {
+  it('applies two quick edits one after another without losing the first', async () => {
+    mockUseGetSavedOptionsQuery.mockReturnValue({ data: customOptions, isLoading: false, isFetching: false });
+    let release: () => void = () => undefined;
+    mockUpdateOptions
+      .mockReturnValueOnce({ unwrap: () => new Promise<void>((res) => { release = res; }) })
+      .mockReturnValue({ unwrap: () => Promise.resolve() });
+
     const { result } = renderHook(() => useSavedOptions());
-
     act(() => {
-      result.current.addStrategy('   ');
+      result.current.addStrategy('A');
+      result.current.addStrategy('B');
     });
-
-    expect(mockToastWarning).toHaveBeenCalledWith('Strategy cannot be empty');
-    expect(mockUpdateOptions).not.toHaveBeenCalled();
-  });
-
-  it('shows toast warning when adding duplicate symbol (case-insensitive)', () => {
-    const { result } = renderHook(() => useSavedOptions());
-
-    act(() => {
-      result.current.addSymbol('eurusd'); // customOptions has 'EURUSD'
+    expect(mockUpdateOptions).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      release();
+      await Promise.resolve();
+      await Promise.resolve();
     });
-
-    expect(mockToastWarning).toHaveBeenCalledWith('"eurusd" already exists in symbols');
-    expect(mockUpdateOptions).not.toHaveBeenCalled();
-  });
-
-  it('shows toast warning when adding duplicate strategy (exact match)', () => {
-    const { result } = renderHook(() => useSavedOptions());
-
-    act(() => {
-      result.current.addStrategy('Breakout'); // already in customOptions
-    });
-
-    expect(mockToastWarning).toHaveBeenCalledWith('"Breakout" already exists in strategys');
-    expect(mockUpdateOptions).not.toHaveBeenCalled();
-  });
-
-  it('allows adding non-duplicate value', () => {
-    const { result } = renderHook(() => useSavedOptions());
-
-    act(() => {
-      result.current.addSymbol('XAUUSD');
-    });
-
-    expect(mockToastWarning).not.toHaveBeenCalled();
-    expect(mockUpdateOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        symbols: ['EURUSD', 'GBPUSD', 'XAUUSD'],
-      })
-    );
-  });
-
-  it('trims whitespace before adding', () => {
-    const { result } = renderHook(() => useSavedOptions());
-
-    act(() => {
-      result.current.addSymbol('  XAUUSD  ');
-    });
-
-    expect(mockUpdateOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        symbols: ['EURUSD', 'GBPUSD', 'XAUUSD'],
-      })
-    );
+    expect(mockUpdateOptions).toHaveBeenCalledTimes(2);
+    expect(mockUpdateOptions.mock.calls[1][0].strategies).toEqual(['Breakout', 'Scalping', 'A', 'B']);
   });
 });

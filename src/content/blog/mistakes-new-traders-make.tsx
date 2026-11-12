@@ -16,7 +16,7 @@ export default function MistakesNewTradersMake() {
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">The 5 Costly Mistakes</h2>
 
-      <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">1. Revenge Trading</h3>
+      <h3 className="text-base font-semibold text-foreground mt-6 mb-3">1. Revenge Trading</h3>
       <p className="text-muted-foreground leading-relaxed mb-4">
         Revenge trading is the impulse to immediately re-enter the market after a loss, driven by
         the emotional need to "win it back." The trader abandons their strategy, increases position
@@ -36,7 +36,7 @@ export default function MistakesNewTradersMake() {
         the platform for 30 minutes after any loss that triggers negative emotions.
       </p>
 
-      <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">2. Overtrading</h3>
+      <h3 className="text-base font-semibold text-foreground mt-6 mb-3">2. Overtrading</h3>
       <p className="text-muted-foreground leading-relaxed mb-4">
         Overtrading means taking more trades than your strategy justifies. It happens when traders
         confuse activity with productivity. Sitting in front of charts all day creates pressure to
@@ -54,7 +54,7 @@ export default function MistakesNewTradersMake() {
         limit based on this data is one of the simplest improvements a new trader can make.
       </p>
 
-      <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">
+      <h3 className="text-base font-semibold text-foreground mt-6 mb-3">
         3. Trading Without a Plan
       </h3>
       <p className="text-muted-foreground leading-relaxed mb-4">
@@ -75,7 +75,7 @@ export default function MistakesNewTradersMake() {
         .
       </p>
 
-      <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">
+      <h3 className="text-base font-semibold text-foreground mt-6 mb-3">
         4. Ignoring Risk Management
       </h3>
       <p className="text-muted-foreground leading-relaxed mb-4">
@@ -99,7 +99,7 @@ export default function MistakesNewTradersMake() {
         becomes inescapable.
       </p>
 
-      <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">
+      <h3 className="text-base font-semibold text-foreground mt-6 mb-3">
         5. Never Reviewing Your Trades
       </h3>
       <p className="text-muted-foreground leading-relaxed mb-4">

@@ -1,34 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { renderWithProviders, screen } from '@/test/test-utils';
+import { renderWithProviders, screen, within } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { BlogIndexPage } from '../blog/BlogIndexPage';
 
 describe('BlogIndexPage', () => {
   it('renders the page title', () => {
     renderWithProviders(<BlogIndexPage />);
-    expect(screen.getByText('Trading Journal Blog')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Blog' })).toBeInTheDocument();
   });
 
   it('renders article cards', () => {
     renderWithProviders(<BlogIndexPage />);
-    expect(screen.getByText('How to Keep a Trading Journal: The Complete Guide')).toBeInTheDocument();
-    expect(screen.getByText('Win Rate vs Profit Factor: Which Matters More?')).toBeInTheDocument();
+    expect(screen.getByText('How to keep a trading journal: the complete guide')).toBeInTheDocument();
+    expect(screen.getByText('Win rate vs profit factor: which matters more?')).toBeInTheDocument();
   });
 
   it('renders tag filter with All button', () => {
     renderWithProviders(<BlogIndexPage />);
-    expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument();
+    const select = screen.getByRole('combobox', { name: 'Topic' });
+    expect(select).toHaveValue('');
+    expect(within(select).getByRole('option', { name: 'All topics' })).toBeInTheDocument();
   });
 
   it('filters articles by tag', async () => {
     const user = userEvent.setup();
     renderWithProviders(<BlogIndexPage />);
 
-    const forexButton = screen.getByRole('button', { name: /forex/i });
-    await user.click(forexButton);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Topic' }), 'forex');
 
-    expect(screen.getByText('Forex Trading Journal: What Forex Traders Should Track')).toBeInTheDocument();
-    expect(screen.queryByText('How to Keep a Trading Journal: The Complete Guide')).not.toBeInTheDocument();
+    expect(screen.getByText('Forex trading journal: what forex traders should track')).toBeInTheDocument();
+    expect(screen.queryByText('How to keep a trading journal: the complete guide')).not.toBeInTheDocument();
   });
 
   it('shows all articles when All tag is clicked after filtering', async () => {
@@ -36,15 +37,26 @@ describe('BlogIndexPage', () => {
     renderWithProviders(<BlogIndexPage />);
 
     // Filter to a specific tag
-    const forexButton = screen.getByRole('button', { name: /forex/i });
-    await user.click(forexButton);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Topic' }), 'forex');
 
-    // Click All to reset
-    const allButton = screen.getByRole('button', { name: 'All' });
-    await user.click(allButton);
+    // Choose All topics to reset
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Topic' }), '');
 
-    expect(screen.getByText('How to Keep a Trading Journal: The Complete Guide')).toBeInTheDocument();
-    expect(screen.getByText('Forex Trading Journal: What Forex Traders Should Track')).toBeInTheDocument();
+    expect(screen.getByText('How to keep a trading journal: the complete guide')).toBeInTheDocument();
+    expect(screen.getByText('Forex trading journal: what forex traders should track')).toBeInTheDocument();
+  });
+
+  it('does not render one button per topic (no tag wall) and shows tags as plain text', () => {
+    const { container } = renderWithProviders(<BlogIndexPage />);
+    expect(screen.queryAllByRole('button', { name: /^(forex|beginner|journaling)$/i })).toHaveLength(0);
+    expect(container.querySelectorAll('[class*="rounded-full"]')).toHaveLength(0);
+    expect(screen.getAllByText(/beginner · journaling/).length).toBeGreaterThan(0);
+  });
+
+  it('shows how many articles each topic has', () => {
+    renderWithProviders(<BlogIndexPage />);
+    const select = screen.getByRole('combobox', { name: 'Topic' });
+    expect(within(select).getByRole('option', { name: /^Forex \(\d+\)$/ })).toBeInTheDocument();
   });
 
   it('renders the footer with copyright', () => {

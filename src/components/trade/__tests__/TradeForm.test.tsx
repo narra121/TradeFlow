@@ -1,0 +1,82 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+
+const online = { value: true };
+vi.mock('@/hooks/useOnline', () => ({ useOnline: () => online.value }));
+vi.mock('@/hooks/useAccounts', async (orig) => ({ ...(await orig<object>()), useAccounts: () => ({ accounts: [{ id: 'a1', name: 'FTMO', currency: 'USD', status: 'active' }], selectedAccountId: null }) }));
+vi.mock('@/hooks/useSavedOptions', () => ({
+  useSavedOptions: () => ({ options: { symbols: [], strategies: [], sessions: [], marketConditions: [], newsEvents: [], mistakes: [], tags: [], timeframes: [] }, addSymbol: vi.fn(), addStrategy: vi.fn(), addSession: vi.fn(), addMarketCondition: vi.fn(), addMistake: vi.fn(), addTag: vi.fn(), addTimeframe: vi.fn(), removeTimeframe: vi.fn() }),
+}));
+vi.mock('@/hooks/useTradingRules', () => ({ useTradingRules: () => ({ rules: [], loading: false }) }));
+vi.mock('@/store/api', () => ({ useCreateTradeMutation: () => [vi.fn()], useUpdateTradeMutation: () => [vi.fn()] }));
+vi.mock('@/store/hooks', () => ({ useAppSelector: () => ({ user: null }), useAppDispatch: () => vi.fn() }));
+
+import { TradeForm } from '../TradeForm';
+
+const setup = () =>
+  render(
+    <MemoryRouter>
+      <TradeForm mode="new" defaultAccountIds={['a1']} onSaved={vi.fn()} onCancel={vi.fn()} />
+    </MemoryRouter>,
+  );
+
+const unload = () => {
+  const e = new Event('beforeunload', { cancelable: true });
+  act(() => {
+    window.dispatchEvent(e);
+  });
+  return e;
+};
+
+describe('TradeForm', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    online.value = true;
+  });
+
+  it('does not stop the tab from closing while nothing was typed', () => {
+    setup();
+    expect(unload().defaultPrevented).toBe(false);
+  });
+
+  it('asks before the tab closes once the form has unsaved edits', async () => {
+    setup();
+    await userEvent.type(screen.getByLabelText(/Entry price/), '1.1');
+    expect(unload().defaultPrevented).toBe(true);
+  });
+
+  it('disables saving while offline and says why', () => {
+    online.value = false;
+    setup();
+    expect(screen.getByRole('button', { name: 'Save trade' })).toBeDisabled();
+    expect(screen.getByText('Offline: reconnect to save.')).toBeInTheDocument();
+  });
+});
+
+describe('TradeForm dates (R-fe-app-013)', () => {
+  it('shows Opened and Closed as typed 24-hour text and parses what is typed on blur', async () => {
+    setup();
+    const opened = screen.getByLabelText(/^Opened/);
+    expect(opened).toHaveAttribute('placeholder', '4 Nov 2026, 14:30');
+    await userEvent.type(opened, '4 Nov 2026, 14:30');
+    await userEvent.tab();
+    expect(opened).toHaveValue('4 Nov 2026, 14:30');
+  });
+
+  it('flags text that is not a date and keeps it for correction', async () => {
+    setup();
+    const opened = screen.getByLabelText(/^Opened/);
+    await userEvent.type(opened, '31 Feb 2026');
+    await userEvent.tab();
+    expect(opened).toHaveAttribute('aria-invalid', 'true');
+    expect(opened).toHaveValue('31 Feb 2026');
+  });
+
+  it('Now fills Closed with the current time', async () => {
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: 'Now' }));
+    expect((screen.getByLabelText(/^Closed/) as HTMLInputElement).value).toMatch(/^\d{1,2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2}$/);
+  });
+});

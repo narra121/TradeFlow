@@ -42,13 +42,12 @@ jobs:
       - name: Create .env.production file
         run: |
           echo "VITE_API_URL=${{ secrets.VITE_API_URL_PROD }}" > .env.production
-          echo "VITE_RAZORPAY_KEY_ID=${{ secrets.VITE_RAZORPAY_KEY_ID_PROD }}" >> .env.production
           echo "VITE_EXTRACT_TRADES_URL=${{ secrets.VITE_EXTRACT_TRADES_URL_PROD }}" >> .env.production
-          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY_PROD }}" >> .env.production
-          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" >> .env.production
-          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID_PROD }}" >> .env.production
           echo "VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN_PROD }}" >> .env.production
           echo "VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID_PROD }}" >> .env.production
+          echo "VITE_GA_MEASUREMENT_ID=${{ secrets.VITE_GA_MEASUREMENT_ID_PROD }}" >> .env.production
+          echo "VITE_GSC_VERIFICATION=${{ secrets.VITE_GSC_VERIFICATION }}" >> .env.production
+          echo "VITE_BING_VERIFICATION=${{ secrets.VITE_BING_VERIFICATION }}" >> .env.production
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
@@ -81,6 +80,9 @@ jobs:
             --cache-control "no-cache, no-store, must-revalidate" \
             --exclude "*" --include "*.html" \
             --content-type "text/html"
+          aws s3 cp ./dist s3://tradequt.com-prod/ --recursive \
+            --exclude "*" --include "*.txt" --include "*.xml" \
+            --cache-control "public, max-age=3600"
           aws s3 cp s3://tradequt.com-prod/assets/ s3://tradequt.com-prod/assets/ \
             --recursive \
             --metadata-directive REPLACE \
@@ -99,3 +101,7 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CF_DISTRIBUTION_ID_PROD }} \
             --paths "/*"
+
+      - name: Ping IndexNow for changed URLs
+        continue-on-error: true
+        run: node scripts/seo/indexnow.mjs --since-days 14

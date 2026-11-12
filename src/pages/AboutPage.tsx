@@ -1,236 +1,107 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { SEO } from '@/components/SEO';
+import { ContentPageShell } from '@/components/content/ContentPageShell';
+import { ContactBlock } from '@/components/content/LegalLayout';
 import { breadcrumbSchema } from '@/config/seo';
-import { Zap, ArrowLeft, Target, Heart, Shield, BarChart3 } from 'lucide-react';
+import { DATA_FACTS, IMPORT_SOURCES, PRODUCT_DEFINITION } from '@/content/product-facts';
+
+const brokers = IMPORT_SOURCES.filter((s) => s.id !== 'generic_csv')
+  .map((s) => s.name)
+  .join(', ');
+
+const DOES = [
+  `Imports trade files from ${brokers}, or any CSV or Excel file, and shows every trade for review before it is saved. Trades already imported are skipped.`,
+  'Estimates brokerage, STT, exchange charges, SEBI fee, stamp duty and GST for trades imported from Indian brokers, at the rates in force on the trade date.',
+  'Shows win rate, profit factor, R, drawdown, and results by strategy, session, weekday and hour.',
+  'Totals what each mistake and each broken rule cost, and tracks your rules week by week.',
+  'Writes AI reports and answers chat questions about your own recorded trades, within monthly limits.',
+];
+
+const DOES_NOT = [
+  'Give trading tips, signals or recommendations. TradeQut is not a SEBI-registered investment adviser or research analyst.',
+  'Place or change orders, or connect to your broker account. You upload the files your broker gives you; automatic sync is planned, not available.',
+  'Show ads inside the app, or sell your data.',
+];
 
 export function AboutPage() {
   return (
-    <>
-      <SEO
-        title="About TradeQut - Built by Traders, for Traders"
-        description="TradeQut is a free trading journal app for stocks, forex, crypto, and options. Track trades, analyze performance, and improve your trading strategy."
-        path="/about"
-        jsonLd={breadcrumbSchema([
-          { name: 'Home', url: 'https://tradequt.com' },
-          { name: 'About', url: 'https://tradequt.com/about' },
-        ])}
-      />
-      <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav aria-label="About page navigation" className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">TradeQut</span>
-          </Link>
-          <Button variant="ghost" asChild className="gap-2">
-            <Link to="/">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Home</span>
-              <span className="sm:hidden">Back</span>
-            </Link>
-          </Button>
+    <ContentPageShell
+      title="About TradeQut - Trading Journal for F&O, Forex and Prop Traders"
+      description="What TradeQut does and does not do, who it is built for, how your trading data is handled, and how to reach the team behind it."
+      path="/about"
+      jsonLd={breadcrumbSchema([
+        { name: 'Home', url: 'https://tradequt.com' },
+        { name: 'About', url: 'https://tradequt.com/about' },
+      ])}
+    >
+      <h1 className="mb-4 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">About TradeQut</h1>
+      <p className="mb-8 text-base text-foreground-soft">{PRODUCT_DEFINITION}</p>
+
+      <section aria-labelledby="for" className="mb-10">
+        <h2 id="for" className="mb-3 text-2xl font-semibold text-foreground">
+          Who it is for
+        </h2>
+        <ul className="list-disc space-y-2 pl-6 text-foreground-soft">
+          <li>Indian F&amp;O and intraday traders who want P&amp;L after charges and to see which habits lose money.</li>
+          <li>Prop-firm challengers who trade on MetaTrader and need to stay inside trade-count and drawdown limits.</li>
+          <li>Forex and multi-account traders who want one journal with totals kept per currency.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="does" className="mb-10">
+        <h2 id="does" className="mb-3 text-2xl font-semibold text-foreground">
+          What it does
+        </h2>
+        <ul className="list-disc space-y-2 pl-6 text-foreground-soft">
+          {DOES.map((d) => (
+            <li key={d}>{d}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="does-not" className="mb-10">
+        <h2 id="does-not" className="mb-3 text-2xl font-semibold text-foreground">
+          What it does not do
+        </h2>
+        <ul className="list-disc space-y-2 pl-6 text-foreground-soft">
+          {DOES_NOT.map((d) => (
+            <li key={d}>{d}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="who" className="mb-10">
+        <h2 id="who" className="mb-3 text-2xl font-semibold text-foreground">
+          Who runs it
+        </h2>
+        <p className="leading-relaxed text-foreground-soft">
+          TradeQut is built and run independently from India. Changes are listed in the{' '}
+          <Link to="/changelog" className="text-primary hover:underline">changelog</Link>, and every price and limit is on the{' '}
+          <Link to="/pricing" className="text-primary hover:underline">pricing page</Link>.
+        </p>
+      </section>
+
+      <section aria-labelledby="data" className="mb-10">
+        <h2 id="data" className="mb-3 text-2xl font-semibold text-foreground">
+          Your data
+        </h2>
+        <ul className="list-disc space-y-2 pl-6 text-foreground-soft">
+          {DATA_FACTS.map((f) => (
+            <li key={f}>{f}</li>
+          ))}
+        </ul>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Details are in the <Link to="/privacy" className="text-primary hover:underline">privacy policy</Link>.
+        </p>
+      </section>
+
+      <section aria-labelledby="contact" className="mb-4">
+        <h2 id="contact" className="mb-3 text-2xl font-semibold text-foreground">
+          Contact
+        </h2>
+        <div className="text-foreground-soft">
+          <ContactBlock />
         </div>
-      </nav>
-
-      <main id="main-content">
-      <article>
-      {/* Content */}
-      <div className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">About TradeQut</h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A free trading journal app built by a trader, for traders. Whether you trade stocks, forex,
-              crypto, or options — TradeQut helps you log trades, track performance, and improve your strategy.
-            </p>
-          </div>
-
-          {/* Our Story */}
-          <section className="mb-16">
-            <h2 className="text-2xl font-semibold text-foreground mb-6">Our Story</h2>
-            <div className="space-y-4 text-muted-foreground leading-relaxed">
-              <p>
-                TradeQut was born out of a simple frustration: existing trading journal software was either
-                too expensive, too complicated, or lacked the features that active day traders and swing traders actually need.
-                As a trader myself, I wanted a clean, powerful trade tracker that could help me log my trades,
-                spot patterns in my win rate and profit factor, and ultimately become a more disciplined trader.
-              </p>
-              <p>
-                What started as a personal trading log quickly grew into something bigger. TradeQut is now
-                a full-featured trading journal app with advanced trading analytics, calendar views, goal tracking,
-                multi-account support, and AI-powered trade extraction from broker statements.
-              </p>
-              <p>
-                TradeQut is independently developed and maintained with a commitment to keeping the
-                product accessible to every trader — free forever for core features, whether you're just starting out or
-                managing multiple accounts professionally.
-              </p>
-            </div>
-          </section>
-
-          {/* Mission & Values */}
-          <section className="mb-12 sm:mb-16">
-            <h2 className="text-2xl font-semibold text-foreground mb-6 sm:mb-8">What We Stand For</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                  <Target className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Mission</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  To provide every stock, forex, crypto, and options trader with a professional-grade
-                  journaling and analytics tool that helps them make better, data-driven trading decisions.
-                </p>
-              </div>
-
-              <div className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
-                <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-4">
-                  <Heart className="w-6 h-6 text-success" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Free Forever</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  All core features are free — no credit card required. Upgrade only if you want
-                  an ad-free experience.
-                </p>
-              </div>
-
-              <div className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
-                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-accent" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Privacy First</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Your trading data is yours. We don't sell, share, or monetize your personal
-                  information. Your data is encrypted and stored securely on AWS infrastructure.
-                </p>
-              </div>
-
-              <div className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
-                <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center mb-4">
-                  <BarChart3 className="w-6 h-6 text-warning" />
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Built for Traders</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Every feature is designed with real trading workflows in mind — from screenshot
-                  imports to broken-rule tracking. We build what traders actually need.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* What TradeQut Offers */}
-          <section className="mb-12 sm:mb-16">
-            <h2 className="text-2xl font-semibold text-foreground mb-6">What TradeQut Offers</h2>
-            <div className="bg-card/50 rounded-2xl border border-border/50 p-6 sm:p-8 md:p-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <ul className="space-y-3 text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    Unlimited trade logging and trading journal entries
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    Advanced trading analytics — win rate, profit factor, risk-reward, and more
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    Calendar view for daily P&L tracking
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    Multi-account support
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    Goal setting and rule tracking
-                  </li>
-                </ul>
-                <ul className="space-y-3 text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    AI-powered trade extraction from screenshots
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    Trade image attachments
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    CSV and broker import for bulk trade entry
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    Customizable filters and views
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-1">&#10003;</span>
-                    Responsive design for desktop and mobile
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* Disclaimer */}
-          <section className="mb-12 sm:mb-16">
-            <div className="bg-card rounded-2xl border border-warning/20 p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Disclaimer</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                TradeQut is a journaling and analytics tool only. It does not provide financial advice,
-                trading signals, or investment recommendations. Trading in financial markets involves
-                substantial risk of loss and is not suitable for every investor. Past performance recorded
-                in the application reflects your own data and is not indicative of future results. You are
-                solely responsible for your own trading decisions. Please consult a qualified financial
-                advisor before making any investment decisions.
-              </p>
-            </div>
-          </section>
-
-          {/* Contact */}
-          <section>
-            <div className="bg-card rounded-2xl border border-border/50 p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-4">Get in Touch</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Have questions, feedback, or partnership inquiries? We'd love to hear from you.
-              </p>
-              <div className="space-y-2 text-muted-foreground">
-                <p><span className="text-foreground font-medium">Business:</span> TradeQutJournal</p>
-                <p><span className="text-foreground font-medium">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348, India</p>
-                <p><span className="text-foreground font-medium">Email:</span> support@tradequt.com</p>
-                <p><span className="text-foreground font-medium">Phone:</span> +91 8501018125</p>
-              </div>
-              <div className="mt-6">
-                <Button asChild>
-                  <Link to="/contact">Contact Us</Link>
-                </Button>
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
-      </article>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/50 py-8 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} TradeQut. All rights reserved.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 text-sm">
-            <Link to="/about" className="text-primary hover:text-primary/80 transition-colors">About Us</Link>
-            <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
-            <Link to="/refund" className="text-muted-foreground hover:text-foreground transition-colors">Refund Policy</Link>
-            <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
-          </div>
-        </div>
-      </footer>
-    </div>
-    </>
+      </section>
+    </ContentPageShell>
   );
 }

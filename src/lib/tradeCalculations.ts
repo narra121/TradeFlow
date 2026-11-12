@@ -46,17 +46,3 @@ export function formatDuration(hours: number): string {
   if (hours < 24) return `${hours.toFixed(1)}h`;
   return `${(hours / 24).toFixed(1)}d`;
 }
-
-/**
- * Format currency with proper decimals
- */
-export function formatCurrency(value: number, decimals: number = 2): string {
-  return value.toFixed(decimals);
-}
-
-/**
- * Format percentage with proper decimals
- */
-export function formatPercentage(value: number, decimals: number = 1): string {
-  return `${value.toFixed(decimals)}%`;
-}

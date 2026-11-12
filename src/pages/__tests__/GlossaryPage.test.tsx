@@ -6,14 +6,14 @@ import { GlossaryPage } from '../glossary/GlossaryPage';
 describe('GlossaryPage', () => {
   it('renders the page title', () => {
     renderWithProviders(<GlossaryPage />);
-    expect(screen.getByText('Trading Glossary')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Trading glossary' })).toBeInTheDocument();
   });
 
   it('renders glossary terms', () => {
     renderWithProviders(<GlossaryPage />);
-    expect(screen.getByText('Win Rate')).toBeInTheDocument();
-    expect(screen.getByText('Profit Factor')).toBeInTheDocument();
-    expect(screen.getByText('Drawdown')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Win Rate' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Profit Factor' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Drawdown' })).toBeInTheDocument();
   });
 
   it('renders the search input', () => {
@@ -28,8 +28,9 @@ describe('GlossaryPage', () => {
     const searchInput = screen.getByPlaceholderText('Search terms...');
     await user.type(searchInput, 'drawdown');
 
-    expect(screen.getByText('Drawdown')).toBeInTheDocument();
-    expect(screen.getByText('Maximum Drawdown')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Drawdown' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Maximum Drawdown' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/\d+ terms?/);
   });
 
   it('renders letter navigation', () => {
@@ -64,7 +65,18 @@ describe('GlossaryPage', () => {
     const searchInput = screen.getByPlaceholderText('Search terms...');
     await user.type(searchInput, 'scalping');
 
-    expect(screen.getByText('Scalping')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Scalping' })).toBeInTheDocument();
     expect(screen.queryByText('Win Rate')).not.toBeInTheDocument();
+  });
+
+  it('explains an empty search and offers Clear search', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<GlossaryPage />);
+    await user.type(screen.getByPlaceholderText('Search terms...'), 'zzzz');
+    expect(screen.getByText(/No terms match/)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('0 terms');
+    await user.click(screen.getByRole('button', { name: 'Clear search' }));
+    expect(screen.queryByText(/No terms match/)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Win Rate' })).toBeInTheDocument();
   });
 });

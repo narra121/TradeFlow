@@ -1,218 +1,144 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
+import {
+  CalcLayout,
+  FormulaDisclosure,
+  LiveResult,
+  calcInputClass,
+  calcLabelClass,
+} from '@/components/content/calculator';
 import { calculatorSchema } from '@/config/seo';
-
-const inputClassName =
-  'w-full px-4 py-2.5 rounded-xl border border-border/50 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20';
-const labelClassName = 'block text-sm font-medium text-foreground mb-1.5';
-
-const PAIRS = [
-  { label: 'EUR/USD', value: 'EUR/USD', rate: 1.085, pipSize: 0.0001, quoteIsUSD: true },
-  { label: 'GBP/USD', value: 'GBP/USD', rate: 1.265, pipSize: 0.0001, quoteIsUSD: true },
-  { label: 'USD/JPY', value: 'USD/JPY', rate: 155.5, pipSize: 0.01, quoteIsUSD: false },
-  { label: 'AUD/USD', value: 'AUD/USD', rate: 0.655, pipSize: 0.0001, quoteIsUSD: true },
-  { label: 'USD/CAD', value: 'USD/CAD', rate: 1.365, pipSize: 0.0001, quoteIsUSD: false },
-  { label: 'EUR/GBP', value: 'EUR/GBP', rate: 0.8575, pipSize: 0.0001, quoteIsUSD: false },
-  { label: 'NZD/USD', value: 'NZD/USD', rate: 0.595, pipSize: 0.0001, quoteIsUSD: true },
-] as const;
-
-const LOT_SIZES = [
-  { label: 'Standard (100,000)', value: 100000 },
-  { label: 'Mini (10,000)', value: 10000 },
-  { label: 'Micro (1,000)', value: 1000 },
-] as const;
-
-const ACCOUNT_CURRENCIES = ['USD', 'EUR', 'GBP', 'INR'] as const;
-
-// Approximate cross-rates to USD for conversion
-const TO_USD: Record<string, number> = {
-  USD: 1,
-  EUR: 1.085,
-  GBP: 1.265,
-  INR: 0.01193, // 1 INR ~ 0.01193 USD (i.e. 1 USD ~ 83.8 INR)
-};
+import { formatMoney } from '@/lib/format';
+import {
+  ACCOUNT_CURRENCIES,
+  FOREX_PAIRS,
+  LOT_SIZES,
+  pipValue,
+  type AccountCurrency,
+} from '@/content/forexPairs';
 
 export function PipCalculatorPage() {
   const [pairIndex, setPairIndex] = useState(0);
   const [lotSize, setLotSize] = useState(100000);
-  const [accountCurrency, setAccountCurrency] = useState<string>('USD');
+  const [accountCurrency, setAccountCurrency] = useState<AccountCurrency>('USD');
 
-  const results = useMemo(() => {
-    const pair = PAIRS[pairIndex];
-    // Pip value in quote currency
-    const pipValueInQuote = pair.pipSize * lotSize;
-
-    // Convert to USD first
-    let pipValueUSD: number;
-    if (pair.quoteIsUSD) {
-      // Quote currency is USD (e.g., EUR/USD) -- pip value is already in USD
-      pipValueUSD = pipValueInQuote;
-    } else {
-      // Quote currency is not USD -- need to convert
-      // For USD/JPY: pip value is in JPY, divide by USD/JPY rate to get USD
-      // For USD/CAD: pip value is in CAD, divide by USD/CAD rate to get USD
-      // For EUR/GBP: pip value is in GBP, multiply by GBP/USD rate to get USD
-      if (pair.value === 'EUR/GBP') {
-        const gbpToUsd = TO_USD['GBP'];
-        pipValueUSD = pipValueInQuote * gbpToUsd;
-      } else {
-        // Quote is JPY or CAD; pair rate IS the conversion factor
-        pipValueUSD = pipValueInQuote / pair.rate;
-      }
-    }
-
-    // Convert from USD to account currency
-    const usdToAccount = 1 / TO_USD[accountCurrency];
-    const pipValueAccount = pipValueUSD * usdToAccount;
-
-    return {
-      pipValueInQuote,
-      pipValueUSD,
-      pipValueAccount,
-      quoteCurrency: pair.value.split('/')[1],
-    };
-  }, [pairIndex, lotSize, accountCurrency]);
-
-  const selectedPair = PAIRS[pairIndex];
+  const selectedPair = FOREX_PAIRS[pairIndex];
+  const results = useMemo(() => pipValue(selectedPair, lotSize, accountCurrency), [selectedPair, lotSize, accountCurrency]);
+  const decimals = results.inAccount < 1 ? 4 : 2;
+  const summary = `Pip value ${formatMoney(results.inAccount, accountCurrency, { decimals })} for ${selectedPair.label}, lot size ${lotSize}.`;
 
   return (
     <ContentPageShell
-      title="Pip Value Calculator - Free | TradeQut"
+      title="Pip value calculator - free | TradeQut"
       description="Calculate the value of a pip for any currency pair and lot size in your account currency. Free forex pip calculator."
       path="/resources/pip-calculator"
       jsonLd={calculatorSchema(
-        'Pip Value Calculator',
+        'Pip value calculator',
         'Calculate pip value for any currency pair and lot size in your account currency.',
         '/resources/pip-calculator'
       )}
-      navLabel="Pip calculator navigation"
+      maxWidth="max-w-5xl"
     >
-      {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mb-8">
+      <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
-            <Link to="/resources" className="hover:text-foreground transition-colors">
+            <Link to="/resources" className="inline-flex min-h-6 items-center hover:text-foreground">
               Resources
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="text-foreground font-medium">Pip Value Calculator</li>
+          <li className="font-medium text-foreground">Pip value calculator</li>
         </ol>
       </nav>
 
-      <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
-        Pip Value Calculator
-      </h1>
-      <p className="text-lg text-muted-foreground mb-8 sm:mb-10">
+      <h1 className="mb-2 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">Pip value calculator</h1>
+      <p className="mb-8 text-base text-foreground-soft">
         Find out how much each pip is worth for any currency pair, lot size, and account currency.
       </p>
 
-      {/* Calculator */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 sm:mb-16">
-        {/* Inputs */}
-        <div className="space-y-5">
-          <div>
-            <label htmlFor="currency-pair" className={labelClassName}>
-              Currency Pair
-            </label>
-            <select
-              id="currency-pair"
-              value={pairIndex}
-              onChange={(e) => setPairIndex(Number(e.target.value))}
-              className={inputClassName}
-            >
-              {PAIRS.map((pair, i) => (
-                <option key={pair.value} value={i}>
-                  {pair.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="lot-size" className={labelClassName}>
-              Lot Size
-            </label>
-            <select
-              id="lot-size"
-              value={lotSize}
-              onChange={(e) => setLotSize(Number(e.target.value))}
-              className={inputClassName}
-            >
-              {LOT_SIZES.map((ls) => (
-                <option key={ls.value} value={ls.value}>
-                  {ls.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="account-currency" className={labelClassName}>
-              Account Currency
-            </label>
-            <select
-              id="account-currency"
-              value={accountCurrency}
-              onChange={(e) => setAccountCurrency(e.target.value)}
-              className={inputClassName}
-            >
-              {ACCOUNT_CURRENCIES.map((cur) => (
-                <option key={cur} value={cur}>
-                  {cur}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Results */}
-        <div className="bg-primary/5 rounded-xl border border-primary/20 p-6 flex flex-col justify-center">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Results</h2>
-          <div className="space-y-4">
+      <CalcLayout
+        inputs={
+          <>
             <div>
-              <p className="text-sm text-muted-foreground">Pip Value ({accountCurrency})</p>
-              <p className="text-2xl font-bold text-primary">
-                {results.pipValueAccount.toFixed(4)} {accountCurrency}
-              </p>
+              <label htmlFor="currency-pair" className={calcLabelClass}>
+                Currency pair
+              </label>
+              <select id="currency-pair" value={pairIndex} onChange={(e) => setPairIndex(Number(e.target.value))} className={calcInputClass}>
+                {FOREX_PAIRS.map((pair, i) => (
+                  <option key={pair.value} value={i}>
+                    {pair.label}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Pip Value ({results.quoteCurrency})
-                </p>
-                <p className="text-lg font-semibold text-foreground">
-                  {results.pipValueInQuote.toFixed(4)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pip Value (USD)</p>
-                <p className="text-lg font-semibold text-foreground">
-                  {results.pipValueUSD.toFixed(4)}
-                </p>
-              </div>
+            <div>
+              <label htmlFor="lot-size" className={calcLabelClass}>
+                Lot size
+              </label>
+              <select id="lot-size" value={lotSize} onChange={(e) => setLotSize(Number(e.target.value))} className={calcInputClass}>
+                {LOT_SIZES.map((ls) => (
+                  <option key={ls.value} value={ls.value}>
+                    {ls.label}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="pt-2 border-t border-border/50">
-              <p className="text-xs text-muted-foreground">
-                {selectedPair.label} &middot; Pip size: {selectedPair.pipSize} &middot; Rate:{' '}
-                {selectedPair.rate}
-              </p>
+            <div>
+              <label htmlFor="account-currency" className={calcLabelClass}>
+                Account currency
+              </label>
+              <select
+                id="account-currency"
+                value={accountCurrency}
+                onChange={(e) => setAccountCurrency(e.target.value as AccountCurrency)}
+                className={calcInputClass}
+              >
+                {ACCOUNT_CURRENCIES.map((cur) => (
+                  <option key={cur} value={cur}>
+                    {cur}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
-
-          {/* Disclaimer */}
-          <div className="mt-4 p-3 bg-yellow-500/5 rounded-lg border border-yellow-500/20">
-            <p className="text-xs text-yellow-600 dark:text-yellow-400">
-              Exchange rates are approximate and for educational purposes only. Use live rates from
-              your broker for actual trading decisions.
+          </>
+        }
+        result={
+          <>
+            <h2 className="mb-4 text-base font-semibold text-foreground">Result</h2>
+            <p className="text-sm text-muted-foreground">Pip value ({accountCurrency})</p>
+            <p className="num mb-4 text-2xl font-semibold text-foreground">
+              {formatMoney(results.inAccount, accountCurrency, { decimals })}
             </p>
-          </div>
-        </div>
-      </div>
+            <dl className="grid grid-cols-2 gap-4">
+              <div>
+                <dt className="text-sm text-muted-foreground">Pip value ({results.quoteCurrency})</dt>
+                <dd className="num text-base font-semibold text-foreground">{formatMoney(results.inQuote, results.quoteCurrency, { decimals: results.inQuote < 1 ? 4 : 2 })}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Pip value (USD)</dt>
+                <dd className="num text-base font-semibold text-foreground">{formatMoney(results.inUsd, 'USD', { decimals: results.inUsd < 1 ? 4 : 2 })}</dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-xs text-muted-foreground">
+              {selectedPair.label} &middot; Pip size {selectedPair.pipSize} &middot; Rate {selectedPair.rate}
+            </p>
+            <FormulaDisclosure>
+              <p>Pip value in the quote currency = pip size × lot size.</p>
+              <p>Converted to USD with the pair rate (or the GBP/USD rate for EUR/GBP), then to your account currency.</p>
+            </FormulaDisclosure>
+            <p className="mt-4 rounded border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
+              Exchange rates are approximate and for education only. Use live rates from your broker for real trades.
+            </p>
+            <LiveResult text={summary} />
+          </>
+        }
+      />
 
       {/* Educational content */}
       <section className="prose prose-gray dark:prose-invert max-w-none">
         <h2 className="text-2xl font-bold text-foreground mb-4">
-          What Are Pips and How Do Lot Sizes Work?
+          What are pips and how do lot sizes work?
         </h2>
         <p className="text-muted-foreground leading-relaxed mb-4">
           A{' '}

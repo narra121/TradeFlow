@@ -1,12 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { loadScope } from '@/lib/scope';
 
 export interface AccountsState {
   selectedAccountId: string | null;
 }
 
-const initialState: AccountsState = {
-  selectedAccountId: null,
-};
+const initialState = (): AccountsState => ({
+  selectedAccountId: loadScope()?.accountId ?? null,
+});
 
 const accountsSlice = createSlice({
   name: 'accounts',

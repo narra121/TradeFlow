@@ -1,0 +1,47 @@
+/**
+ * Interface copy of the app frame and Trades (D.5): one place for the sentences people read, in one voice. Plain
+ * verbs, concrete numbers, sentence case, no exclamation marks, no blame. Strings with variables are functions, so a
+ * sentence is never assembled from fragments.
+ */
+export const copy = {
+  offline: {
+    notice: "You're offline. Changes can't be saved until you reconnect.",
+    saveHint: 'Offline: reconnect to save.',
+    bulkHint: 'Offline: editing is paused.',
+    pickerTitle: "You're offline",
+    pickerBody: 'Reconnect to change journal fields.',
+  },
+
+  notices: {
+    paymentFailed: 'Your last payment failed. Update your card to keep Pro.',
+    updateCard: 'Update card',
+    overLimit: 'You have more accounts than the Free plan allows. Choose the ones you can add trades to.',
+    chooseAccounts: 'Choose accounts',
+    trialEnded: 'Your Pro trial ended. You are on Free.',
+    seeWhatChanged: 'See what changed',
+    trial: (daysLeft: number, endsOn: string) => `Pro trial — ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left. No card on file; on ${endsOn} you move to Free.`,
+    seePlans: 'See plans',
+    noAccount: (n: number) => `${n} ${n === 1 ? 'trade has' : 'trades have'} no account and ${n === 1 ? 'is' : 'are'} not counted in statistics.`,
+    assignAccounts: 'Assign accounts',
+    gettingStarted: (done: number, total: number) => `Getting started ${done} of ${total}`,
+    continue: 'Continue',
+  },
+
+  trades: {
+    loadError: { title: "Couldn't load trades", description: 'Your trades are safe. Check your connection and try again.' },
+    emptyScope: { title: 'No trades in this period.', description: 'The account and period selected above have no trades.', action: 'Show all accounts and dates' },
+    emptyMatch: { title: 'No trades match these filters.', action: 'Clear filters' },
+    ceiling: 'Showing the newest 5,000 trades. Narrow the period to see older ones.',
+    outsideScope: 'This trade is outside the current account or period.',
+  },
+
+  frame: {
+    notFound: { title: 'Page not found', body: 'The page may have moved, or the link is wrong.' },
+    boundary: {
+      title: 'Something went wrong on this page.',
+      body: 'The rest of TradeQut still works. If this keeps happening, send us the reference below.',
+      reload: 'Reload page',
+      report: 'Report this',
+    },
+  },
+} as const;

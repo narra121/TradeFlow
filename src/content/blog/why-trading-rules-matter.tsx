@@ -66,7 +66,7 @@ export default function WhyTradingRulesMatter() {
         <li>
           <strong className="text-foreground">No single position risking more than 2% of account.</strong> This is the
           most fundamental rule in{' '}
-          <Link to="/glossary#risk-management" className="text-primary hover:text-primary/80">risk management</Link>.
+          <Link to="/glossary#position-sizing" className="text-primary hover:text-primary/80">risk management</Link>.
           If you risk 2% per trade, you would need 35 consecutive losses to lose half your account. At 5% per trade,
           that number drops to 14. At 10%, just 7. The math is unforgiving, and capital preservation is the first
           priority.
@@ -88,26 +88,27 @@ export default function WhyTradingRulesMatter() {
         percentage for each rule, which tells you exactly where your discipline is strong and where it breaks down.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        TradeQut makes this process seamless. You define your trading rules once, and when logging each trade you can
-        mark which rules you followed and which you broke. The analytics then show your compliance rate per rule, per
-        week, and per session, making it easy to identify patterns. Perhaps you follow your position sizing rule
-        perfectly but consistently violate your daily trade limit. That specificity is what makes the tracking valuable.
+        In TradeQut you define your rules once on the Goals &amp; rules page, and mark the rules a trade broke in its
+        Broken rules field. The rules table then shows each rule for the current week, what its breaks cost, the last
+        eight weeks and the current streak, and Analytics totals the cost of each broken rule. Perhaps you follow your
+        position sizing rule perfectly but keep breaking your daily trade limit. That specificity is what makes the
+        tracking valuable.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        Set compliance targets as part of your trading goals. A goal like "follow all 5 rules on at least 85% of
-        trades this month" gives you a concrete metric to work toward. When you hit the target, you know your
+        Give yourself a compliance target, such as "follow all five rules on at least 85% of trades this month", and
+        check it in your monthly review against the count of broken rules. When you hit the target, you know your
         discipline improved. When you miss it, you know exactly which rules need more attention.
       </p>
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">How Broken Rules Correlate with Losses</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
         The most persuasive argument for trading rules comes from your own data. When you separate your trades into two
-        groups, those where all rules were followed and those where at least one rule was broken, the performance
-        difference is almost always dramatic. Across thousands of trading journals, the pattern holds: rule-following
-        trades have higher win rates, better average{' '}
-        <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link>, and lower{' '}
-        <Link to="/glossary#drawdown" className="text-primary hover:text-primary/80">drawdowns</Link> than
-        rule-breaking trades.
+        groups, those where all rules were followed and those where at least one rule was broken, you can compare
+        them directly on win rate, average{' '}
+        <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link> and{' '}
+        <Link to="/glossary#drawdown" className="text-primary hover:text-primary/80">drawdown</Link>. If the
+        rule-following group does better, the rules are earning their place. If it does not, the rules need
+        revisiting. Either answer comes from your own trades, not from anyone else&apos;s average.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         This correlation is not coincidence. Broken rules usually happen during emotional states: revenge trading after
@@ -118,7 +119,7 @@ export default function WhyTradingRulesMatter() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         Reviewing this data monthly reinforces the value of your rules in a way that willpower alone cannot. When you
         see in black and white that your rule-breaking trades cost you $2,400 last month while your rule-following
-        trades earned $3,800, the incentive to comply becomes tangible. Data-driven discipline is sustainable discipline.
+        trades earned $3,800 (a hypothetical example), the incentive to comply becomes tangible. Data-driven discipline is sustainable discipline.
         Build your rules, track your compliance, and let the numbers do the convincing.
       </p>
     </>

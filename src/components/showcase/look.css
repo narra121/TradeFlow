@@ -1,0 +1,192 @@
+/* TradeQut's look for the stageshow kit (stageshow references/looks.md): the app's theme tokens mapped onto the kit's,
+   so every stage reads as the app (DESIGN-SHARED S1–S3). Unlayered on purpose: it must win over the kit's
+   `@layer stageshow` theme values. Every stage of TradeQut uses className "tq-look" with theme="dark". */
+.tq-look .ss-stage {
+  --ss-canvas: transparent;
+  --ss-surface: hsl(var(--card));
+  --ss-chrome: hsl(var(--background));
+  --ss-raised: hsl(var(--popover));
+  --ss-well: hsl(var(--background));
+  --ss-fill: hsl(var(--secondary));
+  --ss-ink-1: hsl(var(--foreground) / 0.05);
+  --ss-ink-2: hsl(var(--foreground) / 0.07);
+  --ss-ink-3: hsl(var(--foreground) / 0.1);
+  --ss-ink-4: hsl(var(--foreground) / 0.13);
+  --ss-ink-5: hsl(var(--foreground) / 0.2);
+  --ss-line: hsl(var(--border));
+  --ss-line-faint: hsl(var(--border) / 0.6);
+  --ss-text-strong: hsl(var(--foreground));
+  --ss-text: hsl(var(--muted-foreground));
+  --ss-text-faint: hsl(var(--foreground-faint));
+  --ss-icon: hsl(var(--muted-foreground));
+  --ss-icon-faint: hsl(var(--border-strong));
+  --ss-accent: hsl(var(--primary));
+  --ss-accent-2: hsl(var(--primary));
+  --ss-accent-soft: hsl(var(--primary) / 0.14);
+  --ss-accent-text: hsl(var(--primary));
+  --ss-success: hsl(var(--profit));
+  --ss-success-soft: hsl(var(--tint-profit-1));
+  --ss-success-text: hsl(var(--profit));
+  --ss-danger: hsl(var(--loss));
+  --ss-danger-soft: hsl(var(--tint-loss-1));
+  --ss-danger-text: hsl(var(--loss));
+  --ss-warning: hsl(var(--warning));
+  --ss-warning-soft: hsl(var(--warning) / 0.14);
+  --ss-warning-text: hsl(var(--warning));
+  --ss-font: 'DM Sans', system-ui, sans-serif;
+  --ss-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ss-radius-sm: 4px;
+  --ss-radius-md: 4px;
+  --ss-radius-lg: 6px;
+  --ss-radius-window: 6px;
+  --ss-control: 32px;
+  --ss-row: 28px;
+  /* Depth is a hairline plus a surface step (S3.2): no shadow fall on any surface. */
+  --ss-shadow-hero: 0 0 0 1px hsl(var(--border));
+  --ss-shadow-window: 0 0 0 1px hsl(var(--border));
+  --ss-shadow-satellite: 0 0 0 1px hsl(var(--border-strong) / 0.6);
+  --ss-shadow-ground: 0 0 0 1px hsl(var(--border));
+  --ss-shadow-float: 0 0 0 1px hsl(var(--border-strong) / 0.6), var(--shadow-overlay);
+  --ss-shadow-card: 0 0 0 1px hsl(var(--border));
+  --ss-shadow-lift: 0 0 0 1px hsl(var(--border-strong) / 0.6);
+  color: hsl(var(--foreground));
+  font-family: var(--ss-font);
+}
+
+/* The app's own frame (S8.5): --background canvas, 1 px --border, 6 px radius, title row; no OS or browser chrome. */
+.tq-look .tq-frame {
+  position: absolute;
+  display: flex;
+  overflow: hidden;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.tq-look .tq-frame__rail {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 52px;
+  padding-top: 12px;
+  background: hsl(var(--sidebar-background));
+  border-right: 1px solid hsl(var(--sidebar-border));
+}
+.tq-look .tq-frame__rail span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-look .tq-frame__rail span[data-active='true'] {
+  background: hsl(var(--sidebar-accent));
+  color: hsl(var(--foreground));
+}
+.tq-look .tq-frame__rail .tq-frame__logo {
+  margin-bottom: 8px;
+  color: hsl(var(--primary));
+}
+.tq-look .tq-frame__rail svg {
+  width: 16px;
+  height: 16px;
+}
+.tq-look .tq-frame__main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tq-look .tq-frame__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.tq-look .tq-frame__scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.tq-look .tq-chip-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid hsl(var(--border-strong));
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tq-look .tq-chip-ctl svg {
+  width: 14px;
+  height: 14px;
+  color: hsl(var(--muted-foreground));
+}
+.tq-look .tq-num {
+  font-family: var(--ss-mono);
+  font-variant-numeric: tabular-nums;
+}
+.tq-look .tq-pos {
+  color: hsl(var(--profit));
+}
+.tq-look .tq-neg {
+  color: hsl(var(--loss));
+}
+.tq-look .tq-muted {
+  color: hsl(var(--muted-foreground));
+}
+.tq-look .tq-tag-loss {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 2px;
+  background: hsl(var(--tint-loss-1));
+  color: hsl(var(--loss));
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.tq-look .tq-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 2px;
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground-soft));
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.tq-look .tq-satellite {
+  position: absolute;
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border-strong) / 0.6);
+  border-radius: 6px;
+}
+
+/* The app's primary button: dark label on --primary (the kit draws white, 2.6 : 1 on emerald). */
+.tq-look .ss-button[data-variant='primary'] {
+  color: hsl(var(--primary-foreground));
+}

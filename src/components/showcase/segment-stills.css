@@ -1,0 +1,209 @@
+/* Built-for stills: 340 × 230 stages, frame inset 16, off the bottom. Phone: 420 × 520, pinned from the top. */
+.sg-demo .ss-stage,
+.sg-phone .ss-stage {
+  overflow: hidden;
+}
+.sg-demo .sg-frame {
+  left: 16px;
+  top: 16px;
+  width: 308px;
+  height: 310px;
+}
+.sg-demo .sg-list {
+  padding: 6px 16px 0;
+}
+.sg-demo .sg-li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 26px;
+  font-size: 13px;
+}
+.sg-demo .sg-li--charge {
+  height: 22px;
+  font-size: 12px;
+}
+.sg-demo .sg-li--total {
+  height: 34px;
+  margin-top: 6px;
+  border-top: 1px solid hsl(var(--border));
+  font-weight: 500;
+}
+.sg-demo .tq-frame__title {
+  height: 44px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.sg-demo .sg-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+}
+.sg-demo .sg-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.sg-demo .sg-line--total {
+  margin: 0 16px;
+  padding: 10px 0;
+  border-top: 1px solid hsl(var(--border));
+  font-weight: 500;
+}
+.sg-demo .sg-charges {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 20px;
+  padding: 0 16px 10px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.sg-demo .sg-charges > span {
+  display: flex;
+  justify-content: space-between;
+}
+.sg-demo .sg-goal {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 13px;
+}
+.sg-demo .sg-goal__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sg-demo .sg-goal__status {
+  font-size: 12px;
+  line-height: 16px;
+  color: hsl(var(--muted-foreground));
+}
+.sg-demo .sg-acct {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 52px;
+  padding: 0 16px;
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+}
+.sg-demo .sg-acct small {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+}
+
+.sg-phone .sg-phone__device {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+}
+.sg-phone .ss-stage[data-layout='compact'] .sg-phone__device {
+  left: 16px;
+  top: 16px;
+}
+.sg-phone .sg-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: hsl(var(--foreground));
+  font-size: 15px;
+  line-height: 20px;
+}
+/* Inside a Phone, sizes are iOS points (the device scales them): 17 title, 15 body, 13 caption. */
+.sg-phone .sg-app__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 17px;
+  font-weight: 600;
+}
+.sg-phone .sg-app__chip {
+  padding: 3px 10px;
+  border: 1px solid hsl(var(--border-strong));
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.sg-phone .sg-app__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 16px 20px 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: hsl(var(--card));
+}
+.sg-phone .sg-app__stats > div {
+  padding: 12px 14px;
+}
+.sg-phone .sg-app__stats > div:nth-child(even) {
+  border-left: 1px solid hsl(var(--border));
+}
+.sg-phone .sg-app__stats > div:nth-child(n + 3) {
+  border-top: 1px solid hsl(var(--border));
+}
+.sg-phone .sg-app__stats small {
+  display: block;
+  font-size: 14px;
+  line-height: 18px;
+  color: hsl(var(--muted-foreground));
+}
+.sg-phone .sg-app__stats b {
+  display: block;
+  margin-top: 2px;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 500;
+}
+.sg-phone .sg-app__month {
+  margin: 16px 20px 0;
+  padding: 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: hsl(var(--card));
+}
+.sg-phone .sg-app__month-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.sg-phone .sg-app__cal {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+.sg-phone .sg-app__cal > span {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 40px;
+  border-radius: 2px;
+  font-size: 15px;
+  color: hsl(var(--foreground-soft));
+}
+.sg-phone :where(.sg-app__cal > span) {
+  background: hsl(var(--muted) / 0.4);
+}
+.sg-phone .sg-app__cal > span.sg-app__blank {
+  background: none;
+}
+.sg-phone .sg-app__cal b {
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  font-family: var(--ss-font);
+  font-size: 14px;
+  line-height: 14px;
+  color: hsl(var(--loss));
+}

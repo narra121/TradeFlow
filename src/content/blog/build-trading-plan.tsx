@@ -97,16 +97,17 @@ export default function BuildTradingPlan() {
         changelog of every modification so you can trace which changes improved your performance and which ones hurt it.
       </p>
 
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Using TradeQut to Track Plan Compliance</h2>
+      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Using TradeQut to track plan compliance</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        TradeQut is designed to make plan tracking effortless. When you log a trade, you can attach your trading rules
-        and mark which ones you followed or broke. The{' '}
+        TradeQut tracks plan compliance through your rules. When you log a trade, you mark the rules it broke in the
+        Broken rules field. The{' '}
         <Link to="/blog/trading-analytics-find-edge" className="text-primary hover:text-primary/80">analytics dashboard</Link>{' '}
-        then shows you your compliance rate over time, broken down by rule, by session, and by day of the week.
+        then shows what each broken rule cost, and the Goals &amp; rules page shows every rule week by week with its
+        streak.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        You can set goals tied to plan adherence, such as following all rules on 90% of trades this month. The goals
-        progress tracker shows your real-time compliance, so you always know where you stand. When you combine this
+        You can also set weekly or monthly limits from your plan, such as a maximum number of trades and a maximum
+        drawdown, and the dashboard shows where you stand against them every day. When you combine this
         with performance data, you can see the direct connection between following your plan and your{' '}
         <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link>. That connection is the
         most powerful motivator for building discipline. The data proves that the plan works, and that proof makes it

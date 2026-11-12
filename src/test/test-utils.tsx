@@ -31,7 +31,7 @@ export function renderWithProviders(
     preloadedState = {},
     store = configureStore({
       reducer: rootReducer,
-      preloadedState: preloadedState as any,
+      preloadedState: preloadedState as never,
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
           serializableCheck: false,

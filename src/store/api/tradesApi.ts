@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { api } from './baseApi';
 import type {
   CreateTradePayload,
@@ -36,8 +37,49 @@ let streamDebounceTimer: ReturnType<typeof setTimeout>;
 const debouncedInvalidateStreamDeps = (dispatch: any) => {
   clearTimeout(streamDebounceTimer);
   streamDebounceTimer = setTimeout(() => {
-    dispatch(api.util.invalidateTags(['Accounts', 'Goals', 'Rules', 'SavedOptions']));
+    dispatch(api.util.invalidateTags(['Accounts', 'Goals', 'Rules', 'SavedOptions', 'Stats', { type: 'Trades', id: 'LIST' }]));
   }, STREAM_PROPAGATION_DELAY_MS);
+};
+
+const EXTRA_FIELDS = ['assetClass', 'contractMultiplier', 'fees', 'grossPnl', 'underlying', 'optionType', 'strike', 'expiry', 'externalId', 'importSource'] as const;
+
+/** CONTRACT §6 fields: copied only when present so older trades render as before. */
+const mapExtraFieldsFromBackend = (trade: any): Partial<Trade> => {
+  const out: Record<string, unknown> = {};
+  for (const key of EXTRA_FIELDS) if (trade[key] !== undefined && trade[key] !== null) out[key] = trade[key];
+  return out as Partial<Trade>;
+};
+
+/** Same fields, front to back, used by create, update and bulk so the three mappers cannot drift. */
+export const mapExtraFieldsToBackend = (payload: Partial<CreateTradePayload>): Record<string, unknown> => {
+  const out: Record<string, unknown> = {};
+  for (const key of EXTRA_FIELDS) {
+    const v = (payload as Record<string, unknown>)[key];
+    if (v !== undefined && v !== null) out[key] = v;
+  }
+  return out;
+};
+
+export const SCOPE_TRADE_CEILING = 5000;
+const SCOPE_PAGE_SIZE = 100;
+export const TRADE_LIST_ENDPOINTS = ['getTrades', 'getScopeTrades'];
+
+/** Adds saved trades to every cached scope list they belong to; the list endpoint reads an eventually consistent index, so an immediate refetch can miss them. */
+const insertIntoScopeCaches = (dispatch: any, getState: any, trades: Trade[]) => {
+  const queries = getState()?.[api.reducerPath]?.queries || {};
+  for (const entry of Object.values<any>(queries)) {
+    if (entry?.endpointName !== 'getScopeTrades') continue;
+    const { accountId, startDate, endDate } = entry.originalArgs ?? {};
+    const fits = trades.filter((t) => {
+      if (accountId && accountId !== 'ALL' && t.accountId !== accountId) return false;
+      const day = (t.exitDate || t.entryDate || '').slice(0, 10);
+      return (!startDate || day >= startDate) && (!endDate || day <= endDate);
+    });
+    if (!fits.length) continue;
+    dispatch((tradesApi.util.updateQueryData as any)('getScopeTrades', entry.originalArgs, (draft: Trade[]) => {
+      for (const t of fits) if (!draft.some((d) => d.id === t.id)) draft.push(t);
+    }));
+  }
 };
 
 const mapBackendTradeToTrade = (trade: any): Trade => {
@@ -84,8 +126,34 @@ const mapBackendTradeToTrade = (trade: any): Trade => {
     emotions: trade.emotions,
     accountId,
     brokenRuleIds: trade.brokenRuleIds ?? [],
+    ...mapExtraFieldsFromBackend(trade),
   };
 };
+
+/** `GET /trades` answers 400 without both dates, so an open end of the scope is an open-ended range. */
+const OPEN_START = '2000-01-01';
+const OPEN_END = '2099-12-31';
+
+type ScopeResult = { data?: unknown; error?: any };
+type ScopeFetch = (arg: { url: string; params: Record<string, unknown> }) => ScopeResult | PromiseLike<ScopeResult>;
+
+export async function fetchAllScopeTrades(
+  params: { accountId?: string; startDate?: string; endDate?: string; importBatchId?: string },
+  fetchPage: ScopeFetch,
+): Promise<{ data: Trade[] } | { error: any }> {
+  const all: Trade[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page <= Math.ceil(SCOPE_TRADE_CEILING / SCOPE_PAGE_SIZE); page++) {
+    const res = await fetchPage({ url: '/trades', params: { ...params, startDate: params.startDate || OPEN_START, endDate: params.endDate || OPEN_END, limit: SCOPE_PAGE_SIZE, ...(cursor ? { cursor } : {}) } });
+    if (res.error) return { error: res.error };
+    const body: any = res.data;
+    const list: any[] = Array.isArray(body) ? body : body?.trades ?? [];
+    all.push(...list.map(mapBackendTradeToTrade));
+    cursor = body?.pagination?.hasMore ? body.pagination.nextCursor ?? undefined : undefined;
+    if (!cursor || all.length >= SCOPE_TRADE_CEILING) break;
+  }
+  return { data: all.slice(0, SCOPE_TRADE_CEILING) };
+}
 
 export const tradesApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -124,8 +192,19 @@ export const tradesApi = api.injectEndpoints({
         try {
           const { data: trades } = await queryFulfilled;
           backgroundCacheStoreTrades(trades).catch(() => {});
-        } catch {}
+        } catch {
+          // the local cache is best effort
+        }
       },
+    }),
+
+    /** Every trade in the scope (account + date range): pages `/trades` to completion, newest 5,000 at most. */
+    getScopeTrades: builder.query<Trade[], { accountId?: string; startDate?: string; endDate?: string; importBatchId?: string }>({
+      queryFn: (params, _api, _extra, fetchWithBQ) => fetchAllScopeTrades(params, fetchWithBQ),
+      providesTags: (result) => [
+        ...(result ?? []).map(({ id }) => ({ type: 'Trades' as const, id })),
+        { type: 'Trades' as const, id: 'LIST' },
+      ],
     }),
 
     getTradesPaginated: builder.query<PaginatedTradesResponse, PaginatedTradesQueryParams | void>({
@@ -173,7 +252,9 @@ export const tradesApi = api.injectEndpoints({
         try {
           const { data } = await queryFulfilled;
           backgroundCacheStoreTrades(data.trades).catch(() => {});
-        } catch {}
+        } catch {
+          // the local cache is best effort
+        }
       },
     }),
 
@@ -205,6 +286,7 @@ export const tradesApi = api.injectEndpoints({
           accountIds: payload.accountIds || (payload.accountId ? [payload.accountId] : undefined),
           brokenRuleIds: payload.brokenRuleIds,
           images: payload.images,
+          ...mapExtraFieldsToBackend(payload),
         };
         
         return {
@@ -227,12 +309,13 @@ export const tradesApi = api.injectEndpoints({
         }
         return mappedTrade;
       },
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats'],
-      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+      invalidatesTags: [{ type: 'Trades', id: 'PAGINATED_LIST' }],
+      async onQueryStarted(_, { dispatch, getState, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          // Refetch accounts after a delay to allow the DynamoDB Stream
-          // handler to recalculate the account balance
+          insertIntoScopeCaches(dispatch, getState, [data]);
+          // Refetch accounts and the lists after a delay to allow the DynamoDB Stream
+          // handler and the index to catch up
           debouncedInvalidateStreamDeps(dispatch);
           backgroundCacheStoreTrades([data]).catch(() => {});
         } catch { /* handled elsewhere */ }
@@ -271,6 +354,7 @@ export const tradesApi = api.injectEndpoints({
         }
         if (payload.brokenRuleIds !== undefined) backendPayload.brokenRuleIds = payload.brokenRuleIds;
         if (payload.images !== undefined) backendPayload.images = payload.images;
+        Object.assign(backendPayload, mapExtraFieldsToBackend(payload));
         
         return {
           url: `/trades/${id}`,
@@ -298,7 +382,7 @@ export const tradesApi = api.injectEndpoints({
         }
         return result;
       },
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats'],
+      invalidatesTags: [{ type: 'Trades', id: 'PAGINATED_LIST' }],
       async onQueryStarted({ id }, { dispatch, getState, queryFulfilled }) {
         try {
           // Wait for update to succeed and use the mutation response as the source of truth.
@@ -310,10 +394,10 @@ export const tradesApi = api.injectEndpoints({
           const state: any = getState();
           const queries = state?.[api.reducerPath]?.queries || {};
           for (const entry of Object.values<any>(queries)) {
-            if (entry?.endpointName !== 'getTrades') continue;
+            if (!TRADE_LIST_ENDPOINTS.includes(entry?.endpointName)) continue;
 
             dispatch(
-              tradesApi.util.updateQueryData('getTrades', entry.originalArgs, (draft: Trade[]) => {
+              (tradesApi.util.updateQueryData as any)(entry.endpointName, entry.originalArgs, (draft: Trade[]) => {
                 const index = draft.findIndex((t) => t.id === id);
                 if (index !== -1) {
                   draft[index] = updatedTrade;
@@ -326,6 +410,7 @@ export const tradesApi = api.injectEndpoints({
             );
           }
 
+          insertIntoScopeCaches(dispatch, getState, createdTrades);
           // Delayed refetch for account balance (DynamoDB Stream needs time)
           debouncedInvalidateStreamDeps(dispatch);
           backgroundCacheStoreTrades([updatedTrade, ...createdTrades]).catch(() => {});
@@ -369,10 +454,10 @@ export const tradesApi = api.injectEndpoints({
         const queries = state?.[api.reducerPath]?.queries || {};
         
         for (const entry of Object.values<any>(queries)) {
-          if (entry?.endpointName !== 'getTrades') continue;
+          if (!TRADE_LIST_ENDPOINTS.includes(entry?.endpointName)) continue;
           
           const patchResult = dispatch(
-            tradesApi.util.updateQueryData('getTrades', entry.originalArgs, (draft: Trade[]) => {
+            (tradesApi.util.updateQueryData as any)(entry.endpointName, entry.originalArgs, (draft: Trade[]) => {
               const index = draft.findIndex((t) => t.id === id);
               if (index !== -1) {
                 draft.splice(index, 1);
@@ -422,6 +507,7 @@ export const tradesApi = api.injectEndpoints({
           accountIds: item.accountIds || (item.accountId ? [item.accountId] : undefined),
           brokenRuleIds: item.brokenRuleIds,
           images: item.images,
+          ...mapExtraFieldsToBackend(item),
         }));
 
         return {
@@ -440,6 +526,21 @@ export const tradesApi = api.injectEndpoints({
       },
     }),
 
+    /** BE-E1: a deleted trade is soft-deleted for 30 days; this brings it back (E-055). */
+    restoreTrades: builder.mutation<{ message?: string }, { trades: Trade[] }>({
+      query: ({ trades }) => ({ url: '/trades/restore', method: 'POST', body: { tradeIds: trades.map((t) => t.id) } }),
+      async onQueryStarted({ trades }, { dispatch, getState, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // The list reads an eventually consistent index, so put the trades back by hand, then refresh later.
+          insertIntoScopeCaches(dispatch, getState, trades);
+          debouncedInvalidateStreamDeps(dispatch);
+        } catch {
+          // reported by the caller
+        }
+      },
+    }),
+
     bulkDeleteTrades: builder.mutation<any, { tradeIds: string[] }>({
       query: (payload) => ({
         url: '/trades/bulk-delete',
@@ -455,9 +556,9 @@ export const tradesApi = api.injectEndpoints({
         const idsSet = new Set(tradeIds);
 
         for (const entry of Object.values<any>(queries)) {
-          if (entry?.endpointName !== 'getTrades') continue;
+          if (!TRADE_LIST_ENDPOINTS.includes(entry?.endpointName)) continue;
           const patchResult = dispatch(
-            tradesApi.util.updateQueryData('getTrades', entry.originalArgs, (draft: Trade[]) => {
+            (tradesApi.util.updateQueryData as any)(entry.endpointName, entry.originalArgs, (draft: Trade[]) => {
               return draft.filter((t) => !idsSet.has(t.id));
             })
           );
@@ -478,6 +579,7 @@ export const tradesApi = api.injectEndpoints({
 
 export const {
   useGetTradesQuery,
+  useGetScopeTradesQuery,
   useLazyGetTradesQuery,
   useGetTradesPaginatedQuery,
   useLazyGetTradesPaginatedQuery,
@@ -486,4 +588,5 @@ export const {
   useDeleteTradeMutation,
   useBulkImportTradesMutation,
   useBulkDeleteTradesMutation,
+  useRestoreTradesMutation,
 } = tradesApi;

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import type { Trade } from '@/types/trade';
 import { deriveKey } from './crypto';
 import {
@@ -61,7 +62,7 @@ export async function syncTrades(
     const response = await apiClient.post('/trades/sync', {
       accountId, startDate, endDate, clientHashes,
     });
-    const { serverHashes, staleDays, trades: staleTrades } = response as SyncResponse;
+    const { serverHashes, staleDays, trades: staleTrades } = response as unknown as SyncResponse;
 
     if (staleDays.length > 0) {
       const grouped = groupByDate(staleTrades);

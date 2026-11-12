@@ -1,119 +1,70 @@
+/**
+ * Prerenders every public route listed in dist/_seo/routes.json (written by scripts/seo/manifest.ts from the
+ * route registry) into dist/<path>/index.html. The untouched SPA shell is kept as dist/_spa.html for /app/* and 404s.
+ */
 import { chromium } from 'playwright';
 import { preview } from 'vite';
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
-const ROUTES = [
-  '/',
-  '/about',
-  '/guide',
-  '/contact',
-  '/privacy',
-  '/terms',
-  '/refund',
-  '/login',
-  '/signup',
-  '/blog',
-  '/blog/how-to-keep-trading-journal',
-  '/blog/trading-journal-template',
-  '/blog/mistakes-new-traders-make',
-  '/blog/how-to-review-trades',
-  '/blog/getting-started-tradequt',
-  '/blog/win-rate-vs-profit-factor',
-  '/blog/risk-reward-ratio-guide',
-  '/blog/track-reduce-drawdown',
-  '/blog/trading-metrics-that-matter',
-  '/blog/build-trading-plan',
-  '/blog/trading-psychology-managing-emotions',
-  '/blog/why-trading-rules-matter',
-  '/blog/forex-trading-journal',
-  '/blog/day-trading-journal',
-  '/blog/prop-trading-challenges',
-  '/blog/trading-analytics-find-edge',
-  '/blog/importing-trades-from-broker',
-  '/glossary',
-  '/resources',
-  '/resources/position-size',
-  '/resources/risk-reward',
-  '/resources/pip-calculator',
-  '/case-studies',
-  '/case-studies/day-trader-win-rate',
-  '/case-studies/ftmo-challenge-journal',
-  '/case-studies/revenge-trading-to-discipline',
-  '/case-studies/multi-account-management',
-  '/case-studies/forex-session-edge',
-  '/changelog',
-];
-
+const SITE = 'https://tradequt.com';
+const CONCURRENCY = 4;
 const distDir = join(process.cwd(), 'dist');
+const { routes } = JSON.parse(readFileSync(join(distDir, '_seo', 'routes.json'), 'utf-8'));
+
+async function renderRoute(browser, base, path) {
+  const page = await browser.newPage();
+  try {
+    await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
+    const canonical = path === '/' ? SITE : `${SITE}${path}`;
+    // The route's own <SEO> must have run, not a previous route's or the shell's.
+    await page.waitForFunction(
+      (href) => document.querySelector('link[rel="canonical"]')?.getAttribute('href') === href,
+      canonical,
+      { timeout: 30000 },
+    );
+    return await page.content();
+  } finally {
+    await page.close();
+  }
+}
 
 async function prerender() {
   console.log('Starting pre-render...');
+  copyFileSync(join(distDir, 'index.html'), join(distDir, '_spa.html'));
 
-  // Preserve the original SPA shell — it's the fallback for all non-pre-rendered routes.
-  // Without this, /app/* routes flash the pre-rendered landing page before React hydrates.
-  const indexFile = join(distDir, 'index.html');
-  const spaShell = readFileSync(indexFile, 'utf-8');
-
-  // Pre-seed route directories with index.html so the preview server can serve them
-  for (const route of ROUTES) {
-    if (route === '/') continue;
-    const routeDir = join(distDir, route.slice(1));
-    if (!existsSync(routeDir)) {
-      mkdirSync(routeDir, { recursive: true });
-    }
-    const dest = join(routeDir, 'index.html');
-    if (!existsSync(dest)) {
-      writeFileSync(dest, readFileSync(indexFile, 'utf-8'), 'utf-8');
-    }
-  }
-
-  const server = await preview({
-    preview: { port: 4173, strictPort: false },
-  });
-
-  const address = server.resolvedUrls?.local?.[0] ?? 'http://localhost:4173';
-  console.log(`Preview server at ${address}`);
-
+  const server = await preview({ preview: { port: 4173, strictPort: false } });
+  const base = (server.resolvedUrls?.local?.[0] ?? 'http://localhost:4173').replace(/\/$/, '');
   const browser = await chromium.launch();
+  const results = new Map();
+  const queue = routes.map((r) => r.path);
 
-  for (const route of ROUTES) {
-    const page = await browser.newPage();
-    const url = `${address.replace(/\/$/, '')}${route}`;
-
-    await page.goto(url, { waitUntil: 'networkidle' });
-
-    // Wait for SEO component to set the robots meta tag (indicates page fully rendered)
-    await page.waitForFunction(
-      () => document.querySelector('meta[name="robots"]') !== null,
-      { timeout: 30000 }
-    );
-    await page.waitForTimeout(2000);
-
-    const html = await page.content();
-
-    if (route === '/') {
-      writeFileSync(join(distDir, 'index.html'), html, 'utf-8');
-    } else {
-      const routeDir = join(distDir, route.slice(1));
-      if (!existsSync(routeDir)) {
-        mkdirSync(routeDir, { recursive: true });
-      }
-      writeFileSync(join(routeDir, 'index.html'), html, 'utf-8');
+  async function worker() {
+    while (queue.length) {
+      const path = queue.shift();
+      results.set(path, await renderRoute(browser, base, path));
+      console.log(`  Pre-rendered ${path}`);
     }
-
-    console.log(`  Pre-rendered ${route}`);
-    await page.close();
   }
 
-  await browser.close();
-  server.httpServer.close();
+  try {
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  } finally {
+    await browser.close();
+    server.httpServer.close();
+  }
 
-  // Save the SPA shell as _spa.html — CloudFront error responses use this as the
-  // fallback for non-pre-rendered routes, preventing /app/* from flashing the landing page.
-  writeFileSync(join(distDir, '_spa.html'), spaShell, 'utf-8');
-
-  console.log(`\nPre-rendered ${ROUTES.length} routes.`);
+  // Written only after every route rendered: the preview server keeps serving the untouched shell meanwhile.
+  for (const [path, html] of results) {
+    if (path === '/') {
+      writeFileSync(join(distDir, 'index.html'), html, 'utf-8');
+      continue;
+    }
+    const dir = join(distDir, path.slice(1));
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'index.html'), html, 'utf-8');
+  }
+  console.log(`\nPre-rendered ${results.size} routes.`);
 }
 
 prerender().catch((err) => {

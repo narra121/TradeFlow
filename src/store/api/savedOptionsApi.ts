@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { api } from './baseApi';
 
 export interface SavedOptions {
@@ -9,6 +10,8 @@ export interface SavedOptions {
   symbols: string[];
   lessons: string[];
   timeframes: string[];
+  /** BE-E3: stored by the API since the options contract grew tags. */
+  tags: string[];
 }
 
 export const savedOptionsApi = api.injectEndpoints({

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { api } from './baseApi';
 import type { CreateAccountPayload } from '@/lib/api';
 import type { TradingAccount, AccountStatus } from '@/types/trade';

@@ -24,7 +24,7 @@ export function RelatedArticles({ articles, basePath = '/blog' }: RelatedArticle
           <Link
             key={article.slug}
             to={`${basePath}/${article.slug}`}
-            className="group bg-card rounded-xl border border-border/50 p-5 hover:border-primary/30 transition-colors"
+            className="group bg-card rounded-lg border border-border/50 p-5 hover:border-primary/30 transition-colors"
           >
             <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
               {article.title}

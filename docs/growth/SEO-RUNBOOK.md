@@ -1,0 +1,133 @@
+# SEO runbook
+
+How the public site is served, indexed and kept honest. Owner of the process: whoever runs the monthly checklist.
+
+## 1. How a public page reaches a visitor
+
+```
+src/content/route-registry.ts  (the one list of public routes; lastmod comes from content)
+   |-- scripts/seo/manifest.ts      -> dist/_seo/routes.json
+   |-- scripts/prerender-routes.js  -> dist/<path>/index.html   (Playwright; waits for the page's own canonical)
+   |-- scripts/seo/postbuild.ts     -> sitemap.xml, llms.txt, llms-full.txt, then verify-dist
+   |-- scripts/seo/cf-router.ts     -> infra/cloudfront/router.js (CloudFront Function, generated)
+```
+
+- `bun run build` runs all of it; `bun run build:dev` does the same with `noindex` on every page.
+- `verify-dist` fails the build if any registered route lacks its own prerendered HTML, a unique `<title>`, a self-canonical,
+  a meta description, parseable JSON-LD, or the right robots value. Fix the page, never the check.
+- CloudFront Function (viewer-request): `www` redirects to the apex; `/path` serves `/path/index.html`; `/app/*` and `/auth/*`
+  serve `/_spa.html` (the SPA shell, status 200); `/x/index.html` and trailing slashes redirect (301) to the clean path.
+  Viewer-response: hosts other than `tradequt.com` get `x-robots-tag: noindex, nofollow`.
+- Origin failures (500, 502, 503, 504): CloudFront returns `/error.html` (static, inline CSS, brand mark) with the original
+  status code. `public/maintenance.html` is the full-page maintenance screen; to use it, copy it over `index.html` on the
+  bucket (and invalidate) only while the API is switched off, then redeploy to restore.
+- Missing objects: the S3 origin answers 403/404, and CloudFront returns `/_spa.html` with status **404**, so unknown URLs are
+  real 404s for crawlers and the React `NotFound` page for people.
+- `infra/cloudfront/router.js` is generated. Change `SPA_PREFIXES` or hosts in `route-registry.ts`, run
+  `bun scripts/seo/cf-router.ts --write`, and the unit test then passes. New posts need no function change.
+
+## 2. Add a page or an article
+
+Article (see `ARTICLE-TEMPLATE.md`): add `src/content/blog/<slug>.tsx`, add its entry to `BLOG_ARTICLES`
+(title, description <= 200 chars, tags, `summary`, `faq`, optional `howTo`), run `bun run test` and `bun run build`.
+Stand-alone page (pricing, comparison, landing for a topic): add an entry to `SEO_PAGES` in `src/content/seo-pages.ts`, a
+component in `src/pages/seo/`, and its loader in `SEO_PAGE_LOADERS` in `src/content/routes.ts` (a test fails if the two
+lists differ). Utility pages that must not be indexed (`/goodbye`, `/status`) go in `UTILITY_PAGE_LOADERS` and in the
+registry with `noindex: true`.
+
+Rules: one `h1`; the short answer first; every number linked to a primary source with the date checked; no performance claims;
+product claims only from `src/content/product-facts.ts`.
+
+## 3. Deploy and verify
+
+1. `bun run build` (production) must end with `verify-dist OK`.
+2. Deploy `dist/` to the bucket (the deploy workflows do this), then invalidate CloudFront. A new environment needs the CloudFront Function applied **after** this step (section 4).
+3. Check three URLs: a new article returns 200 with its own title; `/definitely-missing` returns 404; `/app/dashboard` returns 200.
+4. In Search Console, request indexing for new URLs the first time; the sitemap is read automatically.
+5. Production only: the IndexNow ping step in `deploy-prod.yml` submits URLs changed in the last 14 days to Bing.
+
+## 4. CloudFront Function: apply and revert
+
+**Order: deploy `dist/` to the bucket, then apply, then verify.** The associated error responses send every unknown or
+missing path (403/404) to `/_spa.html` and every origin failure (5xx) to `/error.html`. If the bucket does not hold those
+files yet (a first deploy, or an environment that never received this build), every `/app/*` URL and Google's
+`/auth/callback` would break the moment the distribution updates. The script therefore checks first.
+
+```
+node scripts/infra/cf-router.mjs --env dev                    # dry run: the plan, plus the bucket preflight (reads only)
+node scripts/infra/cf-router.mjs --env dev --apply            # preflight, backup, test, publish, associate, wait, verify
+node scripts/infra/cf-router.mjs --env dev --revert <backup>  # restore the saved config, delete the function
+node scripts/infra/cf-router.mjs --env prod --apply --confirm-prod   # owner only, after dev passes and dist/ is deployed
+```
+
+What `--apply` does, in order:
+
+1. **Preflight**: `head-object` on the target bucket for `_spa.html`, `error.html` and one prerendered article
+   (`blog/how-to-keep-trading-journal/index.html`, override with `--probe-slug`). If any is missing it stops before any write and
+   prints `Deploy dist/ first, then apply, then verify`.
+2. **Backup** of the whole distribution config to `infra/cloudfront/backups/` (git-ignored; keep a copy elsewhere).
+3. **Function tests**: eight `test-function` cases (root, article, `/app/*`, `/auth/callback`, trailing slash, assets, `www`
+   redirect, `noindex` off the canonical host) against the DEVELOPMENT stage; nothing is associated if one fails.
+4. Publish, associate (viewer-request and viewer-response), set the error responses, wait for the deployment.
+5. **Verify** against the live site: own pages, a real 404, `/app/dashboard` and `/auth/callback` answer 200 with the shell,
+   `/blog/` redirects, dev sends `noindex`.
+6. **Automatic revert**: if verify fails, the saved config is restored (and the function deleted) and the command exits
+   non-zero. If that revert also fails, the message names the exact `--revert "<backup>"` command to run by hand.
+
+The logic lives in `scripts/infra/cf-router-lib.mjs` with every side effect injected; `src/content/__tests__/cf-router-apply.test.ts`
+runs it against a mocked S3 and CloudFront (using the real `router.js`), including the refusal when an object is missing and
+the automatic revert.
+
+## 5. Search Console, Bing and IndexNow (owner accounts)
+
+- Google Search Console: add the `tradequt.com` Domain property with the DNS TXT record, submit
+  `https://tradequt.com/sitemap.xml`. Optional: set `VITE_GSC_VERIFICATION` for the HTML-tag method.
+- Bing Webmaster Tools: import from Search Console or add the site; `VITE_BING_VERIFICATION` renders the verification tag.
+- IndexNow: the key file lives in `public/<key>.txt`; `scripts/seo/indexnow.mjs --since-days 14` pings changed URLs.
+- Analytics: set `VITE_GA_MEASUREMENT_ID` (empty = analytics off). Consent defaults to denied in EEA, UK and Switzerland.
+- Ads are off at launch; they load only when `VITE_ADS_ENABLED=true` and never inside `/app`.
+
+## 5a. Status and incidents
+
+`/status` renders `public/status.json` (`updated`, `status` = operational | degraded | outage | maintenance, `message`,
+`incidents[]`). To announce an incident, edit that file, deploy (or upload just that file), and invalidate `/status.json`.
+The shape is deliberately small; align it with the in-app incident bar when that spec lands.
+
+## 5b. Fonts, audit and budgets
+
+- Fonts: DM Sans (400-700) and JetBrains Mono (400-500) are self-hosted in `public/fonts/` (woff2, latin plus latin-ext,
+  `font-display: swap`, two preloads in `index.html`). To change a font, download the subset, slim it with
+  `fontTools.varLib.instancer` (pin `opsz`, limit `wght`), keep the total under 120 kB and 4 files; `public-assets.test.ts` checks it.
+- Audit: `node scripts/seo/audit-public.mjs --out <dir>` after a build checks every public route at 1280 and 375 px for console
+  errors, overflow, one `h1`, names and labels, text and target sizes, no blur or gradient, radii in {0, 2, 4, 6}, at most 6
+  type sizes, focus never entirely under the sticky header, and a forced-colors smoke test (CI job `public-site`).
+- Budgets: `node scripts/perf/budget.mjs` measures gzip JS and CSS, fonts, LCP and CLS on four public routes against the
+  targets in `scripts/perf/budgets.json`. The baseline is a ratchet: a metric may not get worse than its baseline; lower the
+  baseline with `--record-baseline` after an improvement. Reports are written to `--out`.
+- Import template: `public/import-template.csv` (three sample rows) is the file users download on the Import page; it parses
+  through the backend's generic importer ("Other broker").
+
+## 6. Entity consistency (for AI assistants)
+
+Use the one definition sentence from `product-facts.ts` on the pricing page, the home JSON-LD, `llms.txt` and the About page.
+`llms.txt` and `llms-full.txt` are generated at build; if a price, limit or broker list changes, change `product-facts.ts` only.
+Do not add ratings, reviews, user counts or testimonials anywhere (no real ones exist; fabricating them breaks advertising
+rules and Google policy).
+
+## 7. India notes for content
+
+- Never state tax or legal conclusions; link to the primary source and suggest a chartered accountant.
+- Forex and prop-firm pages: RBI publishes an Alert List of unauthorised forex platforms and residents trading forex on
+  unauthorised platforms can face FEMA action. Check RBI's current list before writing, say TradeQut recommends no firm,
+  and keep the framing educational.
+- Charges and STT change by budget and exchange circulars: re-read the broker's charges page and cite its date.
+
+## 8. Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Build fails with `title duplicates ...` | two pages share a title | give each its own title in the registry/page |
+| Prerender times out on one route | the route is missing from `App.tsx` (it renders NotFound) or throws | add the route (`CONTENT_ROUTES` for SEO pages); check the page in `vite preview` |
+| `cf-router.test` fails | `route-registry.ts` changed | `bun scripts/seo/cf-router.ts --write` |
+| Dev page serves the home page | the function is not associated or the bucket is stale | re-run `--apply`; deploy the new `dist/` |
+| Page not indexed after weeks | thin or duplicate content, or blocked | Search Console URL Inspection; improve the page; check `robots` and canonical |

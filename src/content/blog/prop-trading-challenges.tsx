@@ -16,7 +16,7 @@ export default function PropTradingChallenges() {
         the account) within 30 days. Phase 2 has a smaller target (usually 5%) within 60 days. Both phases enforce
         strict drawdown limits. Some firms offer one-phase evaluations or instant funding options, but the core
         mechanic is always the same: prove you can trade profitably with disciplined{' '}
-        <Link to="/glossary#risk-management" className="text-primary hover:text-primary/80">risk management</Link>.
+        <Link to="/glossary#position-sizing" className="text-primary hover:text-primary/80">risk management</Link>.
       </p>
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">The Two Rules That Matter Most</h2>
@@ -43,12 +43,11 @@ export default function PropTradingChallenges() {
         buffer.
       </p>
 
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Why Most Traders Fail</h2>
+      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Why traders fail challenges</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        Industry estimates suggest that 85 to 95 percent of traders fail prop firm challenges. The failure rate is
-        not because the profit targets are unreasonable. An 8% gain in 30 days is achievable with moderate skill.
-        Traders fail because they violate the drawdown rules, usually by oversizing positions in an attempt to reach
-        the profit target quickly.
+        Pass rates differ by firm and are rarely published in full, so check a firm&apos;s own statistics instead of
+        relying on a number from an article. A common reason for failing is breaking the drawdown rules, often by
+        oversizing positions in an attempt to reach the profit target quickly.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         The psychological trap is that the challenge fee creates urgency. A trader who paid $500 for a $100,000

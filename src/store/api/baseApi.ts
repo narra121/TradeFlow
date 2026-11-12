@@ -1,13 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { refreshToken } from '@/lib/api/tokenRefresh';
-
-// API Base URL from environment variable with fallback logic
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.MODE === 'production' 
-    ? 'https://b5b3vlqqd0.execute-api.us-east-1.amazonaws.com/tradequt-prod/v1'
-    : 'https://wastpecoi2.execute-api.us-east-1.amazonaws.com/tradequt-dev/v1'
-  );
+import { API_BASE_URL } from '@/lib/api/config';
+import { classifyPlanError, emitPlanSignal } from '@/lib/planErrors';
 
 // Track if we're currently refreshing the token
 let isRefreshing = false;
@@ -158,18 +154,10 @@ const baseQueryWithReauth: BaseQueryFn<
       }
     }
 
-    // Check for subscription-required 403
     const httpStatus = getHttpStatus(r);
-    if (httpStatus === 403 && r.error) {
-      const errData: any = (r.error as any)?.data;
-      const errorCode = errData?.errorCode || errData?.error?.code;
-      if (errorCode === 'SUBSCRIPTION_REQUIRED') {
-        const reason = errData?.error?.details?.reason || 'subscription_ended';
-        const message = errData?.message || 'Please subscribe to continue using TradeQut.';
-        window.dispatchEvent(new CustomEvent('subscription-required', {
-          detail: { reason, message },
-        }));
-      }
+    if (httpStatus === 402 && r.error) {
+      const signal = classifyPlanError(402, (r.error as { data?: unknown }).data, api.type === 'query' ? 'query' : 'mutation');
+      if (signal) emitPlanSignal(signal);
     }
 
     return r;
