@@ -63,7 +63,7 @@ describe('UpgradeDialog', () => {
     setup();
     act(() => emitPlanSignal({ code: 'QUOTA_EXCEEDED', feature: 'ai_extract', limit: 5, resetsAt: '2026-12-01T00:00:00Z', message: 'x', kind: 'mutation' }));
     expect(await screen.findByText('You have used 5 of 5 AI extractions this month')).toBeInTheDocument();
-    expect(screen.getByText('Pro is $79.00 a year.')).toBeInTheDocument();
+    expect(screen.getByText('Pro is $49.99 a year.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Not now' })).toBeInTheDocument();
   });
 

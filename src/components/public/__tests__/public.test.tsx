@@ -38,12 +38,12 @@ describe('PricingTable', () => {
     expect(monthly).toBeChecked();
     expect(monthly.closest('label')?.className).toContain('bg-secondary');
     expect(monthly.closest('label')?.className).not.toContain('bg-primary');
-    expect(screen.getByText('$9.99')).toBeInTheDocument();
+    expect(screen.getByText('$4.99')).toBeInTheDocument();
     await user.click(yearly);
     expect(yearly).toBeChecked();
-    expect(screen.getByText('$79')).toBeInTheDocument();
+    expect(screen.getByText('$49.99')).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'INR' }));
-    expect(screen.getByText('₹1,499')).toBeInTheDocument();
+    expect(screen.getByText('₹4,999')).toBeInTheDocument();
     expect(screen.getByText('₹0')).toBeInTheDocument();
   });
 

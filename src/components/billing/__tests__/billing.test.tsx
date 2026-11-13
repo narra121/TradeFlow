@@ -122,9 +122,9 @@ describe('plan row (sidebar footer)', () => {
 });
 
 describe('yearlySavingPercent', () => {
-  it('is 34 % in USD and 37 % in INR (CONTRACT §4)', () => {
-    expect(yearlySavingPercent('USD')).toBe(34);
-    expect(yearlySavingPercent('INR')).toBe(37);
+  it('is 17 % in USD and in INR (CONTRACT §4)', () => {
+    expect(yearlySavingPercent('USD')).toBe(17);
+    expect(yearlySavingPercent('INR')).toBe(17);
   });
 });
 
@@ -140,7 +140,7 @@ describe('BillingView', () => {
     expect(screen.getByRole('region', { name: /Usage this month/ })).toBeInTheDocument();
     const table = screen.getByRole('table', { name: 'Free and Pro compared' });
     expect(within(table).getByText('After your trial')).toBeInTheDocument();
-    expect(within(table).getByText('$79.00 a year')).toBeInTheDocument();
+    expect(within(table).getByText('$49.99 a year')).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: 'Upgrade to Pro' })[0]);
     expect(checkout).toHaveBeenCalledWith({ interval: 'year' });
     await vi.waitFor(() => expect(assign).toHaveBeenCalledWith('https://checkout.stripe.test/cs_test_1'));
@@ -150,7 +150,7 @@ describe('BillingView', () => {
     response = base();
     wrap();
     await userEvent.click(screen.getByRole('radio', { name: /Monthly/ }));
-    expect(within(screen.getByRole('table')).getByText('$9.99 a month')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('$4.99 a month')).toBeInTheDocument();
     expect(localStorage.getItem('tq.billing.interval')).toBe('month');
   });
 
@@ -158,14 +158,14 @@ describe('BillingView', () => {
     response = base();
     wrap();
     const row = within(screen.getByRole('table')).getByRole('row', { name: /^Price/ });
-    expect(row.textContent).toMatch(/^Price\$0\$79/);
+    expect(row.textContent).toMatch(/^Price\$0\$49\.99/);
     expect(screen.getByText('AI reports')).toBeInTheDocument();
   });
 
   it('shows INR prices for an INR billing currency', () => {
     response = base({}, {}, { billingCurrency: 'INR' });
     wrap();
-    expect(within(screen.getByRole('table')).getByText('₹1,499.00 a year')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('₹4,999.00 a year')).toBeInTheDocument();
   });
 
   it('an inline error replaces a failed checkout, never a toast', async () => {

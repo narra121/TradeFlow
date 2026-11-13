@@ -17,7 +17,7 @@ export interface PlanFacts {
   trialEndsAt?: string;
   trialEndedAt?: string;
   interval?: 'month' | 'year';
-  /** Major units (79 = $79). */
+  /** Major units (49.99 = $49.99). */
   amount?: number;
   currency?: string;
   renewsAt?: string;

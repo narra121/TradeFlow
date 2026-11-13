@@ -68,11 +68,11 @@ describe('LandingPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<LandingPage />);
     const pricing = screen.getByRole('region', { name: 'Pricing' });
-    expect(within(pricing).getByText('$9.99')).toBeInTheDocument();
+    expect(within(pricing).getByText('$4.99')).toBeInTheDocument();
     await user.click(within(pricing).getByRole('radio', { name: 'INR' }));
-    expect(within(pricing).getByText('₹199')).toBeInTheDocument();
+    expect(within(pricing).getByText('₹499')).toBeInTheDocument();
     await user.click(within(pricing).getByRole('radio', { name: 'Yearly' }));
-    expect(within(pricing).getByText('₹1,499')).toBeInTheDocument();
+    expect(within(pricing).getByText('₹4,999')).toBeInTheDocument();
   });
 
   it('renders every product FAQ question visibly', () => {

@@ -45,15 +45,16 @@ export interface PlanPrice {
   currency: Currency;
   interval: Interval;
   amount: number;
-  /** Display string, e.g. "$9.99" or "₹1,499". */
+  /** Display string, e.g. "$4.99" or "₹4,999". */
   display: string;
 }
 
+/** Must match the live Stripe prices (JournalAWSSetup scripts/stripe/lib.mjs PRICES) and get-subscription-plans PLAN_CONFIG. */
 export const PRO_PRICES: PlanPrice[] = [
-  { currency: 'USD', interval: 'month', amount: 9.99, display: '$9.99' },
-  { currency: 'USD', interval: 'year', amount: 79, display: '$79' },
-  { currency: 'INR', interval: 'month', amount: 199, display: '₹199' },
-  { currency: 'INR', interval: 'year', amount: 1499, display: '₹1,499' },
+  { currency: 'USD', interval: 'month', amount: 4.99, display: '$4.99' },
+  { currency: 'USD', interval: 'year', amount: 49.99, display: '$49.99' },
+  { currency: 'INR', interval: 'month', amount: 499, display: '₹499' },
+  { currency: 'INR', interval: 'year', amount: 4999, display: '₹4,999' },
 ];
 
 export function proPrice(currency: Currency, interval: Interval): PlanPrice {

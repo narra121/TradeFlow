@@ -42,9 +42,9 @@ test.describe('Landing page', () => {
   test('shows the Free vs Pro table with a working currency toggle', async ({ page }) => {
     await page.goto('/');
     const pricing = page.getByRole('region', { name: 'Pricing' });
-    await expect(pricing.getByText('$9.99')).toBeVisible();
+    await expect(pricing.getByText('$4.99')).toBeVisible();
     await pricing.getByRole('radio', { name: 'INR' }).check({ force: true });
-    await expect(pricing.getByText('₹199')).toBeVisible();
+    await expect(pricing.getByText('₹499')).toBeVisible();
   });
 
   test('the product tour tabs are keyboard operable and labelled as sample data', async ({ page }) => {

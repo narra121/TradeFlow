@@ -93,7 +93,7 @@ export const COMPETITORS: Competitor[] = [
       {
         question: 'What does TraderSync cost?',
         answer:
-          "TraderSync's own pricing page could not be read automatically on 12 November 2026. A third-party guide updated in September 2026 lists $29.95, $49.95 and $79.95 a month for its three plans; check tradersync.com/pricing for the current figures. TradeQut Pro is $9.99/month or $79/year, with a Free plan.",
+          `TraderSync's own pricing page could not be read automatically on 12 November 2026. A third-party guide updated in September 2026 lists $29.95, $49.95 and $79.95 a month for its three plans; check tradersync.com/pricing for the current figures. TradeQut Pro is ${usdMonth}/month or ${usdYear}/year, with a Free plan.`,
       },
     ],
   },

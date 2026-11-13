@@ -104,10 +104,10 @@ describe('comparison pages', () => {
 
 describe('product facts', () => {
   it('match the monetization contract', () => {
-    expect(proPrice('USD', 'month').amount).toBe(9.99);
-    expect(proPrice('USD', 'year').amount).toBe(79);
-    expect(proPrice('INR', 'month').amount).toBe(199);
-    expect(proPrice('INR', 'year').amount).toBe(1499);
+    expect(proPrice('USD', 'month').amount).toBe(4.99);
+    expect(proPrice('USD', 'year').amount).toBe(49.99);
+    expect(proPrice('INR', 'month').amount).toBe(499);
+    expect(proPrice('INR', 'year').amount).toBe(4999);
     expect(PRO_PRICES).toHaveLength(4);
   });
 

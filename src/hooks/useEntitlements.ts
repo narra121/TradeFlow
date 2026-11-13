@@ -6,7 +6,7 @@ import type { Entitlements, GatedFeature, PlanName, QuotaFeature } from '@/types
 export interface BillingFacts {
   status?: 'free' | 'trialing' | 'active' | 'past_due' | 'canceling';
   interval?: 'month' | 'year';
-  /** Major units (79 = $79). */
+  /** Major units (49.99 = $49.99). */
   amount?: number;
   currency?: string;
   renewsAt?: string;
