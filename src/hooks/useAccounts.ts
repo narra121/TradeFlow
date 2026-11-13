@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { TradingAccount, AccountStatus, AccountType } from '@/types/trade';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSelectedAccount as setSelectedAccountAction } from '@/store/slices/accountsSlice';
@@ -7,7 +6,7 @@ import { useGetAccountsQuery, useCreateAccountMutation, useUpdateAccountMutation
 export function useAccounts() {
   const dispatch = useAppDispatch();
   const selectedAccountId = useAppSelector((state) => state.accounts.selectedAccountId);
-  const { data: accountsData, isLoading: loading, isError, refetch } = useGetAccountsQuery();
+  const { data: accountsData, isLoading: loading, isError, error, refetch } = useGetAccountsQuery();
   const [createAccountMutation] = useCreateAccountMutation();
   const [updateAccountMutation] = useUpdateAccountMutation();
   const [deleteAccountMutation] = useDeleteAccountMutation();
@@ -42,6 +41,7 @@ export function useAccounts() {
     accounts,
     isLoading: loading,
     isError,
+    error,
     refetch,
     selectedAccountId,
     selectedAccount,

@@ -101,18 +101,23 @@ async function mockApi(page: Page, calls: ApiCall[]) {
     if (path === '/goals') return json(ok({ goals: [] }));
     if (path.startsWith('/rules-goals')) return json(ok({ rules: [], goals: [] }));
     if (path.startsWith('/user/profile')) return json(ok({ user: { id: 'test-user-id-123', name: 'Test User', email: 'test@example.com' } }));
-    if (path.startsWith('/auth/refresh')) return json(ok({ IdToken: createFakeJWT() }));
     return json(ok({}));
   });
 }
 
-/** Signs in by seeding the tokens before any page script runs. */
+/**
+ * Signs in by seeding the session Amplify Auth keeps in localStorage before any page script runs. The client id is the
+ * fake one playwright.config.ts passes to the dev server; an unexpired token is used as it is, with no call to Cognito.
+ */
 async function signIn(page: Page) {
   const token = createFakeJWT();
   await page.addInitScript((t) => {
-    localStorage.setItem('idToken', t);
-    localStorage.setItem('accessToken', t);
-    localStorage.setItem('refreshToken', 'fake-refresh-token');
+    const prefix = 'CognitoIdentityServiceProvider.e2eclientid';
+    localStorage.setItem(`${prefix}.LastAuthUser`, 'test-user-id-123');
+    localStorage.setItem(`${prefix}.test-user-id-123.idToken`, t);
+    localStorage.setItem(`${prefix}.test-user-id-123.accessToken`, t);
+    localStorage.setItem(`${prefix}.test-user-id-123.refreshToken`, 'fake-refresh-token');
+    localStorage.setItem(`${prefix}.test-user-id-123.clockDrift`, '0');
   }, token);
 }
 

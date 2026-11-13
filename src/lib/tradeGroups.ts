@@ -1,7 +1,7 @@
 import { format, startOfWeek } from 'date-fns';
 import { realisedR } from '@/lib/tradeFilters';
 import { tradeDayKey } from '@/lib/calendar';
-import { parseLocalDate } from '@/lib/format';
+import { accountCurrency, formatDateShort, parseLocalDate } from '@/lib/format';
 import type { Trade, TradingAccount } from '@/types/trade';
 
 export type GroupBy = 'none' | 'day' | 'week' | 'month' | 'symbol' | 'side' | 'account' | 'asset' | 'outcome' | 'strategy' | 'session' | 'market';
@@ -40,15 +40,19 @@ function keyOf(t: Trade, by: GroupBy, accounts: Map<string, TradingAccount>): { 
   switch (by) {
     case 'day': {
       const k = tradeDayKey(t);
-      return { key: k, label: k ? format(parseLocalDate(k), 'EEE d MMM yyyy') : 'No date' };
+      return { key: k, label: k ? `${format(parseLocalDate(k), 'EEE')} ${formatDateShort(k, true)}` : 'No date' };
     }
+    // Week and month follow the trade's day in the app time zone, like the day group.
     case 'week': {
-      const w = startOfWeek(new Date(t.exitDate || t.entryDate), { weekStartsOn: 1 });
-      return { key: format(w, 'yyyy-MM-dd'), label: `Week of ${format(w, 'd MMM yyyy')}` };
+      const day = tradeDayKey(t);
+      if (!day) return { key: '', label: 'No date' };
+      const w = startOfWeek(parseLocalDate(day), { weekStartsOn: 1 });
+      return { key: format(w, 'yyyy-MM-dd'), label: `Week of ${formatDateShort(w, true)}` };
     }
     case 'month': {
-      const d = new Date(t.exitDate || t.entryDate);
-      return { key: format(d, 'yyyy-MM'), label: format(d, 'MMMM yyyy') };
+      const day = tradeDayKey(t);
+      if (!day) return { key: '', label: 'No date' };
+      return { key: day.slice(0, 7), label: format(parseLocalDate(day), 'MMMM yyyy') };
     }
     case 'symbol':
       return { key: t.symbol, label: t.symbol };
@@ -92,8 +96,9 @@ export function groupTrades(trades: Trade[], by: GroupBy, accounts: Map<string, 
     g.trades.push(t);
     if (t.pnl > 0) g.wins += 1;
     else if (t.pnl < 0) g.losses += 1;
-    const cur = (t.accountId && accounts.get(t.accountId)?.currency) || null;
-    if (cur) {
+    const account = t.accountId ? accounts.get(t.accountId) : undefined;
+    if (account) {
+      const cur = accountCurrency(account);
       const row = g.net.find((n) => n.currency === cur);
       if (row) row.value += t.pnl;
       else g.net.push({ currency: cur, value: t.pnl });

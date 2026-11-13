@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useExportMyDataMutation } from '@/store/api/profileApi';
+import { readApiError } from '@/lib/apiError';
+import { dayKeyIn } from '@/lib/appTimeZone';
 
 export type ExportState =
   | { status: 'idle' }
@@ -14,7 +16,8 @@ export function formatFileSize(bytes: number): string {
 }
 
 export function exportFileName(exportedAt: string | undefined, now = new Date()): string {
-  const date = exportedAt && /^\d{4}-\d{2}-\d{2}/.test(exportedAt) ? exportedAt.slice(0, 10) : now.toISOString().slice(0, 10);
+  const at = exportedAt && /^\d{4}-\d{2}-\d{2}/.test(exportedAt) ? new Date(exportedAt) : now;
+  const date = dayKeyIn(Number.isNaN(at.getTime()) ? now : at);
   return `tradequt-export-${date}.json`;
 }
 
@@ -49,9 +52,9 @@ export function useDataExport() {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       urlRef.current = URL.createObjectURL(blob);
       setState({ status: 'ready', url: urlRef.current, fileName: exportFileName(data.exportedAt), size: formatFileSize(blob.size) });
-    } catch {
+    } catch (err) {
       if (cancelled.current) return;
-      setState({ status: 'error', message: "Couldn't prepare your export. Check your connection and try again." });
+      setState({ status: 'error', message: readApiError(err, "Couldn't prepare your export.").message });
     } finally {
       pending.current = null;
     }

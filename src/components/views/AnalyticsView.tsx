@@ -48,7 +48,7 @@ export function AnalyticsView() {
   const filters = useAppSelector((s) => s.trades.filters);
   const trade = useTradeParam();
   const ent = useEntitlements();
-  const { accounts, selectedAccountId, accountsLoading } = useScopeCapital();
+  const { accounts, selectedAccountId, accountsLoading, drawdownBasis } = useScopeCapital();
   const selectedCurrency = accounts.find((a) => a.id === selectedAccountId)?.currency;
 
   const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'overview') as TabId;
@@ -95,7 +95,7 @@ export function AnalyticsView() {
     </>
   );
   if (!accountsLoading && accounts.length === 0) return <EmptyState title={`Add at least ${MIN_TRADES} trades to see analytics.`} action={noTradesCta} />;
-  if (ps.isError) return <ErrorState title="Couldn't load this tab." description="The other tabs keep working." onRetry={ps.refetch} />;
+  if (ps.isError) return <ErrorState title="Couldn't load this tab." description="The other tabs keep working." error={ps.error} onRetry={ps.refetch} />;
   if (ps.isLoading || !ps.stats || ent.isLoading) {
     return (
       <div className="space-y-4" aria-busy="true" aria-label="Loading analytics">
@@ -119,7 +119,7 @@ export function AnalyticsView() {
     );
   }
 
-  const ctx: AnalyticsContext = { stats: view.stats ?? ps.stats, prev: view.prev, prevRange: ps.prevRange, currency, multi: view.currencies.length > 1, zone: (ps.stats.timeZone as string | undefined) ?? 'UTC', pro };
+  const ctx: AnalyticsContext = { stats: view.stats ?? ps.stats, prev: view.prev, prevRange: ps.prevRange, currency, multi: view.currencies.length > 1, noBalance: drawdownBasis === 'balance', zone: (ps.stats.timeZone as string | undefined) ?? 'UTC', pro };
 
   return (
     <div className="space-y-4">

@@ -9,6 +9,7 @@ export interface EnhanceTextResponse {
 }
 
 export const textApi = api.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     enhanceText: builder.mutation<EnhanceTextResponse, EnhanceTextRequest>({
       query: (body) => ({

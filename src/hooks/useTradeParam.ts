@@ -31,7 +31,8 @@ const PANE_KEYS = ['trade', 'edit', 'pane', 'date', 'from', 'ids'];
  * pane was opened in this session, otherwise replace without the parameters.
  */
 export function useTradeParam(): TradeParam {
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -39,7 +40,8 @@ export function useTradeParam(): TradeParam {
   const idsParam = params.get('ids');
   const ids = useMemo(() => (idsParam ? idsParam.split(',').filter(Boolean) : null), [idsParam]);
   const mode: PaneMode = !trade ? 'closed' : trade === 'new' ? 'new' : params.get('edit') === '1' ? 'edit' : 'view';
-  const state = (location.state ?? {}) as { tqPane?: boolean; tqEdit?: boolean };
+  // The router keeps one state object per history entry; `?? {}` would make a new one on every render and invalidate every memo below.
+  const state = useMemo(() => (location.state ?? {}) as { tqPane?: boolean; tqEdit?: boolean }, [location.state]);
 
   const write = useCallback(
     (mutate: (p: URLSearchParams) => void, replace: boolean, markPane = false, extra: Record<string, unknown> = {}) => {

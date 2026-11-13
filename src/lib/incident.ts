@@ -14,13 +14,16 @@ const LEVELS: readonly string[] = ['investigating', 'identified', 'monitoring', 
 
 export const STATUS_URL = '/status.json';
 
+/** Only http(s) and same-site paths (`/x`, not `//host`) may reach an `href`: a `javascript:` link in the status file would run on click. */
+const safeLink = (v: string | undefined) => (v && /^(https?:\/\/|\/(?!\/))/i.test(v) ? v : undefined);
+
 /** `{}` (or anything malformed) means nothing to show. */
 export function parseIncident(raw: unknown): Incident | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   if (typeof r.id !== 'string' || !r.id || typeof r.message !== 'string' || !r.message || typeof r.level !== 'string' || !LEVELS.includes(r.level)) return null;
   const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
-  return { id: r.id, level: r.level as IncidentLevel, message: r.message, link: str(r.link), from: str(r.from), until: str(r.until) };
+  return { id: r.id, level: r.level as IncidentLevel, message: r.message, link: safeLink(str(r.link)), from: str(r.from), until: str(r.until) };
 }
 
 /** Inside its `from`/`until` window and not dismissed for this `id`. */

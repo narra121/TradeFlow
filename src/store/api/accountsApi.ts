@@ -19,6 +19,7 @@ const normalizeAccount = (account: any): TradingAccount => {
 };
 
 export const accountsApi = api.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     getAccounts: builder.query<AccountsResponse, void>({
       query: () => '/accounts',
@@ -31,14 +32,6 @@ export const accountsApi = api.injectEndpoints({
           accounts,
         };
 
-        if (response?._apiMessage) {
-             Object.defineProperty(result, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return result;
       },
       providesTags: (result) =>
@@ -58,14 +51,6 @@ export const accountsApi = api.injectEndpoints({
       }),
       transformResponse: (response: any) => {
         const account = normalizeAccount(response?.account);
-        if (response?._apiMessage) {
-             Object.defineProperty(account, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return account;
       },
       invalidatesTags: [{ type: 'Accounts', id: 'LIST' }],
@@ -95,14 +80,6 @@ export const accountsApi = api.injectEndpoints({
       }),
       transformResponse: (response: any) => {
         const account = normalizeAccount(response?.account);
-        if (response?._apiMessage) {
-             Object.defineProperty(account, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return account;
       },
       invalidatesTags: [], // Don't invalidate, use manual cache update
@@ -133,14 +110,6 @@ export const accountsApi = api.injectEndpoints({
       }),
       transformResponse: (response: any) => {
         const account = normalizeAccount(response?.account);
-        if (response?._apiMessage) {
-             Object.defineProperty(account, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return account;
       },
       invalidatesTags: [], // Don't invalidate, use manual cache update
@@ -177,14 +146,6 @@ export const accountsApi = api.injectEndpoints({
             rulesDeleted: response.rulesDeleted || 0,
         };
 
-        if (response?._apiMessage) {
-             Object.defineProperty(result, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return result;
       },
       invalidatesTags: ['Stats', 'Trades', 'Goals', 'Rules'], // Invalidate related data

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
-import { SAMPLE_DAYS, SAMPLE_RECENT, SAMPLE_WINS } from '@/components/public/tourFixture';
+import { SAMPLE_DAYS, SAMPLE_RECENT, SAMPLE_TRADES, SAMPLE_WINS } from '@/components/public/tourFixture';
 import { DashboardWindow } from '../DashboardWindow';
 import { SampleDataChip } from '../SampleDataChip';
 import { HEADLINE, HEADLINE_PARTS } from '../copy';
@@ -12,8 +12,8 @@ describe('sample journal figures (computed from the one fixture)', () => {
     expect(money(s.net)).toBe('+$370.50');
     expect(s.trades).toBe(29);
     expect(s.days).toBe(11);
-    expect(s.winRate.toFixed(1)).toBe('62.1');
-    expect(`${s.wins} W · ${s.losses} L`).toBe('18 W · 11 L');
+    expect(s.winRate.toFixed(1)).toBe('58.6');
+    expect(`${s.wins} W · ${s.losses} L`).toBe('17 W · 12 L');
     expect(money(s.bestDay.pnl)).toBe('+$140.00');
     expect(s.bestDay.day).toBe(9);
     expect(money(s.brokenRules)).toBe('−$118.25');
@@ -29,11 +29,24 @@ describe('sample journal figures (computed from the one fixture)', () => {
   it('keeps the fixture consistent: wins per day, recent trades summing to their day', () => {
     expect(SAMPLE_WINS).toHaveLength(SAMPLE_DAYS.length);
     SAMPLE_WINS.forEach((w, i) => expect(w).toBeLessThanOrEqual(SAMPLE_DAYS[i].trades));
+    // FE-070: the wins are the winning trades of the list, so the win rate cannot drift from it.
+    SAMPLE_WINS.forEach((w, i) => expect(w).toBe(SAMPLE_TRADES.filter((t) => t.day === SAMPLE_DAYS[i].day && t.pnl > 0).length));
     for (const day of new Set(SAMPLE_RECENT.map((t) => t.day))) {
       const rows = SAMPLE_RECENT.filter((t) => t.day === day);
       const fixture = SAMPLE_DAYS.find((d) => d.day === day)!;
       if (rows.length === fixture.trades) expect(Math.round(rows.reduce((a, t) => a + t.pnl, 0) * 100) / 100).toBe(fixture.pnl);
     }
+  });
+
+  it('lists every trade of the month: each day sums to its fixture day and the last six are the recent trades', () => {
+    expect(SAMPLE_TRADES).toHaveLength(SAMPLE_DAYS.reduce((n, d) => n + d.trades, 0));
+    for (const d of SAMPLE_DAYS) {
+      const rows = SAMPLE_TRADES.filter((t) => t.day === d.day);
+      expect(rows).toHaveLength(d.trades);
+      expect(Math.round(rows.reduce((a, t) => a + t.pnl, 0) * 100) / 100).toBe(d.pnl);
+    }
+    const pick = (t: { day: number; symbol: string; pnl: number }) => [t.day, t.symbol, t.pnl];
+    expect(SAMPLE_TRADES.slice(-SAMPLE_RECENT.length).map(pick)).toEqual([...SAMPLE_RECENT].reverse().map(pick));
   });
 
   it('ends the equity series at the month net and tints by thirds of the largest day', () => {
@@ -57,7 +70,7 @@ describe('shared showcase pieces', () => {
   it('renders the still dashboard with computed figures, no headings and nothing focusable', () => {
     const { container, getByText } = render(<DashboardWindow />);
     expect(getByText('+$370.50', { selector: '.tq-stat__value' })).toBeInTheDocument();
-    expect(getByText('62.1%')).toBeInTheDocument();
+    expect(getByText('58.6%')).toBeInTheDocument();
     expect(getByText('−$118.25')).toBeInTheDocument();
     expect(container.querySelectorAll('h1,h2,h3,h4,h5,h6')).toHaveLength(0);
     expect(container.querySelectorAll('a,button,input,select,textarea,[tabindex]')).toHaveLength(0);

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarRange, Copy, ExternalLink, FileUp, Keyboard, LogOut, Palette, Plus, Rows3, Search, Settings, Table2, UserPlus, type LucideIcon } from 'lucide-react';
+import { Activity, CalendarRange, CircleHelp, Copy, FileUp, Keyboard, LogOut, Palette, Plus, Rows3, Search, Settings, Table2, UserPlus, type LucideIcon } from 'lucide-react';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from '@/components/ui/command';
 import { ALL_NAV_ITEMS } from '@/components/shell/navItems';
 import { patchUiState } from '@/hooks/useUiState';
@@ -11,7 +11,7 @@ import { useTradeParam } from '@/hooks/useTradeParam';
 import { useAppDispatch } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { formatDateShort, formatMoney } from '@/lib/format';
+import { accountCurrency, formatDateShort, formatMoney } from '@/lib/format';
 import { keyEntry } from '@/lib/keymap';
 import { pushRecent, readRecent, saveRecent } from '@/lib/paletteRecent';
 import { getDateRangeFromPreset, PRESET_OPTIONS } from '@/lib/scope';
@@ -80,7 +80,7 @@ export function CommandPalette({ open, onOpenChange, trades = [], onShowShortcut
       accounts.length > 0
         ? [
             { id: 'account-all', label: 'Switch account: All accounts', keywords: ['change account', 'scope'], run: () => setSelectedAccountId(null) },
-            ...accounts.map((a) => ({ id: `account-${a.id}`, label: `Switch account: ${a.name} · ${a.currency}`, keywords: ['change account', 'scope'], run: () => setSelectedAccountId(a.id) })),
+            ...accounts.map((a) => ({ id: `account-${a.id}`, label: `Switch account: ${a.name} · ${a.currency || 'USD'}`, keywords: ['change account', 'scope'], run: () => setSelectedAccountId(a.id) })),
           ]
         : [];
     const settings: Command[] = [
@@ -120,8 +120,8 @@ export function CommandPalette({ open, onOpenChange, trades = [], onShowShortcut
     ];
     const help: Command[] = [
       ...(onShowShortcuts ? [{ id: 'help-shortcuts', label: 'Keyboard shortcuts', keymapId: 'shortcuts', icon: Keyboard, keywords: ['help', 'keys', 'hotkeys'], run: onShowShortcuts }] : []),
-      { id: 'help-guide', label: 'Open the guide', icon: ExternalLink, keywords: ['help', 'docs', 'how to'], run: () => window.open('/guide', '_blank', 'noopener') },
-      { id: 'help-status', label: 'System status', icon: ExternalLink, keywords: ['help', 'outage', 'incident'], run: () => window.open('/status', '_blank', 'noopener') },
+      { id: 'help-guide', label: 'Open the guide', icon: CircleHelp, keywords: ['help', 'docs', 'how to'], run: () => navigate('/guide') },
+      { id: 'help-status', label: 'System status', icon: Activity, keywords: ['help', 'outage', 'incident'], run: () => navigate('/status') },
     ];
     return [
       { heading: 'Actions', items: actions },
@@ -196,7 +196,8 @@ export function CommandPalette({ open, onOpenChange, trades = [], onShowShortcut
         {tradeMatches.length > 0 && (
           <CommandGroup heading="Open trade">
             {tradeMatches.slice(0, 8).map((t) => {
-              const currency = t.accountId ? accountById.get(t.accountId)?.currency : undefined;
+              const account = t.accountId ? accountById.get(t.accountId) : undefined;
+              const currency = account ? accountCurrency(account) : undefined;
               return (
                 <CommandItem
                   key={t.id}

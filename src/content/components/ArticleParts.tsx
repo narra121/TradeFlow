@@ -154,7 +154,7 @@ export function Disclaimer({ children }: { children?: ReactNode }) {
 
 export function SignupCta({ text = 'Start a free journal' }: { text?: string }) {
   return (
-    <div className="mt-10 rounded-lg border border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="signed-out-only mt-10 rounded-lg border border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <p className="text-foreground">Log your trades, see net P&amp;L after charges and find the rules you break most.</p>
       <Link
         to="/signup"

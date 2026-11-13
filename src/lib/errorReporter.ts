@@ -1,17 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { API_BASE_URL } from '@/lib/api/config';
-import { decodeJwtPayload } from '@/lib/jwt';
+import { readStoredIdToken } from '@/lib/auth/storedSession';
 
 const REPORT_URL = `${API_BASE_URL}/errors/report`;
 const MAX_CONSOLE_LOGS = 50;
 const MAX_API_CALLS = 20;
+const MAX_BODY_CHARS = 2000;
 const MAX_PAYLOAD_BYTES = 200 * 1024; // 200KB
 const KEEPALIVE_LIMIT_BYTES = 60 * 1024; // fetch keepalive bodies are capped at 64 KiB by browsers
 const DEDUP_WINDOW_MS = 60000; // 60 seconds
+// POST /v1/errors/report allows 10 reports per hour per IP, and an office NAT shares that quota.
+const MAX_REPORTS_PER_SESSION = 5;
 
 // Keep reference to original fetch before patching
 let originalFetch: typeof window.fetch;
 let sessionStart: number;
+let reportsSent = 0;
+let rateLimited = false;
 
 // ─── Ring Buffers ───────────────────────────────────────
 
@@ -108,6 +113,18 @@ function truncate(str: string | null | undefined, max: number): string | null {
   return str.length > max ? str.slice(0, max) + '...' : str;
 }
 
+/** Cuts to a bounded window before redacting, then to `max`. The window is wider than `max` so a secret that starts inside the kept part is closed (and matched) before the cut. */
+function redactedExcerpt(text: string | null | undefined, max: number): string | null {
+  if (!text) return null;
+  return truncate(redactSecrets(text.slice(0, max * 4)), max);
+}
+
+/** Query strings and fragments carry OAuth codes and Stripe session ids. */
+function withoutQuery(url: string): string {
+  const cut = url.search(/[?#]/);
+  return cut === -1 ? url : url.slice(0, cut);
+}
+
 function extractUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   if (input instanceof URL) return input.toString();
@@ -138,8 +155,8 @@ function extractHeaders(input: RequestInfo | URL, init?: RequestInit): Record<st
 function extractBody(input: RequestInfo | URL, init?: RequestInit): string | null {
   const body = init?.body || (typeof input !== 'string' && !(input instanceof URL) ? input.body : null);
   if (!body) return null;
-  if (typeof body === 'string') return truncate(redactSecrets(body), 2000);
-  try { return truncate(redactSecrets(JSON.stringify(body)), 2000); } catch { return '[body]'; }
+  if (typeof body === 'string') return redactedExcerpt(body, MAX_BODY_CHARS);
+  try { return redactedExcerpt(JSON.stringify(body), MAX_BODY_CHARS); } catch { return '[body]'; }
 }
 
 function buildCurlCommand(url: string, method: string, headers: Record<string, string>, body: string | null): string {
@@ -151,6 +168,14 @@ function buildCurlCommand(url: string, method: string, headers: Record<string, s
     cmd += ` -d '${body.length > 500 ? body.slice(0, 500) + '...' : body}'`;
   }
   return cmd;
+}
+
+/** Fills `entry.responseBody` after the caller already has the response. Only a failed call's JSON body is kept: a 2xx body is user data, and an SSE or other non-JSON body can be endless. */
+function captureErrorBody(response: Response, entry: ApiCallEntry) {
+  try {
+    if (response.ok || !/json/i.test(response.headers.get('content-type') || '')) return;
+    response.clone().text().then((text) => { entry.responseBody = redactedExcerpt(text, MAX_BODY_CHARS); }, () => {});
+  } catch { /* ignore */ }
 }
 
 function patchFetch() {
@@ -173,43 +198,35 @@ function patchFetch() {
     const method = extractMethod(input, init);
     const headers = extractHeaders(input, init);
     const requestBody = extractBody(input, init);
+    const reportedUrl = withoutQuery(url);
     const startTime = Date.now();
 
     try {
       const response = await originalFetch(input, init);
-      const durationMs = Date.now() - startTime;
-
-      // Clone response to read body without consuming it
-      let responseBody: string | null = null;
-      try {
-        const cloned = response.clone();
-        const text = await cloned.text();
-        responseBody = truncate(redactSecrets(text), 2000);
-      } catch { /* ignore */ }
-
-      pushToRing(apiCalls, {
-        url: truncate(url, 500) || url,
+      const entry: ApiCallEntry = {
+        url: truncate(reportedUrl, 500) || reportedUrl,
         method,
         status: response.status,
         timestamp: new Date().toISOString(),
         requestBody,
-        responseBody,
-        durationMs,
-        curl: buildCurlCommand(url, method, headers, requestBody),
-      }, MAX_API_CALLS);
+        responseBody: null,
+        durationMs: Date.now() - startTime,
+        curl: buildCurlCommand(reportedUrl, method, headers, requestBody),
+      };
+      pushToRing(apiCalls, entry, MAX_API_CALLS);
+      captureErrorBody(response, entry);
 
       return response;
     } catch (err) {
-      const durationMs = Date.now() - startTime;
       pushToRing(apiCalls, {
-        url: truncate(url, 500) || url,
+        url: truncate(reportedUrl, 500) || reportedUrl,
         method,
         status: 0,
         timestamp: new Date().toISOString(),
         requestBody,
         responseBody: err instanceof Error ? err.message : 'Network error',
-        durationMs,
-        curl: buildCurlCommand(url, method, headers, requestBody),
+        durationMs: Date.now() - startTime,
+        curl: buildCurlCommand(reportedUrl, method, headers, requestBody),
       }, MAX_API_CALLS);
       throw err;
     }
@@ -218,9 +235,12 @@ function patchFetch() {
 
 // ─── Deduplication ──────────────────────────────────────
 
+const VARIABLE_PARTS = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\b[0-9a-f]{16,}\b|\d+/gi;
+
+/** Ids and numbers are masked so "Trade 42 failed" and "Trade 43 failed" are one error. */
 function getFingerprint(message: string, stack?: string | null): string {
   const firstLine = stack?.split('\n')[0] || '';
-  return `${message}::${firstLine}`;
+  return `${message}::${firstLine}`.replace(VARIABLE_PARTS, '#');
 }
 
 function isDuplicate(fingerprint: string): boolean {
@@ -245,18 +265,11 @@ interface ErrorData {
 
 function reportError(errorData: ErrorData) {
   try {
+    if (rateLimited || reportsSent >= MAX_REPORTS_PER_SESSION) return;
     const fingerprint = getFingerprint(errorData.message, errorData.stack);
     if (isDuplicate(fingerprint)) return;
 
-    // Extract userId from JWT if available
-    let userId: string | null = null;
-    try {
-      const token = localStorage.getItem('idToken');
-      if (token) {
-        userId = decodeJwtPayload(token)?.sub || null;
-      }
-    } catch { /* ignore */ }
-
+    // The backend names the owner from the Authorization header, never from the body.
     const payload = {
       error: {
         message: redactSecrets(errorData.message.slice(0, 2000)),
@@ -265,8 +278,7 @@ function reportError(errorData: ErrorData) {
         type: errorData.type,
       },
       timestamp: new Date().toISOString(),
-      url: window.location.href.slice(0, 2000),
-      userId,
+      url: withoutQuery(window.location.href).slice(0, 2000),
       browser: {
         userAgent: navigator.userAgent.slice(0, 500),
         language: navigator.language,
@@ -305,16 +317,17 @@ function reportError(errorData: ErrorData) {
     }
 
     // Fire and forget — use original fetch with keepalive
-    const token = localStorage.getItem('idToken');
+    const token = readStoredIdToken();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
+    reportsSent++;
     originalFetch(REPORT_URL, {
       method: 'POST',
       headers,
       body,
       keepalive: true,
-    }).catch(() => {}); // Swallow ALL errors
+    }).then((res) => { if (res.status === 429) rateLimited = true; }, () => {}); // Swallow ALL errors
   } catch {
     // Never throw from the error reporter
   }

@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { readApiError } from '@/lib/apiError';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { hasValue, isStarterList, ownEntries, type ListDef } from '@/components/settings/optionLists';
 
@@ -32,8 +33,8 @@ export function OptionList({ def, values, usage, saving, onAdd, onRemove, onRese
     setMessage(null);
     try {
       await action();
-    } catch {
-      setMessage({ kind: 'error', text: failure });
+    } catch (err) {
+      setMessage({ kind: 'error', text: `${failure} ${readApiError(err, 'Try again.').message}` });
     }
   };
 
@@ -42,7 +43,7 @@ export function OptionList({ def, values, usage, saving, onAdd, onRemove, onRese
     if (!value) return;
     if (hasValue(values, value)) return setMessage({ kind: 'info', text: `"${value}" is already in the list` });
     setDraft('');
-    void run(() => onAdd(value), `Couldn't add "${value}". Try again.`);
+    void run(() => onAdd(value), `Couldn't add "${value}".`);
   };
 
   const own = ownEntries(def, values);
@@ -131,7 +132,7 @@ export function OptionList({ def, values, usage, saving, onAdd, onRemove, onRese
               onClick={() => {
                 const value = removing as string;
                 setRemoving(null);
-                void run(() => onRemove(value), `Couldn't remove "${value}". Try again.`);
+                void run(() => onRemove(value), `Couldn't remove "${value}".`);
               }}
             >
               Remove
@@ -157,7 +158,7 @@ export function OptionList({ def, values, usage, saving, onAdd, onRemove, onRese
               variant="destructive"
               onClick={() => {
                 setResetting(false);
-                void run(onReset, `Couldn't reset ${def.title}. Try again.`);
+                void run(onReset, `Couldn't reset ${def.title}.`);
               }}
             >
               {`Reset ${def.title}`}

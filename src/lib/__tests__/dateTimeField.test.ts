@@ -5,8 +5,8 @@ const now = new Date(2026, 10, 11, 9, 5);
 
 describe('formatField', () => {
   it('prints day, short month, year and a 24-hour time', () => {
-    expect(formatField('2026-11-04T14:30')).toBe('4 Nov 2026, 14:30');
-    expect(formatField('2026-11-04T09:05')).toBe('4 Nov 2026, 09:05');
+    expect(formatField('2026-11-04T14:30')).toBe('04 Nov 2026, 14:30');
+    expect(formatField('2026-11-04T09:05')).toBe('04 Nov 2026, 09:05');
     expect(formatField('')).toBe('');
   });
 });

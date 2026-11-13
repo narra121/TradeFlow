@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { store } from '@/store';
-import { clearAuth, setAuth } from '@/store/slices/authSlice';
+import { clearAuth, setUser } from '@/store/slices/authSlice';
 import { setSelectedAccount } from '@/store/slices/accountsSlice';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { authApi } from '@/store/api/authApi';
@@ -8,7 +8,7 @@ import { SCOPE_KEY, TRADELOG_KEY } from '@/lib/scope';
 
 describe('sessionResetMiddleware', () => {
   it('clears scope, persisted view state and filters when the session ends', () => {
-    store.dispatch(setAuth({ user: { id: 'u1' }, token: 't', refreshToken: 'r' }));
+    store.dispatch(setUser({ id: 'u1', name: 'U', email: 'u@x.io' }));
     store.dispatch(setSelectedAccount('acc-1'));
     store.dispatch(setDateRangeFilter({ startDate: '2026-01-01', endDate: '2026-01-31', datePreset: 'custom' }));
     sessionStorage.setItem(TRADELOG_KEY, '{"q":"EUR"}');

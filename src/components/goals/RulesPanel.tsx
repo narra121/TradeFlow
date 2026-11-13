@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataColumn } from '@/components/ui/data-table';
@@ -10,6 +10,7 @@ import { returnFocusByName } from '@/components/account/returnFocus';
 import { periodNoun, type GoalPeriod } from '@/components/goals/goalMath';
 import { ruleStreak, type RuleCell, type RuleStat } from '@/components/goals/ruleMath';
 import { cn } from '@/lib/utils';
+import { readApiError } from '@/lib/apiError';
 
 export const RULE_MAX = 200;
 
@@ -66,6 +67,8 @@ function RuleInput({ initial, onSave, onCancel, label }: { initial: string; onSa
   const [error, setError] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+  const errorId = `${inputId}-error`;
   useEffect(() => {
     ref.current?.focus();
     if (initial) ref.current?.select();
@@ -78,8 +81,8 @@ function RuleInput({ initial, onSave, onCancel, label }: { initial: string; onSa
     setSaving(true);
     try {
       await onSave(t);
-    } catch {
-      setError('Couldn’t save the rule. Check your connection and try again.');
+    } catch (err) {
+      setError(readApiError(err, 'Couldn’t save the rule.').message);
     } finally {
       setSaving(false);
     }
@@ -87,9 +90,9 @@ function RuleInput({ initial, onSave, onCancel, label }: { initial: string; onSa
   return (
     <form onSubmit={(e) => { e.preventDefault(); void submit(); }} onKeyDown={(e) => e.key === 'Escape' && (e.stopPropagation(), onCancel())} className="flex flex-wrap items-start gap-2">
       <div className="min-w-0 flex-1">
-        <label htmlFor="rule-input" className="sr-only">{label}</label>
-        <Input id="rule-input" ref={ref} value={text} maxLength={RULE_MAX} onChange={(e) => { setText(e.target.value); setError(undefined); }} aria-invalid={!!error} aria-describedby={error ? 'rule-input-error' : undefined} className="h-8 text-13" />
-        {error && <p id="rule-input-error" role="alert" className="mt-1 text-xs text-destructive">{error}</p>}
+        <label htmlFor={inputId} className="sr-only">{label}</label>
+        <Input id={inputId} ref={ref} value={text} maxLength={RULE_MAX} onChange={(e) => { setText(e.target.value); setError(undefined); }} aria-invalid={!!error} aria-describedby={error ? errorId : undefined} className="h-8 text-13" />
+        {error && <p id={errorId} role="alert" className="mt-1 text-xs text-destructive">{error}</p>}
       </div>
       <Button type="submit" size="sm" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
       <Button type="button" size="sm" variant="ghost" onClick={onCancel} disabled={saving}>Cancel</Button>
@@ -103,6 +106,7 @@ export function RulesPanel({ rows, period, readOnly, complianceText, starters, p
   const [deleting, setDeleting] = useState<RuleRow | null>(null);
   const [blocked, setBlocked] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | undefined>();
   const noun = periodNoun(period);
   const returnTo = useRef<string | null>(null);
 
@@ -168,7 +172,7 @@ export function RulesPanel({ rows, period, readOnly, complianceText, starters, p
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setEditingId(r.id)}>Edit</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => { returnTo.current = `Actions for rule: ${r.text}`; setDeleting(r); }} className="text-loss focus:text-loss">Delete…</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => { returnTo.current = `Actions for rule: ${r.text}`; setDeleteError(undefined); setDeleting(r); }} variant="destructive">Delete…</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ),
@@ -178,10 +182,13 @@ export function RulesPanel({ rows, period, readOnly, complianceText, starters, p
   const confirmDelete = async () => {
     if (!deleting) return;
     setBusy(true);
+    setDeleteError(undefined);
     try {
       const res = await onDelete(deleting.id);
       if (res.inUse) setBlocked((b) => ({ ...b, [deleting.id]: deleting.stat?.breaks ?? 1 }));
       setDeleting(null);
+    } catch (err) {
+      setDeleteError(readApiError(err, 'Couldn’t delete the rule.').message);
     } finally {
       setBusy(false);
     }
@@ -239,6 +246,7 @@ export function RulesPanel({ rows, period, readOnly, complianceText, starters, p
             <AlertDialogDescription>
               {used > 0 ? `It stays on the ${used} ${used === 1 ? 'trade' : 'trades'} that recorded it. ` : ''}“{deleting?.text}” is removed from this {noun}.
             </AlertDialogDescription>
+            {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={busy} autoFocus>Cancel</AlertDialogCancel>

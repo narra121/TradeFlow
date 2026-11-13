@@ -86,6 +86,17 @@ describe('AnalyticsView', () => {
     expect(screen.getByText("Couldn't load this tab.")).toBeInTheDocument();
   });
 
+  it('shows the API message of a failed tab; the connection message only without a response', () => {
+    periodStats.mockReturnValue(ready({ stats: undefined, isError: true, error: { status: 500, data: { message: 'Statistics are being rebuilt.' } } }));
+    const { unmount } = renderWithProviders(<AnalyticsView />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Statistics are being rebuilt.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    unmount();
+    periodStats.mockReturnValue(ready({ stats: undefined, isError: true, error: { status: 'TIMEOUT_ERROR' } }));
+    renderWithProviders(<AnalyticsView />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/timed out/i);
+  });
+
   it('shows a loading skeleton while the statistics load', () => {
     periodStats.mockReturnValue(ready({ stats: undefined, isLoading: true }));
     renderWithProviders(<AnalyticsView />);

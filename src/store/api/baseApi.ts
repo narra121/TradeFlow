@@ -1,37 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
-import { refreshToken } from '@/lib/api/tokenRefresh';
+import { getIdToken } from '@/lib/auth/authService';
 import { API_BASE_URL } from '@/lib/api/config';
 import { classifyPlanError, emitPlanSignal } from '@/lib/planErrors';
-
-// Track if we're currently refreshing the token
-let isRefreshing = false;
-let failedQueue: Array<{ resolve: (value?: unknown) => void; reject: (reason?: unknown) => void }> = [];
-
-const processQueue = (error: any | null, token: string | null = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
+import { connectionMessage } from '@/lib/apiError';
 
 const dispatchUnauthorized = () => {
   window.dispatchEvent(new CustomEvent('unauthorized'));
-};
-
-const clearStoredTokens = () => {
-  localStorage.removeItem('idToken');
-  localStorage.removeItem('refreshToken');
-};
-
-const isRefreshRequest = (args: string | FetchArgs) => {
-  if (typeof args === 'string') return args.includes('/auth/refresh');
-  return typeof args.url === 'string' && args.url.includes('/auth/refresh');
 };
 
 const getHttpStatus = (result: { error?: unknown; meta?: unknown } | undefined): number | undefined => {
@@ -53,7 +29,7 @@ const getHttpStatus = (result: { error?: unknown; meta?: unknown } | undefined):
 
 const isUnauthorized = (result: { error?: unknown; meta?: unknown } | undefined) => getHttpStatus(result) === 401;
 
-// Custom base query with token refresh logic
+// Custom base query: adds the ID token and, on a 401, renews it once and retries
 const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
   unknown,
@@ -62,11 +38,9 @@ const baseQueryWithReauth: BaseQueryFn<
   const baseQuery = fetchBaseQuery({
     baseUrl: API_BASE_URL,
     timeout: 30000,
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem('idToken');
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
+    prepareHeaders: async (headers) => {
+      const token = await getIdToken().catch(() => null);
+      if (token) headers.set('Authorization', `Bearer ${token}`);
       return headers;
     },
     validateStatus: (response) => response.ok, // Only treat 2xx as success
@@ -98,19 +72,6 @@ const baseQueryWithReauth: BaseQueryFn<
           responseData = {};
         }
 
-        if (responseData && (typeof responseData === 'object' || typeof responseData === 'function') && data.message) {
-          try {
-            Object.defineProperty(responseData, '_apiMessage', {
-              value: data.message,
-              enumerable: false,
-              writable: true,
-              configurable: true
-            });
-          } catch (e) {
-            // Ignore if immutable
-          }
-        }
-
         r = { ...r, data: responseData } as any;
       }
       // Old format: { data, error, meta }
@@ -132,25 +93,16 @@ const baseQueryWithReauth: BaseQueryFn<
       }
     }
 
-    // Normalize network errors
     if (r.error) {
       const err: any = r.error;
       const status = err?.status;
 
-      if (status === 'FETCH_ERROR') {
-        const isOffline = typeof navigator !== 'undefined' && navigator && navigator.onLine === false;
-        const raw = typeof err?.error === 'string' ? err.error : '';
-        const looksLikeDns = raw.toLowerCase().includes('name_not_resolved');
+      if (status === 'FETCH_ERROR') err.data = connectionMessage('network');
+      if (status === 'TIMEOUT_ERROR') err.data = connectionMessage('timeout');
 
-        err.data = isOffline
-          ? 'You appear to be offline. Please check your internet connection.'
-          : looksLikeDns
-            ? 'Network issue (DNS lookup failed). Please try again.'
-            : 'Network error. Please try again.';
-      }
-
-      if (status === 'TIMEOUT_ERROR') {
-        err.data = 'Request timed out. Please try again.';
+      // A body that is not JSON (a gateway's HTML page) still came with an HTTP status: keep that status and the text.
+      if (status === 'PARSING_ERROR' && typeof err.originalStatus === 'number' && err.originalStatus >= 400) {
+        r = { error: { status: err.originalStatus, data: err.data } as FetchBaseQueryError, meta: r.meta };
       }
     }
 
@@ -167,63 +119,16 @@ const baseQueryWithReauth: BaseQueryFn<
   result = transformResult(result) as any;
 
   if (isUnauthorized(result)) {
-    // If the refresh endpoint itself is unauthorized, immediately logout.
-    if (isRefreshRequest(args)) {
-      clearStoredTokens();
-      dispatchUnauthorized();
-      return result;
+    // The ID token may have expired mid-request: renew it once and retry. Amplify shares one renewal between concurrent callers.
+    // `null` = no session is left; a throw = Cognito could not be reached, so the session stays and the next request retries.
+    let renewed: string | null | undefined;
+    try {
+      renewed = await getIdToken({ forceRefresh: true });
+    } catch {
+      renewed = undefined;
     }
-
-    const rt = localStorage.getItem('refreshToken');
-
-    if (rt && !isRefreshing) {
-      isRefreshing = true;
-
-      try {
-        const newToken = await refreshToken();
-
-        // Process the queued requests
-        processQueue(null, newToken);
-        isRefreshing = false;
-
-        // Retry the original request (transform the response)
-        result = transformResult(await baseQuery(args, api, extraOptions)) as any;
-
-        // If the retried request is still unauthorized, logout.
-        if (isUnauthorized(result)) {
-          clearStoredTokens();
-          dispatchUnauthorized();
-        }
-      } catch (refreshError) {
-        processQueue(refreshError);
-        isRefreshing = false;
-        clearStoredTokens();
-        dispatchUnauthorized();
-      }
-    } else if (isRefreshing) {
-      // If already refreshing, queue this request
-      try {
-        await new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        });
-
-        // Retry after token is refreshed (transform the response)
-        result = transformResult(await baseQuery(args, api, extraOptions)) as any;
-
-        // If the retried request is still unauthorized, logout.
-        if (isUnauthorized(result)) {
-          clearStoredTokens();
-          dispatchUnauthorized();
-        }
-      } catch (e) {
-        clearStoredTokens();
-        dispatchUnauthorized();
-      }
-    } else {
-      // No refresh token available - dispatch unauthorized event
-      clearStoredTokens();
-      dispatchUnauthorized();
-    }
+    if (renewed) result = transformResult(await baseQuery(args, api, extraOptions)) as any;
+    if (renewed === null || (renewed && isUnauthorized(result))) dispatchUnauthorized();
   }
 
   return result;

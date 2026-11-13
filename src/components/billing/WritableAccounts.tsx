@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { ACCOUNT_SEARCH_FROM, AccountListbox } from '@/components/account/AccountListbox';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { FREE_ACCOUNTS } from '@/components/billing/freeLimits';
 import { readApiError } from '@/lib/apiError';
+import { cn } from '@/lib/utils';
 import { useSaveWritableAccountsMutation } from '@/store/api/billingApi';
 
 interface AccountLite {
@@ -17,7 +18,10 @@ interface WritableAccountsProps {
   chosen: string[] | null;
 }
 
-/** Free users above the account limit choose which accounts stay writable; the rest stay fully visible (B-111). */
+/**
+ * Free users above the account limit choose which accounts stay writable; the rest stay fully visible (B-111).
+ * The list scrolls inside the panel and the chosen accounts stay on top, so Save is reachable with any number of accounts.
+ */
 export function WritableAccounts({ accounts, chosen }: WritableAccountsProps) {
   const [selected, setSelected] = useState<string[]>(chosen ?? []);
   const [save, { isLoading }] = useSaveWritableAccountsMutation();
@@ -29,6 +33,10 @@ export function WritableAccounts({ accounts, chosen }: WritableAccountsProps) {
     setMessage(null);
     setSelected((s) => (on ? [...s, id] : s.filter((x) => x !== id)));
   };
+  const full = selected.length >= FREE_ACCOUNTS;
+  // Shorter on short screens, so the panel and Save fit under the page chrome without scrolling the page.
+  // A list long enough to search keeps one height, so Save does not move while the search narrows it.
+  const listHeight = accounts.length >= ACCOUNT_SEARCH_FROM ? 'h-[clamp(15rem,calc(100dvh-37rem),21rem)] max-h-none' : 'max-h-[clamp(15rem,calc(100dvh-37rem),21rem)]';
   const dirty = selected.slice().sort().join(',') !== (chosen ?? []).slice().sort().join(',');
 
   const submit = async () => {
@@ -44,27 +52,25 @@ export function WritableAccounts({ accounts, chosen }: WritableAccountsProps) {
     <fieldset className="rounded-lg border border-border bg-card p-4">
       <legend className="px-1 text-sm font-semibold">{`Choose the ${FREE_ACCOUNTS} accounts you keep adding trades to`}</legend>
       <p className="mb-3 text-13 text-muted-foreground">The other accounts read “Read-only on Free” and stay fully visible. Pro makes them all writable again.</p>
-      <ul className="space-y-1">
-        {accounts.map((a) => {
-          const on = selected.includes(a.id);
-          const disabled = !on && selected.length >= FREE_ACCOUNTS;
-          return (
-            <li key={a.id}>
-              <label className="flex min-h-8 cursor-pointer items-center gap-2 text-13 max-md:min-h-11">
-                <Checkbox checked={on} disabled={disabled} onCheckedChange={(v) => toggle(a.id, v === true)} aria-label={`Keep ${a.name} writable`} />
-                <span>{a.name}</span>
-                {a.currency && <span className="font-mono text-xs text-muted-foreground">{a.currency}</span>}
-              </label>
-            </li>
-          );
-        })}
-      </ul>
-      <div className="mt-3 flex items-center gap-3">
-        <Button type="button" variant="outline" disabled={!dirty || isLoading || selected.length === 0} onClick={submit}>
-          {isLoading ? 'Saving…' : 'Save choice'}
-        </Button>
-        {message && <p role={message.kind === 'error' ? 'alert' : 'status'} className={message.kind === 'error' ? 'text-13 text-error' : 'text-13 text-muted-foreground'}>{message.text}</p>}
-      </div>
+      <AccountListbox
+        label="Accounts that stay writable"
+        selectedLabel="Stay writable"
+        accounts={accounts}
+        selected={selected}
+        multiple
+        max={FREE_ACCOUNTS}
+        onToggle={toggle}
+        className="max-w-xl"
+        listClassName={cn('rounded-md border border-border bg-card', listHeight)}
+      />
+      {message?.kind === 'error' ? (
+        <p role="alert" className="mt-1.5 min-h-4 text-xs text-error">{message.text}</p>
+      ) : (
+        <p role="status" className="mt-1.5 min-h-4 text-xs text-muted-foreground">{message?.text ?? (full ? 'Untick one to choose a different account.' : '')}</p>
+      )}
+      <Button type="button" variant="outline" className="mt-2" disabled={!dirty || isLoading || selected.length === 0} onClick={submit}>
+        {isLoading ? 'Saving…' : 'Save choice'}
+      </Button>
     </fieldset>
   );
 }

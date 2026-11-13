@@ -9,6 +9,7 @@ const createAccount = vi.fn();
 const navigate = vi.fn();
 const openNew = vi.fn();
 const saveName = vi.fn();
+let entCurrency = 'INR';
 let profile = { name: 'Ann', email: 'ann@example.com', hasName: true, isLoading: false, isSaving: false };
 
 vi.mock('@/store/api/accountsApi', () => ({
@@ -17,7 +18,7 @@ vi.mock('@/store/api/accountsApi', () => ({
 }));
 vi.mock('@/store/api/goalsRulesApi', () => ({ useGetRulesAndGoalsQuery: () => ({ data: rulesGoals }) }));
 vi.mock('@/hooks/useProfile', () => ({ useProfile: () => ({ ...profile, saveName }) }));
-vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ currency: 'INR', plan: 'trial', trialDaysLeft: 14 }) }));
+vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ currency: entCurrency, plan: 'trial', trialDaysLeft: 14 }) }));
 vi.mock('@/hooks/useTradeParam', () => ({ useTradeParam: () => ({ openNew }) }));
 vi.mock('react-router-dom', async () => ({ ...(await vi.importActual<object>('react-router-dom')), useNavigate: () => navigate }));
 
@@ -31,6 +32,7 @@ const wrap = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
 beforeEach(() => {
   accounts = [];
+  entCurrency = 'INR';
   rulesGoals = { goals: [], rules: [] };
   profile = { name: 'Ann', email: 'ann@example.com', hasName: true, isLoading: false, isSaving: false };
   [createAccount, navigate, openNew, saveName].forEach((m) => m.mockReset());
@@ -90,6 +92,24 @@ describe('FirstRunPage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /Choose files/ })).toHaveFocus());
   });
 
+  it('keeps the currency the user picked when the billing currency resolves later', async () => {
+    createAccount.mockResolvedValue({ id: 'a9', name: 'FTMO' });
+    // jsdom lacks what Radix Select needs to open
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+    Element.prototype.scrollIntoView ??= () => undefined;
+    entCurrency = 'USD';
+    const { rerender } = wrap(<FirstRunPage />);
+    await userEvent.click(screen.getByRole('combobox'));
+    await userEvent.click(await screen.findByRole('option', { name: 'EUR' }));
+    entCurrency = 'INR';
+    rerender(<MemoryRouter><FirstRunPage /></MemoryRouter>);
+    await userEvent.type(screen.getByLabelText(/Name/), 'FTMO');
+    await userEvent.type(screen.getByLabelText(/Starting balance/), '1000');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(createAccount).toHaveBeenCalledWith(expect.objectContaining({ currency: 'EUR' }));
+  });
+
   it('shows a creation error under the form', async () => {
     createAccount.mockRejectedValue({ status: 500, data: { message: 'Nope' } });
     wrap(<FirstRunPage />);
@@ -97,6 +117,18 @@ describe('FirstRunPage', () => {
     await userEvent.type(screen.getByLabelText(/Starting balance/), '1');
     await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Nope');
+  });
+
+  it('a creation failure with no response reads as a connection problem; a body-less one keeps our sentence', async () => {
+    createAccount.mockRejectedValueOnce({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' });
+    wrap(<FirstRunPage />);
+    await userEvent.type(screen.getByLabelText(/Name/), 'A');
+    await userEvent.type(screen.getByLabelText(/Starting balance/), '1');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/internet connection/i);
+    createAccount.mockRejectedValueOnce({ status: 400 });
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent("Couldn't create the account."));
   });
 
   it('a file dropped before step 1 is kept and the form says so', () => {

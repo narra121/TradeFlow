@@ -94,6 +94,45 @@ describe('streamChat', () => {
     expect(tokens).toEqual(['Part']);
   });
 
+  it('an error frame cancels the rest of the download', async () => {
+    const cancel = vi.fn();
+    const body = new ReadableStream({
+      start(c) {
+        c.enqueue(enc.encode('event: error\ndata: {"code":"AI_UNAVAILABLE","message":"cut"}\n\n'));
+      },
+      cancel,
+    });
+    const fetchImpl = vi.fn(async () => new Response(body, { status: 200 }));
+    await expect(streamChat({ ...base, fetchImpl: fetchImpl as any, onToken: () => {} })).rejects.toMatchObject({ code: 'AI_UNAVAILABLE' });
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('a 401 that the renewal does not cure, or a renewal that fails, sends the app to login', async () => {
+    const heard = vi.fn();
+    window.addEventListener('unauthorized', heard);
+    try {
+      const refused = vi.fn(async () => json(401, { message: 'Unauthorized' }));
+      await expect(streamChat({ ...base, fetchImpl: refused as any, onToken: () => {} })).rejects.toMatchObject({ status: 401 });
+      expect(heard).toHaveBeenCalledTimes(1);
+      await expect(streamChat({ ...base, refresh: async () => { throw new Error('no session'); }, fetchImpl: refused as any, onToken: () => {} })).rejects.toMatchObject({ status: 401 });
+      expect(heard).toHaveBeenCalledTimes(2);
+    } finally {
+      window.removeEventListener('unauthorized', heard);
+    }
+  });
+
+  it('a 401 cured by the renewal does not sign the user out', async () => {
+    const heard = vi.fn();
+    window.addEventListener('unauthorized', heard);
+    try {
+      const fetchImpl = vi.fn().mockResolvedValueOnce(json(401, { message: 'Unauthorized' })).mockResolvedValueOnce(sseResponse([FRAMES]));
+      await streamChat({ ...base, fetchImpl: fetchImpl as any, onToken: () => {} });
+      expect(heard).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('unauthorized', heard);
+    }
+  });
+
   it('a stream that ends without done rejects', async () => {
     const fetchImpl = vi.fn(async () => sseResponse(['event: token\ndata: {"t":"x"}\n\n']));
     await expect(streamChat({ ...base, fetchImpl: fetchImpl as any, onToken: () => {} })).rejects.toMatchObject({ code: 'STREAM_ENDED' });

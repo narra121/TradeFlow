@@ -9,16 +9,11 @@ vi.mock('@/hooks/useProfile', () => ({ useProfile: () => useProfile() }));
 
 const forgot = vi.fn();
 const reset = vi.fn();
-const clearLocal = vi.fn();
+const logoutAll = vi.fn();
 vi.mock('@/store/api/authApi', () => ({
   useForgotPasswordMutation: () => [forgot, { isLoading: false }],
   useResetPasswordMutation: () => [reset, { isLoading: false }],
-  useLogoutMutation: () => [clearLocal, { isLoading: false }],
-}));
-
-const logoutAll = vi.fn();
-vi.mock('@/store/api/profileApi', () => ({
-  useLogoutAllDevicesMutation: () => [logoutAll, { isLoading: false }],
+  useLogoutEverywhereMutation: () => [logoutAll, { isLoading: false }],
 }));
 
 const ok = () => ({ unwrap: () => Promise.resolve(undefined) });
@@ -30,7 +25,6 @@ describe('SecuritySection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useProfile.mockReturnValue(base);
-    clearLocal.mockReturnValue(ok());
     Object.defineProperty(window, 'location', { value: { assign }, writable: true });
   });
 
@@ -80,10 +74,10 @@ describe('SecuritySection', () => {
     render(<SecuritySection />);
     await user.click(screen.getByRole('button', { name: 'Change password' }));
     await user.click(await screen.findByRole('button', { name: 'Send code' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Too many attempts. Wait a few minutes');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Too many attempts');
   });
 
-  it('confirms before logging out everywhere, then clears local state and goes to login', async () => {
+  it('confirms before logging out everywhere, then goes to the logged-out-everywhere page', async () => {
     logoutAll.mockReturnValue(ok());
     const user = userEvent.setup();
     render(<SecuritySection />);
@@ -94,7 +88,17 @@ describe('SecuritySection', () => {
     expect(logoutAll).not.toHaveBeenCalled();
     await user.click(within(dialog).getByRole('button', { name: 'Log out everywhere' }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith(LOGGED_OUT_EVERYWHERE_URL));
-    expect(clearLocal).toHaveBeenCalled();
+  });
+
+  it('shows the API message when the sign-out call fails with a response, and the connection message without one', async () => {
+    logoutAll.mockReturnValueOnce(fail({ status: 500, data: { message: 'We could not end your other sessions.' } })).mockReturnValueOnce(fail({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' }));
+    const user = userEvent.setup();
+    render(<SecuritySection />);
+    await user.click(screen.getByRole('button', { name: 'Log out of all devices' }));
+    await user.click(await screen.findByRole('button', { name: 'Log out everywhere' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('We could not end your other sessions.');
+    await user.click(screen.getByRole('button', { name: 'Log out everywhere' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/internet connection/i));
   });
 
   it('stays signed in and shows an inline error when the sign-out call fails', async () => {
@@ -105,7 +109,6 @@ describe('SecuritySection', () => {
     await user.click(await screen.findByRole('button', { name: 'Log out everywhere' }));
     expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't log you out");
     expect(assign).not.toHaveBeenCalled();
-    expect(clearLocal).not.toHaveBeenCalled();
   });
 
   it('shows an error state when the profile fails to load', () => {
@@ -113,13 +116,26 @@ describe('SecuritySection', () => {
     render(<SecuritySection />);
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
+
+  it('shows the API message of a failed profile load; the connection message only without a response', () => {
+    useProfile.mockReturnValue({ ...base, isError: true, error: { status: 500, data: { message: 'Your profile is being restored.' } } });
+    const { unmount } = render(<SecuritySection />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Your profile is being restored.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    unmount();
+    useProfile.mockReturnValue({ ...base, isError: true, error: { status: 'FETCH_ERROR' } });
+    render(<SecuritySection />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/Check your internet connection/);
+  });
 });
 
 describe('passwordErrorMessage', () => {
-  it('maps rate limits, expired and wrong codes', () => {
-    expect(passwordErrorMessage({ status: 429 })).toMatch(/Too many attempts/);
-    expect(passwordErrorMessage({ status: 400, data: { message: 'Invalid verification code provided, please try again.' } })).toMatch(/not right/);
-    expect(passwordErrorMessage({ status: 400, data: { message: 'Confirmation code has expired' } })).toMatch(/expired/);
-    expect(passwordErrorMessage({})).toMatch(/Couldn't change the password/);
+  it('shows the API message, the connection message only without a response, and our sentence when the body has none', () => {
+    expect(passwordErrorMessage({ status: 429, data: { message: 'Too many attempts. Please wait a few minutes and try again.' } })).toBe('Too many attempts. Please wait a few minutes and try again.');
+    expect(passwordErrorMessage({ status: 400, data: { message: 'Invalid verification code. Check the email and enter it again.' } })).toBe('Invalid verification code. Check the email and enter it again.');
+    expect(passwordErrorMessage({ status: 400, data: { message: 'That verification code has expired. Request a code again.' } })).toBe('That verification code has expired. Request a code again.');
+    expect(passwordErrorMessage({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' })).toMatch(/internet connection/i);
+    expect(passwordErrorMessage({ status: 400 })).toBe("Couldn't change the password. Check the code and try again.");
+    expect(passwordErrorMessage({})).toBe("Couldn't change the password. Check the code and try again.");
   });
 });

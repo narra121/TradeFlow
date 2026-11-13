@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { MoreHorizontal, Plus } from 'lucide-react';
+import { Check, MoreHorizontal, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataColumn, type DataGroup } from '@/components/ui/data-table';
@@ -42,7 +42,7 @@ export function AccountsView() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const selectedAccountId = useAppSelector((s) => s.accounts.selectedAccountId);
-  const { data, isLoading, isError, refetch } = useGetAccountsQuery();
+  const { data, isLoading, isError, error, refetch } = useGetAccountsQuery();
   const [createAccount, { isLoading: creating }] = useCreateAccountMutation();
   const [updateAccount, { isLoading: updating }] = useUpdateAccountMutation();
   const [deleteAccount, { isLoading: deletingNow }] = useDeleteAccountMutation();
@@ -114,7 +114,8 @@ export function AccountsView() {
   const save = async (payload: AccountPayload) => {
     setSaveError(null);
     try {
-      if (editing) await updateAccount({ id: editing.id, payload }).unwrap();
+      // The server keeps the balance from the trades (and moves it when the starting balance changes), so an edit never sends it.
+      if (editing) await updateAccount({ id: editing.id, payload: { ...payload, balance: undefined } }).unwrap();
       else await createAccount(payload).unwrap();
       closePane();
     } catch (e) {
@@ -242,13 +243,13 @@ export function AccountsView() {
                 <DropdownMenuSubContent>
                   {STATUSES.map((s) => (
                     <DropdownMenuItem key={s} onSelect={() => (s === a.status ? undefined : CONFIRM_STATUS.includes(s) ? askStatus(a, s) : void changeStatus(a, s))} aria-checked={s === a.status} role="menuitemradio">
-                      <span className="mr-2 inline-block w-4 text-primary" aria-hidden="true">{s === a.status ? '✓' : ''}</span>{accountStatusLabels[s]}
+                      <span className="mr-2 flex h-4 w-4 items-center justify-center text-primary" aria-hidden="true">{s === a.status && <Check className="h-4 w-4" />}</span>{accountStatusLabels[s]}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => { returnName.current = `Actions for ${a.name}`; setDeleteError(null); setDeleting(a); }} className="text-loss focus:text-loss">Delete…</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => { returnName.current = `Actions for ${a.name}`; setDeleteError(null); setDeleting(a); }} variant="destructive">Delete…</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </span>
@@ -259,7 +260,7 @@ export function AccountsView() {
   const deleteTrades = deleting ? (capped ? null : tally.get(deleting.id)?.trades ?? 0) : 0;
 
   const body = () => {
-    if (isError) return <ErrorState title="Couldn’t load your accounts." description="Check your connection and try again." onRetry={() => void refetch()} />;
+    if (isError) return <ErrorState title="Couldn’t load your accounts." description="Try again." error={error} onRetry={() => void refetch()} />;
     if (isLoading) return <div className="space-y-1.5" aria-busy="true">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-11" />)}</div>;
     if (accounts.length === 0) {
       return <EmptyState title="Create your first trading account." description="Trades belong to an account, which also sets the currency of your P&L." action={<Button size="sm" onClick={addAccount}>Add account</Button>} />;

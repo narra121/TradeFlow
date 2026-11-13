@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useLogoutMutation } from '@/store/api/authApi';
-import { useDeleteAccountMutation } from '@/store/api/profileApi';
+import { useDeleteUserAccountMutation } from '@/store/api/profileApi';
+import { readApiError } from '@/lib/apiError';
 import { emailMatches } from './helpers';
 import type { ExportState } from './useDataExport';
 
@@ -18,7 +19,7 @@ interface Props {
 }
 
 export function DeleteAccountDialog({ open, email, onOpenChange, exportState, onExport }: Props) {
-  const [deleteAccount, { isLoading }] = useDeleteAccountMutation();
+  const [deleteUserAccount, { isLoading }] = useDeleteUserAccountMutation();
   const [clearLocal] = useLogoutMutation();
   const [typed, setTyped] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -36,9 +37,9 @@ export function DeleteAccountDialog({ open, email, onOpenChange, exportState, on
     if (!emailMatches(typed, email)) return;
     setError(null);
     try {
-      await deleteAccount().unwrap();
-    } catch {
-      setError("Couldn't delete your account. Nothing was removed. Check your connection and try again.");
+      await deleteUserAccount().unwrap();
+    } catch (err) {
+      setError(readApiError(err, "Couldn't delete your account. Nothing was removed.").message);
       return;
     }
     await clearLocal().unwrap().catch(() => undefined);

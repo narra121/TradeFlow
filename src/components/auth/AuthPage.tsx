@@ -19,6 +19,7 @@ import { formatClock, spokenWait, useCountdown } from '@/components/auth/useCoun
 import { useGoogleSignIn } from '@/components/auth/useGoogleSignIn';
 import { TRIAL_DAYS } from '@/content/product-facts';
 import { useOnline } from '@/hooks/useOnline';
+import { normalizeEmail } from '@/lib/auth/email';
 import { trackLogin, trackSignUp } from '@/lib/analytics';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { clearSignupSuccess } from '@/store/slices/authSlice';
@@ -26,13 +27,8 @@ import { useConfirmSignupMutation, useForgotPasswordMutation, useLoginMutation, 
 
 type AuthView = 'login' | 'signup' | 'forgot' | 'otp' | 'reset';
 
-export interface AuthSuccess {
-  /** True right after the user verified a new account, so the app opens the first-run page. */
-  newUser: boolean;
-}
-
 interface AuthPageProps {
-  onLogin: (info: AuthSuccess) => void;
+  onLogin: () => void;
   initialView?: 'login' | 'signup';
 }
 
@@ -128,7 +124,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
     (next: AuthView) => navigate({ pathname: location.pathname, search: next === 'login' || next === 'signup' ? '' : `?view=${next}` }, { state: { ...(location.state as object | null), email: undefined, focus: undefined } }),
     [navigate, location.pathname, location.state],
   );
-  const justSignedUp = useRef(false);
+  const wasOffline = useRef(false);
   const passwordChanged = useRef(false);
   const summary = useRef<HTMLDivElement>(null);
   const resend = useCountdown(30);
@@ -147,22 +143,25 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
     if (!isAuthenticated) return;
     trackLogin('email');
     if (passwordChanged.current) toast.success('Password changed');
-    onLogin({ newUser: justSignedUp.current });
+    onLogin();
   }, [isAuthenticated, onLogin]);
 
   useEffect(() => {
     if (signupSuccess) dispatch(clearSignupSuccess());
   }, [signupSuccess, dispatch]);
 
+  // Read from the flag's own change: a second `online` listener is removed by this effect's cleanup before the browser calls it.
   useEffect(() => {
-    if (online) return;
-    setBackOnline(false);
-    const onBack = () => {
-      setBackOnline(true);
-      window.setTimeout(() => setBackOnline(false), 5000);
-    };
-    window.addEventListener('online', onBack, { once: true });
-    return () => window.removeEventListener('online', onBack);
+    if (!online) {
+      wasOffline.current = true;
+      setBackOnline(false);
+      return;
+    }
+    if (!wasOffline.current) return;
+    wasOffline.current = false;
+    setBackOnline(true);
+    const id = window.setTimeout(() => setBackOnline(false), 5000);
+    return () => window.clearTimeout(id);
   }, [online]);
 
   useEffect(() => {
@@ -209,7 +208,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
   const failServer = (err: unknown, call: AuthCall) => {
     const info = describeAuthError(err, call);
     if (info.kind === 'rate') {
-      setLimit({ call, email: email.trim(), retryAfter: info.retryAfter });
+      setLimit({ call, email: normalizeEmail(email), retryAfter: info.retryAfter });
       if (info.retryAfter) cooldown.restart(info.retryAfter);
       focusSummary();
       return info;
@@ -237,7 +236,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
   const emailError = () => (!email.trim() ? 'Enter your email address.' : !isValidEmail(email) ? 'Enter a valid email address, like name@example.com.' : undefined);
   const policyError = () => (!password ? 'Enter a password.' : unmetRules(password).length ? missingRulesMessage(unmetRules(password)) : undefined);
 
-  const blocked = (call: AuthCall) => !!limit && !!limit.retryAfter && cooldown.left > 0 && limit.call === call && limit.email === email.trim();
+  const blocked = (call: AuthCall) => !!limit && !!limit.retryAfter && cooldown.left > 0 && limit.call === call && limit.email === normalizeEmail(email);
 
   const items = (): SummaryItem[] =>
     showSummary
@@ -282,7 +281,6 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
     clearFeedback();
     try {
       await signup({ name: fallbackName(email), email: email.trim(), password }).unwrap();
-      justSignedUp.current = true;
       trackSignUp('email');
       setOrigin('signup');
       go('otp');
@@ -303,7 +301,6 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
       failServer(err, 'confirm');
       return;
     }
-    justSignedUp.current = true;
     if (!password) return goVerifiedLogin();
     setVerified(true);
     try {
@@ -483,7 +480,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
         value={email}
         onChange={(e) => {
           setEmail(e.target.value);
-          if (limit && e.target.value.trim() !== limit.email) setLimit(null);
+          if (limit && normalizeEmail(e.target.value) !== limit.email) setLimit(null);
         }}
         autoComplete="email"
         inputMode="email"
@@ -543,7 +540,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
 
   const alternate =
     view === 'login'
-      ? { prompt: 'New here?', label: 'Create account', to: '/signup', state: { ...(location.state as object | null), email: email.trim() || undefined } }
+      ? { prompt: 'New here?', note: `${TRIAL_DAYS}-day Pro trial. No card.`, label: 'Create account', to: '/signup', state: { ...(location.state as object | null), email: email.trim() || undefined } }
       : view === 'signup'
         ? { prompt: 'Have an account?', label: 'Log in', to: '/login', state: { ...(location.state as object | null), email: email.trim() || undefined } }
         : undefined;

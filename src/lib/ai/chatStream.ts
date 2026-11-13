@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { API_BASE_URL } from '@/lib/api/config';
-import { refreshToken } from '@/lib/api/tokenRefresh';
+import { getIdToken } from '@/lib/auth/authService';
 import { classifyPlanError, emitPlanSignal } from '@/lib/planErrors';
+import { readApiError } from '@/lib/apiError';
 import type { ChatDonePayload, ChatStreamErrorInfo } from '@/types/chat';
 import { SseParser } from './sse';
 
@@ -31,8 +32,8 @@ export interface StreamChatOptions {
   onToken: (text: string) => void;
   /** test hooks */
   fetchImpl?: typeof fetch;
-  getToken?: () => string | null;
-  refresh?: () => Promise<string>;
+  getToken?: () => string | null | Promise<string | null>;
+  refresh?: () => Promise<string | null>;
 }
 
 async function errorFromResponse(res: Response): Promise<ChatStreamError> {
@@ -50,7 +51,7 @@ async function errorFromResponse(res: Response): Promise<ChatStreamError> {
   return new ChatStreamError({
     status: res.status,
     code: body?.errorCode ?? info.code ?? 'REQUEST_FAILED',
-    message: body?.errorMessage ?? body?.message ?? `Request failed (${res.status})`,
+    message: readApiError({ status: res.status, data: body }, `Request failed (${res.status})`).message,
     feature: info.feature,
     limit: info.limit,
     resetsAt: info.resetsAt,
@@ -64,8 +65,8 @@ async function errorFromResponse(res: Response): Promise<ChatStreamError> {
  */
 export async function streamChat(opts: StreamChatOptions): Promise<ChatDonePayload> {
   const doFetch = opts.fetchImpl ?? fetch;
-  const getToken = opts.getToken ?? (() => localStorage.getItem('idToken'));
-  const refresh = opts.refresh ?? refreshToken;
+  const getToken = opts.getToken ?? (() => getIdToken());
+  const refresh = opts.refresh ?? (() => getIdToken({ forceRefresh: true }));
   const url = `${API_BASE_URL}/chat/sessions/${encodeURIComponent(opts.sessionId)}/messages`;
 
   const attempt = (token: string | null) =>
@@ -76,15 +77,17 @@ export async function streamChat(opts: StreamChatOptions): Promise<ChatDonePaylo
       signal: opts.signal,
     });
 
-  let res = await attempt(getToken());
+  let res = await attempt(await getToken());
   if (res.status === 401) {
-    let fresh: string;
+    let fresh: string | null = null;
     try {
       fresh = await refresh();
     } catch {
-      throw await errorFromResponse(res);
+      // no renewed token: the 401 below is final
     }
-    res = await attempt(fresh);
+    if (fresh) res = await attempt(fresh);
+    // The same event baseApi raises: the app signs the user out and returns to login.
+    if (res.status === 401) window.dispatchEvent(new CustomEvent('unauthorized'));
   }
   if (!res.ok) throw await errorFromResponse(res);
   if (!res.body) throw new ChatStreamError({ status: res.status, code: 'NO_STREAM', message: 'The server did not return a stream.' });
@@ -108,13 +111,18 @@ export async function streamChat(opts: StreamChatOptions): Promise<ChatDonePaylo
     }
   };
 
-  for (;;) {
-    const { value, done: finished } = await reader.read();
-    if (finished) break;
-    handle(parser.push(decoder.decode(value, { stream: true })));
+  try {
+    for (;;) {
+      const { value, done: finished } = await reader.read();
+      if (finished) break;
+      handle(parser.push(decoder.decode(value, { stream: true })));
+    }
+    handle(parser.push(decoder.decode()));
+    handle(parser.end());
+  } finally {
+    // An error frame or an abort leaves the connection open: stop the download so the server stops generating.
+    reader.cancel().catch(() => undefined);
   }
-  handle(parser.push(decoder.decode()));
-  handle(parser.end());
   if (!done) throw new ChatStreamError({ status: res.status, code: 'STREAM_ENDED', message: 'The answer was cut off. Please ask again.' });
   return done;
 }

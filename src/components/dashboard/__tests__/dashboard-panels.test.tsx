@@ -90,6 +90,14 @@ describe('GoalsSummary', () => {
     wrap(<GoalsSummary week={week({ isError: true })} mixed={false} />);
     expect(screen.getByText(/Could not load your goals/)).toBeInTheDocument();
   });
+
+  it('adds the API message of a failed load; the connection message only without a response', () => {
+    const { unmount } = wrap(<GoalsSummary week={week({ isError: true, error: { status: 500, data: { message: 'Goals are being recalculated.' } } })} mixed={false} />);
+    expect(screen.getByText(/Goals are being recalculated\./)).toBeInTheDocument();
+    unmount();
+    wrap(<GoalsSummary week={week({ isError: true, error: { status: 'FETCH_ERROR' } })} mixed={false} />);
+    expect(screen.getByText(/Check your internet connection/)).toBeInTheDocument();
+  });
 });
 
 describe('NeedsAttention', () => {

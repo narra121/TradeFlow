@@ -31,6 +31,13 @@ interface GoalsProgressResponse {
   rules: TradingRule[];
 }
 
+interface GoalsHistoryResponse {
+  period: 'week' | 'month';
+  accountId: string;
+  /** Oldest first; each `goals` is the `goalProgress` that `/goals/progress` returns for that period. */
+  periods: { periodKey: string; startDate: string; endDate: string; goals: GoalsProgressResponse['goalProgress'] }[];
+}
+
 interface RulesAndGoalsResponse {
   rules: TradingRule[];
   goals: Goal[];
@@ -43,6 +50,7 @@ function patchAllRulesGoals(dispatch: any, getState: any, recipe: (draft: RulesA
 }
 
 export const goalsRulesApi = api.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     getRulesAndGoals: builder.query<RulesAndGoalsResponse, { periodKey?: string; currentPeriod?: boolean } | void>({
       query: (params) => {
@@ -69,14 +77,6 @@ export const goalsRulesApi = api.injectEndpoints({
       }),
       transformResponse: (response: any) => {
         const goal = response.goal;
-        if (response?._apiMessage) {
-             Object.defineProperty(goal, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return goal;
       },
       invalidatesTags: ['Goals'],
@@ -101,14 +101,6 @@ export const goalsRulesApi = api.injectEndpoints({
       }),
       transformResponse: (response: any) => {
         const goal = response.goal;
-        if (response?._apiMessage) {
-             Object.defineProperty(goal, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return goal;
       },
       invalidatesTags: ['Goals'],
@@ -118,14 +110,6 @@ export const goalsRulesApi = api.injectEndpoints({
       query: () => '/rules',
       transformResponse: (response: any) => {
         const rules = response.rules;
-        if (response?._apiMessage) {
-             Object.defineProperty(rules, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return rules;
       },
       providesTags: (result) =>
@@ -145,14 +129,6 @@ export const goalsRulesApi = api.injectEndpoints({
       }),
       transformResponse: (response: any) => {
         const rule = response.rule;
-        if (response?._apiMessage) {
-             Object.defineProperty(rule, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return rule;
       },
       invalidatesTags: ['Rules'],
@@ -166,14 +142,6 @@ export const goalsRulesApi = api.injectEndpoints({
       }),
       transformResponse: (response: any) => {
         const rule = response.rule;
-        if (response?._apiMessage) {
-             Object.defineProperty(rule, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return rule;
       },
       invalidatesTags: ['Rules'],
@@ -206,14 +174,6 @@ export const goalsRulesApi = api.injectEndpoints({
             message: response.message || 'Rule deleted successfully',
             rule: response.rule
         };
-        if (response?._apiMessage) {
-             Object.defineProperty(result, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
         return result;
       },
       invalidatesTags: ['Rules'],
@@ -261,6 +221,23 @@ export const goalsRulesApi = api.injectEndpoints({
       }),
       providesTags: ['Goals', 'Rules', 'Stats'],
     }),
+
+    getGoalsHistory: builder.query<GoalsHistoryResponse, {
+      period: 'week' | 'month';
+      count: number;
+      /** The period on screen; the list ends with the period before it. */
+      before: string;
+      accountId: string;
+      totalCapital?: number;
+    }>({
+      query: (params) => ({
+        url: '/goals/history',
+        params: { ...params, totalCapital: params.totalCapital !== undefined ? String(params.totalCapital) : undefined },
+      }),
+      providesTags: ['Goals', 'Rules', 'Stats'],
+      // 60 s would reload the history on the next visit. A write still drops it (the 'Goals' tag), so this only spares reloads of unchanged periods.
+      keepUnusedDataFor: 900,
+    }),
   }),
 });
 
@@ -273,4 +250,5 @@ export const {
   useUpdateRuleMutation,
   useDeleteRuleMutation,
   useGetGoalsProgressQuery,
+  useGetGoalsHistoryQuery,
 } = goalsRulesApi;

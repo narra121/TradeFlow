@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useEnhanceTextMutation } from '@/store/api/textApi';
 import { cn } from '@/lib/utils';
+import { readApiError } from '@/lib/apiError';
 
 interface TextEnhancerButtonProps {
   text: string;
@@ -29,8 +30,7 @@ export function TextEnhancerButton({
       const result = await enhanceText({ text }).unwrap();
       onEnhanced(result.enhancedText);
     } catch (error: unknown) {
-      console.error('Failed to enhance text:', error);
-      // You could add toast notification here
+      toast.error("Couldn't enhance the text.", { description: readApiError(error, 'Try again.').message });
     }
   };
 

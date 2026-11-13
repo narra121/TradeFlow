@@ -51,6 +51,7 @@ export function ReportBody({ insight, title, currency, onOpenTrades, onMakeRule,
         <p className="text-xs text-muted-foreground">
           {insight.tradeCount} trades · {formatDateShort(insight.period.from, true)} – {formatDateShort(insight.period.to, true)} · generated {formatDateShort(insight.createdAt, true)}
         </p>
+        {insight.truncated && <p className="text-xs text-warning">Based on the oldest {insight.tradeCount} trades of the period. The period held more than could be analysed.</p>}
         <details className="text-xs text-muted-foreground">
           <summary className="cursor-pointer select-none underline-offset-2 hover:underline">How this is calculated</summary>
           <p className="mt-1 max-w-prose">

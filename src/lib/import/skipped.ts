@@ -1,4 +1,5 @@
 import Papa from 'papaparse';
+import { zoneOffsetMinutes } from '@/lib/appTimeZone';
 import type { NormalizedTrade, ParseImportResponse } from '@/types/import';
 import { grossFrom, makeRows, shortHash, type ReviewRow } from './rows';
 
@@ -38,15 +39,13 @@ export interface SkippedLine {
   trade: NormalizedTrade | null;
 }
 
-const IST_MINUTES = 330;
-
-/** `2026-11-02 09:15` is read in IST like the parser does for generic files; anything else falls back to the browser. */
+/** `2026-11-02 09:15` is read on the app time zone's clock like the parse request asks of the parser for generic files; anything else falls back to the browser. */
 function readDate(value: string): string {
   const v = value.trim();
   if (!v) return '';
   const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/.exec(v);
   if (m) {
-    const ms = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)) - IST_MINUTES * 60_000;
+    const ms = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)) - zoneOffsetMinutes(new Date()) * 60_000;
     return new Date(ms).toISOString();
   }
   const d = new Date(v);

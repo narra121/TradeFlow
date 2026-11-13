@@ -6,7 +6,7 @@ const LINKS = [
   { to: '/', label: 'Home' },
   { to: '/guide', label: 'Guide' },
   { to: '/blog', label: 'Blog' },
-  { to: '/login', label: 'Log in' },
+  { to: '/login', label: 'Log in', className: 'signed-out-only' },
 ];
 
 const NotFound = () => {
@@ -22,7 +22,7 @@ const NotFound = () => {
           <p className="mt-3 text-base text-foreground-soft">The page may have moved, or the link is wrong.</p>
           <ul className="mt-6 flex flex-wrap gap-3">
             {LINKS.map((l) => (
-              <li key={l.to}>
+              <li key={l.to} className={l.className}>
                 <Link
                   to={l.to}
                   className="inline-flex h-10 items-center rounded-md border border-border-strong px-4 text-sm font-medium text-foreground hover:bg-secondary"

@@ -9,12 +9,12 @@ import { formatPercent } from '@/lib/format';
 import { StatementPanel } from './StatementPanel';
 import { rowLink, type AnalyticsContext } from './drill';
 
-function StandoutRow({ s, up, currency }: { s: Standout; up: boolean; currency?: string }) {
+function StandoutRow({ s, up, currency, zone }: { s: Standout; up: boolean; currency?: string; zone: string }) {
   const { row } = s;
   return (
     <li>
       <Link
-        to={rowLink(s.dimId, row) ?? '/app/tradelog'}
+        to={rowLink(s.dimId, row, zone) ?? '/app/tradelog'}
         className="grid min-h-9 grid-cols-[1rem_minmax(0,1fr)_auto_auto] items-center gap-x-3 rounded-sm text-[13px] hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[1rem_minmax(0,1fr)_5rem_4rem_7rem_4rem_1rem]"
       >
         <span aria-hidden="true" className="text-muted-foreground">{up ? '▲' : '▼'}</span>
@@ -31,7 +31,7 @@ function StandoutRow({ s, up, currency }: { s: Standout; up: boolean; currency?:
 
 /** Statement of twelve figures, equity with drawdown, and the segments that earn and cost the most. */
 export function OverviewTab({ ctx }: { ctx: AnalyticsContext }) {
-  const { stats, pro, currency } = ctx;
+  const { stats, pro, currency, zone } = ctx;
   const points = useMemo(() => equitySeries(stats.dailyPnl, (d) => d), [stats.dailyPnl]);
   const standouts = useMemo(() => {
     const dims = pro ? availableDimensions(stats) : DIMENSIONS.filter((d) => d.free);
@@ -54,8 +54,8 @@ export function OverviewTab({ ctx }: { ctx: AnalyticsContext }) {
           <p className="px-4 pb-4 pt-3 text-sm text-muted-foreground">No segment has {MIN_SEGMENT_TRADES} trades with a clear result yet.</p>
         ) : (
           <ul className="space-y-0.5 px-4 pb-3 pt-2">
-            {standouts.working.map((s) => <StandoutRow key={`w-${s.dimId}-${s.row.key}`} s={s} up currency={currency} />)}
-            {standouts.notWorking.map((s) => <StandoutRow key={`n-${s.dimId}-${s.row.key}`} s={s} up={false} currency={currency} />)}
+            {standouts.working.map((s) => <StandoutRow key={`w-${s.dimId}-${s.row.key}`} s={s} up currency={currency} zone={zone} />)}
+            {standouts.notWorking.map((s) => <StandoutRow key={`n-${s.dimId}-${s.row.key}`} s={s} up={false} currency={currency} zone={zone} />)}
           </ul>
         )}
       </Panel>

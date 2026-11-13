@@ -83,7 +83,7 @@ export function BillingView() {
       </div>
     );
   }
-  if (ent.isError || !ent.plan) return <ErrorState title="Couldn't load your plan." onRetry={ent.refetch} />;
+  if (ent.isError || !ent.plan) return <ErrorState title="Couldn't load your plan." error={ent.error} onRetry={ent.refetch} />;
 
   const state = planState(toPlanFacts(ent));
   const paid = ent.plan === 'pro';

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { SCOPE_TRADE_CEILING, useGetScopeTradesQuery } from '@/store/api/tradesApi';
+import { SCOPE_TRADE_CEILING, useGetNewestTradeQuery, useGetScopeTradesQuery } from '@/store/api/tradesApi';
 import type { Trade } from '@/types/trade';
 
 export interface ScopeParams {
@@ -23,22 +23,26 @@ export function sortNewestFirst(trades: Trade[]): Trade[] {
 
 /**
  * Every trade in the current scope (account + date range from the store) unless `override` narrows it,
- * e.g. the calendar loads its visible month regardless of the date range.
+ * e.g. the calendar loads its visible month regardless of the date range. `newestOnly` reads just the newest trade
+ * of that scope in one request (`trades` has at most one entry) instead of paging all of them.
  */
-export function useScopeTrades(override?: ScopeParams, options?: { skip?: boolean }) {
+export function useScopeTrades(override?: ScopeParams, options?: { skip?: boolean; newestOnly?: boolean }) {
   const filters = useAppSelector((s) => s.trades.filters);
   const params: ScopeParams = override ?? {
     accountId: filters.accountId,
     startDate: filters.startDate,
     endDate: filters.endDate,
   };
-  const query = useGetScopeTradesQuery(params, { skip: options?.skip });
+  const all = useGetScopeTradesQuery(params, { skip: options?.skip || options?.newestOnly });
+  const newest = useGetNewestTradeQuery(params, { skip: options?.skip || !options?.newestOnly });
+  const query = options?.newestOnly ? newest : all;
   const trades = useMemo(() => sortNewestFirst(query.data ?? []), [query.data]);
   return {
     trades,
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     isError: query.isError,
+    error: query.error,
     refetch: query.refetch,
     truncated: (query.data?.length ?? 0) >= SCOPE_TRADE_CEILING,
     params,

@@ -4,8 +4,8 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
-  if (!env.VITE_API_URL) {
-    throw new Error(`VITE_API_URL is not set for mode "${mode}". Copy .env.example to .env.${mode}.local and fill it in.`);
+  for (const name of ['VITE_API_URL', 'VITE_COGNITO_USER_POOL_ID', 'VITE_COGNITO_CLIENT_ID']) {
+    if (!env[name]) throw new Error(`${name} is not set for mode "${mode}". Copy .env.example to .env.${mode}.local and fill it in.`);
   }
   // The dev API only allows its own CORS origins, so `vite` (development mode) talks to it through a same-origin proxy.
   const proxyDevApi = command === 'serve' && mode === 'development';

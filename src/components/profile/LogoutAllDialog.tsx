@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { useLogoutMutation } from '@/store/api/authApi';
-import { useLogoutAllDevicesMutation } from '@/store/api/profileApi';
+import { useLogoutEverywhereMutation } from '@/store/api/authApi';
 import { DRAFT_LOGOUT_SENTENCE } from '@/components/auth/useLogout';
 import { hasTradeDrafts } from '@/lib/scope';
+import { readApiError } from '@/lib/apiError';
 import { LOGGED_OUT_EVERYWHERE_URL } from './helpers';
 
 interface Props {
@@ -14,19 +14,17 @@ interface Props {
 }
 
 export function LogoutAllDialog({ open, onOpenChange }: Props) {
-  const [logoutAll, { isLoading }] = useLogoutAllDevicesMutation();
-  const [clearLocal] = useLogoutMutation();
+  const [logoutAll, { isLoading }] = useLogoutEverywhereMutation();
   const [error, setError] = useState<string | null>(null);
 
   const confirm = async () => {
     setError(null);
     try {
       await logoutAll().unwrap();
-    } catch {
-      setError("Couldn't log you out of your other devices. Check your connection and try again.");
+    } catch (err) {
+      setError(readApiError(err, "Couldn't log you out of your other devices.").message);
       return;
     }
-    await clearLocal().unwrap().catch(() => undefined);
     window.location.assign(LOGGED_OUT_EVERYWHERE_URL);
   };
 

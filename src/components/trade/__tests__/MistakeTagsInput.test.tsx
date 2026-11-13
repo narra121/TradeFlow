@@ -1,3 +1,5 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MistakeTagsInput } from '../MistakeTagsInput';
@@ -237,5 +239,37 @@ describe('MistakeTagsInput – additional coverage', () => {
 
     expect(onAddNew).toHaveBeenCalledWith('Trimmed Tag');
     expect(onChange).toHaveBeenCalledWith(['Trimmed Tag']);
+  });
+});
+
+describe('MistakeTagsInput (FE-049)', () => {
+  const props = { selectedTags: [] as string[], onChange: vi.fn(), availableTags: ['scalp', 'swing'], onAddNew: vi.fn() };
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('selects an existing tag typed in the add row instead of doing nothing', async () => {
+    const user = userEvent.setup();
+    render(<MistakeTagsInput {...props} />);
+    await user.click(screen.getByText('Add New Mistake'));
+    await user.type(screen.getByPlaceholderText('Enter new mistake...'), 'scalp{Enter}');
+    expect(props.onChange).toHaveBeenCalledWith(['scalp']);
+    expect(props.onAddNew).not.toHaveBeenCalled();
+  });
+
+  it('does not select an already selected tag twice', async () => {
+    const user = userEvent.setup();
+    render(<MistakeTagsInput {...props} selectedTags={['scalp']} />);
+    await user.click(screen.getByText('Add New Mistake'));
+    await user.type(screen.getByPlaceholderText('Enter new mistake...'), 'scalp{Enter}');
+    expect(props.onChange).not.toHaveBeenCalled();
+  });
+
+  it('words the add row for tags when noun="tag" and limits the length', async () => {
+    const user = userEvent.setup();
+    render(<MistakeTagsInput {...props} noun="tag" maxLength={24} />);
+    await user.click(screen.getByText('Add New Tag'));
+    expect(screen.getByPlaceholderText('Enter new tag...')).toHaveAttribute('maxlength', '24');
   });
 });

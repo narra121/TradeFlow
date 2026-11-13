@@ -68,6 +68,19 @@ describe('RulesPanel', () => {
     expect(h.onCloseAdd).toHaveBeenCalled();
   });
 
+  it('shows the API message when saving a rule fails, and the connection message only without a response', async () => {
+    const user = userEvent.setup();
+    const h = setup({ adding: true });
+    h.onAdd.mockRejectedValueOnce({ status: 400, data: { message: 'You can keep at most 20 rules.' } });
+    await user.type(screen.getByLabelText('New rule'), 'Stop after −2% day{Enter}');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('You can keep at most 20 rules.');
+    expect(alert).not.toHaveTextContent(/connection/i);
+    h.onAdd.mockRejectedValueOnce({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' });
+    await user.type(screen.getByLabelText('New rule'), '{Enter}');
+    await vi.waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/internet connection/i));
+  });
+
   it('refuses an empty rule under the field', async () => {
     const user = userEvent.setup();
     const h = setup({ adding: true });
@@ -115,6 +128,32 @@ describe('RulesPanel', () => {
     const input = screen.getByLabelText('New rule') as HTMLInputElement;
     expect(input).toHaveValue('Stop after −2% day');
     expect(input.selectionEnd - input.selectionStart).toBe(input.value.length);
+  });
+
+  it('keeps the dialog open and shows the failure when the delete throws (FE-057)', async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn().mockRejectedValue({ status: 500, data: { message: 'The rules service is busy.' } });
+    setup({ onDelete });
+    await user.click(screen.getByRole('button', { name: 'Actions for rule: Risk at most 1% per trade' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete…' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete rule' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('The rules service is busy.');
+    expect(onDelete).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Delete rule' })).toBeEnabled();
+  });
+
+  it('gives the add row and an open edit row separate input ids (FE-066)', async () => {
+    const user = userEvent.setup();
+    setup({ adding: true, addInitial: '' });
+    await user.click(screen.getByRole('button', { name: 'Actions for rule: Risk at most 1% per trade' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Edit' }));
+    const inputs = screen.getAllByRole('textbox');
+    expect(inputs.length).toBeGreaterThanOrEqual(2);
+    const ids = inputs.map((i) => i.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const input of inputs) expect(document.querySelectorAll(`label[for="${CSS.escape(input.id)}"]`)).toHaveLength(1);
   });
 
   it('says why a rule cannot be deleted when the API refuses', async () => {

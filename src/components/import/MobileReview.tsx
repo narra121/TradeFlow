@@ -9,7 +9,8 @@ import { DirectionChip } from '@/components/ui/chips';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { formatDateTime, formatQuantity } from '@/lib/format';
 import { STATUS_LABEL } from '@/lib/import/labels';
-import { rowStatus, validateTrade, type EditableField, type ReviewRow } from '@/lib/import/rows';
+import { fromZonedInput, toZonedInput } from '@/lib/appTimeZone';
+import { parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow } from '@/lib/import/rows';
 import { cn } from '@/lib/utils';
 
 interface MobileReviewProps {
@@ -80,37 +81,33 @@ const FIELDS: { field: EditableField; label: string; type: 'text' | 'number' | '
   { field: 'pnl', label: 'Net P&L', type: 'number' },
 ];
 
-const toLocal = (iso: string) => {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-};
+const toIso = (v: string) => fromZonedInput(v)?.toISOString() ?? '';
+
+const draftOf = (t: ReviewRow['trade']): Record<string, string> => ({
+  symbol: t.symbol,
+  quantity: String(t.quantity || ''),
+  entryPrice: String(t.entryPrice || ''),
+  exitPrice: String(t.exitPrice || ''),
+  openDate: toZonedInput(t.openDate),
+  closeDate: toZonedInput(t.closeDate),
+  fees: String(t.fees ?? 0),
+  pnl: String(t.pnl ?? 0),
+  side: t.side,
+});
 
 function RowSheet({ row, onClose, onEdit }: { row: ReviewRow | null; onClose: () => void; onEdit: MobileReviewProps['onEdit'] }) {
   const [draft, setDraft] = useState<Record<string, string>>({});
   useEffect(() => {
-    if (!row) return;
-    const t = row.trade;
-    setDraft({
-      symbol: t.symbol,
-      quantity: String(t.quantity || ''),
-      entryPrice: String(t.entryPrice || ''),
-      exitPrice: String(t.exitPrice || ''),
-      openDate: toLocal(t.openDate),
-      closeDate: toLocal(t.closeDate),
-      fees: String(t.fees ?? 0),
-      pnl: String(t.pnl ?? 0),
-      side: t.side,
-    });
+    if (row) setDraft(draftOf(row.trade));
   }, [row]);
   if (!row) return <Sheet open={false} />;
-  const preview = { ...row.trade, symbol: draft.symbol ?? '', quantity: Number(draft.quantity), entryPrice: Number(draft.entryPrice), exitPrice: Number(draft.exitPrice), openDate: draft.openDate ? new Date(draft.openDate).toISOString() : '', closeDate: draft.closeDate ? new Date(draft.closeDate).toISOString() : '', fees: Number(draft.fees), pnl: Number(draft.pnl) };
+  const preview = { ...row.trade, symbol: draft.symbol ?? '', quantity: parseNumberCell(draft.quantity ?? ''), entryPrice: parseNumberCell(draft.entryPrice ?? ''), exitPrice: parseNumberCell(draft.exitPrice ?? ''), openDate: toIso(draft.openDate ?? ''), closeDate: toIso(draft.closeDate ?? ''), fees: parseNumberCell(draft.fees ?? ''), pnl: parseNumberCell(draft.pnl ?? '') };
   const errors = validateTrade(preview);
   const apply = () => {
     for (const f of FIELDS) {
       const v = draft[f.field] ?? '';
-      const next = f.type === 'number' ? Number(v) : f.type === 'datetime-local' ? (v ? new Date(v).toISOString() : '') : v.trim().toUpperCase();
+      if (f.type === 'number' && v === draftOf(row.trade)[f.field]) continue; // untouched cell
+      const next = f.type === 'number' ? parseNumberCell(v) : f.type === 'datetime-local' ? toIso(v) : v.trim().toUpperCase();
       const was = f.type === 'datetime-local' ? row.trade[f.field as 'openDate' | 'closeDate'] : row.trade[f.field as keyof typeof row.trade];
       if (!Object.is(next, was)) onEdit(row.key, f.field, next);
     }

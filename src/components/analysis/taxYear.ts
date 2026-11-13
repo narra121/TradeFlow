@@ -1,5 +1,4 @@
-import { format } from 'date-fns/format';
-import { parseLocalDate } from '@/lib/format';
+import { formatDateShort } from '@/lib/format';
 
 /** Indian financial year of a date, `2026-27` (1 April to 31 March). */
 export function financialYear(now: Date = new Date()): string {
@@ -14,5 +13,5 @@ export function financialYears(now: Date = new Date(), count = 4): string[] {
 }
 
 export function formatFyRange(from: string, to: string): string {
-  return `${format(parseLocalDate(from), 'd MMM yyyy')} – ${format(parseLocalDate(to), 'd MMM yyyy')}`;
+  return `${formatDateShort(from, true)} – ${formatDateShort(to, true)}`;
 }

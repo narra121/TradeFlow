@@ -1,7 +1,8 @@
 import { addDays, addMonths, addYears, differenceInCalendarDays } from 'date-fns';
+import { appToday, appTodayKey } from '@/lib/appTimeZone';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { tradeDayKey } from '@/lib/calendar';
-import { parseLocalDate } from '@/lib/format';
+import { accountCurrency, MONTHS_SHORT, parseLocalDate } from '@/lib/format';
 import type { DatePreset } from '@/lib/scope';
 import type { Trade, TradingAccount } from '@/types/trade';
 
@@ -32,33 +33,18 @@ export interface TodaySummary {
 }
 
 export function todaySummary(trades: Trade[], accounts: Map<string, TradingAccount>, now: Date = new Date()): TodaySummary {
-  const today = formatLocalDateOnly(now);
+  const today = appTodayKey(now);
   const list = trades.filter((t) => tradeDayKey(t) === today);
   const byCurrency: { currency: string; net: number }[] = [];
   for (const t of list) {
     const acc = t.accountId ? accounts.get(t.accountId) : undefined;
     if (!acc) continue;
-    const cur = acc.currency || 'USD';
+    const cur = accountCurrency(acc);
     const row = byCurrency.find((c) => c.currency === cur);
     if (row) row.net += t.pnl;
     else byCurrency.push({ currency: cur, net: t.pnl });
   }
   return { count: list.length, byCurrency };
-}
-
-/** Net per account currency across the loaded trades, largest trade count first (used while /stats cannot group by currency). */
-export function netByCurrency(trades: Trade[], accounts: Map<string, TradingAccount>): { currency: string; net: number; trades: number }[] {
-  const out = new Map<string, { currency: string; net: number; trades: number }>();
-  for (const t of trades) {
-    const acc = t.accountId ? accounts.get(t.accountId) : undefined;
-    if (!acc) continue;
-    const cur = acc.currency || 'USD';
-    const row = out.get(cur) ?? { currency: cur, net: 0, trades: 0 };
-    row.net += t.pnl;
-    row.trades += 1;
-    out.set(cur, row);
-  }
-  return [...out.values()].sort((a, b) => b.trades - a.trades);
 }
 
 export interface EquityPoint {
@@ -81,12 +67,11 @@ export interface PreviousPeriod {
   spokenName: string;
 }
 
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTH_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 /**
- * The equal period before the one shown; `null` for All time. A month preset compares with the whole previous
- * month, a week with the whole previous week.
+ * The equal period before the one shown; `null` for All time. Every preset compares the same number of days: a week
+ * with the same weekdays of the week before, a month with the first days of the previous month (cut at its end).
  */
 export function previousPeriod(preset: DatePreset, startDate: string, endDate: string): PreviousPeriod | null {
   if (preset === 'all') return null;
@@ -99,7 +84,9 @@ export function previousPeriod(preset: DatePreset, startDate: string, endDate: s
   }
   if (preset === 'thisMonth') {
     const start = addMonths(from, -1);
-    return { startDate: fmt(start), endDate: fmt(addDays(from, -1)), name: MONTH_SHORT[start.getMonth()], spokenName: MONTH_LONG[start.getMonth()] };
+    const lastDay = addDays(from, -1);
+    const sameDays = addDays(start, differenceInCalendarDays(to, from));
+    return { startDate: fmt(start), endDate: fmt(sameDays.getTime() < lastDay.getTime() ? sameDays : lastDay), name: MONTHS_SHORT[start.getMonth()], spokenName: MONTH_LONG[start.getMonth()] };
   }
   if (preset === 'last1Year' || preset === 365) {
     return { startDate: fmt(addYears(from, -1)), endDate: fmt(addYears(to, -1)), name: 'previous period', spokenName: 'the previous period' };
@@ -151,6 +138,34 @@ export function chartSeries(points: EquityPoint[], labelOf: (d: string) => strin
   };
 }
 
+export interface DrawdownPoint {
+  date: string;
+  /** At most 0: how far the equity curve is below its highest point so far (the peak starts at 0). */
+  drawdown: number;
+}
+
+/**
+ * Drawdown of every day in `points`. `chart` is the same series for drawing: beyond 92 days each Monday-start week keeps
+ * its deepest day, so a trough in the middle of a week is not averaged away.
+ */
+export function drawdownSeries(points: EquityPoint[]): { daily: DrawdownPoint[]; chart: DrawdownPoint[] } {
+  let peak = 0;
+  const daily = points.map((p) => {
+    peak = Math.max(peak, p.cumulative);
+    return { date: p.date, drawdown: p.cumulative - peak };
+  });
+  const span = daily.length > 1 ? differenceInCalendarDays(parseLocalDate(daily[daily.length - 1].date), parseLocalDate(daily[0].date)) + 1 : 0;
+  if (span <= WEEKLY_BUCKET_DAYS) return { daily, chart: daily };
+  const weeks = new Map<string, DrawdownPoint>();
+  for (const p of daily) {
+    const key = mondayKey(p.date);
+    const w = weeks.get(key);
+    if (!w) weeks.set(key, { date: key, drawdown: p.drawdown });
+    else if (p.drawdown < w.drawdown) w.drawdown = p.drawdown;
+  }
+  return { daily, chart: [...weeks.values()] };
+}
+
 interface ProgressItem {
   current: number;
   target: number;
@@ -195,7 +210,8 @@ export function weekGoals(progress: Record<'profit' | 'winRate' | 'maxDrawdown' 
 
 /** Monday-start current week: the date range and `week#YYYY-MM-DD` key the goals endpoint takes. */
 export function currentWeek(now: Date = new Date()): { start: string; end: string; periodKey: string } {
-  const monday = addDays(now, -((now.getDay() + 6) % 7));
+  const today = appToday(now);
+  const monday = addDays(today, -((today.getDay() + 6) % 7));
   const start = formatLocalDateOnly(monday);
   return { start, end: formatLocalDateOnly(addDays(monday, 6)), periodKey: `week#${start}` };
 }

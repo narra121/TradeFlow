@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { refreshToken } from '@/lib/api/tokenRefresh';
-import { decodeJwtPayload } from '@/lib/jwt';
+import { getIdToken } from '@/lib/auth/authService';
+import { decodeClaims, readStoredIdToken } from '@/lib/auth/storedSession';
 import { useGetProfileQuery, useUpdateProfileMutation } from '@/store/api/userApi';
 
 export type SignInMethod = 'google' | 'password';
@@ -9,8 +9,8 @@ export const NAME_MAX_LENGTH = 60;
 
 /** Google users carry an `identities` claim or a `Google_` Cognito username. */
 export function signInMethodFromToken(idToken: string | null | undefined): SignInMethod {
-  const payload = decodeJwtPayload(idToken);
-  const identities = (payload as { identities?: { providerName?: string }[] } | null)?.identities;
+  const payload = decodeClaims(idToken);
+  const identities = payload?.identities;
   if (identities?.some((i) => i.providerName?.toLowerCase() === 'google')) return 'google';
   return String(payload?.['cognito:username'] ?? '').toLowerCase().startsWith('google_') ? 'google' : 'password';
 }
@@ -27,7 +27,7 @@ export function validateName(raw: string): string | null {
  * can ask "What should we call you?" and store the answer through `saveName`.
  */
 export function useProfile() {
-  const { data, isLoading, isError, refetch } = useGetProfileQuery();
+  const { data, isLoading, isError, error, refetch } = useGetProfileQuery();
   const [update, { isLoading: isSaving }] = useUpdateProfileMutation();
 
   // updateProfile invalidates the profile, and that refetch runs with the old ID token and returns the old name,
@@ -39,7 +39,7 @@ export function useProfile() {
   }, [saved, serverName]);
   const name = saved?.name ?? serverName;
   const email = data?.email ?? '';
-  const method = signInMethodFromToken(typeof localStorage === 'undefined' ? null : localStorage.getItem('idToken'));
+  const method = signInMethodFromToken(readStoredIdToken());
 
   const saveName = useCallback(
     async (next: string) => {
@@ -48,11 +48,16 @@ export function useProfile() {
       await update({ name: next.trim() }).unwrap();
       setSaved({ name: next.trim(), replaced: serverName });
       // GET /user/profile reads `name` from the ID token claims (get-user-profile/app.ts), so the token must be reissued first.
-      await refreshToken();
-      await refetch();
+      // The name is already saved: a failed reissue or refetch must not report the save as failed (`saved` keeps showing it).
+      try {
+        await getIdToken({ forceRefresh: true });
+        await refetch();
+      } catch {
+        // the next profile load reads the new token
+      }
     },
     [update, refetch, serverName],
   );
 
-  return { name, email, method, hasName: name.length > 0, isLoading, isError, refetch, saveName, isSaving };
+  return { name, email, method, hasName: name.length > 0, isLoading, isError, error, refetch, saveName, isSaving };
 }

@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { popupHighlight, popupItem, popupSurface } from '@/components/ui/popup';
 import { cn } from '@/lib/utils';
 
 interface SmartInputProps {
@@ -113,7 +114,7 @@ export function SmartInput({
         <ChevronDown className="h-4 w-4" aria-hidden="true" />
       </button>
       {isOpen && rows.length > 0 && (
-        <ul id={listId} role="listbox" className="absolute z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-overlay">
+        <ul id={listId} role="listbox" data-side="bottom" className={cn(popupSurface, 'absolute mt-1 max-h-52 w-full overflow-y-auto p-1')}>
           {rows.map((row, i) => {
             const isNew = row.startsWith('__new__');
             return (
@@ -123,8 +124,9 @@ export function SmartInput({
                 role="option"
                 aria-selected={active === i}
                 onMouseDown={(e) => e.preventDefault()}
+                onMouseMove={() => setActive(i)}
                 onClick={() => pick(row)}
-                className={cn('flex min-h-9 cursor-pointer items-center gap-2 px-3 text-sm hover:bg-muted [@media(pointer:coarse)]:min-h-11', active === i && 'bg-muted', isNew && 'border-t border-border text-primary')}
+                className={cn(popupItem, 'cursor-pointer gap-2', active === i && popupHighlight, isNew && 'text-primary')}
               >
                 {isNew ? (
                   <>

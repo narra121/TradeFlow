@@ -1,55 +1,52 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { periodOf } from '../goalMath';
+import { renderHook } from '@testing-library/react';
+import { periodOf, previousPeriods } from '../goalMath';
 
-const initiate = vi.fn((args: { periodKey: string }) => ({ args }));
-const calls: string[] = [];
-let respond: (periodKey: string) => unknown = () => ({ goalProgress: {} });
+interface Item {
+  current: number;
+  target: number;
+}
+type Periods = { periodKey: string; goals: Record<'profit' | 'winRate' | 'maxDrawdown' | 'tradeCount', Item> }[];
 
+const query = vi.fn();
+let state: { currentData?: { periods: Periods }; isError: boolean } = { isError: false };
 vi.mock('@/store/api/goalsRulesApi', () => ({
-  goalsRulesApi: { endpoints: { getGoalsProgress: { initiate: (a: { periodKey: string }) => initiate(a) } } },
+  useGetGoalsHistoryQuery: (args: unknown, options: unknown) => (query(args, options), state),
 }));
-const dispatch = (action: { args: { periodKey: string } }) => ({
-  unwrap: () => {
-    calls.push(action.args.periodKey);
-    const r = respond(action.args.periodKey);
-    return r instanceof Error ? Promise.reject(r) : Promise.resolve(r);
-  },
-});
-vi.mock('@/store/hooks', () => ({ useAppDispatch: () => dispatch }));
 
 import { useGoalHistory } from '../useGoalHistory';
 
 const current = periodOf('weekly', new Date(2026, 10, 11));
-const progress = (profit: number, trades: number) => ({
-  goalProgress: {
-    profit: { current: profit, target: 500 },
-    winRate: { current: 60, target: 65 },
-    maxDrawdown: { current: 1, target: 3 },
-    tradeCount: { current: trades, target: 8 },
-  },
+const goals = (profit: number, trades: number) => ({
+  profit: { current: profit, target: 500 },
+  winRate: { current: 60, target: 65 },
+  maxDrawdown: { current: 1, target: 3 },
+  tradeCount: { current: trades, target: 8 },
 });
+const response = (pick: (key: string) => ReturnType<typeof goals>) => ({ periods: previousPeriods(current).map((p) => ({ periodKey: p.key, goals: pick(p.key) })) });
 
 describe('useGoalHistory', () => {
   beforeEach(() => {
-    calls.length = 0;
-    initiate.mockClear();
-    respond = () => progress(600, 4);
+    query.mockClear();
+    state = { currentData: response(() => goals(600, 4)), isError: false };
   });
 
-  it('asks once for each of the eight periods before the one on screen, never for the current one', async () => {
+  it('asks once for the eight periods before the one on screen, never for the current one', () => {
     const { result } = renderHook(() => useGoalHistory({ accountId: 'usd', totalCapital: 1000, current, enabled: true }));
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(calls).toHaveLength(8);
-    expect(calls).not.toContain(current.key);
-    expect(new Set(calls).size).toBe(8);
-    expect(initiate).toHaveBeenCalledWith(expect.objectContaining({ accountId: 'usd', currentPeriod: false, period: 'weekly', totalCapital: 1000 }));
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenCalledWith({ period: 'week', count: 8, before: 'week#2026-11-09', accountId: 'usd', totalCapital: 1000 }, { skip: false });
+    expect(result.current.strips.profit.map((c) => c.period.key)).not.toContain(current.key);
+    expect(result.current.loaded).toBe(8);
   });
 
-  it('turns each response into a glyph per goal, oldest first', async () => {
-    respond = (key) => (key === 'week#2026-10-05' ? progress(100, 3) : key === 'week#2026-10-12' ? progress(0, 0) : progress(600, 4));
+  it('names a month on screen as month', () => {
+    renderHook(() => useGoalHistory({ accountId: 'ALL', totalCapital: 0, current: periodOf('monthly', new Date(2026, 10, 11)), enabled: true }));
+    expect(query).toHaveBeenCalledWith(expect.objectContaining({ period: 'month', before: 'month#2026-11' }), { skip: false });
+  });
+
+  it('turns each period into a glyph per goal, oldest first', () => {
+    state = { currentData: response((key) => (key === 'week#2026-10-05' ? goals(100, 3) : key === 'week#2026-10-12' ? goals(0, 0) : goals(600, 4))), isError: false };
     const { result } = renderHook(() => useGoalHistory({ accountId: 'usd', totalCapital: 1000, current, enabled: true }));
-    await waitFor(() => expect(result.current.loaded).toBe(8));
     const profit = result.current.strips.profit;
     expect(profit).toHaveLength(8);
     expect(profit[3].period.key).toBe('week#2026-10-05');
@@ -62,15 +59,25 @@ describe('useGoalHistory', () => {
   });
 
   it('does not call the API until enabled, so the current period renders first', () => {
-    renderHook(() => useGoalHistory({ accountId: 'usd', totalCapital: 1000, current, enabled: false }));
-    expect(calls).toHaveLength(0);
+    state = { isError: false };
+    const { result } = renderHook(() => useGoalHistory({ accountId: 'usd', totalCapital: 1000, current, enabled: false }));
+    expect(query).toHaveBeenCalledWith(expect.anything(), { skip: true });
+    expect(result.current.loading).toBe(false);
   });
 
-  it('reports a failure and keeps the other cells', async () => {
-    respond = (key) => (key === 'week#2026-10-12' ? new Error('boom') : progress(600, 4));
+  it('is loading until the answer comes, with every cell empty', () => {
+    state = { isError: false };
     const { result } = renderHook(() => useGoalHistory({ accountId: 'usd', totalCapital: 1000, current, enabled: true }));
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.loading).toBe(true);
+    expect(result.current.loaded).toBe(0);
+    expect(result.current.strips.profit.every((c) => c.glyph === 'none')).toBe(true);
+  });
+
+  it('reports a failure with empty cells and stops loading', () => {
+    state = { isError: true };
+    const { result } = renderHook(() => useGoalHistory({ accountId: 'usd', totalCapital: 1000, current, enabled: true }));
     expect(result.current.failed).toBe(true);
-    expect(result.current.loaded).toBe(7);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.loaded).toBe(0);
   });
 });

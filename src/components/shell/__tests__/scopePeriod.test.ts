@@ -3,9 +3,16 @@ import { shiftRange } from '../ScopePeriod';
 
 describe('shiftRange', () => {
   it('moves a week by a week and a month by a month', () => {
-    expect(shiftRange('thisWeek', '2026-11-09', '2026-11-11', -1)).toEqual({ startDate: '2026-11-02', endDate: '2026-11-04' });
+    expect(shiftRange('thisWeek', '2026-11-09', '2026-11-11', -1)).toEqual({ startDate: '2026-11-02', endDate: '2026-11-08' });
     expect(shiftRange('thisMonth', '2026-11-01', '2026-11-11', -1)).toEqual({ startDate: '2026-10-01', endDate: '2026-10-31' });
     expect(shiftRange('thisMonth', '2026-10-01', '2026-10-31', 1)).toEqual({ startDate: '2026-11-01', endDate: '2026-11-30' });
+  });
+
+  it('steps from the partial current week to the whole Monday-Sunday week, then by seven days (FE-021)', () => {
+    const prev = shiftRange('thisWeek', '2026-11-09', '2026-11-12', -1)!;
+    expect(prev).toEqual({ startDate: '2026-11-02', endDate: '2026-11-08' });
+    expect(shiftRange('custom', prev.startDate, prev.endDate, -1)).toEqual({ startDate: '2026-10-26', endDate: '2026-11-01' });
+    expect(shiftRange('thisWeek', '2026-11-09', '2026-11-12', 1)).toEqual({ startDate: '2026-11-16', endDate: '2026-11-22' });
   });
 
   it('moves a custom or day-count range by its own length', () => {

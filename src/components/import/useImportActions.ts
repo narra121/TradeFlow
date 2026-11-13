@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useEntitlements } from '@/hooks/useEntitlements';
@@ -7,15 +7,18 @@ import { setAccountFilter, setDateRangeFilter } from '@/store/slices/tradesSlice
 import { useBulkDeleteTradesMutation } from '@/store/api';
 import { importApi, useExtractScreenshotsMutation, useParseImportMutation, useSaveImportedTradesMutation } from '@/store/api/importApi';
 import { chunk, fileToBase64, ImportFileError, importErrorMessage } from '@/lib/import';
+import { readApiError } from '@/lib/apiError';
 import { rememberBatchFile, type ImportBatch } from '@/lib/import/batches';
 import { base64ToText, recoverSkipped } from '@/lib/import/skipped';
 import { loadMapping, saveMapping, type ColumnMap } from '@/lib/import/mappingMemory';
+import { zoneOffsetMinutes } from '@/lib/appTimeZone';
 import { editRow, makeRows, MAX_REVIEW_ROWS, mergeRows, moveRows, rowStatus, setIncluded, type EditableField, type ReviewRow } from '@/lib/import/rows';
 import {
   batchLabel,
   batches,
   classifyFile,
   fromExtracted,
+  fitScreenshot,
   MAX_SCREENSHOT_BYTES,
   MAX_SCREENSHOTS,
   readAsDataUrl,
@@ -26,8 +29,9 @@ import { trackImportCompleted } from '@/lib/analytics';
 import { emitPlanSignal } from '@/lib/planErrors';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { SCREENSHOT_SOURCE, type ImportSourceId, type NormalizedTrade, type ParseImportResponse, type SaveImportedResult } from '@/types/import';
+import { formatCount } from '@/lib/format';
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+const plural = (n: number, one: string, many = `${one}s`) => `${formatCount(n)} ${n === 1 ? one : many}`;
 
 /** Rows that already sit in the review (same source and external id) are marked as duplicates when a second file adds them. */
 function dedupeAgainst(existing: ReviewRow[], incoming: ReviewRow[]): ReviewRow[] {
@@ -70,7 +74,10 @@ export function useImportActions() {
   const parseOne = useCallback(
     async (name: string, contentBase64: string, mapping?: ColumnMap, source?: ImportSourceId): Promise<ParseImportResponse | null> => {
       const flow = importFlow.get();
-      const req = parse({ source: source ?? flow.source, fileName: name, contentBase64, accountId: flow.accountId ?? undefined, ...(mapping ? { mapping } : {}) });
+      const chosen = source ?? flow.source;
+      // A generic CSV has no broker clock: its times are read in the app time zone, not the parser's IST default. A mapping only exists for a generic CSV.
+      const zone = chosen === 'generic_csv' || mapping ? { utcOffsetMinutes: zoneOffsetMinutes(new Date()) } : {};
+      const req = parse({ source: chosen, fileName: name, contentBase64, accountId: flow.accountId ?? undefined, ...(mapping ? { mapping } : {}), ...zone });
       abort.current = req;
       try {
         return await req.unwrap();
@@ -159,8 +166,9 @@ export function useImportActions() {
   );
 
   const readScreenshots = useCallback(
-    async (files: File[], append: boolean) => {
+    async (picked: File[], append: boolean) => {
       const flow = importFlow.get();
+      const files = await Promise.all(picked.map((f) => fitScreenshot(f)));
       const tooBig = files.filter((f) => f.size > MAX_SCREENSHOT_BYTES);
       if (tooBig.length > 0) {
         fail(`${tooBig.map((f) => f.name).join(', ')} ${tooBig.length === 1 ? 'is' : 'are'} larger than 1 MB. Crop the screenshot or export a smaller image.`);
@@ -362,7 +370,7 @@ export function useImportActions() {
             accountId,
             batchId,
             onProgress: ({ done, paused }) =>
-              importFlow.set({ progress: { label: paused ? 'Saving paused — you’re offline' : `Saving ${(offset + done).toLocaleString()} of ${total.toLocaleString()}`, done: offset + done, total } }),
+              importFlow.set({ progress: { label: paused ? 'Saving paused — you’re offline' : `Saving ${formatCount(offset + done)} of ${formatCount(total)}`, done: offset + done, total } }),
           }).unwrap();
           batchId = res.batchId;
           sum.batchId = res.batchId;
@@ -417,8 +425,8 @@ export function useImportActions() {
       });
       toast(`Import undone · ${plural(ids.length, 'trade')} deleted`);
       return true;
-    } catch {
-      importFlow.set({ phase: 'done', progress: null, error: 'Couldn’t undo the import. Try again.' });
+    } catch (e) {
+      importFlow.set({ phase: 'done', progress: null, error: `Couldn’t undo the import. ${readApiError(e, 'Try again.').message}` });
       return false;
     }
   }, [bulkDelete, dispatch]);
@@ -444,5 +452,9 @@ export function useImportActions() {
 
   const viewBatch = useCallback((b: ImportBatch) => openBatch(b), [openBatch]);
 
-  return { addFiles, reparse, cancelParse, edit, toggle, merge, move, undoRows, saveRows, undoImport, viewImported, viewBatch };
+  // One object per set of callbacks, so effects that depend on it do not re-subscribe on every render.
+  return useMemo(
+    () => ({ addFiles, reparse, cancelParse, edit, toggle, merge, move, undoRows, saveRows, undoImport, viewImported, viewBatch }),
+    [addFiles, reparse, cancelParse, edit, toggle, merge, move, undoRows, saveRows, undoImport, viewImported, viewBatch],
+  );
 }

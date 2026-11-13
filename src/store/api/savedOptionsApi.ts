@@ -15,6 +15,7 @@ export interface SavedOptions {
 }
 
 export const savedOptionsApi = api.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     getSavedOptions: builder.query<SavedOptions, void>({
       query: () => '/options',
@@ -23,14 +24,6 @@ export const savedOptionsApi = api.injectEndpoints({
       providesTags: ['SavedOptions'],
       transformResponse: (response: any) => {
         const options = response.options || response;
-        if (response?._apiMessage) {
-          Object.defineProperty(options, '_apiMessage', {
-            value: response._apiMessage,
-            enumerable: false,
-            writable: true,
-            configurable: true
-          });
-        }
         return options;
       },
     }),
@@ -43,14 +36,6 @@ export const savedOptionsApi = api.injectEndpoints({
       }),
       transformResponse: (response: any) => {
         const options = response.options || response;
-        if (response?._apiMessage) {
-          Object.defineProperty(options, '_apiMessage', {
-            value: response._apiMessage,
-            enumerable: false,
-            writable: true,
-            configurable: true
-          });
-        }
         return options;
       },
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {

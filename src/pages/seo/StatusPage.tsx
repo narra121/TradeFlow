@@ -30,6 +30,8 @@ export default function StatusPage() {
   const [state, setState] = useState<State>({ kind: 'loading' });
 
   useEffect(() => {
+    // The prerender (scripts/prerender-routes.js) must not bake today's status into the static page.
+    if ((window as { __PRERENDER__?: boolean }).__PRERENDER__) return;
     let cancelled = false;
     fetch(STATUS_URL, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))

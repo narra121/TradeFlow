@@ -15,7 +15,6 @@ export interface BlogArticle {
   /** Last substantive edit (YYYY-MM-DD); drives dateModified and sitemap lastmod. Absent = publishedAt. */
   updatedAt?: string;
   readingTime: number;
-  featured: boolean;
   /** 2-3 sentence answer-first summary shown at the top and copied into llms-full.txt. */
   summary?: string;
   /** Rendered visibly by <ArticleFaq> and emitted as FAQPage JSON-LD; both read this array. */
@@ -33,7 +32,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['beginner', 'journaling', 'discipline'],
     publishedAt: '2026-04-20',
     readingTime: 8,
-    featured: true,
     updatedAt: '2026-11-12',
     summary:
       'A trading journal records every trade with its numbers and the reasoning behind it, so you can measure what works. Record entry, exit, size, stop, fees, strategy, mistakes and a one-line lesson, and review the record every week.',
@@ -59,7 +57,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['beginner', 'journaling', 'template'],
     publishedAt: '2026-04-21',
     readingTime: 6,
-    featured: false,
     updatedAt: '2026-11-12',
     summary:
       'A good trading journal template has required fields for the numbers (symbol, direction, prices, size, stop, fees, times) and a few context fields (strategy, session, market condition), plus a mistake field and a lesson field on every entry.',
@@ -85,7 +82,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['beginner', 'psychology', 'mistakes'],
     publishedAt: '2026-04-22',
     readingTime: 7,
-    featured: true,
     summary:
       'Five mistakes cost new traders most: revenge trading, overtrading, trading without a plan, ignoring risk per trade and never reviewing. A journal makes each one visible because it shows when the mistake happened and what it cost.',
     faq: [
@@ -110,7 +106,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['beginner', 'review', 'routine'],
     publishedAt: '2026-04-23',
     readingTime: 6,
-    featured: false,
     updatedAt: '2026-11-12',
     summary:
       'A weekly review takes 20 to 30 minutes: check the week\'s net P&L, win rate and broken rules, study the best and the worst trade, look for one repeating pattern, and choose one change for next week.',
@@ -136,7 +131,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['beginner', 'tradequt', 'onboarding'],
     publishedAt: '2026-04-24',
     readingTime: 5,
-    featured: false,
     updatedAt: '2026-11-12',
     summary:
       'A four-week plan for a new TradeQut journal: set up accounts, pick lists and rules in week one, get every trade in by import or by hand, read your first numbers in Analytics after about 20 trades, then set weekly limits and review once a week.',
@@ -162,7 +156,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['analytics', 'metrics', 'intermediate'],
     publishedAt: '2026-04-25',
     readingTime: 8,
-    featured: true,
     summary:
       'Win rate is the share of trades that make money; profit factor is gross profit divided by gross loss. A high win rate can still lose money if losses are larger than wins, so profit factor (above 1.0 after fees) says more about profitability.',
     faq: [
@@ -187,7 +180,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['analytics', 'risk-management', 'intermediate'],
     publishedAt: '2026-04-26',
     readingTime: 7,
-    featured: false,
     summary:
       'The risk-reward ratio compares the distance to your stop with the distance to your target. It sets the win rate you need to break even: at 1:2 you need about 33% winners, at 1:1 about 50%, before fees and slippage.',
     faq: [
@@ -212,7 +204,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['analytics', 'risk-management', 'drawdown'],
     publishedAt: '2026-04-27',
     readingTime: 7,
-    featured: false,
     summary:
       'Drawdown is the fall from an equity peak to a later low. Recovery is not symmetrical: a 20% drawdown needs a 25% gain and a 50% drawdown needs 100%. Fixed risk per trade, loss limits and reviewing what caused each drawdown keep it small.',
     faq: [
@@ -237,7 +228,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['analytics', 'metrics', 'advanced'],
     publishedAt: '2026-04-28',
     readingTime: 9,
-    featured: false,
     summary:
       'Win rate alone says little. Expectancy, profit factor, average R, maximum drawdown, the longest losing streak and results by time of day together show whether a strategy makes money and how hard it is to trade.',
     faq: [
@@ -262,7 +252,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['strategy', 'planning', 'discipline'],
     publishedAt: '2026-04-29',
     readingTime: 8,
-    featured: false,
     updatedAt: '2026-11-12',
     summary:
       'A trading plan writes down what you trade, when, how you enter and exit, how much you risk per trade, your daily loss limit and how you review. Tracking where reality differs from the plan is what makes it useful.',
@@ -288,7 +277,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['psychology', 'emotions', 'journaling'],
     publishedAt: '2026-04-30',
     readingTime: 7,
-    featured: false,
     summary:
       'Fear and greed show up in your trades as patterns: revenge trades after losses, oversized trades after wins, early exits. Recording what happened on each trade and comparing results by situation turns feelings into data you can act on.',
     faq: [
@@ -313,7 +301,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['strategy', 'rules', 'discipline'],
     publishedAt: '2026-05-01',
     readingTime: 6,
-    featured: false,
     updatedAt: '2026-11-12',
     summary:
       'Signals change with the market; rules decide how you behave in every market. Writing five or so checkable rules, marking which ones each trade broke, and comparing results with and without breaks shows which rules earn their place.',
@@ -339,7 +326,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['forex', 'journaling', 'market-specific'],
     publishedAt: '2026-05-02',
     readingTime: 7,
-    featured: false,
     updatedAt: '2026-11-12',
     summary:
       'A forex journal needs fields a stock journal does not: P&L in pips and in money, the session (London, New York, Tokyo, Sydney), commission and swap, the spread at entry and major news events.',
@@ -365,7 +351,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['day-trading', 'journaling', 'market-specific'],
     publishedAt: '2026-05-03',
     readingTime: 7,
-    featured: false,
     summary:
       'Day traders should track time of day, trades per day, slippage, and results against a daily loss limit. These show overtrading and the hours that cost money, which a trade-by-trade view hides.',
     faq: [
@@ -390,7 +375,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['prop-trading', 'challenges', 'discipline'],
     publishedAt: '2026-05-04',
     readingTime: 8,
-    featured: true,
     summary:
       'Prop-firm challenges fail most often on two rules: the daily loss limit and the maximum drawdown. A daily checklist, fixed risk per trade and a journal of how close each day came to the limits keep you inside them.',
     faq: [
@@ -415,7 +399,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['analytics', 'advanced', 'edge'],
     publishedAt: '2026-05-05',
     readingTime: 9,
-    featured: false,
     updatedAt: '2026-11-12',
     summary:
       'An edge is a repeatable pattern with positive expectancy. Break your own results down by symbol, strategy, session, weekday and hour, check the number of trades behind each figure, and concentrate on the segments that hold up.',
@@ -441,7 +424,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['tradequt', 'import', 'practical'],
     publishedAt: '2026-05-06',
     readingTime: 5,
-    featured: false,
     updatedAt: '2026-11-12',
     summary:
       'TradeQut imports trade files from Zerodha, Dhan, Upstox, Angel One, Groww, MetaTrader 4 and MetaTrader 5, or any CSV or Excel file with column matching, and reads screenshots with AI when there is no file. Every trade is reviewed before saving, duplicates are skipped, and Indian broker trades get estimated charges.',
@@ -473,7 +455,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     publishedAt: '2026-11-11',
     updatedAt: '2026-11-12',
     readingTime: 7,
-    featured: true,
     summary:
       'An F&O trade pays brokerage, STT, exchange charges, a SEBI fee, GST and stamp duty. On a hypothetical option trade with a ₹1,000 gross gain, charges at Zerodha rates came to ₹72.83, leaving ₹927.17. STT on derivatives rose on 1 April 2026.',
     faq: [
@@ -502,7 +483,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['india', 'zerodha', 'import', 'practical'],
     publishedAt: '2026-11-11',
     readingTime: 5,
-    featured: false,
     summary:
       'In Zerodha Console go to Reports, then Tradebook, pick a segment and dates, and download CSV or XLSX; each export covers at most 365 days. The file lists executions, not closed trades or charges, so you must match buys with sells and add charges.',
     faq: [
@@ -540,7 +520,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     publishedAt: '2026-11-11',
     updatedAt: '2026-11-12',
     readingTime: 5,
-    featured: true,
     summary:
       'A spreadsheet is free but manual. TradesViz Basic is free with 3,000 executions a month and one account. TradeQut Free has unlimited manual trades, two accounts and three broker file imports a month. Test two tools with your own broker file before choosing.',
     faq: [
@@ -565,7 +544,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['journaling', 'template', 'excel'],
     publishedAt: '2026-11-11',
     readingTime: 5,
-    featured: false,
     summary:
       'Use one row per closed trade with date, symbol, setup, direction, entry, exit, quantity, fees and risk. Net P&L is =IF(D2="Long",1,-1)*(F2-E2)*G2-H2 and R is net P&L divided by risk. Add COUNTIF, SUMIF and AVERAGE formulas for the summary.',
     faq: [
@@ -589,7 +567,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['india', 'options', 'journaling'],
     publishedAt: '2026-11-11',
     readingTime: 5,
-    featured: false,
     summary:
       'An options journal should record underlying, expiry, strike, call or put, buy or sell, quantity in units, entry and exit premium, planned stop, structure, charges, setup and a mistake tag. With these you can compare expiry-day trades and option buyers versus sellers.',
     faq: [
@@ -612,7 +589,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['forex', 'mt5', 'prop-trading', 'import'],
     publishedAt: '2026-11-11',
     readingTime: 5,
-    featured: false,
     summary:
       "In MetaTrader 5 open the Toolbox History tab, choose a period, right-click and pick Report. Report times are in broker server time, and commission and swap are separate columns. Journal pair, stop, risk in money, session and your firm's loss limits.",
     faq: [
@@ -635,7 +611,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['metrics', 'risk', 'beginner'],
     publishedAt: '2026-11-11',
     readingTime: 4,
-    featured: false,
     summary:
       "1R is the amount you lose if your stop is hit. A trade's R multiple is its result divided by that planned risk, so a trade that makes 1.7 times its risk is +1.7R in any market or currency. Losses bigger than 1R show broken stop rules.",
     faq: [
@@ -658,7 +633,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['metrics', 'analytics'],
     publishedAt: '2026-11-11',
     readingTime: 4,
-    featured: false,
     summary:
       'Expectancy is the average result per trade: win rate times average win minus loss rate times average loss, ideally in R. A 40% win rate with 2R wins and 1R losses gives +0.2R per trade. Use at least 100 trades per setup before trusting it.',
     faq: [
@@ -681,7 +655,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['risk', 'position-sizing', 'beginner'],
     publishedAt: '2026-11-11',
     readingTime: 4,
-    featured: false,
     summary:
       'Position size equals the money you will risk divided by the distance to your stop times the value per unit of price. With ₹5,00,000 and 1% risk, a ₹10 stop gives 500 shares; with $10,000 and 1% risk, a 20-pip stop gives 0.5 lots.',
     faq: [
@@ -704,7 +677,6 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['risk', 'drawdown', 'metrics'],
     publishedAt: '2026-11-11',
     readingTime: 5,
-    featured: false,
     summary:
       'Drawdown is the fall from peak equity, as a percentage of the peak: from 1,10,000 to 99,000 is 10%. Recovering needs 1 ÷ (1 − drawdown) − 1, so 10% needs 11.1% and 50% needs 100%. Prop firms define their own limits, so use their rules.',
     faq: [
@@ -726,7 +698,9 @@ export const ALL_TAGS = [...new Set(BLOG_ARTICLES.flatMap((a) => a.tags))].sort(
 export function getRelatedArticles(currentSlug: string, limit = 3) {
   const current = BLOG_ARTICLES.find((a) => a.slug === currentSlug);
   if (!current) return [];
-  return BLOG_ARTICLES.filter(
-    (a) => a.slug !== currentSlug && a.tags.some((t) => current.tags.includes(t))
-  ).slice(0, limit);
+  const shared = (a: (typeof BLOG_ARTICLES)[number]) => a.tags.filter((t) => current.tags.includes(t)).length;
+  // Most shared tags first, then the newest.
+  return BLOG_ARTICLES.filter((a) => a.slug !== currentSlug && shared(a) > 0)
+    .sort((a, b) => shared(b) - shared(a) || b.publishedAt.localeCompare(a.publishedAt))
+    .slice(0, limit);
 }

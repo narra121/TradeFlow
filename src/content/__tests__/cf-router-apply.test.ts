@@ -16,8 +16,8 @@ function loadHandler(source: string): Handler {
 }
 
 interface DistConfig {
-  DefaultCacheBehavior: { FunctionAssociations: { Quantity: number; Items?: { EventType: string }[] } };
-  CustomErrorResponses: { Items: { ErrorCode: number; ResponsePagePath: string; ResponseCode: string }[] };
+  DefaultCacheBehavior: { TargetOriginId?: string; FunctionAssociations: { Quantity: number; Items?: { EventType: string }[] } };
+  CustomErrorResponses: { Quantity?: number; Items: { ErrorCode: number; ResponsePagePath: string; ResponseCode: string; ErrorCachingMinTTL?: number }[] };
   [k: string]: unknown;
 }
 
@@ -34,12 +34,22 @@ const ORIGINAL_CONFIG: DistConfig = {
 };
 
 /** In-memory S3 bucket, CloudFront distribution and site: just enough behaviour for the router's commands. */
-function fakeCloud(opts: { keys?: string[]; routerSource?: string; siteBroken?: boolean; revertFails?: boolean; env?: 'dev' | 'prod' } = {}) {
+const OLD_ROUTER = '// router v1 (what is LIVE before the apply)';
+const FN_CONFIG = { Comment: 'TradeQut router', Runtime: 'cloudfront-js-2.0' };
+
+function fakeCloud(opts: { keys?: string[]; routerSource?: string; siteBroken?: boolean; revertFails?: boolean; deleteFails?: boolean; alreadyAssociated?: boolean; env?: 'dev' | 'prod' } = {}) {
   const env = opts.env ?? 'dev';
   const keys = new Set(opts.keys ?? ['_spa.html', 'error.html', `blog/${DEFAULT_PROBE_SLUG}/index.html`]);
-  let config: DistConfig = structuredClone(ORIGINAL_CONFIG);
-  let functionExists = false;
-  let deployedFn = false;
+  const fnArn = 'arn:aws:cloudfront::1:function/tradequt-router';
+  const associated = (): DistConfig['DefaultCacheBehavior']['FunctionAssociations'] => ({ Quantity: 2, Items: [{ EventType: 'viewer-request' }, { EventType: 'viewer-response' }] });
+  /** A router that an earlier apply already published and associated: LIVE holds the old code. */
+  const initial: DistConfig = structuredClone(ORIGINAL_CONFIG);
+  if (opts.alreadyAssociated) initial.DefaultCacheBehavior.FunctionAssociations = associated();
+  let config: DistConfig = structuredClone(initial);
+  let functionExists = !!opts.alreadyAssociated;
+  let devCode: string | null = opts.alreadyAssociated ? OLD_ROUTER : null;
+  let liveCode: string | null = opts.alreadyAssociated ? OLD_ROUTER : null;
+  let deployedFn = !!opts.alreadyAssociated;
   const calls: string[][] = [];
   const files = new Map<string, string>();
   const handler = loadHandler(opts.routerSource ?? REAL_ROUTER);
@@ -65,11 +75,19 @@ function fakeCloud(opts: { keys?: string[]; routerSource?: string; siteBroken?: 
         deployedFn = next.DefaultCacheBehavior.FunctionAssociations.Quantity > 0;
         return {};
       }
-      case 'describe-function':
-        return functionExists ? { ETag: 'EFN' } : o.allowFail ? null : (() => { throw new Error('no function'); })();
+      case 'describe-function': {
+        const code = arg('--stage') === 'LIVE' ? liveCode : devCode;
+        if (functionExists && code !== null) return { ETag: 'EFN', FunctionSummary: { FunctionConfig: FN_CONFIG } };
+        if (o.allowFail) return null;
+        throw new Error('no function');
+      }
+      case 'get-function':
+        files.set(args[args.length - 1], liveCode as string);
+        return { ETag: 'EFN', ContentType: 'application/octet-stream' };
       case 'create-function':
       case 'update-function':
         functionExists = true;
+        devCode = fileArg('--function-code')!;
         return { ETag: 'EFN2' };
       case 'test-function': {
         const ev = JSON.parse(fileArg('--event-object')!);
@@ -78,15 +96,30 @@ function fakeCloud(opts: { keys?: string[]; routerSource?: string; siteBroken?: 
         return { TestResult: { FunctionOutput: JSON.stringify(output), FunctionErrorMessage: '' } };
       }
       case 'publish-function':
-        return { FunctionSummary: { FunctionMetadata: { FunctionARN: 'arn:aws:cloudfront::1:function/tradequt-router' } } };
+        liveCode = devCode;
+        return { FunctionSummary: { FunctionMetadata: { FunctionARN: fnArn } } };
       case 'create-invalidation':
         return {};
       case 'delete-function':
+        // CloudFront refuses to delete a function a distribution still uses.
+        if (opts.deleteFails || config.DefaultCacheBehavior.FunctionAssociations.Quantity > 0) throw new Error('FunctionInUse');
         functionExists = false;
+        devCode = liveCode = null;
         return {};
       default:
         throw new Error(`unexpected aws call: ${args.join(' ')}`);
     }
+  };
+
+  /** The headers the real router adds to an HTML response once it is associated. */
+  const htmlHeaders = (): Record<string, string> => {
+    const response = {
+      statusCode: 200,
+      headers: { 'content-type': { value: 'text/html' } },
+    };
+    const event = { version: '1.0', context: { eventType: 'viewer-response' }, request: { method: 'GET', uri: '/', querystring: {}, headers: { host: { value: ENVS[env].host } }, cookies: {} }, response };
+    const out = handler(event) as unknown as { headers: Record<string, { value: string }> };
+    return Object.fromEntries(Object.entries(out.headers).map(([k, v]) => [k, v.value]));
   };
 
   /** What a visitor sees: the router only works once associated, and the app shell needs _spa.html in the bucket. */
@@ -98,7 +131,7 @@ function fakeCloud(opts: { keys?: string[]; routerSource?: string; siteBroken?: 
       headers: { get: (n: string) => headers[n.toLowerCase()] ?? null },
     });
     const noindex = env === 'dev' ? { 'x-robots-tag': 'noindex, nofollow' } : {};
-    if (path === '/') return res(200, 'Home', noindex);
+    if (path === '/') return res(200, 'Home', { ...noindex, ...(deployedFn ? htmlHeaders() : {}) });
     if (path === '/blog/') return res(301, '', { location: '/blog' });
     if (/^\/(app|auth)(\/|$)/.test(path)) return res(deployedFn && keys.has('_spa.html') && !opts.siteBroken ? 200 : 404, 'Shell');
     if (['/guide', '/blog', `/blog/${DEFAULT_PROBE_SLUG}`, '/glossary', '/resources/position-size'].includes(path)) return res(200, `Page ${path}`);
@@ -129,7 +162,7 @@ function fakeCloud(opts: { keys?: string[]; routerSource?: string; siteBroken?: 
   });
 
   const writes = () => calls.filter((c) => ['update-distribution', 'create-function', 'update-function', 'publish-function', 'create-invalidation'].includes(c[1]));
-  return { router, calls, log, files, writes, config: () => config, keys, isDeployed: () => deployedFn };
+  return { router, calls, log, files, writes, config: () => config, keys, isDeployed: () => deployedFn, liveCode: () => liveCode, functionExists: () => functionExists, initial };
 }
 
 describe('cf-router preflight (G-01)', () => {
@@ -197,6 +230,14 @@ describe('cf-router apply', () => {
     expect(cloud.calls.some((c) => c[1] === 'update-distribution')).toBe(false);
   });
 
+  it('does not associate a router that adds no CSP headers to HTML', async () => {
+    const noCsp = REAL_ROUTER.replace("type.value.indexOf('text/html') === 0", 'false');
+    expect(noCsp).not.toBe(REAL_ROUTER);
+    const cloud = fakeCloud({ routerSource: noCsp });
+    await expect(cloud.router.apply()).rejects.toThrow(/function test\(s\) failed; nothing was associated/);
+    expect(cloud.log.join('\n')).toContain('test FAIL: security headers on html');
+  });
+
   it('reverts automatically when the live verification fails', async () => {
     const cloud = fakeCloud({ siteBroken: true });
     await expect(cloud.router.apply()).rejects.toThrow(/reverted to the backup/);
@@ -219,6 +260,39 @@ describe('cf-router apply', () => {
     const broken = fakeCloud({ siteBroken: true });
     expect(await broken.router.verify()).toBeGreaterThanOrEqual(2); // /app/dashboard and /auth/callback
     expect(broken.log.join('\n')).toContain('/auth/callback returns the SPA shell with 200');
+  });
+
+  it('a second apply that fails verification puts the previous LIVE router code back and does not hide a refused delete (FE-006)', async () => {
+    const cloud = fakeCloud({ siteBroken: true, alreadyAssociated: true });
+    await expect(cloud.router.apply()).rejects.toThrow(/reverted to the backup/);
+    expect(cloud.liveCode()).toBe(OLD_ROUTER);
+    expect(cloud.config()).toEqual(cloud.initial);
+    expect(cloud.functionExists()).toBe(true);
+    expect(cloud.calls.some((c) => c[1] === 'delete-function')).toBe(false);
+    expect(cloud.log.join('\n')).toContain('restored the previous LIVE code');
+  });
+
+  it('keeps the previous LIVE code in the backup file, taken before anything is published', async () => {
+    const cloud = fakeCloud({ alreadyAssociated: true });
+    const { backupFile } = await cloud.router.apply();
+    const saved = JSON.parse(cloud.files.get(backupFile)!);
+    expect(saved.previousFunction).toEqual({ config: FN_CONFIG, code: OLD_ROUTER });
+    expect(cloud.calls.findIndex((c) => c[1] === 'get-function')).toBeLessThan(cloud.calls.findIndex((c) => c[1] === 'publish-function'));
+    expect(cloud.liveCode()).toBe(REAL_ROUTER);
+    cloud.router.revert(backupFile);
+    expect(cloud.liveCode()).toBe(OLD_ROUTER);
+  });
+
+  it('records no previous function on a first apply', async () => {
+    const cloud = fakeCloud();
+    const { backupFile } = await cloud.router.apply();
+    expect(JSON.parse(cloud.files.get(backupFile)!).previousFunction).toBeNull();
+  });
+
+  it('reports a delete the revert could not do instead of logging "reverted"', async () => {
+    const cloud = fakeCloud({ siteBroken: true, deleteFails: true });
+    await expect(cloud.router.apply()).rejects.toThrow(/automatic revert failed .*was not deleted.*FunctionInUse/);
+    expect(cloud.log.join('\n')).not.toContain('deleted tradequt-router');
   });
 
   it('the manual revert restores the saved config and deletes the function', async () => {

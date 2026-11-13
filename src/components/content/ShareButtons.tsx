@@ -1,5 +1,5 @@
 import { Link2, Check } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ShareButtonsProps {
   title: string;
@@ -8,14 +8,22 @@ interface ShareButtonsProps {
 
 export function ShareButtons({ title, url }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
+  const timer = useRef<number>();
+  useEffect(() => () => window.clearTimeout(timer.current), []);
   const fullUrl = `https://tradequt.com${url}`;
   const encodedUrl = encodeURIComponent(fullUrl);
   const encodedTitle = encodeURIComponent(title);
 
+  // "Copied" only once the browser says the text is on the clipboard (insecure context or denied permission: nothing is shown).
   function copyLink() {
-    void navigator.clipboard?.writeText(fullUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard?.writeText(fullUrl).then(
+      () => {
+        setCopied(true);
+        window.clearTimeout(timer.current);
+        timer.current = window.setTimeout(() => setCopied(false), 2000);
+      },
+      () => undefined,
+    );
   }
 
   return (

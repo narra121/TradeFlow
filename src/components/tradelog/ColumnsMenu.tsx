@@ -33,7 +33,7 @@ export function ColumnsMenu({ config, onChange, density, onDensity }: ColumnsMen
           <span className="hidden 2xl:inline">Columns: {config.preset === 'custom' ? 'Custom' : PRESET_LABEL[config.preset]}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-3">
+      <PopoverContent align="end" aria-label="Columns" className="w-80 p-3">
         <SegmentedControl
           label="Column preset"
           size="sm"

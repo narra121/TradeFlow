@@ -78,25 +78,48 @@ describe('frame and accessibility', () => {
     expect(container.querySelector('button[type=submit]')).toBeInTheDocument();
   });
 
-  it('every view carries the sample dashboard labelled Sample data; sign-up adds the headline and facts', async () => {
+  it('log in sets the journal stage: greeting, the sample month labelled Sample data, no second heading; forgot switches to the reset stage', async () => {
     setup('login');
-    const pane = screen.getByRole('complementary', { name: 'What TradeQut looks like' });
-    expect(within(pane).getByText('Sample data')).toBeInTheDocument();
-    expect(within(pane).getByRole('img', { name: /Sample data, not your account: the TradeQut dashboard for November 2026/ })).toBeInTheDocument();
-    expect(within(pane).queryByRole('heading', { level: 2 })).toBeNull();
+    const stage = screen.getByRole('complementary', { name: 'What TradeQut looks like' });
+    expect(within(stage).getByText('Welcome back')).toBeInTheDocument();
+    expect(stage.querySelector('.auth-display')).toHaveTextContent('Your journal is where you left it.');
+    expect(within(stage).getByText('Sample data')).toBeInTheDocument();
+    expect(within(stage).getByText('One sample account, November 2026')).toBeInTheDocument();
+    expect(within(stage).getByText('+$370.50')).toBeInTheDocument();
+    expect(within(stage).getByText('58.6%')).toBeInTheDocument();
+    expect(within(stage).queryByRole('heading')).toBeNull();
+    // The other way in sits under the form, with the trial sentence.
+    expect(within(screen.getByRole('main')).getByText('14-day Pro trial. No card.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Forgot password?' }));
-    expect(within(screen.getByRole('complementary')).getByText('Sample data')).toBeInTheDocument();
+    const reset = screen.getByRole('complementary', { name: 'About this step' });
+    expect(within(reset).getByText('Password reset')).toBeInTheDocument();
+    expect(within(reset).getByText('Email a code').closest('li')).toHaveAttribute('aria-current', 'step');
+    expect(within(reset).getByText('Trades, notes and screenshots')).toBeInTheDocument();
+    expect(within(reset).queryByText('Sample data')).toBeNull();
   });
 
-  it('sign-up shows the shared headline in two tones, four facts and the trial sentence', () => {
+  it('sign-up sets the shared headline in two tones, the step row, the facts and the trial sentence', () => {
     setup('signup');
-    const pane = screen.getByRole('complementary', { name: 'What TradeQut looks like' });
-    const h2 = within(pane).getByRole('heading', { level: 2 });
-    expect(h2).toHaveTextContent('The trading journal that shows what your rules cost you.');
-    expect(h2.querySelector('.dim')).toHaveTextContent('The trading journal that shows');
-    expect(within(pane).getByText('Zerodha, Dhan, Upstox, Angel One, Groww, MT4 and MT5 files, or any CSV.')).toBeInTheDocument();
+    const stage = screen.getByRole('complementary', { name: 'What TradeQut looks like' });
+    const line = stage.querySelector('.auth-display') as HTMLElement;
+    expect(line).toHaveTextContent('The trading journal that shows what your rules cost you.');
+    expect(line.querySelector('.dim')).toHaveTextContent('The trading journal that shows');
+    expect(within(stage).getByText('14-day Pro trial · No card')).toBeInTheDocument();
+    expect(within(stage).getAllByRole('term').map((t) => t.textContent)).toEqual(['Free after the trial', 'Export any time', 'Delete any time']);
+    expect(within(stage).queryByRole('heading')).toBeNull();
+    const steps = screen.getByRole('list', { name: 'Sign-up steps' });
+    expect(within(steps).getByText('Create account').closest('li')).toHaveAttribute('aria-current', 'step');
     expect(screen.getByText('14-day Pro trial. No card.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Create your account' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
+  });
+
+  it('makes no claim it cannot prove: no counts, ratings, testimonials or security promises', () => {
+    const { container } = setup('signup');
+    const text = container.textContent ?? '';
+    for (const banned of [/\d[\d,]*\+?\s*(traders|users|customers)/i, /rated|stars|reviews/i, /trusted by/i, /bank-grade|military|encrypt/i, /guarantee/i]) {
+      expect(text).not.toMatch(banned);
+    }
   });
 
   it('draws no "or" divider and no Google sentence when Google sign-in is not configured', async () => {
@@ -263,6 +286,17 @@ describe('login', () => {
     expect(screen.queryByText(/Too many attempts/)).toBeNull();
   });
 
+  it('keeps the wait when the same email is pasted in other capitals', async () => {
+    login.mockRejectedValue({ status: 429, data: { errorCode: 'RATE_LIMITED', errors: [{ retryAfter: 240 }] } });
+    setup();
+    await submitLogin();
+    await waitFor(() => expect(alertText()).toContain('Try again in 4:00'));
+    await userEvent.tripleClick(screen.getByLabelText('Email'));
+    await userEvent.paste('A@B.CO');
+    expect(screen.getByLabelText('Email')).toHaveValue('A@B.CO');
+    expect(screen.getByRole('button', { name: 'Log in' })).toHaveAttribute('aria-disabled', 'true');
+  });
+
   it('keeps the old details.retryAfter path as a fallback and says a few minutes when no wait is sent', async () => {
     login.mockRejectedValue({ status: 429, data: { error: { code: 'RATE_LIMITED' } } });
     setup();
@@ -287,7 +321,11 @@ describe('login', () => {
     expect(signup).toHaveBeenCalledWith({ name: 'trader', email: 'trader@example.com', password: 'Secret#12' });
     expect(screen.getAllByRole('status')[0]).toHaveTextContent("This email isn't verified yet");
     expect(screen.getAllByRole('status')[0]).toHaveTextContent('Enter the new code we just sent');
-    expect(within(screen.getByRole('complementary')).queryByRole('heading', { level: 2 })).toBeNull();
+    // Verify opened from log in: the mail stage for this address, no sign-up steps and no account facts.
+    const stage = screen.getByRole('complementary', { name: 'About this step' });
+    expect(within(stage).getByRole('img', { name: 'A message with a 6-digit code for trader@example.com.' })).toBeInTheDocument();
+    expect(within(stage).queryByRole('term')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Sign-up steps' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /Back to log in/ }));
     expect(screen.getByRole('heading', { name: 'Log in to TradeQut' })).toBeInTheDocument();
   });
@@ -326,7 +364,7 @@ describe('signup', () => {
     expect(alertText()).toContain('Password: add a symbol, like ! or #.');
   });
 
-  it('creates the account with the email local part as the name and opens verify with the sign-up pane', async () => {
+  it('creates the account with the email local part as the name and opens verify as step 2 with the facts kept', async () => {
     signup.mockResolvedValue({ resent: false });
     setup('signup');
     await type('Email', 'ann@example.com');
@@ -334,7 +372,12 @@ describe('signup', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(signup).toHaveBeenCalledWith({ name: 'ann', email: 'ann@example.com', password: 'Abcdef1!' });
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
-    expect(within(screen.getByRole('complementary')).getByRole('heading', { level: 2 })).toBeInTheDocument();
+    const stage = screen.getByRole('complementary', { name: 'About this step' });
+    expect(stage.querySelector('.auth-display')).toHaveTextContent('Six digits, then your journal.');
+    expect(within(stage).getAllByRole('term')).toHaveLength(3);
+    const steps = screen.getByRole('list', { name: 'Sign-up steps' });
+    expect(within(steps).getByText('Verify email').closest('li')).toHaveAttribute('aria-current', 'step');
+    expect(within(steps).getByText('Create account').closest('li')).toHaveTextContent('(done)');
     expect(screen.getByRole('button', { name: /Back to sign up/ })).toBeInTheDocument();
   });
 
@@ -363,9 +406,18 @@ describe('signup', () => {
     await waitFor(() => expect(alertText()).toContain('Creating an account is paused for this email. Try again in 1:'));
   });
 
-  it('puts the facts list under the form for narrow screens', () => {
+  it('mirrors the digits typed so far on the mail card, never the digits themselves', async () => {
+    signup.mockResolvedValue({ resent: false });
     const { container } = setup('signup');
-    expect(container.querySelector('main .facts.facts-phone')).toBeInTheDocument();
+    await type('Email', 'ann@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'Abcdef1!');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    await screen.findByRole('heading', { name: 'Check your email' });
+    await userEvent.type(screen.getByLabelText(/Verification code/), '481');
+    const tiles = [...container.querySelectorAll('.mail__code i')];
+    expect(tiles).toHaveLength(6);
+    expect(tiles.filter((t) => t.hasAttribute('data-on'))).toHaveLength(3);
+    expect(container.querySelector('.mail__code')?.textContent).toBe('');
   });
 });
 

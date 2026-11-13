@@ -44,12 +44,13 @@ describe('fanOut', () => {
         peak = Math.max(peak, running);
         await new Promise((r) => setTimeout(r, 2));
         running -= 1;
-        if (i === 3) throw new Error('boom');
+        if (i === 3) throw { status: 400, data: { message: 'A trade can have at most 6 images' } };
       },
       { concurrency: 5, onProgress: (d) => progress.push(d) },
     );
     expect(peak).toBeLessThanOrEqual(5);
     expect(res.failed).toEqual([3]);
+    expect(res.reason).toBe('A trade can have at most 6 images');
     expect(res.done).toHaveLength(11);
     expect(progress[progress.length - 1]).toBe(12);
   });

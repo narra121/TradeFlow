@@ -7,6 +7,7 @@ import { DirectionChip, OUTCOME_LABEL } from '@/components/ui/chips';
 import { DataTable, type DataColumn, type DataGroup, type DataSelection, type DataSort } from '@/components/ui/data-table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Money, RMultiple } from '@/components/ui/money';
+import { copy } from '@/copy';
 import { formatDateShort, formatDurationMinutes, formatMoney, formatPrice, formatQuantity, formatTime } from '@/lib/format';
 import { resolveColumns, type ColumnConfig } from '@/lib/tradeColumns';
 import { holdingMinutes, plannedRR, realisedR, riskAmount, type SortKey, type SortState } from '@/lib/tradeFilters';
@@ -18,9 +19,7 @@ const PIN_WIDTH: Record<string, number> = { date: 84, symbol: 96, pnl: 108 };
 export interface TradeRowActions {
   onEdit: (id: string) => void;
   onDuplicate: (id: string) => void;
-  onCopyLink: (id: string) => void;
   onDelete: (id: string) => void;
-  openInNewTab: (id: string) => void;
 }
 
 interface TradeTableProps {
@@ -232,12 +231,15 @@ export function TradeTable({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => actions.openInNewTab(t.id)}>Open in new tab</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => actions.onEdit(t.id)}>Edit</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => actions.onDuplicate(t.id)}>Duplicate</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => actions.onCopyLink(t.id)}>Copy link</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => actions.onDuplicate(t.id)}>
+              <span>
+                {copy.trades.duplicate.label}
+                <span className="block text-xs text-muted-foreground">{copy.trades.duplicate.hint}</span>
+              </span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => actions.onDelete(t.id)} className="text-error focus:text-error">Delete…</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => actions.onDelete(t.id)} variant="destructive">Delete…</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),

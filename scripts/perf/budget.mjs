@@ -14,6 +14,7 @@ import { preview } from 'vite';
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
+import { createByteCounter } from './collectBytes.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d) => (args.includes(`--${n}`) ? args[args.indexOf(`--${n}`) + 1] : d);
@@ -37,22 +38,9 @@ function chunkSizes() {
 async function measure(browser, base, route) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
-  const bytes = { js: 0, css: 0, font: 0, fontFiles: new Set(), other: 0 };
-  page.on('response', async (res) => {
-    try {
-      const url = res.url();
-      if (!url.startsWith(base)) return;
-      const body = await res.body();
-      if (/\.js(\?|$)/.test(url)) bytes.js += gzipSync(body).length;
-      else if (/\.css(\?|$)/.test(url)) bytes.css += gzipSync(body).length;
-      else if (/\.woff2(\?|$)/.test(url)) {
-        bytes.font += body.length;
-        bytes.fontFiles.add(url);
-      } else bytes.other += body.length;
-    } catch {
-      /* a response without a body (redirect, aborted) does not count */
-    }
-  });
+  const counter = createByteCounter(base);
+  const { bytes } = counter;
+  page.on('response', counter.onResponse);
   await page.addInitScript(() => {
     window.__lcp = 0;
     window.__cls = 0;
@@ -66,6 +54,8 @@ async function measure(browser, base, route) {
   await page.goto(`${base}${route}`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(600);
   const vitals = await page.evaluate(() => ({ lcp: window.__lcp, cls: window.__cls }));
+  // Bodies still being read when the context closes would be dropped and the budget under-counted.
+  await counter.settled();
   await ctx.close();
   return {
     route,

@@ -126,6 +126,12 @@
     outline-offset: 2px;
   }
 
+  /* The option list of a native select is drawn by the browser: ask for its dark chrome. Scoped to `select`, because
+     a page-wide dark scheme gives embedded light iframes (sign-in buttons) an opaque canvas. */
+  select {
+    color-scheme: dark;
+  }
+
   ::selection {
     background: hsl(var(--primary) / 0.35);
   }
@@ -280,6 +286,30 @@
 
 .animate-caret {
   animation: tq-caret 1s steps(1) infinite;
+}
+
+/* Popups (menu, select, popover, tooltip; classes in components/ui/popup.ts): D.1 motion. Opacity and 4 px of travel
+   from the trigger's side, --dur-2 in and 70 % of it out. */
+@keyframes tq-pop-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--pop-x, 0), var(--pop-y, 0));
+  }
+}
+
+@keyframes tq-pop-out {
+  to { opacity: 0; }
+}
+
+.popup-motion {
+  animation: tq-pop-in var(--dur-2) var(--ease-in);
+}
+.popup-motion[data-side='bottom'] { --pop-y: -4px; }
+.popup-motion[data-side='top'] { --pop-y: 4px; }
+.popup-motion[data-side='right'] { --pop-x: -4px; }
+.popup-motion[data-side='left'] { --pop-x: 4px; }
+.popup-motion[data-state='closed'] {
+  animation: tq-pop-out calc(var(--dur-2) * 0.7) var(--ease-out) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

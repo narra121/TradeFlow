@@ -3,6 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Runs before the first paint, so a stored session never sees the prerendered signed-out markup.
+         "/", "/login" and "/signup" mirror App.tsx (a session goes to /app/dashboard); main.tsx drops the hidden
+         prerendered page and keeps .tq-signed-in in step with the store. -->
+    <script>
+      try {
+        // Amplify Auth keeps the session at CognitoIdentityServiceProvider.<clientId>.LastAuthUser (= username) and
+        // CognitoIdentityServiceProvider.<clientId>.<username>.accessToken; keep in step with src/lib/auth/storedSession.ts.
+        var hasSession = false;
+        for (var i = 0; i < localStorage.length; i++) {
+          var key = localStorage.key(i);
+          var m = /^(CognitoIdentityServiceProvider\.[^.]+)\.LastAuthUser$/.exec(key || '');
+          if (m && localStorage.getItem(m[1] + '.' + localStorage.getItem(key) + '.accessToken')) {
+            hasSession = true;
+            break;
+          }
+        }
+        if (hasSession) {
+          document.documentElement.classList.add('tq-signed-in');
+          if (/^\/(login|signup)?$/.test(location.pathname)) {
+            history.replaceState(null, '', '/app/dashboard');
+            document.documentElement.classList.add('tq-app-boot');
+          }
+        }
+      } catch (e) {}
+    </script>
+    <style>
+      html.tq-signed-in .signed-out-only,
+      html:not(.tq-signed-in) .signed-in-only {
+        display: none !important;
+      }
+      html.tq-app-boot #root {
+        visibility: hidden;
+      }
+    </style>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />

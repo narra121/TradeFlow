@@ -22,8 +22,10 @@ import {
   emptyForm,
   formFromTrade,
   fromLocalInput,
+  imagesKey,
+  LIMITS,
   parseNum,
-  toLocalInput,
+  serverFieldErrors,
   validateForm,
   type FormErrors,
   type TradeFormState,
@@ -36,15 +38,17 @@ import { useUiState } from '@/hooks/useUiState';
 import { useCreateTradeMutation, useUpdateTradeMutation } from '@/store/api';
 import { useAppSelector } from '@/store/hooks';
 import { trackFirstTrade } from '@/lib/analytics';
+import { readApiError } from '@/lib/apiError';
 import { formatDurationMinutes, formatMoney, formatR, signOf } from '@/lib/format';
 import { patchTradePayload } from '@/lib/patchTrade';
 import { ASSET_CLASSES, computePreview, defaultLotSize, needsLotSize, outcomeForPnl, pnlConflictsWithOutcome, quantityLabel } from '@/lib/tradePreview';
 import { cn } from '@/lib/utils';
 import type { CreateTradePayload } from '@/lib/api';
-import type { AssetClass, Trade, TradeOutcome } from '@/types/trade';
+import type { AssetClass, Trade, TradeImage, TradeOutcome } from '@/types/trade';
 
 export interface TradeFormHandle {
-  submit: (opts?: { addAnother?: boolean }) => Promise<void>;
+  /** Resolves to true only when the trade was saved; false for a validation error, a failed save or a screenshot still uploading. */
+  submit: (opts?: { addAnother?: boolean }) => Promise<boolean>;
   isDirty: () => boolean;
 }
 
@@ -75,6 +79,17 @@ function stripImages(f: TradeFormState): Omit<TradeFormState, 'images'> {
   const { images: _images, ...rest } = f;
   return rest;
 }
+
+const formKey = (f: TradeFormState) => JSON.stringify(stripImages(f)) + imagesKey(f.images);
+
+/** An image id that is an S3 key (every uploaded screenshot) is also sent as `key`, which the API needs to attach a new upload. */
+const imagePayload = ({ id, url, timeframe, description }: TradeImage): TradeImage & { key?: string } => ({
+  id,
+  ...(id.startsWith('images/') ? { key: id } : {}),
+  ...(url?.startsWith('data:') ? { url } : {}),
+  timeframe,
+  description,
+});
 
 export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function TradeForm(
   { mode, initialTrade, date, from, defaultAccountIds, onSaved, onCancel, onDirtyChange },
@@ -108,14 +123,18 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Partial<Record<keyof TradeFormState, boolean>>>({});
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const symbolRef = useRef<HTMLInputElement>(null);
-  const baseline = useRef(JSON.stringify(stripImages(initial)) + JSON.stringify(initial.images));
+  const baseline = useRef(formKey(initial));
+  const inFlight = useRef<Promise<boolean> | null>(null);
+  // One key per create request body: a repeat of the same body returns the trade already created instead of a second one.
+  const attempt = useRef<{ key: string; body: string } | null>(null);
 
   const set = useCallback(<K extends keyof TradeFormState>(key: K, value: TradeFormState[K]) => setForm((f) => ({ ...f, [key]: value })), []);
 
-  const dirty = JSON.stringify(stripImages(form)) + JSON.stringify(form.images) !== baseline.current;
+  const dirty = formKey(form) !== baseline.current;
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   // Closing or reloading the tab with unsaved edits asks first (F-029).
@@ -229,7 +248,7 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
       exitDate,
       outcome: form.outcome,
       pnl: netPnl ?? 0,
-      riskRewardRatio: risk > 0 && tp > 0 ? Math.abs(tp - entry) / risk : 0,
+      riskRewardRatio: sl > 0 && risk > 0 && tp > 0 ? Math.abs(tp - entry) / risk : 0,
       strategy: form.strategy,
       session: form.session,
       marketCondition: form.marketCondition,
@@ -237,7 +256,7 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
       mistakes: form.mistakes,
       keyLesson: form.keyLesson,
       notes: form.notes,
-      images: form.images,
+      images: form.images.map(imagePayload),
       tags: form.tags,
       accountIds: form.accountIds.length > 0 ? form.accountIds : undefined,
       brokenRuleIds: form.brokenRuleIds,
@@ -253,13 +272,17 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
     };
   };
 
-  const submit = async (opts: { addAnother?: boolean } = {}) => {
+  const save = async (opts: { addAnother?: boolean }): Promise<boolean> => {
+    if (uploading) {
+      setSaveError('Wait for the screenshots to finish uploading.');
+      return false;
+    }
     const next = validate(form);
     setErrors(next);
     setTouched(Object.fromEntries(Object.keys(next).map((k) => [k, true])));
     if (Object.keys(next).length > 0) {
       requestAnimationFrame(() => (formRef.current?.querySelector('[aria-invalid="true"]') as HTMLElement | null)?.focus());
-      return;
+      return false;
     }
     setSaving(true);
     setSaveError(null);
@@ -267,14 +290,18 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
       const payload = buildPayload();
       let saved: Trade | null = null;
       if (mode === 'new') {
-        saved = await createTrade(payload).unwrap();
+        const body = JSON.stringify(payload);
+        if (attempt.current?.body !== body) attempt.current = { key: crypto.randomUUID(), body };
+        const created = await createTrade({ ...payload, idempotencyKey: attempt.current.key }).unwrap();
+        saved = created[0] ?? null; // one trade per selected account; the pane opens the first
+        attempt.current = null;
         if (userId) trackFirstTrade(userId);
       } else if (initialTrade) {
         const res = await updateTrade({ id: initialTrade.id, payload: patchTradePayload(initialTrade, payload) }).unwrap();
         saved = res.updatedTrade;
       }
       clearDraft();
-      baseline.current = JSON.stringify(stripImages(form)) + JSON.stringify(form.images);
+      baseline.current = formKey(form);
       onDirtyChange?.(false);
       // The saved trade is on screen afterwards, except when the form stays open for the next one (D.6).
       if (opts.addAnother) toast.success('Trade saved');
@@ -282,19 +309,34 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
         const keep = { accountIds: form.accountIds, assetClass: form.assetClass, strategy: form.strategy, session: form.session, entryTime: form.entryTime };
         const fresh = emptyForm({ accountIds: keep.accountIds, assetClass: keep.assetClass });
         setForm({ ...fresh, strategy: keep.strategy, session: keep.session, entryTime: keep.entryTime });
-        baseline.current = JSON.stringify(stripImages({ ...fresh, strategy: keep.strategy, session: keep.session, entryTime: keep.entryTime })) + '[]';
+        baseline.current = formKey({ ...fresh, strategy: keep.strategy, session: keep.session, entryTime: keep.entryTime });
         setTouched({});
         setErrors({});
         symbolRef.current?.focus();
       }
       onSaved(saved, { addAnother: !!opts.addAnother });
+      return true;
     } catch (e) {
-      const status = (e as { status?: number })?.status;
       // 402 is handled by the shared upgrade dialog.
-      if (status !== 402) setSaveError('Could not save the trade. Check your connection and try again.');
+      const failure = readApiError(e, 'Could not save the trade.');
+      if (failure.status !== 402) {
+        setSaveError(failure.message);
+        const fields = serverFieldErrors(e);
+        setErrors(fields);
+        setTouched(Object.fromEntries(Object.keys(fields).map((k) => [k, true])));
+      }
+      return false;
     } finally {
       setSaving(false);
     }
+  };
+
+  // Ctrl+Enter, the buttons and the unsaved-changes dialog all land here: a second call while a save runs shares its result.
+  const submit = (opts: { addAnother?: boolean } = {}): Promise<boolean> => {
+    inFlight.current ??= save(opts).finally(() => {
+      inFlight.current = null;
+    });
+    return inFlight.current;
   };
 
   useImperativeHandle(ref, () => ({ submit, isDirty: () => dirty }));
@@ -517,41 +559,50 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
           {ui.reviewOpen && (
             <div className="space-y-4 border-t border-border p-3">
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Strategy">
-                  {() => <DynamicSelect value={form.strategy} onChange={(v) => set('strategy', v)} options={options.strategies ?? []} onAddNew={addStrategy} placeholder="Strategy" />}
+                <Field label="Strategy" error={err('strategy')}>
+                  {() => <DynamicSelect value={form.strategy} onChange={(v) => set('strategy', v)} options={options.strategies ?? []} onAddNew={addStrategy} maxLength={LIMITS.strategy} placeholder="Strategy" />}
                 </Field>
-                <Field label="Session">
-                  {() => <DynamicSelect value={form.session} onChange={(v) => set('session', v)} options={options.sessions ?? []} onAddNew={addSession} placeholder="Session" />}
+                <Field label="Session" error={err('session')}>
+                  {() => <DynamicSelect value={form.session} onChange={(v) => set('session', v)} options={options.sessions ?? []} onAddNew={addSession} maxLength={LIMITS.session} placeholder="Session" />}
                 </Field>
-                <Field label="Market condition">
-                  {() => <DynamicSelect value={form.marketCondition} onChange={(v) => set('marketCondition', v)} options={options.marketConditions ?? []} onAddNew={addMarketCondition} placeholder="Condition" />}
+                <Field label="Market condition" error={err('marketCondition')}>
+                  {() => <DynamicSelect value={form.marketCondition} onChange={(v) => set('marketCondition', v)} options={options.marketConditions ?? []} onAddNew={addMarketCondition} maxLength={LIMITS.marketCondition} placeholder="Condition" />}
                 </Field>
               </div>
-              <Field label="Mistakes">
+              <Field label="Mistakes" error={err('mistakes')}>
                 {() => (
-                  <MistakeTagsInput selectedTags={form.mistakes} onChange={(t) => set('mistakes', t)} availableTags={[...(options.mistakes ?? []), ...unknownMistakes]} onAddNew={addMistake} />
+                  <MistakeTagsInput selectedTags={form.mistakes} onChange={(t) => set('mistakes', t)} availableTags={[...(options.mistakes ?? []), ...unknownMistakes]} onAddNew={addMistake} maxLength={LIMITS.mistake} />
                 )}
               </Field>
-              <Field label="Tags">
-                {() => <MistakeTagsInput selectedTags={form.tags} onChange={(t) => set('tags', t)} availableTags={[...(options.tags ?? []), ...unknownTags]} onAddNew={addTag} />}
+              <Field label="Tags" error={err('tags')}>
+                {() => (
+                  <MistakeTagsInput
+                    noun="tag"
+                    selectedTags={form.tags}
+                    onChange={(t) => set('tags', t)}
+                    availableTags={[...(options.tags ?? []), ...unknownTags]}
+                    onAddNew={addTag}
+                    maxLength={LIMITS.tag}
+                  />
+                )}
               </Field>
               {rules.length > 0 && (
                 <Field label="Broken rules">{() => <BrokenRulesSelect rules={rules} selectedRuleIds={form.brokenRuleIds} onChange={(ids) => set('brokenRuleIds', ids)} />}</Field>
               )}
-              <Field label="Key lesson">
+              <Field label="Key lesson" error={err('keyLesson')}>
                 {(a) => (
                   <div className="flex gap-2">
-                    <Input {...a} value={form.keyLesson} onChange={(e) => set('keyLesson', e.target.value)} />
-                    <TextEnhancerButton text={form.keyLesson} onEnhanced={(t: string) => set('keyLesson', t)} />
+                    <Input {...a} maxLength={LIMITS.keyLesson} value={form.keyLesson} onChange={(e) => set('keyLesson', e.target.value)} />
+                    <TextEnhancerButton text={form.keyLesson} onEnhanced={(t: string) => set('keyLesson', t.slice(0, LIMITS.keyLesson))} />
                   </div>
                 )}
               </Field>
-              <Field label="Notes">
-                {(a) => <Textarea {...a} rows={4} value={form.notes} onChange={(e) => set('notes', e.target.value)} />}
+              <Field label="Notes" error={err('notes')}>
+                {(a) => <Textarea {...a} rows={4} maxLength={LIMITS.notes} value={form.notes} onChange={(e) => set('notes', e.target.value)} />}
               </Field>
-              <Field label="Screenshots">
+              <Field label="Screenshots" error={err('images')}>
                 {() => (
-                  <ImageUploader images={form.images} onChange={(imgs) => set('images', imgs)} timeframeOptions={options.timeframes ?? []} onAddTimeframe={addTimeframe} onRemoveTimeframe={removeTimeframe} />
+                  <ImageUploader images={form.images} onChange={(imgs) => set('images', imgs)} onBusyChange={setUploading} timeframeOptions={options.timeframes ?? []} onAddTimeframe={addTimeframe} onRemoveTimeframe={removeTimeframe} />
                 )}
               </Field>
             </div>
@@ -594,11 +645,11 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
           </Button>
           {!online && <span className="text-xs text-warning">{copy.offline.saveHint}</span>}
           {mode === 'new' && (
-            <Button type="button" variant="outline" disabled={saving || !online} onClick={() => void submit({ addAnother: true })}>
+            <Button type="button" variant="outline" disabled={saving || uploading || !online} onClick={() => void submit({ addAnother: true })}>
               Save &amp; add another
             </Button>
           )}
-          <Button type="submit" disabled={saving || !online}>
+          <Button type="submit" disabled={saving || uploading || !online}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
             {saving ? 'Saving…' : mode === 'new' ? 'Save trade' : 'Save changes'}
           </Button>

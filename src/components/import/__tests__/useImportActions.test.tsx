@@ -1,6 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { importFlow } from '@/lib/importFlowStore';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
+import { zoneOffsetMinutes } from '@/lib/appTimeZone';
 import { makeRows } from '@/lib/import/rows';
 import { PLAN_SIGNAL_EVENT } from '@/lib/planErrors';
 import type { NormalizedTrade, ParseImportResponse, SaveImportedResult } from '@/types/import';
@@ -27,6 +29,9 @@ vi.mock('@/store/api/importApi', () => ({
   useSaveImportedTradesMutation: () => [save],
 }));
 vi.mock('@/lib/analytics', () => ({ trackImportCompleted: vi.fn() }));
+// jsdom cannot decode images, so the real fitScreenshot would return its input; a test can make it shrink a file.
+const fit = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/import/screenshot', async (importOriginal) => ({ ...(await importOriginal<typeof import('@/lib/import/screenshot')>()), fitScreenshot: (f: File) => fit(f) }));
 
 const trade = (p: Partial<NormalizedTrade> = {}): NormalizedTrade => ({
   symbol: 'NIFTY', side: 'BUY', quantity: 10, entryPrice: 100, exitPrice: 105, openDate: '2026-10-02T03:45:00.000Z', closeDate: '2026-10-02T06:10:00.000Z',
@@ -38,7 +43,8 @@ const png = (name = 's.png', size = 100) => new File([new Uint8Array(size)], nam
 const saved = (p: Partial<SaveImportedResult> = {}): SaveImportedResult => ({ created: 1, skipped: 0, errors: 0, failed: 0, batchId: 'b1', createdIds: ['t1'], failedExternalIds: [], ...p });
 
 beforeEach(() => {
-  [parse, extract, save, bulkDelete, navigate, dispatch].forEach((f) => f.mockReset());
+  [parse, extract, save, bulkDelete, navigate, dispatch, fit].forEach((f) => f.mockReset());
+  fit.mockImplementation(async (f: File) => f);
   usage = [];
   act(() => importFlow.reset());
   act(() => importFlow.set({ accountId: 'a1', source: 'auto' }));
@@ -52,6 +58,16 @@ const run = async (fn: (a: ReturnType<typeof setup>) => unknown) => {
     await fn(a);
   });
 };
+
+describe('the returned actions', () => {
+  it('are one object across re-renders, so listeners that depend on it do not re-subscribe', () => {
+    const { result, rerender } = renderHook(() => useImportActions());
+    const first = result.current;
+    rerender();
+    rerender();
+    expect(result.current).toBe(first);
+  });
+});
 
 describe('addFiles', () => {
   it('needs an account first', async () => {
@@ -79,6 +95,51 @@ describe('addFiles', () => {
     expect(seen).toHaveBeenCalledTimes(1);
     expect((seen.mock.calls[0][0] as CustomEvent).detail).toMatchObject({ code: 'QUOTA_EXCEEDED', feature: 'broker_import', limit: 3, kind: 'mutation' });
     expect(parse).not.toHaveBeenCalled();
+  });
+
+  describe('the clock of the file (X-009)', () => {
+    afterEach(() => {
+      localStorage.clear();
+      resetUiStateCache();
+    });
+
+    it('a generic CSV is read in the app time zone, not the IST default of the parser', async () => {
+      patchUiState({ timeZone: 'America/New_York' });
+      act(() => importFlow.set({ source: 'generic_csv' }));
+      parse.mockReturnValue(call(parsed({ detectedSource: 'generic_csv' })));
+      await run((x) => x.addFiles([csv()]));
+      expect(parse.mock.calls[0][0].utcOffsetMinutes).toBe(zoneOffsetMinutes(new Date(), 'America/New_York'));
+      expect([-300, -240]).toContain(parse.mock.calls[0][0].utcOffsetMinutes);
+    });
+
+    it('with no saved zone it sends the offset of this browser', async () => {
+      act(() => importFlow.set({ source: 'generic_csv' }));
+      parse.mockReturnValue(call(parsed({ detectedSource: 'generic_csv' })));
+      await run((x) => x.addFiles([csv()]));
+      expect(parse.mock.calls[0][0].utcOffsetMinutes).toBe(-new Date().getTimezoneOffset());
+    });
+
+    it('the generic fallback after auto-detect finds no broker sends it too, and so does a column mapping', async () => {
+      patchUiState({ timeZone: 'Asia/Kolkata' });
+      parse
+        .mockReturnValueOnce(call(parsed({ detectedSource: 'unknown', trades: [] })))
+        .mockReturnValueOnce(call(parsed({ detectedSource: 'generic_csv', trades: [], columns: { headers: ['a', 'b'], suggested: {} } })));
+      await run((x) => x.addFiles([csv()]));
+      expect(parse.mock.calls[0][0].utcOffsetMinutes).toBeUndefined();
+      expect(parse.mock.calls[1][0]).toMatchObject({ source: 'generic_csv', utcOffsetMinutes: 330 });
+      parse.mockReturnValueOnce(call(parsed({ detectedSource: 'generic_csv' })));
+      await run((x) => x.reparse({ symbol: 'a' }));
+      expect(parse.mock.calls[2][0]).toMatchObject({ mapping: { symbol: 'a' }, utcOffsetMinutes: 330 });
+    });
+
+    it('a broker with its own clock keeps the parser default: nothing is sent for Auto-detect or a named broker', async () => {
+      patchUiState({ timeZone: 'America/New_York' });
+      parse.mockReturnValue(call(parsed()));
+      await run((x) => x.addFiles([csv()]));
+      act(() => importFlow.set({ source: 'zerodha' }));
+      await run((x) => x.reparse());
+      for (const [req] of parse.mock.calls) expect(req.utcOffsetMinutes).toBeUndefined();
+    });
   });
 
   it('parses a broker file into rows; duplicates start unchecked; the file is kept for a re-check', async () => {
@@ -144,6 +205,16 @@ describe('addFiles', () => {
     await run((x) => x.addFiles([csv()]));
     expect(importFlow.get().phase).toBe('idle');
     expect(importFlow.get().error).toBe('This file is empty.');
+  });
+
+  it('shrinks an oversized screenshot instead of refusing it, and sends the smaller image', async () => {
+    const shrunk = new File([new Uint8Array(500_000)], 'big.jpg', { type: 'image/jpeg' });
+    fit.mockResolvedValueOnce(shrunk);
+    extract.mockReturnValue(call({ items: [] }));
+    await run((x) => x.addFiles([png('big.png', 3 * 1024 * 1024)]));
+    expect(importFlow.get().error).not.toMatch(/larger than 1 MB/);
+    expect(extract).toHaveBeenCalledTimes(1);
+    expect(extract.mock.calls[0][0].images[0].length).toBeLessThan(1_000_000); // the 500 KB image, not the 3 MB one
   });
 
   it('refuses screenshots above 1 MB by name instead of dropping them', async () => {

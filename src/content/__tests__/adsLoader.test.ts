@@ -15,7 +15,8 @@ beforeEach(() => {
   __resetAdsLoaderForTests();
   delete window.dataLayer;
   delete window.gtag;
-  document.head.querySelectorAll('script').forEach((s) => s.remove());
+  document.head.querySelectorAll('script, meta[name="google-adsense-account"]').forEach((s) => s.remove());
+  document.head.insertAdjacentHTML('beforeend', '<meta name="google-adsense-account" content="ca-pub-123" />');
   localStorage.clear();
   setWebdriver(false);
 });
@@ -38,6 +39,18 @@ describe('AdSense loader (public pages only, off at launch)', () => {
     expect(loadAdSense('/blog/x')).toBe(true);
     expect(document.querySelectorAll('script[src*="adsbygoogle"]').length).toBe(1);
     expect(loadAdSense('/glossary')).toBe(false);
+    vi.unstubAllEnvs();
+  });
+
+  it('loads the publisher id from the index.html meta tag, and nothing without it', () => {
+    vi.stubEnv('VITE_ADS_ENABLED', 'true');
+    document.head.querySelector('meta[name="google-adsense-account"]')!.remove();
+    expect(loadAdSense('/blog/x')).toBe(false);
+    expect(document.querySelector('script[src*="adsbygoogle"]')).toBeNull();
+
+    document.head.insertAdjacentHTML('beforeend', '<meta name="google-adsense-account" content="ca-pub-123" />');
+    expect(loadAdSense('/blog/x')).toBe(true);
+    expect(document.querySelector('script[src*="adsbygoogle"]')!.getAttribute('src')).toContain('client=ca-pub-123');
     vi.unstubAllEnvs();
   });
 });

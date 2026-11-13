@@ -15,7 +15,7 @@ vi.mock('@/hooks/useReadOnlyAccounts', () => ({ useReadOnlyAccounts: () => readO
 vi.mock('@/hooks/useAccounts', () => ({ useAccounts: () => ({ accounts: [{ id: 'a1', name: 'FTMO', currency: 'USD', status: 'active' }], selectedAccountId: null }) }));
 vi.mock('@/hooks/useSavedOptions', () => ({ useSavedOptions: () => ({ options: { strategies: [], sessions: [], marketConditions: [], mistakes: [], tags: [] }, addStrategy: vi.fn(), addSession: vi.fn(), addMarketCondition: vi.fn(), addMistake: vi.fn(), addTag: vi.fn() }) }));
 vi.mock('@/hooks/useTradingRules', () => ({ useTradingRules: () => ({ rules: [], loading: false }) }));
-vi.mock('@/store/api', () => ({ useDeleteTradeMutation: () => [vi.fn(), { isLoading: false }], useBulkDeleteTradesMutation: () => [vi.fn()], useRestoreTradesMutation: () => [vi.fn()], useUpdateTradeMutation: () => [vi.fn()] }));
+vi.mock('@/store/api', () => ({ useDeleteTradeMutation: () => [vi.fn(), { isLoading: false }], useBulkDeleteTradesMutation: () => [vi.fn()], useRestoreTradesMutation: () => [vi.fn()], useUpdateTradeMutation: () => [vi.fn()], useGetTradeQuery: () => ({ currentData: undefined, isFetching: false }) }));
 
 import { TradePane } from '../TradePane';
 
@@ -58,9 +58,12 @@ describe('TradePane', () => {
     expect(param.stepTo).toHaveBeenCalledWith('t3');
   });
 
-  it('offers Duplicate, Copy link, Open in new tab and Delete in the more menu', async () => {
+  it('offers a new trade from this one and Delete in the more menu', async () => {
     setup();
     await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
-    expect(screen.getAllByRole('menuitem').map((i) => i.textContent?.trim())).toEqual(['Duplicate', 'Copy link', 'Open in new tab', 'Delete…']);
+    expect(screen.getAllByRole('menuitem').map((i) => i.textContent?.trim())).toEqual([
+      'New trade from this oneSame account, symbol, size, stop and target',
+      'Delete…',
+    ]);
   });
 });

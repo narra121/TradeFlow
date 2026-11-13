@@ -1,4 +1,5 @@
 import type { CreateTradePayload } from '@/lib/api';
+import { readApiError } from '@/lib/apiError';
 import type { Trade } from '@/types/trade';
 
 export const BULK_EDIT_CAP = 200;
@@ -61,6 +62,8 @@ export function inverseOf(t: Trade, patch: Partial<CreateTradePayload>): Partial
 export interface FanOutResult<T> {
   done: T[];
   failed: T[];
+  /** The API's message for the first failure, absent when nothing failed or the failure carried none. */
+  reason?: string;
 }
 
 /** Runs `fn` over items `concurrency` at a time; a failure never stops the rest. */
@@ -75,8 +78,9 @@ export async function fanOut<T>(items: T[], fn: (item: T) => Promise<void>, opts
       try {
         await fn(item);
         result.done.push(item);
-      } catch {
+      } catch (err) {
         result.failed.push(item);
+        result.reason ??= readApiError(err, '').message || undefined;
       }
       finished += 1;
       opts.onProgress?.(finished, items.length);

@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { arrivalNotice, type Arrival } from '@/components/auth/authErrors';
-import { safeDestination } from '@/lib/oauth';
+import { safeDestination } from '@/lib/auth/destination';
 
 interface FromState {
   from?: { pathname?: string; search?: string; hash?: string };

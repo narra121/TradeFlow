@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attentionLink, chartSeries, currentWeek, equitySeries, needsAttention, netByCurrency, previousPeriod, todaySummary, weekGoals } from '../dashboard';
+import { attentionLink, chartSeries, currentWeek, drawdownSeries, equitySeries, needsAttention, previousPeriod, todaySummary, weekGoals } from '../dashboard';
 import type { Trade, TradingAccount } from '@/types/trade';
 
 const accounts = new Map(
@@ -28,18 +28,13 @@ describe('needsAttention', () => {
   });
 });
 
-describe('todaySummary / netByCurrency', () => {
+describe('todaySummary', () => {
   const now = new Date(2026, 10, 11, 18, 0);
 
   it("sums today's trades per currency", () => {
     const s = todaySummary([t('1', { pnl: 100 }), t('2', { pnl: -20 }), t('3', { pnl: 5000, accountId: 'b' }), t('4', { exitDate: '2026-11-10T10:00:00' })], accounts, now);
     expect(s.count).toBe(3);
     expect(s.byCurrency).toEqual([{ currency: 'USD', net: 80 }, { currency: 'INR', net: 5000 }]);
-  });
-
-  it('orders currencies by trade count and ignores trades with no account', () => {
-    const rows = netByCurrency([t('1'), t('2'), t('3', { accountId: 'b', pnl: 7 }), t('4', { accountId: undefined })], accounts);
-    expect(rows).toEqual([{ currency: 'USD', net: 20, trades: 2 }, { currency: 'INR', net: 7, trades: 1 }]);
   });
 });
 
@@ -51,8 +46,13 @@ describe('equitySeries', () => {
 });
 
 describe('previousPeriod', () => {
-  it('compares a month with the whole previous month, named by month', () => {
-    expect(previousPeriod('thisMonth', '2026-11-01', '2026-11-11')).toEqual({ startDate: '2026-10-01', endDate: '2026-10-31', name: 'Oct', spokenName: 'October' });
+  it('compares a month with the same number of days of the previous month, named by month (FE-022)', () => {
+    expect(previousPeriod('thisMonth', '2026-11-01', '2026-11-11')).toEqual({ startDate: '2026-10-01', endDate: '2026-10-11', name: 'Oct', spokenName: 'October' });
+    expect(previousPeriod('thisMonth', '2026-11-01', '2026-11-05')).toMatchObject({ startDate: '2026-10-01', endDate: '2026-10-05' });
+  });
+
+  it('cuts the previous month at its last day when the month so far is longer', () => {
+    expect(previousPeriod('thisMonth', '2026-10-01', '2026-10-31')).toMatchObject({ startDate: '2026-09-01', endDate: '2026-09-30', name: 'Sep' });
   });
 
   it('shifts a week by seven days and a rolling range by its own length', () => {
@@ -79,6 +79,32 @@ describe('chartSeries', () => {
     expect(bucket).toBe('week');
     expect(points).toHaveLength(2);
     expect(points[0]).toMatchObject({ date: '2025-12-29', day: 15, cumulative: 15 });
+  });
+});
+
+describe('drawdownSeries (FE-059)', () => {
+  const day = (date: string, pnl: number, cumulative: number) => ({ date, label: date, day: pnl, cumulative });
+
+  it('measures every day against the running peak, which starts at 0', () => {
+    const { daily, chart } = drawdownSeries([day('2026-11-02', -10, -10), day('2026-11-03', 30, 20), day('2026-11-04', -35, -15)]);
+    expect(daily.map((p) => p.drawdown)).toEqual([-10, 0, -35]);
+    expect(chart).toEqual(daily);
+  });
+
+  it('beyond 92 days draws one point per week with its deepest day, and still reports every day', () => {
+    // Monday 5 Jan is the week's first day; the trough is on Wednesday, the week closes near the peak.
+    const { daily, chart } = drawdownSeries([
+      day('2026-01-05', 100, 100),
+      day('2026-01-07', -60, 40),
+      day('2026-01-09', 55, 95),
+      day('2026-05-01', 20, 115),
+    ]);
+    expect(daily.map((p) => p.drawdown)).toEqual([0, -60, -5, 0]);
+    expect(chart).toEqual([{ date: '2026-01-05', drawdown: -60 }, { date: '2026-04-27', drawdown: 0 }]);
+  });
+
+  it('is empty without points', () => {
+    expect(drawdownSeries([])).toEqual({ daily: [], chart: [] });
   });
 });
 

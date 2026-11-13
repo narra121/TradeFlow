@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { batchFile, type ImportBatch } from '@/lib/import/batches';
 import { sourceLabel } from '@/lib/import/labels';
-import { formatDateShort } from '@/lib/format';
+import { readApiError } from '@/lib/apiError';
+import { formatCount, formatDateShort } from '@/lib/format';
 import { useGetImportBatchesQuery } from '@/store/api/importApi';
 import { SCREENSHOT_SOURCE, type ImportSource } from '@/types/import';
 
@@ -24,7 +25,7 @@ function sourceName(id: string, sources: ImportSource[]): string {
 /** Past imports: date, file, source, account, trades and `View trades`. Loaded when opened, from the newest trades. */
 export function PastImports({ accounts, sources, onView }: PastImportsProps) {
   const [open, setOpen] = useState(false);
-  const { data, isFetching, isError, refetch } = useGetImportBatchesQuery({ accountIds: accounts.map((a) => a.id) }, { skip: !open || accounts.length === 0 });
+  const { data, isFetching, isError, error, refetch } = useGetImportBatchesQuery({ accountIds: accounts.map((a) => a.id) }, { skip: !open || accounts.length === 0 });
   const accountName = (id: string) => accounts.find((a) => a.id === id)?.name ?? 'Account';
   const Caret = open ? ChevronDown : ChevronRight;
   return (
@@ -37,7 +38,7 @@ export function PastImports({ accounts, sources, onView }: PastImportsProps) {
       {open &&
         (isError ? (
           <p role="alert" className="text-13 text-loss">
-            Couldn’t load your past imports.{' '}
+            Couldn’t load your past imports. {readApiError(error, '').message}{' '}
             <button type="button" className="underline" onClick={() => void refetch()}>Retry</button>
           </p>
         ) : isFetching && !data ? (
@@ -67,7 +68,7 @@ export function PastImports({ accounts, sources, onView }: PastImportsProps) {
                       <td className="max-w-48 truncate pr-3">{file ?? <span className="text-muted-foreground">—</span>}</td>
                       <td className="pr-3">{sourceName(b.source, sources)}</td>
                       <td className="pr-3">{accountName(b.accountId)}</td>
-                      <td className="pr-3 text-right font-mono tabular-nums">{b.count.toLocaleString()}</td>
+                      <td className="pr-3 text-right font-mono tabular-nums">{formatCount(b.count)}</td>
                       <td className="text-right">
                         <Button type="button" variant="ghost" size="sm" onClick={() => onView(b)} aria-label={`View trades from the import of ${formatDateShort(b.importedAt, true)}, ${b.count} trades`}>
                           View trades →

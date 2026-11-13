@@ -4,6 +4,8 @@ var CANONICAL_HOST = "tradequt.com";
 var REDIRECT_HOSTS = ["www.tradequt.com"];
 var SPA_PREFIXES = ["/app","/auth"];
 var SPA_SHELL = '/_spa.html';
+var SECURITY_HEADERS = {"strict-transport-security":"max-age=31536000","x-content-type-options":"nosniff","referrer-policy":"strict-origin-when-cross-origin"};
+var PAGE_HEADERS = {"content-security-policy":"frame-ancestors 'none'","content-security-policy-report-only":"default-src 'self'; script-src 'self' 'sha256-HW2W6NF3ZACcYzgkTxNgaaKc8o3QBT/z8AEenqrwVhs=' https://www.googletagmanager.com https://pagead2.googlesyndication.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com https://pagead2.googlesyndication.com https://*.g.doubleclick.net; font-src 'self'; connect-src 'self' https://*.tradequt.com https://*.execute-api.us-east-1.amazonaws.com https://cognito-idp.us-east-1.amazonaws.com https://*.s3.us-east-1.amazonaws.com https://*.google-analytics.com https://*.googletagmanager.com https://analytics.google.com https://*.analytics.google.com https://pagead2.googlesyndication.com https://*.g.doubleclick.net; frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; object-src 'none'; base-uri 'self'; form-action 'self'"};
 
 function queryString(q) {
   var parts = [];
@@ -39,6 +41,11 @@ function handler(event) {
 
   if (event.context.eventType === 'viewer-response') {
     var response = event.response;
+    for (var name in SECURITY_HEADERS) response.headers[name] = { value: SECURITY_HEADERS[name] };
+    var type = response.headers['content-type'];
+    if (type && type.value.indexOf('text/html') === 0) {
+      for (var page in PAGE_HEADERS) response.headers[page] = { value: PAGE_HEADERS[page] };
+    }
     if (host !== CANONICAL_HOST) response.headers['x-robots-tag'] = { value: 'noindex, nofollow' };
     return response;
   }

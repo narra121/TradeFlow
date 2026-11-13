@@ -20,13 +20,14 @@ let scopeTrades: Trade[] = [];
 vi.mock('@/hooks/useScopeTrades', () => ({
   useScopeTrades: () => ({ trades: scopeTrades, isLoading: false, isError: false, isFetching: false, refetch: vi.fn(), truncated: false, params: {} }),
 }));
+const historyArgs = vi.fn();
 vi.mock('@/components/goals/useGoalHistory', () => ({
-  useGoalHistory: () => ({ strips: { profit: [], winRate: [], maxDrawdown: [], maxTrades: [] }, loading: false, failed: false, loaded: 8 }),
+  useGoalHistory: (args: unknown) => (historyArgs(args), { strips: { profit: [], winRate: [], maxDrawdown: [], maxTrades: [] }, loading: false, failed: false, loaded: 8 }),
 }));
 
 const progressArgs = vi.fn();
-let progress: { data?: unknown; isLoading: boolean; isError: boolean } = { isLoading: false, isError: false };
-let rulesGoals: { data?: unknown; isLoading: boolean; isError: boolean } = { isLoading: false, isError: false };
+let progress: { data?: unknown; isLoading: boolean; isError: boolean; error?: unknown } = { isLoading: false, isError: false };
+let rulesGoals: { data?: unknown; isLoading: boolean; isError: boolean; error?: unknown } = { isLoading: false, isError: false };
 let allRules: { data?: unknown; isLoading: boolean; isError: boolean } = { data: [], isLoading: false, isError: false };
 const refetch = vi.fn();
 const createGoal = vi.fn();
@@ -94,7 +95,7 @@ describe('GoalsView', () => {
     rulesGoals = { data: { goals: [realGoal], rules: [rule('a', 'Risk at most 1% per trade')] }, isLoading: false, isError: false };
     allRules = { data: [rule('a', 'Risk at most 1% per trade')], isLoading: false, isError: false };
     scopeTrades = [];
-    for (const f of [progressArgs, refetch, createGoal, updateGoal, createRule, updateRule, deleteRule, setSelectedAccountId]) f.mockReset();
+    for (const f of [progressArgs, historyArgs, refetch, createGoal, updateGoal, createRule, updateRule, deleteRule, setSelectedAccountId]) f.mockReset();
     for (const f of [createGoal, updateGoal, createRule, updateRule]) f.mockReturnValue(unwrap({}));
     deleteRule.mockReturnValue(unwrap({}));
   });
@@ -105,7 +106,11 @@ describe('GoalsView', () => {
     setup();
     expect(screen.getByText(/Goals are tracked per account/)).toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Zerodha · INR' }));
+    // One picker, not a button per account.
+    expect(screen.queryByRole('button', { name: /Zerodha/ })).not.toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: 'Account' }));
+    await user.click(screen.getByRole('option', { name: /Zerodha.*INR/ }));
     expect(setSelectedAccountId).toHaveBeenCalledWith('inr');
   });
 
@@ -127,6 +132,16 @@ describe('GoalsView', () => {
     for (const [args] of progressArgs.mock.calls) expect(args.currentPeriod && args.periodKey !== 'week#2026-11-09').toBe(false);
   });
 
+  it('asks for the history of the account and period on screen only once the period itself has loaded', () => {
+    progress = { isLoading: true, isError: false };
+    const { unmount } = setup();
+    expect(historyArgs).toHaveBeenLastCalledWith(expect.objectContaining({ enabled: false }));
+    unmount();
+    progress = { data: gp, isLoading: false, isError: false };
+    setup();
+    expect(historyArgs).toHaveBeenLastCalledWith(expect.objectContaining({ enabled: true, accountId: 'usd', totalCapital: 100000, current: expect.objectContaining({ key: 'week#2026-11-09' }) }));
+  });
+
   it('is read-only in a past period', () => {
     setup('/app/goals?on=2026-11-02');
     expect(screen.getByText('Past period — read-only.')).toBeInTheDocument();
@@ -141,7 +156,7 @@ describe('GoalsView', () => {
     expect(screen.getByRole('button', { name: 'Next week' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Previous week' }));
     expect(screen.getByTestId('search')).toHaveTextContent('on=2026-11-02');
-    expect(screen.getByText('2 – 8 Nov 2026')).toBeInTheDocument();
+    expect(screen.getByText('02 – 08 Nov 2026')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'This week' }));
     expect(screen.getByTestId('search')).not.toHaveTextContent('on=');
   });
@@ -196,6 +211,21 @@ describe('GoalsView', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     await userEvent.setup().click(screen.getAllByRole('button', { name: 'Retry' })[0]);
     expect(refetch).toHaveBeenCalled();
+  });
+
+  it('shows the API message of a failed goals and rules load; the connection message only without a response', () => {
+    progress = { isLoading: false, isError: true, error: { status: 500, data: { message: 'Goals are being recalculated.' } } };
+    rulesGoals = { isLoading: false, isError: true, error: { status: 403, data: { message: 'Rules are not available on this plan.' } } };
+    const { unmount } = setup();
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts[0]).toHaveTextContent('Goals are being recalculated.');
+    expect(alerts.some((a) => a.textContent?.includes('Rules are not available on this plan.'))).toBe(true);
+    expect(alerts.every((a) => !/internet connection/i.test(a.textContent ?? ''))).toBe(true);
+    unmount();
+    progress = { isLoading: false, isError: true, error: { status: 'FETCH_ERROR' } };
+    rulesGoals = { isLoading: false, isError: false };
+    setup();
+    expect(screen.getAllByRole('alert')[0]).toHaveTextContent(/Check your internet connection/);
   });
 
   it('shows skeletons while loading', () => {

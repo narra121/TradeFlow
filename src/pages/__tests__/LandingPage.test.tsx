@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders, screen, within } from '@/test/test-utils';
 import { LandingPage } from '../LandingPage';
 import { IMPORT_SOURCES, PRODUCT_FAQ } from '@/content/product-facts';
+import { daysSortedAt } from '@/components/landing/ParticleAssembly';
+import { SAMPLE_DAYS } from '@/components/public/tourFixture';
 
 // jsdom has no layout observers or 2-D canvas; the stageshow stages and the particle canvas only need them to exist.
 beforeAll(() => {
@@ -115,6 +117,16 @@ describe('LandingPage', () => {
     expect(screen.getByRole('link', { name: 'See pricing' })).toHaveAttribute('href', '/pricing');
     const pricing = screen.getByRole('region', { name: 'Pricing' });
     expect(within(pricing).getByRole('link', { name: 'See full pricing' })).toHaveAttribute('href', '/pricing');
+  });
+
+  it('sorts the sample month into the calendar: no day at the pin, every day before the release, never a day taken back', () => {
+    expect(daysSortedAt(0)).toBe(0);
+    expect(daysSortedAt(0.94)).toBe(SAMPLE_DAYS.length);
+    const steps = Array.from({ length: 101 }, (_, i) => daysSortedAt(i / 100));
+    steps.forEach((n, i) => expect(n).toBeGreaterThanOrEqual(steps[Math.max(0, i - 1)]));
+    renderWithProviders(<LandingPage />);
+    expect(screen.getByRole('heading', { name: 'Every trade from the file, sorted into days and read as a month.' })).toBeInTheDocument();
+    expect(screen.getByText('29 trades in 11 days')).toBeInTheDocument();
   });
 
   it('has a Pause control for the animations', async () => {

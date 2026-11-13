@@ -1,6 +1,7 @@
 import { addDays, addMonths, addWeeks, endOfMonth, format, startOfMonth, startOfWeek } from 'date-fns';
+import { appToday } from '@/lib/appTimeZone';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { formatMoney, formatPercent } from '@/lib/format';
+import { formatDateShort, formatMoney, formatPercent } from '@/lib/format';
 
 export type GoalPeriod = 'weekly' | 'monthly';
 export type GoalType = 'profit' | 'winRate' | 'maxDrawdown' | 'maxTrades';
@@ -63,26 +64,25 @@ export function previousPeriods(ref: PeriodRef, count = 8): PeriodRef[] {
   return Array.from({ length: count }, (_, i) => shiftPeriod(ref, i - count));
 }
 
-export function isCurrentPeriod(ref: PeriodRef, now: Date = new Date()): boolean {
+export function isCurrentPeriod(ref: PeriodRef, now: Date = appToday()): boolean {
   return periodOf(ref.period, now).key === ref.key;
 }
 
-export function isPastPeriod(ref: PeriodRef, now: Date = new Date()): boolean {
+export function isPastPeriod(ref: PeriodRef, now: Date = appToday()): boolean {
   return ref.end < new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
 export function periodLabel(ref: PeriodRef): string {
   if (ref.period === 'monthly') return format(ref.start, 'MMMM yyyy');
   const sameMonth = ref.start.getMonth() === ref.end.getMonth();
-  return sameMonth ? `${format(ref.start, 'd')} – ${format(ref.end, 'd MMM yyyy')}` : `${format(ref.start, 'd MMM')} – ${format(ref.end, 'd MMM yyyy')}`;
+  return sameMonth ? `${format(ref.start, 'dd')} – ${formatDateShort(ref.end, true)}` : `${formatDateShort(ref.start)} – ${formatDateShort(ref.end, true)}`;
 }
 
 export const periodNoun = (p: GoalPeriod): 'week' | 'month' => (p === 'weekly' ? 'week' : 'month');
 
 /** Monday to Friday days of the period; the pace of a target is measured in these. */
 export function tradingDays(ref: PeriodRef): { total: number; elapsed: number; left: number } {
-  const today = new Date();
-  const todayKey = formatLocalDateOnly(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
+  const todayKey = formatLocalDateOnly(appToday());
   let total = 0;
   let elapsed = 0;
   for (let d = ref.start; d <= ref.end; d = addDays(d, 1)) {
@@ -195,7 +195,7 @@ export function streakText(type: GoalType, period: GoalPeriod, s: { kind: 'met' 
 }
 
 export function glyphName(type: GoalType, g: Glyph, period: PeriodRef): string {
-  const label = period.period === 'weekly' ? `Week of ${format(period.start, 'd MMM')}` : format(period.start, 'MMMM yyyy');
+  const label = period.period === 'weekly' ? `Week of ${formatDateShort(period.start)}` : format(period.start, 'MMMM yyyy');
   const word = g === 'none' ? 'no trades or no goal' : g === 'met' ? (isLimit(type) ? 'within the limit' : 'met') : isLimit(type) ? 'over the limit' : 'missed';
   return `${label}: ${word}`;
 }

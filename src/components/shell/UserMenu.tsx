@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, CircleHelp, CreditCard, ExternalLink, Keyboard, LogOut, Settings, User } from 'lucide-react';
+import { ChevronDown, CircleHelp, CreditCard, Keyboard, LogOut, Settings, User } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ContactSupportDialog, FeedbackDialog } from '@/components/help';
 import { useLogout } from '@/components/auth/useLogout';
@@ -63,8 +63,8 @@ export function UserMenu({ onShowShortcuts, variant = 'full', className }: UserM
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <a href="/guide" target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-between">
-                <span className="flex items-center"><CircleHelp className="mr-2 h-4 w-4" aria-hidden="true" /> Guide</span> <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              <a href="/guide" className="flex w-full items-center">
+                <CircleHelp className="mr-2 h-4 w-4" aria-hidden="true" /> Guide
               </a>
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setDialog('support')}>Contact support</DropdownMenuItem>

@@ -23,6 +23,8 @@ let messages: ChatMessage[] = [];
 let insights: Insight[] = [];
 let usage = { used: 2, limit: 500 as number | null };
 let mobile = false;
+let sessionsFailure: unknown;
+let messagesFailure: unknown;
 
 vi.mock('sonner', () => ({ toast: vi.fn() }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
@@ -30,8 +32,8 @@ vi.mock('@/hooks/useTradeParam', () => ({ useTradeParam: () => ({ openTrade }) }
 vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ usage: [{ feature: 'ai_chat', ...usage }], periodResetsAt: '2026-12-01T00:00:00.000Z' }) }));
 vi.mock('@/store/api/insightsApi', () => ({ useListInsightsQuery: () => ({ data: { insights } }) }));
 vi.mock('@/store/api/chatApi', () => ({
-  useListChatSessionsQuery: () => ({ data: sessions, isLoading: false, isError: false, refetch: vi.fn() }),
-  useGetChatMessagesQuery: () => ({ data: messages, isFetching: false, isError: false, refetch: vi.fn() }),
+  useListChatSessionsQuery: () => ({ data: sessions, isLoading: false, isError: !!sessionsFailure, error: sessionsFailure, refetch: vi.fn() }),
+  useGetChatMessagesQuery: () => ({ data: messages, isFetching: false, isError: !!messagesFailure, error: messagesFailure, refetch: vi.fn() }),
   useCreateChatSessionMutation: () => [createSession],
   useDeleteChatSessionMutation: () => [deleteSession],
   useSendChatMessageMutation: () => [send],
@@ -41,7 +43,8 @@ function Where() {
   const l = useLocation();
   return <p data-testid="where">{l.search}</p>;
 }
-const renderChat = (route = '/app/chat') => render(<MemoryRouter initialEntries={[route]}><ChatView /><Where /></MemoryRouter>);
+/** The app's router moves URL changes into a transition (App.tsx), so the new `?s=` renders after the turn that was set with it. */
+const renderChat = (route = '/app/chat') => render(<MemoryRouter initialEntries={[route]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><ChatView /><Where /></MemoryRouter>);
 const session = (id: string, title: string, updatedAt = new Date().toISOString()): ChatSession => ({ id, title, createdAt: updatedAt, updatedAt, messageCount: 2 });
 const msg = (id: string, role: 'user' | 'assistant', content: string): ChatMessage => ({ id, role, content, createdAt: '2026-11-11T10:00:00.000Z' });
 const box = () => screen.getByRole('textbox', { name: 'Ask about your trading' });
@@ -53,6 +56,8 @@ beforeEach(() => {
   insights = [];
   usage = { used: 2, limit: 500 };
   mobile = false;
+  sessionsFailure = undefined;
+  messagesFailure = undefined;
   createSession.mockReturnValue(call({ id: 's-new', title: '', createdAt: '', updatedAt: '', messageCount: 0 }));
 });
 
@@ -76,7 +81,44 @@ describe('ChatView empty thread', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Which mistakes cost me the most?' }));
     expect(createSession).toHaveBeenCalled();
     await waitFor(() => expect(send).toHaveBeenCalledWith(expect.objectContaining({ sessionId: 's-new', content: 'Which mistakes cost me the most?' })));
-    expect(screen.getByTestId('where')).toHaveTextContent('?s=s-new');
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('?s=s-new'));
+  });
+
+  it('the first answer of a new chat streams on: the session id arriving in the URL does not wipe the running turn', async () => {
+    let emit: (t: string) => void = () => undefined;
+    send.mockImplementation((args: { onToken: (t: string) => void }) => {
+      emit = args.onToken;
+      args.onToken('First ');
+      return { unwrap: () => new Promise(() => undefined), abort: vi.fn() };
+    });
+    renderChat();
+    await userEvent.click(screen.getByRole('button', { name: 'Which mistakes cost me the most?' }));
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('?s=s-new'));
+    act(() => emit('tokens'));
+    expect(await screen.findByText('First tokens')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Stop answer/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Which mistakes cost me the most?' })).toBeNull();
+  });
+
+  it('a second Enter or a double click while the session is being created sends nothing more', async () => {
+    let created: (v: unknown) => void = () => undefined;
+    createSession.mockReturnValue({ unwrap: () => new Promise((r) => (created = r)), abort: vi.fn() });
+    send.mockReturnValue(call({ content: 'x', done: { messageId: 'm' } }));
+    renderChat();
+    await userEvent.type(box(), 'Hello{Enter}');
+    await userEvent.keyboard('{Enter}{Enter}');
+    expect(createSession).toHaveBeenCalledTimes(1);
+    await act(async () => created({ id: 's-new', title: '', createdAt: '', updatedAt: '', messageCount: 0 }));
+    await waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    expect(createSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('a double-clicked starter creates one session and sends one question', async () => {
+    send.mockReturnValue(call({ content: 'x', done: { messageId: 'm' } }));
+    renderChat();
+    await userEvent.dblClick(screen.getByRole('button', { name: 'Which mistakes cost me the most?' }));
+    await waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    expect(createSession).toHaveBeenCalledTimes(1);
   });
 
   it('a report discussed in chat is attached to the new session', async () => {
@@ -100,9 +142,9 @@ describe('ChatView conversation', () => {
     expect(within(log).getByText('11 trades').tagName).toBe('STRONG');
     expect(within(log).getAllByRole('listitem')).toHaveLength(2);
     await userEvent.click(within(log).getByRole('button', { name: 'Open trade 2' }));
-    expect(openTrade).toHaveBeenCalledWith('t2');
+    expect(openTrade).toHaveBeenCalledWith('t2', undefined);
     await userEvent.click(within(log).getByRole('button', { name: /View all 2 trades/ }));
-    expect(openTrade).toHaveBeenCalledWith('t1');
+    expect(openTrade).toHaveBeenCalledWith('t1', { ids: ['t1', 't2'] });
   });
 
   it('Enter sends, Shift+Enter adds a line, an empty box cannot be sent', async () => {
@@ -156,6 +198,38 @@ describe('ChatView conversation', () => {
     await userEvent.type(box(), 'Why?{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent('The answer couldn’t be completed.');
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
+
+  it('shows the API message of a failed answer, and the connection message only without a response', async () => {
+    sessions = [session('s1', 'x')];
+    send.mockReturnValueOnce(call({ status: 500, data: { message: 'The assistant is overloaded' } }, true));
+    const { unmount } = renderChat('/app/chat?s=s1');
+    await userEvent.type(box(), 'Why?{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent('The assistant is overloaded. Your question was not lost.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    unmount();
+    send.mockReturnValueOnce(call({ status: 'FETCH_ERROR', data: 'x' }, true));
+    renderChat('/app/chat?s=s1');
+    await userEvent.type(box(), 'Why?{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Check your internet connection/);
+  });
+
+  it('shows the API message when a chat cannot be started', async () => {
+    createSession.mockReturnValueOnce(call({ status: 400, data: { message: 'You have too many open chats.' } }, true));
+    renderChat('/app/chat');
+    await userEvent.type(box(), 'Hello{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent('You have too many open chats.');
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('shows the API message when the chat list or a chat fails to load', () => {
+    sessionsFailure = { status: 500, data: { message: 'Chats are being moved.' } };
+    messagesFailure = { status: 404, data: { message: 'That chat no longer exists.' } };
+    renderChat('/app/chat?s=s1');
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts.some((a) => a.textContent?.includes('Chats are being moved.'))).toBe(true);
+    expect(alerts.some((a) => a.textContent?.includes('That chat no longer exists.'))).toBe(true);
+    expect(alerts.every((a) => !/internet connection/i.test(a.textContent ?? ''))).toBe(true);
   });
 
   it('Esc inside the composer stops a running answer', async () => {

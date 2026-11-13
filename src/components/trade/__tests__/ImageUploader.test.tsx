@@ -1,7 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImageUploader } from '../ImageUploader';
 import { TradeImage } from '@/types/trade';
+
+const upload = vi.hoisted(() => ({ uploadScreenshot: vi.fn() }));
+vi.mock('../imageUpload', async (orig) => ({ ...(await orig<object>()), uploadScreenshot: upload.uploadScreenshot }));
 
 // Mock CachedImage
 vi.mock('../CachedImage', () => ({
@@ -99,7 +104,7 @@ describe('ImageUploader', () => {
 
     const fileInput = document.querySelector('input[type="file"]');
     expect(fileInput).toBeInTheDocument();
-    expect(fileInput).toHaveAttribute('accept', 'image/*');
+    expect(fileInput).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp,image/gif');
     expect(fileInput).toHaveAttribute('multiple');
     expect(fileInput).toHaveClass('hidden');
   });
@@ -226,7 +231,7 @@ describe('ImageUploader – additional coverage', () => {
 
     // The input accepts multiple files
     expect(fileInput).toHaveAttribute('multiple');
-    expect(fileInput).toHaveAttribute('accept', 'image/*');
+    expect(fileInput).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp,image/gif');
   });
 
   it('shows image preview for data URL images', () => {
@@ -283,5 +288,95 @@ describe('ImageUploader – additional coverage', () => {
     render(<ImageUploader {...defaultProps} images={images} />);
 
     expect(screen.getByTestId('cached-image')).toBeInTheDocument();
+  });
+});
+
+describe('ImageUploader screenshots (X-003, FE-013, FE-046, FE-047, FE-048)', () => {
+  const png = (name = 'chart.png') => new File(['x'], name, { type: 'image/png' });
+  const base = { images: [] as TradeImage[], onChange: vi.fn(), timeframeOptions: ['1H'], onAddTimeframe: vi.fn() };
+  const input = () => document.querySelector('input[type="file"]') as HTMLInputElement;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    upload.uploadScreenshot.mockReset();
+  });
+
+  it('uploads a picked file and adds it by its S3 key', async () => {
+    const onChange = vi.fn();
+    const onBusyChange = vi.fn();
+    upload.uploadScreenshot.mockResolvedValue('images/u1/upload/a.jpg');
+    render(<ImageUploader {...base} onChange={onChange} onBusyChange={onBusyChange} />);
+    await userEvent.upload(input(), png());
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith([{ id: 'images/u1/upload/a.jpg', timeframe: '1H', description: '' }]));
+    expect(onBusyChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('skips files the API does not take and says which', async () => {
+    const onChange = vi.fn();
+    render(<ImageUploader {...base} onChange={onChange} />);
+    await userEvent.setup({ applyAccept: false }).upload(input(), new File(['x'], 'shot.heic', { type: 'image/heic' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('shot.heic is not a JPEG, PNG, WebP or GIF image.');
+    expect(upload.uploadScreenshot).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps a trade to 6 screenshots', async () => {
+    const onChange = vi.fn();
+    const five = Array.from({ length: 5 }, (_, i) => makeImage({ id: `i${i}`, url: undefined }));
+    upload.uploadScreenshot.mockResolvedValue('images/u1/upload/new.jpg');
+    render(<ImageUploader {...base} images={five} onChange={onChange} />);
+    await userEvent.upload(input(), [png('a.png'), png('b.png')]);
+    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
+    expect(upload.uploadScreenshot).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0]).toHaveLength(6);
+    expect(screen.getByRole('alert')).toHaveTextContent('at most 6 screenshots');
+  });
+
+  it('uploads files dropped on the drop area and stops the browser opening them', async () => {
+    const onChange = vi.fn();
+    upload.uploadScreenshot.mockResolvedValue('images/u1/upload/d.jpg');
+    render(<ImageUploader {...base} onChange={onChange} />);
+    const zone = screen.getByText(/Drop images here/).closest('button')!.parentElement!;
+    expect(fireEvent.dragOver(zone)).toBe(false);
+    expect(fireEvent.drop(zone, { dataTransfer: { files: [png()] } })).toBe(false);
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith([expect.objectContaining({ id: 'images/u1/upload/d.jpg' })]));
+  });
+
+  it('merges into the images as they are when the upload ends, so a description typed meanwhile survives', async () => {
+    const onChange = vi.fn();
+    let finish!: (key: string) => void;
+    upload.uploadScreenshot.mockReturnValue(new Promise<string>((resolve) => (finish = resolve)));
+    const first = makeImage({ id: 'old', url: undefined, description: '' });
+    const { rerender } = render(<ImageUploader {...base} images={[first]} onChange={onChange} />);
+    await userEvent.upload(input(), png());
+    rerender(<ImageUploader {...base} images={[{ ...first, description: 'typed while uploading' }]} onChange={onChange} />);
+    finish('images/u1/upload/n.jpg');
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith([expect.objectContaining({ id: 'old', description: 'typed while uploading' }), expect.objectContaining({ id: 'images/u1/upload/n.jpg' })]));
+  });
+
+  it('shows why an upload failed and adds nothing', async () => {
+    const onChange = vi.fn();
+    upload.uploadScreenshot.mockRejectedValue(new Error('Screenshots can be at most 2 MB.'));
+    render(<ImageUploader {...base} onChange={onChange} />);
+    await userEvent.upload(input(), png('big.png'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('big.png: Screenshots can be at most 2 MB.');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('names the icon-only buttons and opens the large preview as a dialog that Esc closes', async () => {
+    render(<ImageUploader {...base} images={[makeImage()]} />);
+    expect(screen.getByRole('button', { name: 'Remove screenshot 1' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Enlarge screenshot 1' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('does not remount the previews on a re-render (the image component is module level)', () => {
+    const images = [makeImage({ id: 'img-1', url: 'data:image/png;base64,abc' })];
+    const { rerender } = render(<ImageUploader {...base} images={images} />);
+    const before = screen.getAllByRole('img')[0];
+    rerender(<ImageUploader {...base} images={[{ ...images[0], description: 'more' }]} />);
+    expect(screen.getAllByRole('img')[0]).toBe(before);
   });
 });

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -10,6 +9,10 @@ interface MistakeTagsInputProps {
   onChange: (tags: string[]) => void;
   availableTags: string[];
   onAddNew: (tag: string) => void;
+  /** What the items are called in the add row: "mistake" or "tag". */
+  noun?: string;
+  /** Longest value a new item may have. */
+  maxLength?: number;
   className?: string;
 }
 
@@ -18,6 +21,8 @@ export function MistakeTagsInput({
   onChange,
   availableTags,
   onAddNew,
+  noun = 'mistake',
+  maxLength,
   className,
 }: MistakeTagsInputProps) {
   const [isAdding, setIsAdding] = useState(false);
@@ -32,12 +37,12 @@ export function MistakeTagsInput({
   };
 
   const handleAddNew = () => {
-    if (newTag.trim() && !availableTags.includes(newTag.trim())) {
-      onAddNew(newTag.trim());
-      onChange([...selectedTags, newTag.trim()]);
-      setNewTag('');
-      setIsAdding(false);
-    }
+    const tag = newTag.trim();
+    if (!tag) return;
+    if (!availableTags.includes(tag)) onAddNew(tag);
+    if (!selectedTags.includes(tag)) onChange([...selectedTags, tag]);
+    setNewTag('');
+    setIsAdding(false);
   };
 
   return (
@@ -71,7 +76,8 @@ export function MistakeTagsInput({
           <Input
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
-            placeholder="Enter new mistake..."
+            placeholder={`Enter new ${noun}...`}
+            maxLength={maxLength}
             className="h-8 text-xs sm:text-sm flex-1 min-w-0"
             autoFocus
             onKeyDown={(e) => {
@@ -116,7 +122,7 @@ export function MistakeTagsInput({
           className="text-primary border-dashed"
         >
           <Plus className="w-4 h-4 mr-1" />
-          Add New Mistake
+          Add New {noun.charAt(0).toUpperCase() + noun.slice(1)}
         </Button>
       )}
     </div>

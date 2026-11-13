@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImageViewerModal } from '../ImageViewerModal';
 
@@ -12,6 +12,7 @@ vi.mock('@/hooks/useCachedImage', () => ({
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({ children, open }: any) => open ? <div data-testid="dialog">{children}</div> : null,
   DialogContent: ({ children, className }: any) => <div data-testid="dialog-content" className={className}>{children}</div>,
+  DialogTitle: ({ children }: any) => <h2>{children}</h2>,
 }));
 
 vi.mock('@/components/ui/button', () => ({
@@ -174,6 +175,17 @@ describe('ImageViewerModal', () => {
     expect(screen.getByText('Failed to load image')).toBeInTheDocument();
   });
 
+  it('says why the image failed: the API message, or the connection message when nothing answered', () => {
+    mockUseCachedImage.mockReturnValue({ src: undefined, isLoading: false, error: { status: 'CUSTOM_ERROR', error: 'Image not found', data: 'Image not found' } });
+    const { unmount } = render(<ImageViewerModal {...defaultProps} />);
+    expect(screen.getByText('Image not found')).toBeInTheDocument();
+    unmount();
+
+    mockUseCachedImage.mockReturnValue({ src: undefined, isLoading: false, error: { status: 'FETCH_ERROR', error: "Can't reach TradeQut.", data: "Can't reach TradeQut. Check your internet connection and try again." } });
+    render(<ImageViewerModal {...defaultProps} />);
+    expect(screen.getByText(/internet connection/i)).toBeInTheDocument();
+  });
+
   it('calls useCachedImage with the correct imageId', () => {
     render(<ImageViewerModal {...defaultProps} imageId="my-special-image" />);
 
@@ -204,5 +216,25 @@ describe('ImageViewerModal', () => {
     expect(screen.queryByText('Entry confirmation screenshot')).not.toBeInTheDocument();
     // Now shows eye-off
     expect(screen.getByTestId('icon-eye-off')).toBeInTheDocument();
+  });
+
+  it('names every icon-only button (FE-048)', () => {
+    render(<ImageViewerModal {...defaultProps} />);
+    for (const name of ['Zoom out', 'Zoom in', 'Reset zoom', 'Fit to screen', 'Show description', 'Close viewer']) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+  });
+
+  it('zooms with the wheel through a non-passive listener that stops the page scrolling (FE-048)', () => {
+    const add = vi.spyOn(HTMLElement.prototype, 'addEventListener');
+    render(<ImageViewerModal {...defaultProps} />);
+    expect(add.mock.calls.some(([type, , opts]) => type === 'wheel' && (opts as AddEventListenerOptions).passive === false)).toBe(true);
+    add.mockRestore();
+
+    const area = screen.getByRole('img').parentElement!;
+    expect(screen.getByText('100%')).toBeInTheDocument();
+    const notPrevented = fireEvent.wheel(area, { deltaY: -100 });
+    expect(notPrevented).toBe(false);
+    expect(screen.getByText('110%')).toBeInTheDocument();
   });
 });

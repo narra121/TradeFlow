@@ -118,6 +118,21 @@ describe('merge', () => {
     expect(out[1].mergedFrom).toEqual(['a', 'b']);
     expect(out[0].trade.symbol).toBe('AAA');
   });
+
+  it('a merge of fills that were all already imported stays Already imported instead of becoming Ready', () => {
+    const rows = makeRows([trade({ externalId: 'a', duplicate: true }), trade({ externalId: 'b', duplicate: true })], 'f');
+    const out = mergeRows(rows, new Set(rows.map((r) => r.key)));
+    expect(out).toHaveLength(1);
+    expect(out[0].trade.duplicate).toBe(true);
+    expect(out[0].included).toBe(false);
+    expect(rowStatus(out[0])).toBe('duplicate');
+  });
+
+  it('a merge that includes a new fill is Ready', () => {
+    const rows = makeRows([trade({ externalId: 'a', duplicate: true }), trade({ externalId: 'b' })], 'f');
+    const out = mergeRows(rows, new Set(rows.map((r) => r.key)));
+    expect(rowStatus(out[0])).toBe('ready');
+  });
 });
 
 describe('filterRows and moveRows', () => {

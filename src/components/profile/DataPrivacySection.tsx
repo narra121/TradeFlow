@@ -11,12 +11,12 @@ import { SectionHeading, SettingRow } from './layout';
 import { useDataExport } from './useDataExport';
 
 export function DataPrivacySection() {
-  const { email, isLoading, isError, refetch } = useProfile();
+  const { email, isLoading, isError, error, refetch } = useProfile();
   const exporter = useDataExport();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading) return <Skeleton className="h-64" aria-label="Loading data and privacy" />;
-  if (isError) return <ErrorState title="Couldn't load your data and privacy settings" description="Check your connection and try again." onRetry={refetch} />;
+  if (isError) return <ErrorState title="Couldn't load your data and privacy settings" description="Try again." error={error} onRetry={refetch} />;
 
   const { state } = exporter;
 

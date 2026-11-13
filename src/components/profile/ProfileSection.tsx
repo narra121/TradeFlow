@@ -11,7 +11,7 @@ import { SectionHeading, SettingRow } from './layout';
 const SAVED_VISIBLE_MS = 5000;
 
 export function ProfileSection() {
-  const { name: saved, email, method, isLoading, isError, refetch, saveName, isSaving } = useProfile();
+  const { name: saved, email, method, isLoading, isError, error: loadError, refetch, saveName, isSaving } = useProfile();
   const [draft, setDraft] = useState(saved);
   const [error, setError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
@@ -21,7 +21,7 @@ export function ProfileSection() {
   useEffect(() => () => clearTimeout(timer.current), []);
 
   if (isLoading) return <Skeleton className="h-40" aria-label="Loading your profile" />;
-  if (isError) return <ErrorState title="Couldn't load your profile" description="Check your connection and try again." onRetry={refetch} />;
+  if (isError) return <ErrorState title="Couldn't load your profile" description="Try again." error={loadError} onRetry={refetch} />;
 
   const dirty = draft.trim() !== saved;
 
@@ -37,7 +37,7 @@ export function ProfileSection() {
       timer.current = setTimeout(() => setJustSaved(false), SAVED_VISIBLE_MS);
     } catch (err) {
       setJustSaved(false);
-      setError(readApiError(err, "Couldn't save your name. Check your connection and try again.").message);
+      setError(readApiError(err, "Couldn't save your name.").message);
     }
   };
 

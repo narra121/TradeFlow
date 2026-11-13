@@ -17,6 +17,9 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 } as unknown as typeof ResizeObserver;
 
+// jsdom has no elementFromPoint; the one-time-code input probes it on a timer after it mounts.
+document.elementFromPoint ??= () => null;
+
 describe('describeAuthError (DESIGN-AUTH §3.17)', () => {
   const body = (status: number, data: object) => ({ status, data });
   it('no response is a connection problem with a Status pointer', () => {
@@ -36,6 +39,8 @@ describe('describeAuthError (DESIGN-AUTH §3.17)', () => {
     expect(describeAuthError(body(429, { error: { code: 'RATE_LIMITED', details: { retryAfter: 30 } } }), 'signup').message).toBe('Creating an account is paused for this email. Try again in 0:30.');
     expect(describeAuthError(body(429, {}), 'forgot').message).toBe("We've already sent several codes to this email. Try again in a few minutes.");
     expect(describeAuthError(body(429, { errors: [{ retryAfter: 7200 }] }), 'reset').message).toBe('Try again in about 1 hour.');
+    // The one error envelope carries the wait as error.retryAfter; it wins over the older shapes.
+    expect(describeAuthError(body(429, { success: false, errorCode: 'RATE_LIMITED', message: 'Too many requests', error: { code: 'RATE_LIMITED', retryAfter: 95 }, errors: [{ retryAfter: 5 }] }), 'login')).toMatchObject({ kind: 'rate', retryAfter: 95 });
   });
   it('a 429 without a wait on a code call is a code-field message', () => {
     expect(describeAuthError(body(429, {}), 'confirm')).toMatchObject({ kind: 'attempts', field: 'code', message: 'Too many attempts. Wait a few minutes, then try again.' });

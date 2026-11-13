@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { hasStoredSession } from '@/lib/auth/storedSession';
 import { authApi } from '../api/authApi';
 
 export interface AuthState {
@@ -8,25 +8,13 @@ export interface AuthState {
     name: string;
     email: string;
   } | null;
-  token: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   signupSuccess: boolean;
 }
 
-function safeGetItem(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
 const initialState: AuthState = {
   user: null,
-  token: safeGetItem('idToken'),
-  refreshToken: safeGetItem('refreshToken'),
-  isAuthenticated: !!safeGetItem('idToken'),
+  isAuthenticated: hasStoredSession(),
   signupSuccess: false,
 };
 
@@ -38,22 +26,12 @@ const authSlice = createSlice({
     clearSignupSuccess: (state) => {
       state.signupSuccess = false;
     },
-    setAuth: (state, action: PayloadAction<{ user: any; token: string; refreshToken: string }>) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.refreshToken = action.payload.refreshToken;
-      state.isAuthenticated = true;
-    },
-    setGoogleAuth: (state, action: PayloadAction<{ user: any; token: string; refreshToken: string | null }>) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.refreshToken = action.payload.refreshToken;
+    setUser: (state, action: PayloadAction<AuthState['user']>) => {
+      state.user = action.payload;
       state.isAuthenticated = true;
     },
     clearAuth: (state) => {
       state.user = null;
-      state.token = null;
-      state.refreshToken = null;
       state.isAuthenticated = false;
     },
   },
@@ -68,8 +46,6 @@ const authSlice = createSlice({
     builder
       .addMatcher(authApi.endpoints.login.matchFulfilled, (state, action) => {
         state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.refreshToken = action.payload.refreshToken;
         state.isAuthenticated = true;
       });
 
@@ -77,12 +53,14 @@ const authSlice = createSlice({
     builder
       .addMatcher(authApi.endpoints.logout.matchFulfilled, (state) => {
         state.user = null;
-        state.token = null;
-        state.refreshToken = null;
+        state.isAuthenticated = false;
+      })
+      .addMatcher(authApi.endpoints.logoutEverywhere.matchFulfilled, (state) => {
+        state.user = null;
         state.isAuthenticated = false;
       });
   },
 });
 
-export const { clearSignupSuccess, setAuth, setGoogleAuth, clearAuth } = authSlice.actions;
+export const { clearSignupSuccess, setUser, clearAuth } = authSlice.actions;
 export default authSlice.reducer;

@@ -69,6 +69,17 @@ describe('ProfileSection', () => {
     expect(refetch).toHaveBeenCalled();
   });
 
+  it('shows the API message of a failed load; the connection message only without a response', () => {
+    useProfile.mockReturnValue({ ...base, isError: true, error: { status: 500, data: { message: 'Your profile is being restored.' } }, saveName: vi.fn() });
+    const { unmount } = render(<ProfileSection />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Your profile is being restored.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    unmount();
+    useProfile.mockReturnValue({ ...base, isError: true, error: { status: 'FETCH_ERROR' }, saveName: vi.fn() });
+    render(<ProfileSection />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/Check your internet connection/);
+  });
+
   it('labels a Google user', () => {
     useProfile.mockReturnValue({ ...base, method: 'google', saveName: vi.fn() });
     render(<ProfileSection />);

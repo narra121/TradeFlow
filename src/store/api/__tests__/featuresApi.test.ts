@@ -1,6 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NormalizedTrade } from '@/types/import';
+vi.mock('@/lib/auth/authService', () => ({ getIdToken: vi.fn(async () => 'tok') }));
+
 import { api } from '../baseApi';
 import { billingApi } from '../billingApi';
 import { chatApi } from '../chatApi';
@@ -121,7 +123,7 @@ describe('importApi', () => {
 describe('insightsApi', () => {
   const insight = { id: '20261111T100000000Z_abcd1234', createdAt: '2026-11-11T10:00:00.000Z', period: { from: '2026-10-01', to: '2026-10-31' }, accountId: null, summary: 's', sections: [], model: 'm', tradeCount: 18 };
 
-  it('generate / list / get', async () => {
+  it('generate / list', async () => {
     const store = makeStore();
     handler = () => envelope({ insight });
     const g = await store.dispatch(insightsApi.endpoints.generateInsight.initiate({ from: '2026-10-01', to: '2026-10-31' }));
@@ -133,11 +135,6 @@ describe('insightsApi', () => {
     expect(l.data?.insights).toHaveLength(1);
     expect(calls[1].url.searchParams.get('accountId')).toBe('acc1');
     expect(calls[1].url.searchParams.get('limit')).toBe('5');
-
-    handler = () => envelope({ insight });
-    const one = await store.dispatch(insightsApi.endpoints.getInsight.initiate(insight.id));
-    expect(one.data?.tradeCount).toBe(18);
-    expect(calls[2].url.pathname).toMatch(new RegExp(`/insights/${insight.id}$`));
   });
 
   it('422 NOT_ENOUGH_TRADES keeps its error code', async () => {
@@ -172,7 +169,6 @@ describe('chatApi', () => {
       c.url.pathname.endsWith('/messages') && c.method === 'POST'
         ? sse('event: token\ndata: {"t":"Hi "}\n\nevent: token\ndata: {"t":"there"}\n\nevent: done\ndata: {"messageId":"m2","usage":{"promptTokens":1,"outputTokens":1,"remaining":4},"disclaimer":"d","tradeIds":[]}\n\n')
         : envelope({ messages: [] });
-    localStorage.setItem('idToken', 'tok');
     const r = await makeStore().dispatch(chatApi.endpoints.sendChatMessage.initiate({ sessionId: session.id, content: 'q', onToken: (t) => tokens.push(t) }));
     expect(tokens).toEqual(['Hi ', 'there']);
     expect((r as any).data).toMatchObject({ content: 'Hi there', done: { messageId: 'm2', usage: { remaining: 4 } } });

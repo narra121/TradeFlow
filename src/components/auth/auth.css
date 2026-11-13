@@ -9,6 +9,10 @@
   --pad: clamp(32px, 4.2vw, 64px);
   /* The stage's display size, from the stage's own width (it is the `stage` container). */
   --display: clamp(34px, 7.6cqi, 68px);
+  /* The stage's fixed heights; the picture box takes what they leave (`--fit-h`). */
+  --eyebrow-h: 64px;
+  --vis-pad: 28px;
+  --bar-h: 89px;
   position: relative;
   isolation: isolate;
   display: grid;
@@ -27,43 +31,29 @@ html:has(.tq-auth) {
   scrollbar-gutter: auto;
 }
 
-/* ---------- Layout, stacked (below 1024 px): top row, head, card, picture, bar, legal ---------- */
+/* ---------- Layout, stacked (below 1024 px): header with the head, form, stage, legal ---------- */
 .tq-auth .auth-sheet-bg {
   display: none;
 }
-.tq-auth .auth-stage {
-  display: contents;
-}
 .tq-auth .auth-top {
-  order: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 56px;
   padding: 0 20px;
 }
-.tq-auth .auth-head {
-  order: 1;
-  padding: 20px 20px 28px;
-  container: stage / inline-size;
+.tq-auth .auth-head.is-top {
+  padding: 12px 0 28px;
+  container: head / inline-size;
+}
+.tq-auth .auth-head.is-stage {
+  display: none;
 }
 .tq-auth .auth-main {
-  order: 2;
   padding: 0 16px;
   min-width: 0;
 }
-.tq-auth .auth-visual {
-  order: 3;
+.tq-auth .auth-stage {
   padding: 40px 16px 0;
   min-width: 0;
 }
-.tq-auth .stage-bar {
-  order: 4;
-  margin: 20px 16px 0;
-}
 .tq-auth .auth-foot {
-  order: 5;
   padding: 20px 20px calc(12px + env(safe-area-inset-bottom, 0px));
 }
 .tq-auth[data-scene='none'] .auth-main {
@@ -71,20 +61,15 @@ html:has(.tq-auth) {
 }
 @media (min-width: 600px) {
   .tq-auth .auth-top,
-  .tq-auth .auth-head,
   .tq-auth .auth-main,
-  .tq-auth .auth-visual,
-  .tq-auth .stage-bar,
+  .tq-auth .auth-stage,
   .tq-auth .auth-foot {
     width: min(100%, 560px);
     margin-inline: auto;
   }
-  .tq-auth .auth-top {
-    min-height: 64px;
-  }
 }
 
-/* The particle field (canvas, lazy). Stacked: a band behind the head. */
+/* The particle field (canvas, lazy). Stacked: a band behind the header. */
 .tq-auth .auth-bg {
   position: absolute;
   z-index: -1;
@@ -109,7 +94,7 @@ html:has(.tq-auth) {
   height: auto;
 }
 .tq-auth[data-scene='none'] .auth-bg::after {
-  background: radial-gradient(ellipse 60% 55% at 50% 42%, hsl(var(--background) / 0.86), transparent 100%);
+  background: none;
 }
 
 /* ---------- Layout, split (from 1024 px) ---------- */
@@ -130,7 +115,7 @@ html:has(.tq-auth) {
     border-right: 1px solid hsl(var(--border));
     box-shadow: 32px 0 80px -32px hsl(var(--shade) / 0.95);
   }
-  /* The sheet's lit edge; it turns emerald while focus is in the form. */
+  /* The sheet's lit edge, and the emerald light that comes up while focus is in the form. */
   .tq-auth .auth-sheet-bg::before,
   .tq-auth .auth-sheet-bg::after {
     content: '';
@@ -147,7 +132,7 @@ html:has(.tq-auth) {
     box-shadow: 0 0 32px 2px hsl(var(--primary) / 0.5);
     transition: opacity var(--dur-3) var(--ease-in);
   }
-  .tq-auth:has(.auth-card :focus-visible) .auth-sheet-bg::after {
+  .tq-auth:has(.auth-main :focus-visible) .auth-sheet-bg::after {
     opacity: 1;
   }
   .tq-auth:not([data-scene='none']) .auth-top,
@@ -161,15 +146,27 @@ html:has(.tq-auth) {
   }
   .tq-auth:not([data-scene='none']) .auth-top {
     grid-row: 1;
+    display: flex;
+    align-items: center;
+  }
+  .tq-auth .auth-head.is-top {
+    display: none;
+  }
+  .tq-auth .auth-head.is-stage {
+    display: block;
   }
   .tq-auth:not([data-scene='none']) .auth-main {
     grid-row: 2;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .tq-auth:not([data-scene='none']) .auth-card {
     align-self: center;
-    padding-block: 24px 32px;
+    margin-block: 24px 32px;
   }
   .tq-auth:not([data-scene='none']) .auth-foot {
     grid-row: 3;
-    padding-block: 16px 20px;
+    padding-block: 12px 20px;
   }
   .tq-auth .auth-stage {
     position: sticky;
@@ -180,7 +177,8 @@ html:has(.tq-auth) {
     align-self: start;
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    width: auto;
+    margin-inline: 0;
     min-height: 100vh;
     min-height: 100dvh;
     padding: 0 var(--pad);
@@ -195,27 +193,36 @@ html:has(.tq-auth) {
   /* A lift of the surface behind the picture: the only "light" on the field, from surface tokens. */
   .tq-auth .auth-stage .auth-bg::after {
     z-index: -1;
-    background: radial-gradient(ellipse 58% 46% at 50% 56%, hsl(var(--card) / 0.9), transparent 100%);
-  }
-  .tq-auth .auth-stage .auth-head,
-  .tq-auth .auth-stage .auth-visual,
-  .tq-auth .auth-stage .stage-bar {
-    width: auto;
-    margin-inline: 0;
-  }
-  .tq-auth .auth-stage .auth-head {
-    padding: 0;
-    container: none;
+    background: radial-gradient(ellipse 74% 62% at 50% 56%, hsl(var(--card)), transparent 80%);
   }
   .tq-auth .auth-stage .auth-visual {
     flex: 1;
     display: grid;
     align-items: center;
-    padding: 28px 0;
+    padding: var(--vis-pad) 0;
   }
   .tq-auth .auth-stage .stage-bar {
     margin: 0 calc(var(--pad) * -1);
     padding: 0 var(--pad);
+  }
+}
+/* A short window (a laptop with browser chrome): the stage's fixed parts tighten so the picture still fits. */
+@media (min-width: 1024px) and (max-height: 740px) {
+  .tq-auth {
+    --display: clamp(30px, 5.4cqi, 48px);
+    --eyebrow-h: 48px;
+    --vis-pad: 16px;
+    --bar-h: 77px;
+  }
+  .tq-auth .auth-stage .bar-cells > div,
+  .tq-auth .auth-stage .bar-note {
+    padding-block: 8px;
+  }
+  .tq-auth:not([data-scene='none']) {
+    grid-template-rows: 52px minmax(0, 1fr) auto;
+  }
+  .tq-auth:not([data-scene='none']) .auth-card {
+    margin-block: 12px 16px;
   }
 }
 /* The account-deleted page: one card in the middle of the field. */
@@ -225,6 +232,8 @@ html:has(.tq-auth) {
     align-content: stretch;
   }
   .tq-auth[data-scene='none'] .auth-top {
+    display: flex;
+    align-items: center;
     width: auto;
     margin-inline: 0;
     padding-inline: var(--pad);
@@ -301,21 +310,33 @@ html:has(.tq-auth) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: 56px;
   font-size: 16px;
   line-height: 24px;
   font-weight: 600;
   letter-spacing: -0.01em;
   border-radius: 4px;
 }
-.tq-auth .alt {
+/* The other way in: a quiet block under the form (the sheet's foot in the split layout). */
+.tq-auth .auth-alt {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-top: 16px;
+  padding: 0 4px;
   font-size: 13px;
   line-height: 20px;
   color: hsl(var(--muted-foreground));
-  white-space: nowrap;
+}
+.tq-auth .auth-alt p {
+  display: grid;
+  min-width: 0;
+}
+.tq-auth .auth-alt strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
 }
 .tq-auth .auth-foot ul {
   display: flex;
@@ -337,6 +358,11 @@ html:has(.tq-auth) {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+@media (min-width: 1024px) {
+  .tq-auth .brand {
+    min-height: 44px;
+  }
+}
 @media (min-width: 1024px) and (pointer: fine) {
   .tq-auth .brand {
     min-height: 32px;
@@ -346,11 +372,6 @@ html:has(.tq-auth) {
   }
   .tq-auth .auth-foot ul {
     gap: 4px;
-  }
-}
-@media (max-width: 359px) {
-  .tq-auth .alt span {
-    display: none;
   }
 }
 
@@ -1005,14 +1026,17 @@ html:has(.tq-auth) {
 .tq-auth .auth-display .dim {
   color: hsl(var(--muted-foreground));
 }
-@media (min-width: 1024px) {
-  .tq-auth .auth-head .tq-eyebrow {
-    min-height: 64px;
-  }
-  .tq-auth .auth-display {
-    margin-top: 4px;
-    font-size: var(--display);
-  }
+/* In the split the line is two lines by design: the muted part, then the rest. */
+.tq-auth .auth-head.is-stage .tq-eyebrow {
+  min-height: var(--eyebrow-h);
+}
+.tq-auth .auth-head.is-stage .auth-display {
+  margin-top: 4px;
+  font-size: var(--display);
+  text-wrap: nowrap;
+}
+.tq-auth .auth-head.is-stage .auth-display span {
+  display: block;
 }
 
 /* ---------- Stage: the picture box. Its size is reserved here, so the lazy demos move nothing when they arrive. ---------- */
@@ -1036,8 +1060,7 @@ html:has(.tq-auth) {
 @media (min-width: 1024px) {
   .tq-auth .stage-box {
     /* The height left for the picture: the viewport less the eyebrow row, two display lines, the bar and the paddings. */
-    --bar-h: 84px;
-    --fit-h: calc(100dvh - 64px - 2.1 * var(--display) - 4px - 56px - var(--bar-h));
+    --fit-h: calc(100dvh - var(--eyebrow-h) - 2.1 * var(--display) - 4px - 2 * var(--vis-pad) - var(--bar-h));
     margin-inline: 0;
     width: min(100%, 988px, max(600px, calc(var(--fit-h) * var(--ratio))));
     aspect-ratio: var(--ratio);
@@ -1056,9 +1079,14 @@ html:has(.tq-auth) {
       --ratio: 358 / 430;
       width: min(100%, 430px, max(300px, calc(var(--fit-h) * var(--ratio))));
     }
-    .tq-auth:not([data-scene='journal'], [data-scene='signup']) .stage-box {
+    .tq-auth:not([data-scene='journal'], [data-scene='signup'], [data-scene='opening']) .stage-box {
       aspect-ratio: auto;
       width: min(100%, 430px);
+    }
+    /* The Google wait has no card: the box keeps a shape for the blueprint to assemble in. */
+    .tq-auth[data-scene='opening'] .stage-box {
+      --ratio: 4 / 3;
+      width: min(100%, 430px, max(300px, calc(var(--fit-h) * var(--ratio))));
     }
   }
   @container demo (max-width: 559.98px) {
@@ -1100,9 +1128,9 @@ html:has(.tq-auth) {
 /* The near layer: the month's broken-rules cost, overlapping the window's top-right corner. */
 .tq-auth .stage-satellite {
   position: absolute;
-  top: -26px;
-  right: -22px;
-  display: grid;
+  right: -24px;
+  bottom: 17%;
+  display: none;
   gap: 2px;
   min-width: 196px;
   padding: 12px 16px;
@@ -1120,9 +1148,17 @@ html:has(.tq-auth) {
   line-height: 28px;
   font-weight: 500;
 }
-@container demo (max-width: 599.98px) {
+@media (min-width: 1024px) {
   .tq-auth .stage-satellite {
-    display: none;
+    display: grid;
+  }
+  @container demo (max-width: 599.98px) {
+    .tq-auth .stage-satellite {
+      right: auto;
+      bottom: auto;
+      top: 21%;
+      left: calc(100% - 36px);
+    }
   }
 }
 @keyframes tq-auth-rise {
@@ -1161,15 +1197,38 @@ html:has(.tq-auth) {
   content: none;
 }
 .tq-auth .stage-card {
-  width: min(100%, 400px);
-  padding: 20px 24px 22px;
+  position: relative;
+  width: min(100%, 440px);
+  padding: 24px 28px 26px;
   border: 1px solid hsl(var(--border-strong) / 0.6);
   border-radius: 6px;
   background: hsl(var(--popover));
   box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.05), 0 40px 80px -32px hsl(var(--shade) / 0.95);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 20px;
   color: hsl(var(--foreground-soft));
+}
+/* Reset: the journal itself, still and dimmed, behind the card that says it does not change. */
+.tq-auth .stage-under {
+  display: none;
+}
+@media (min-width: 1024px) {
+  @container demo (min-width: 600px) {
+    .tq-auth .stage-under {
+      display: block;
+      position: absolute;
+      inset: 0;
+      opacity: 0.4;
+      animation: tq-fade 600ms var(--ease-in) both;
+    }
+    .tq-auth .stage-reveal:has(> .reset) {
+      place-items: center end;
+    }
+    /* The still shows no day summary: the card would cut it. */
+    .tq-auth .stage-under .cs-pop {
+      display: none;
+    }
+  }
 }
 .tq-auth .stage-card__title {
   display: flex;
@@ -1196,7 +1255,7 @@ html:has(.tq-auth) {
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  padding: 9px 0;
+  padding: 11px 0;
   border-bottom: 1px solid hsl(var(--border));
 }
 .tq-auth .stage-rows > div:last-child {
@@ -1239,7 +1298,7 @@ html:has(.tq-auth) {
 }
 .tq-auth .mail__label {
   margin-top: 16px;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 24px;
   font-weight: 600;
   color: hsl(var(--foreground));
@@ -1253,7 +1312,7 @@ html:has(.tq-auth) {
   flex: 1 1 0;
   display: grid;
   place-items: center;
-  height: 48px;
+  height: 54px;
   border: 1px solid hsl(var(--border-strong) / 0.7);
   border-radius: 4px;
   background: hsl(var(--background));
@@ -1348,6 +1407,7 @@ html:has(.tq-auth) {
 }
 .tq-auth .bar-cells {
   grid-column: 1 / -1;
+  grid-row: 2;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border-top: 1px solid hsl(var(--border));
@@ -1388,6 +1448,28 @@ html:has(.tq-auth) {
   font-weight: 600;
   color: hsl(var(--foreground));
 }
+@media (max-width: 1023px) {
+  .tq-auth .bar-cells.facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tq-auth .bar-cells.facts > div {
+    grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 0;
+    border-left: 0;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .tq-auth .bar-cells.facts > div + div {
+    padding-left: 0;
+  }
+  .tq-auth .bar-cells.facts > div:last-child {
+    border-bottom: 0;
+  }
+  .tq-auth .bar-cells.facts small {
+    font-size: 13px;
+    line-height: 20px;
+  }
+}
 .tq-auth .stage-pause {
   position: relative;
   display: grid;
@@ -1421,10 +1503,10 @@ html:has(.tq-auth) {
 }
 @media (min-width: 1024px) {
   .tq-auth .stage-bar {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 3fr) auto;
+    grid-template-columns: minmax(236px, 1.6fr) minmax(0, 3fr) auto;
     align-items: stretch;
     gap: 0 20px;
-    min-height: 84px;
+    min-height: var(--bar-h);
     padding-top: 0;
     background: hsl(var(--background) / 0.82);
   }
@@ -1434,6 +1516,7 @@ html:has(.tq-auth) {
   }
   .tq-auth .bar-cells {
     grid-column: auto;
+    grid-row: auto;
     border-top: 0;
   }
   .tq-auth .bar-cells > div {
@@ -1459,7 +1542,7 @@ html:has(.tq-auth) {
     /* The taller bar leaves the picture less height (`--fit-h`). */
     .tq-auth[data-scene='journal'] .stage-box,
     .tq-auth[data-scene='signup'] .stage-box {
-      --bar-h: 136px;
+      --bar-h: 144px;
     }
     .tq-auth .stage-bar:not([data-cells='none']) .bar-note {
       padding: 12px 0 0;

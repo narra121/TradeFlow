@@ -4,7 +4,8 @@ import { TRIAL_DAYS } from '@/content/product-facts';
 /** What the stage beside the form shows (DESIGN-AUTH-V2 §3). */
 export type AuthScene = 'journal' | 'opening' | 'signup' | 'mail' | 'reset' | 'closed';
 
-export type FieldMode = 'drift' | 'calm' | 'assemble';
+/** `drift`: the cloud turns. `calm`: slower and dimmer. `assemble`: the points draw the shape, with a scan line. `rest`: the drawn shape, dim and slow. */
+export type FieldMode = 'drift' | 'calm' | 'assemble' | 'rest';
 export type FieldShape = 'calendar' | 'envelope';
 
 export interface SceneMeta {
@@ -68,7 +69,7 @@ export const SCENES: Record<AuthScene, SceneMeta> = {
     bar: null,
     note: 'Your trades stay in your account. Log in from any browser to open them.',
     sample: false,
-    field: { mode: 'calm', shape: 'calendar' },
+    field: { mode: 'rest', shape: 'calendar' },
   },
 };
 

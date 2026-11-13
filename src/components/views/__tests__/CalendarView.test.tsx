@@ -16,13 +16,13 @@ const t = (id: string, exit: string, pnl: number, accountId = 'usd', over: Parti
 
 let monthTrades: Trade[] = [];
 let everyTrade: Trade[] = [];
-let monthState = { isLoading: false, isError: false };
+let monthState: { isLoading: boolean; isError: boolean; error?: unknown } = { isLoading: false, isError: false };
 let accountList = accounts;
 const refetch = vi.fn();
 vi.mock('@/hooks/useScopeTrades', () => ({
   useScopeTrades: (p?: { startDate?: string; endDate?: string }) => {
     const whole = p?.startDate === '2000-01-01';
-    return { trades: whole ? everyTrade : monthTrades, isLoading: whole ? false : monthState.isLoading, isError: whole ? false : monthState.isError, isFetching: false, refetch, truncated: false, params: {} };
+    return { trades: whole ? everyTrade : monthTrades, isLoading: whole ? false : monthState.isLoading, isError: whole ? false : monthState.isError, error: whole ? undefined : monthState.error, isFetching: false, refetch, truncated: false, params: {} };
   },
 }));
 vi.mock('@/hooks/useAccounts', () => ({
@@ -215,6 +215,17 @@ describe('CalendarView', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t load this month.');
   });
 
+  it('shows the API message of a failed month; the connection message only without a response', () => {
+    monthState = { isLoading: false, isError: true, error: { status: 500, data: { message: 'Your trades are being moved. Try again in a minute.' } } };
+    const { unmount } = setup();
+    expect(screen.getByRole('alert')).toHaveTextContent('Your trades are being moved. Try again in a minute.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    unmount();
+    monthState = { isLoading: false, isError: true, error: { status: 'FETCH_ERROR' } };
+    setup();
+    expect(screen.getByRole('alert')).toHaveTextContent(/Check your internet connection/);
+  });
+
   it('shows a skeleton of the final layout while loading', () => {
     monthState = { isLoading: true, isError: false };
     setup();
@@ -240,6 +251,15 @@ describe('CalendarView', () => {
     expect(screen.getByRole('button', { name: 'Wed 4' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /SYM2 long/ }));
     expect(screen.getByTestId('search')).toHaveTextContent('trade=2');
+  });
+
+  it('cites the weeks trades in time order so Prev / Next walk them (FE-017)', async () => {
+    const user = userEvent.setup();
+    setup('/app/calendar?month=2026-11&view=week&week=2026-11-04');
+    await user.click(screen.getByRole('button', { name: /SYM2 long/ }));
+    const ids = new URLSearchParams(screen.getByTestId('search').textContent ?? '').get('ids') ?? '';
+    expect(ids.split(',')).toContain('2');
+    expect(ids.split(',').length).toBeGreaterThan(1);
   });
 
   it('opens the day pane from a timeline column header', async () => {

@@ -5,14 +5,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
-import { Money } from '@/components/ui/money';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MonthGrid } from '@/components/calendar/MonthGrid';
 import { METRIC_LABEL, zoneName } from '@/components/calendar/cellText';
-import { DayPanel, WeekPanel } from '@/components/calendar/DayPanel';
+import { DayPanel, WeekPanel, sortByTime } from '@/components/calendar/DayPanel';
 import { PeriodSummary } from '@/components/calendar/PeriodSummary';
-import { plural } from '@/components/calendar/dayText';
 import { SidePaneLayout } from '@/components/calendar/SidePane';
 import { WeekTimeline } from '@/components/calendar/WeekTimeline';
 import { YearView, type YearMonth } from '@/components/calendar/YearView';
@@ -27,6 +25,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { isNotesUnavailable, useGetDayNotesQuery } from '@/store/api/journalApi';
 import { buildMonth, summarizeDays, defaultMetric, gridRange, isoWeek, monthKey, parseMetric, parseMonth, tradeDayKey, type CalendarMetric } from '@/lib/calendar';
+import { appToday, appTodayKey } from '@/lib/appTimeZone';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { formatMoney, parseLocalDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -49,7 +48,7 @@ export function CalendarView() {
   const view: View = params.get('view') === 'week' ? 'week' : params.get('view') === 'year' ? 'year' : 'month';
   const dayKey = params.get('day');
   const weekPaneKey = params.get('wk');
-  const todayKey = formatLocalDateOnly(new Date());
+  const todayKey = appTodayKey();
   const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
   const setQuery = (patch: Record<string, string | null>, replace = false) => {
@@ -81,8 +80,8 @@ export function CalendarView() {
   const month = parseMonth(params.get('month'));
   const range = useMemo(() => gridRange(month), [month]);
   const monthQuery = useScopeTrades({ accountId, ...range }, { skip: view === 'year' });
-  // The trades route needs both dates, so "every trade" is an open-ended range.
-  const everything = useScopeTrades({ accountId, startDate: '2000-01-01', endDate: '2099-12-31' });
+  // The trades route needs both dates, so "every trade" is an open-ended range; only the newest one is needed.
+  const everything = useScopeTrades({ accountId, startDate: '2000-01-01', endDate: '2099-12-31' }, { newestOnly: true });
   const newest = everything.trades[0];
   const newestMonth = newest ? parseMonth(monthKey(parseLocalDate(tradeDayKey(newest)))) : null;
   const trades = monthQuery.trades;
@@ -182,6 +181,7 @@ export function CalendarView() {
   const noAccounts = accounts.length === 0;
   const loading = view === 'year' ? yearQuery.isLoading : monthQuery.isLoading;
   const error = view === 'year' ? yearQuery.isError : monthQuery.isError;
+  const loadError = view === 'year' ? yearQuery.error : monthQuery.error;
   const refetch = view === 'year' ? yearQuery.refetch : monthQuery.refetch;
 
   return (
@@ -192,7 +192,7 @@ export function CalendarView() {
           <span className="min-w-32 text-center text-13 font-medium max-md:min-w-0 max-md:px-2" aria-live="polite">{title}</span>
           <Button type="button" variant="ghost" size="icon-sm" onClick={() => step(1)} aria-label={`Next ${unit}`}><ChevronRight className="h-4 w-4" aria-hidden="true" /></Button>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={() => setQuery({ month: monthKey(new Date()), week: formatLocalDateOnly(new Date()), day: null, wk: null }, true)}>Today</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setQuery({ month: monthKey(appToday()), week: appTodayKey(), day: null, wk: null }, true)}>Today</Button>
         {newestMonth && monthKey(newestMonth) !== monthKey(month) && (
           <Button type="button" variant="ghost" size="sm" onClick={() => goMonth(newestMonth, { week: newest ? tradeDayKey(newest) : null })}>Newest trade</Button>
         )}
@@ -225,7 +225,7 @@ export function CalendarView() {
               notesReady={notesReady}
               onStepDay={stepDay}
               onClose={closePane}
-              onOpenTrade={(id) => trade.openTrade(id)}
+              onOpenTrade={(id) => trade.openTrade(id, { ids: sortByTime(openDay.trades).map((t) => t.id) })}
               onAddTrade={() => trade.openNew({ date: openDay.key })}
               onOpenInTrades={openInTrades}
             />
@@ -236,14 +236,14 @@ export function CalendarView() {
               weekNumber={isoWeek(openWeekRow.days[0].date)}
               accountMap={accountMap}
               onClose={closePane}
-              onOpenTrade={(id) => trade.openTrade(id)}
+              onOpenTrade={(id) => trade.openTrade(id, { ids: openWeekRow.days.flatMap((d) => sortByTime(d.trades)).map((t) => t.id) })}
               onOpenDay={(key) => setQuery({ day: key, wk: null })}
             />
           ) : null
         }
       >
         {error ? (
-          <ErrorState title={view === 'year' ? 'Couldn’t load this year.' : 'Couldn’t load this month.'} description="Check your connection and try again." onRetry={() => void refetch()} />
+          <ErrorState title={view === 'year' ? 'Couldn’t load this year.' : 'Couldn’t load this month.'} description="Try again." error={loadError} onRetry={() => void refetch()} />
         ) : noAccounts ? (
           <EmptyState title="Add a trading account to start your calendar." description="Each trade belongs to an account. Trades appear here by the day they closed." action={<Button size="sm" onClick={() => navigate('/app/accounts?account=new')}>Add account</Button>} />
         ) : view === 'year' ? (
@@ -273,7 +273,7 @@ export function CalendarView() {
             )}
 
             {view === 'week' && weekRow ? (
-              <WeekTimeline week={weekRow} accountMap={accountMap} openKey={dayKey} todayKey={todayKey} isMobile={isMobile} onOpenDay={(key) => setQuery({ day: key })} onOpenTrade={(id) => trade.openTrade(id)} />
+              <WeekTimeline week={weekRow} accountMap={accountMap} openKey={dayKey} todayKey={todayKey} isMobile={isMobile} onOpenDay={(key) => setQuery({ day: key })} onOpenTrade={(id) => trade.openTrade(id, { ids: weekRow.days.flatMap((d) => sortByTime(d.trades)).map((t) => t.id) })} />
             ) : (
               <MonthGrid
                 model={model}

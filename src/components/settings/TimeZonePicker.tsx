@@ -31,7 +31,7 @@ export function TimeZonePicker({ id, value, onChange }: TimeZonePickerProps) {
         <span className="truncate">{label}</span>
         <ChevronDown className="h-4 w-4 shrink-0 opacity-60" aria-hidden="true" />
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 p-2">
+      <PopoverContent align="start" aria-label="Time zone" className="w-72 p-2">
         <Picker
           mode="single"
           label="Time zone"

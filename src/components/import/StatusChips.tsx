@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import type { RowStatus, RowSummary } from '@/lib/import/rows';
 import { STATUS_LABEL } from '@/lib/import/labels';
+import { formatCount } from '@/lib/format';
 
 export type ChipFilter = 'all' | RowStatus;
 
@@ -51,7 +52,7 @@ export function StatusChips({ value, onChange, summary }: StatusChipsProps) {
               k === 'fix' && count > 0 && !on && 'text-loss',
             )}
           >
-            {label} <span className="font-mono tabular-nums">{count.toLocaleString()}</span>
+            {label} <span className="font-mono tabular-nums">{formatCount(count)}</span>
           </button>
         );
       })}

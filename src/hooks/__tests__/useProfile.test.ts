@@ -4,9 +4,9 @@ import { NAME_MAX_LENGTH, signInMethodFromToken, useProfile, validateName } from
 
 const useGetProfileQuery = vi.fn();
 const updateProfile = vi.fn();
-const refreshToken = vi.fn();
+const getIdToken = vi.fn();
 
-vi.mock('@/lib/api/tokenRefresh', () => ({ refreshToken: () => refreshToken() }));
+vi.mock('@/lib/auth/authService', () => ({ getIdToken: (opts?: unknown) => getIdToken(opts) }));
 
 vi.mock('@/store/api/userApi', () => ({
   useGetProfileQuery: () => useGetProfileQuery(),
@@ -46,6 +46,13 @@ describe('useProfile', () => {
     localStorage.removeItem('idToken');
   });
 
+  it('exposes the error of a failed profile load', () => {
+    const failure = { status: 500, data: { message: 'Your profile is being restored.' } };
+    useGetProfileQuery.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: failure, refetch: vi.fn() });
+    const { result } = renderHook(() => useProfile());
+    expect(result.current).toMatchObject({ isError: true, error: failure });
+  });
+
   it('exposes name, email and hasName', () => {
     useGetProfileQuery.mockReturnValue({ data: { name: ' Ada ', email: 'a@b.co' }, isLoading: false, isError: false, refetch: vi.fn() });
     const { result } = renderHook(() => useProfile());
@@ -56,7 +63,7 @@ describe('useProfile', () => {
     const stale = { data: { name: 'Old', email: 'a@b.co' }, isLoading: false, isError: false, refetch: vi.fn() };
     useGetProfileQuery.mockReturnValue(stale);
     updateProfile.mockReturnValue({ unwrap: () => Promise.resolve({}) });
-    refreshToken.mockResolvedValue('t');
+    getIdToken.mockResolvedValue('t');
     const { result, rerender } = renderHook(() => useProfile());
     await act(async () => {
       await result.current.saveName('New');
@@ -81,7 +88,7 @@ describe('useProfile', () => {
     const order: string[] = [];
     useGetProfileQuery.mockReturnValue({ data: { name: '', email: 'a@b.co' }, isLoading: false, isError: false, refetch });
     updateProfile.mockReturnValue({ unwrap: () => { order.push('update'); return Promise.resolve({}); } });
-    refreshToken.mockImplementation(() => { order.push('refresh'); return Promise.resolve('t'); });
+    getIdToken.mockImplementation(() => { order.push('refresh'); return Promise.resolve('t'); });
     refetch.mockImplementation(() => { order.push('refetch'); });
     const { result } = renderHook(() => useProfile());
     await act(async () => {
@@ -89,7 +96,26 @@ describe('useProfile', () => {
     });
     expect(updateProfile).toHaveBeenCalledWith({ name: 'Ada' });
     expect(order).toEqual(['update', 'refresh', 'refetch']);
+    expect(getIdToken).toHaveBeenCalledWith({ forceRefresh: true });
     await expect(result.current.saveName('  ')).rejects.toThrow();
     expect(updateProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('a name that was saved is not reported as failed when the token reissue fails; a failed save still is', async () => {
+    const refetch = vi.fn();
+    useGetProfileQuery.mockReturnValue({ data: { name: 'Old', email: 'a@b.co' }, isLoading: false, isError: false, refetch });
+    updateProfile.mockReturnValue({ unwrap: () => Promise.resolve({}) });
+    getIdToken.mockRejectedValue(new Error('refresh failed'));
+    const { result } = renderHook(() => useProfile());
+    await act(async () => {
+      await expect(result.current.saveName('Ada')).resolves.toBeUndefined();
+    });
+    expect(refetch).not.toHaveBeenCalled();
+    expect(result.current.name).toBe('Ada');
+
+    updateProfile.mockReturnValue({ unwrap: () => Promise.reject({ status: 500 }) });
+    await act(async () => {
+      await expect(result.current.saveName('Grace')).rejects.toBeDefined();
+    });
   });
 });

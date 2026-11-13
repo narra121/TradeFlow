@@ -23,9 +23,10 @@ import { useScopeTrades } from '@/hooks/useScopeTrades';
 import { useTradeParam } from '@/hooks/useTradeParam';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
+import { appToday, appTodayKey } from '@/lib/appTimeZone';
 import { equitySeries, needsAttention, todaySummary } from '@/lib/dashboard';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { formatPercent, formatProfitFactor, formatR, parseLocalDate } from '@/lib/format';
+import { formatPercent, formatProfitFactor, parseLocalDate } from '@/lib/format';
 import { getDateRangeFromPreset } from '@/lib/scope';
 
 interface DashboardViewProps {
@@ -38,7 +39,7 @@ const MAX_CURRENCY_LINES = 2;
 export function DashboardView(_props: DashboardViewProps = {}) {
   const dispatch = useAppDispatch();
   const filters = useAppSelector((s) => s.trades.filters);
-  const { accounts, selectedAccountId, accountsLoading, accountsError } = useScopeCapital();
+  const { accounts, selectedAccountId, accountsLoading, accountsError, accountsErrorDetail, drawdownBasis } = useScopeCapital();
   const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const trade = useTradeParam();
   const scope = useScopeTrades();
@@ -46,7 +47,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
   const ps = usePeriodStats({ includeEquityCurve: true });
   const { stats, prev, prevRange } = ps;
 
-  const todayKey = formatLocalDateOnly(new Date());
+  const todayKey = appTodayKey();
   const todayScope = useScopeTrades({ accountId: filters.accountId, startDate: todayKey, endDate: todayKey });
   const week = useWeekGoals();
 
@@ -65,7 +66,8 @@ export function DashboardView(_props: DashboardViewProps = {}) {
   const points = useMemo(() => equitySeries((mixed ? view.stats : stats)?.dailyPnl, (d) => d), [mixed, view.stats, stats]);
   const heatAnchor = useMemo(() => {
     const end = parseLocalDate(filters.endDate);
-    return Number.isNaN(end.getTime()) || end > new Date() ? new Date() : end;
+    const today = appToday();
+    return Number.isNaN(end.getTime()) || end > today ? today : end;
   }, [filters.endDate]);
 
   const showAllTime = () => {
@@ -73,7 +75,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
     dispatch(setDateRangeFilter({ startDate: formatLocalDateOnly(range.from), endDate: formatLocalDateOnly(range.to), datePreset: 'all' }));
   };
 
-  if (accountsError) return <ErrorState title="Couldn't load your accounts." description="Your data is safe." onRetry={() => window.location.reload()} />;
+  if (accountsError) return <ErrorState title="Couldn't load your accounts." description="Your data is safe." error={accountsErrorDetail} onRetry={() => window.location.reload()} />;
   if (!accountsLoading && accounts.length === 0) return <FirstRunPage tradeCount={0} />;
 
   const compareSlot = ps.canCompare ? (
@@ -107,7 +109,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
   const sinceStart = selectedAccount && selectedAccount.initialBalance > 0 ? ((selectedAccount.balance - selectedAccount.initialBalance) / selectedAccount.initialBalance) * 100 : null;
 
   const strip = ps.isError ? (
-    <ErrorState title="Couldn't load your statistics." description="Your data is safe." onRetry={ps.refetch} />
+    <ErrorState title="Couldn't load your statistics." description="Your data is safe." error={ps.error} onRetry={ps.refetch} />
   ) : quiet ? (
     <StatStrip label="Period statistics" className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
       {(['netPnl', 'winRate', 'profitFactor', 'plannedRR', 'maxDrawdown'] as const).map((m) => <StatCell key={m} metric={m} value="—" />)}
@@ -169,9 +171,9 @@ export function DashboardView(_props: DashboardViewProps = {}) {
       <StatCell
         metric="maxDrawdown"
         to="/app/analytics?tab=risk"
-        value={statsLoading ? <Skeleton className="h-5 w-12" /> : mixed ? '—' : formatPercent(s?.maxDrawdown ?? 0)}
-        hint={mixed ? 'Per account only' : undefined}
-        delta={!mixed && prev ? <Delta kind="pts" current={s?.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...deltaProps} /> : undefined}
+        value={statsLoading ? <Skeleton className="h-5 w-12" /> : mixed || drawdownBasis !== 'ok' ? '—' : formatPercent(s?.maxDrawdown ?? 0)}
+        hint={mixed || drawdownBasis === 'mixed' ? 'Per account only' : drawdownBasis === 'balance' ? 'Set a starting balance' : undefined}
+        delta={!mixed && drawdownBasis === 'ok' && prev ? <Delta kind="pts" current={s?.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...deltaProps} /> : undefined}
       />
     </StatStrip>
   );
@@ -185,7 +187,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12 [&>*]:min-w-0">
         <section className={`flex flex-col rounded-lg border border-border bg-card p-4 max-md:order-1 xl:col-span-7`}>
           {ps.isError ? (
-            <ErrorState title="Couldn't load your statistics." onRetry={ps.refetch} />
+            <ErrorState title="Couldn't load your statistics." error={ps.error} onRetry={ps.refetch} />
           ) : statsLoading ? (
             <Skeleton className="h-[320px]" aria-busy="true" />
           ) : quiet ? (
@@ -210,7 +212,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
 
         <div className="max-md:order-3 xl:col-span-7">
           {scope.isError ? (
-            <ErrorState title="Couldn't load your trades." onRetry={() => void scope.refetch()} />
+            <ErrorState title="Couldn't load your trades." error={scope.error} onRetry={() => void scope.refetch()} />
           ) : scope.isLoading ? (
             <Skeleton className="h-64" aria-busy="true" />
           ) : quiet ? (

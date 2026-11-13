@@ -57,6 +57,16 @@ describe('ErrorState', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(retry).toHaveBeenCalled();
   });
+
+  it('shows the API message of the failed request instead of the fixed description', () => {
+    const { rerender } = render(<ErrorState title="Could not load trades" description="Your trades are safe." error={{ status: 500, data: { message: 'Trades are being moved.' } }} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Trades are being moved.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Your trades are safe.');
+    rerender(<ErrorState title="Could not load trades" description="Your trades are safe." error={{ status: 500 }} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Your trades are safe.');
+    rerender(<ErrorState title="Could not load trades" description="Your trades are safe." error={{ status: 'FETCH_ERROR' }} />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/Check your internet connection/);
+  });
 });
 
 describe('Money and chips', () => {

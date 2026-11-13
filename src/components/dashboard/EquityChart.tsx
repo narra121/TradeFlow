@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns/format';
 import { Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { calendarHref, chartSeries, type ChartPoint, type EquityPoint } from '@/lib/dashboard';
-import { formatCompactMoney, formatMoney, parseLocalDate } from '@/lib/format';
+import { formatCompactMoney, formatDateShort, formatMoney, parseLocalDate } from '@/lib/format';
 
 interface EquityChartProps {
   points: EquityPoint[];
@@ -39,7 +38,7 @@ export function EquityChart({ points: raw, currency, title = 'Equity', fill = fa
   const [cursor, setCursor] = useState<number | null>(null);
 
   const longRange = raw.length > 1 && parseLocalDate(raw[0].date).getFullYear() !== parseLocalDate(raw[raw.length - 1].date).getFullYear();
-  const labelOf = useMemo(() => (d: string) => format(parseLocalDate(d), longRange ? 'd MMM yy' : 'd MMM'), [longRange]);
+  const labelOf = useMemo(() => (d: string) => (longRange ? `${formatDateShort(d)} ${d.slice(2, 4)}` : formatDateShort(d)), [longRange]);
   const { points, bucket } = useMemo(() => chartSeries(raw.map((p) => ({ ...p, label: labelOf(p.date) })), labelOf), [raw, labelOf]);
   const labels = useMemo(() => new Map(points.map((p) => [p.date, p.label])), [points]);
 
@@ -107,7 +106,7 @@ export function EquityChart({ points: raw, currency, title = 'Equity', fill = fa
                 <ComposedChart data={points} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
                   <CartesianGrid stroke="hsl(var(--chart-grid))" vertical={false} />
                   <XAxis dataKey="date" hide />
-                  <YAxis tick={AXIS} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => formatCompactMoney(v)} />
+                  <YAxis tick={AXIS} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => formatCompactMoney(v, { currency, symbol: false })} />
                   <ReferenceLine y={0} stroke="hsl(var(--border-strong))" />
                   <Area dataKey={(p: ChartPoint) => [p.cumulative, p.peak]} stroke="none" fill="hsl(var(--loss))" fillOpacity={0.16} isAnimationActive={false} activeDot={false} legendType="none" tooltipType="none" />
                   <Line type="monotone" dataKey="cumulative" stroke={lineColor} strokeWidth={2} dot={false} isAnimationActive={false} />

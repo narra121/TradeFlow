@@ -3,9 +3,10 @@ import { RefreshCw } from 'lucide-react';
 import { AccountSwitcher } from '@/components/shell/AccountSwitcher';
 import { ScopePeriod } from '@/components/shell/ScopePeriod';
 import { ScopeBarTargets, useChromeState } from '@/components/shell/chrome';
-import { refreshData } from '@/components/shell/refresh';
+import { refreshData, refreshOnReturn } from '@/components/shell/refresh';
 import { useOnline } from '@/hooks/useOnline';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { readApiError } from '@/lib/apiError';
 import { formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -39,7 +40,15 @@ export function ScopeBar({ scoped, isMobile }: ScopeBarProps) {
     }
     return latest;
   });
-  const failed = useAppSelector((s) => Object.values(s.api.queries).some((q) => q && SCREEN_QUERIES.includes(q.endpointName) && q.status === 'rejected'));
+  // Only a query something is showing counts: an unsubscribed one (a goal-history period) failing says nothing about this screen.
+  const rejected = useAppSelector(
+    (s) =>
+      Object.entries(s.api.queries).find(
+        ([cacheKey, q]) => q && SCREEN_QUERIES.includes(q.endpointName) && q.status === 'rejected' && Object.keys(s.api.subscriptions?.[cacheKey] ?? {}).length > 0,
+      )?.[1],
+  );
+  const failed = !!rejected;
+  const failure = rejected ? readApiError(rejected.error, '').message : '';
 
   const stamp = useCallback(() => {
     setSpinning(true);
@@ -52,14 +61,14 @@ export function ScopeBar({ scoped, isMobile }: ScopeBarProps) {
     return () => window.removeEventListener('tq:refreshed', stamp);
   }, [stamp]);
 
-  // Refetch on focus when the data on screen is older than 60 s.
+  // On returning to the tab after 60 s or more, refetch the figures; the explicit ↻ reloads everything.
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && lastOk && Date.now() - lastOk > 60_000) refresh();
+      if (document.visibilityState === 'visible' && lastOk && Date.now() - lastOk > 60_000) refreshOnReturn(dispatch);
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [lastOk, refresh]);
+  }, [lastOk, dispatch]);
 
   const label = !online ? 'Offline' : failed ? "Couldn't refresh · Retry" : lastOk ? `Updated ${formatTime(new Date(lastOk))}` : 'Updating…';
 
@@ -83,6 +92,7 @@ export function ScopeBar({ scoped, isMobile }: ScopeBarProps) {
           onClick={refresh}
           disabled={!online}
           className={cn('flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs hover:bg-muted hover:text-foreground disabled:pointer-events-none', failed && online ? 'text-error' : 'text-muted-foreground')}
+          title={failed && online && failure ? failure : undefined}
           aria-label={isMobile ? (failed ? "Couldn't refresh. Retry" : 'Refresh data') : `Refresh data. ${label}`}
         >
           {!isMobile && <>{label}</>}

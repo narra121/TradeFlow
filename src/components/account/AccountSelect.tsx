@@ -1,7 +1,9 @@
 import { cn } from '@/lib/utils';
 import { TradingAccount } from '@/types/trade';
-import { accountStatusColors, accountStatusLabels, accountTypeLabels } from '@/hooks/useAccounts';
-import { Building2, ChevronDown, Check } from 'lucide-react';
+import { accountStatusLabels, accountTypeLabels } from '@/hooks/useAccounts';
+import { AccountListbox } from '@/components/account/AccountListbox';
+import { focusAccountList } from '@/components/account/returnFocus';
+import { Building2, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useState } from 'react';
 
@@ -41,7 +43,7 @@ export function AccountSelect({ accounts, selectedAccountIds, onChange }: Accoun
         <button
           type="button"
           className={cn(
-            "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border transition-all text-left",
+            "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border transition-all text-left [@media(pointer:coarse)]:min-h-11",
             "bg-secondary/50 border-border/50 hover:border-primary/30",
             open && "border-primary/50 ring-1 ring-primary/20"
           )}
@@ -62,9 +64,11 @@ export function AccountSelect({ accounts, selectedAccountIds, onChange }: Accoun
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] min-w-[280px] p-0 bg-card border-border z-50"
+        aria-label="Accounts"
+        className="w-[var(--radix-popover-trigger-width)] min-w-[280px] p-0"
         align="start"
         sideOffset={4}
+        onOpenAutoFocus={focusAccountList}
       >
         <div className="p-2.5 sm:p-3 border-b border-border">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -86,52 +90,21 @@ export function AccountSelect({ accounts, selectedAccountIds, onChange }: Accoun
           </div>
         </div>
 
-        <div className="max-h-64 overflow-y-auto p-1.5 sm:p-2">
-          {accounts.map((account) => {
-            const isSelected = selectedAccountIds.includes(account.id);
-
-            return (
-              <button
-                key={account.id}
-                type="button"
-                onClick={() => toggleAccount(account.id)}
-                className={cn(
-                  "w-full flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg cursor-pointer transition-all text-left min-h-[44px]",
-                  "hover:bg-secondary/50"
-                )}
-              >
-                <div className={cn(
-                  "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                  isSelected
-                    ? "border-primary bg-primary"
-                    : "border-muted-foreground/40"
-                )}>
-                  {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium text-sm text-foreground truncate">{account.name}</span>
-                    <span className={cn(
-                      "text-[9px] px-1.5 py-0.5 rounded-full border uppercase shrink-0 font-medium",
-                      accountStatusColors[account.status]
-                    )}>
-                      {accountStatusLabels[account.status]}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                    {account.broker} • {accountTypeLabels[account.type]}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-
-          {accounts.length === 0 && (
-            <div className="text-sm text-muted-foreground text-center py-4">
-              No accounts available. Add an account first.
-            </div>
-          )}
+        <div className="p-1.5 sm:p-2">
+          <AccountListbox
+            label="Accounts"
+            multiple
+            accounts={accounts.map((a) => ({
+              id: a.id,
+              name: a.name,
+              currency: a.currency,
+              meta: `${a.broker} • ${accountTypeLabels[a.type]}`,
+              tag: a.status === 'active' ? undefined : accountStatusLabels[a.status],
+            }))}
+            selected={selectedAccountIds}
+            onToggle={toggleAccount}
+            emptyText="No accounts available. Add an account first."
+          />
         </div>
       </PopoverContent>
     </Popover>

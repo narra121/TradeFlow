@@ -46,7 +46,7 @@ describe('TaxReport', () => {
     expect(within(table).queryByText('Commodity derivatives')).not.toBeInTheDocument();
     const total = within(table).getByRole('row', { name: /Total/ });
     expect(within(total).getByText('+₹800.00')).toBeInTheDocument();
-    expect(screen.getByText('1 Apr 2026 – 31 Mar 2027')).toBeInTheDocument();
+    expect(screen.getByText('01 Apr 2026 – 31 Mar 2027')).toBeInTheDocument();
   });
 
   it('states the F&O turnover against the audit threshold, the charges, the uncovered trades and the caveat', () => {
@@ -75,6 +75,17 @@ describe('TaxReport', () => {
     renderWithProviders(<TaxReport />);
     expect(screen.getByText('The tax report is in rupees.')).toBeInTheDocument();
     expect(query).toHaveBeenCalledWith(expect.anything(), { skip: true });
+  });
+
+  it('shows the API message of a failed load, and the connection message only without a response', () => {
+    query.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: { status: 422, data: { message: 'The financial year is not valid.' } }, refetch: vi.fn() });
+    const { unmount } = renderWithProviders(<TaxReport />);
+    expect(screen.getByRole('alert')).toHaveTextContent('The financial year is not valid.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    unmount();
+    query.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: { status: 'FETCH_ERROR' }, refetch: vi.fn() });
+    renderWithProviders(<TaxReport />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/Check your internet connection/);
   });
 
   it('shows an error with Retry and a skeleton while loading', async () => {
@@ -109,6 +120,6 @@ describe('financial year helpers', () => {
   });
 
   it('writes the range with day, short month and year', () => {
-    expect(formatFyRange('2026-04-01', '2027-03-31')).toBe('1 Apr 2026 – 31 Mar 2027');
+    expect(formatFyRange('2026-04-01', '2027-03-31')).toBe('01 Apr 2026 – 31 Mar 2027');
   });
 });

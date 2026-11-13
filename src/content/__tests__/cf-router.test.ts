@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { describe, it, expect } from 'vitest';
@@ -26,12 +27,12 @@ function req(uri: string, host = 'tradequt.com', querystring: Record<string, unk
   };
 }
 
-function res(host: string) {
+function res(host: string, contentType?: string) {
   return {
     version: '1.0',
     context: { eventType: 'viewer-response' },
     request: { method: 'GET', uri: '/x/index.html', querystring: {}, headers: { host: { value: host } }, cookies: {} },
-    response: { statusCode: 200, headers: {} as Record<string, { value: string }> },
+    response: { statusCode: 200, headers: (contentType ? { 'content-type': { value: contentType } } : {}) as Record<string, { value: string }> },
   };
 }
 
@@ -79,5 +80,63 @@ describe('CloudFront router function', () => {
     expect(handler(res('dev.tradequt.com')).headers['x-robots-tag'].value).toBe('noindex, nofollow');
     expect(handler(res('d1234.cloudfront.net')).headers['x-robots-tag'].value).toBe('noindex, nofollow');
     expect(handler(res('tradequt.com')).headers['x-robots-tag']).toBeUndefined();
+  });
+
+  describe('security headers (viewer-response)', () => {
+    const html = handler(res('tradequt.com', 'text/html; charset=utf-8')).headers;
+
+    it('sends HSTS, nosniff and a referrer policy on every response, an asset included', () => {
+      for (const headers of [html, handler(res('tradequt.com', 'text/javascript')).headers, handler(res('tradequt.com')).headers]) {
+        expect(headers['strict-transport-security'].value).toBe('max-age=31536000');
+        expect(headers['x-content-type-options'].value).toBe('nosniff');
+        expect(headers['referrer-policy'].value).toBe('strict-origin-when-cross-origin');
+      }
+    });
+
+    it('sends the CSP headers on HTML only', () => {
+      expect(html['content-security-policy']).toBeDefined();
+      expect(html['content-security-policy-report-only']).toBeDefined();
+      for (const type of ['text/javascript', 'image/png', undefined]) {
+        const headers = handler(res('tradequt.com', type)).headers;
+        expect(headers['content-security-policy']).toBeUndefined();
+        expect(headers['content-security-policy-report-only']).toBeUndefined();
+      }
+    });
+
+    it('enforces only frame-ancestors; the full policy is Report-Only', () => {
+      expect(html['content-security-policy'].value).toBe("frame-ancestors 'none'");
+      const policy = html['content-security-policy-report-only'].value;
+      expect(policy).toContain("default-src 'self'");
+      expect(policy).toContain("object-src 'none'");
+      expect(policy).not.toMatch(/script-src[^;]*'unsafe-(inline|eval)'/);
+    });
+
+    it('lists the origins the app talks to', () => {
+      const directives = Object.fromEntries(
+        html['content-security-policy-report-only'].value.split('; ').map((d) => [d.split(' ')[0], d.split(' ').slice(1)]),
+      );
+      expect(directives['script-src']).toEqual(expect.arrayContaining(["'self'", 'https://www.googletagmanager.com', 'https://pagead2.googlesyndication.com']));
+      expect(directives['connect-src']).toEqual(
+        expect.arrayContaining([
+          'https://*.tradequt.com',
+          'https://*.execute-api.us-east-1.amazonaws.com',
+          'https://cognito-idp.us-east-1.amazonaws.com',
+          'https://*.s3.us-east-1.amazonaws.com',
+          'https://*.google-analytics.com',
+          'https://analytics.google.com',
+        ]),
+      );
+      expect(directives['img-src']).toEqual(expect.arrayContaining(['data:', 'blob:']));
+    });
+
+    it('hashes the inline boot script in index.html as the browser reads it (LF)', () => {
+      const scripts = [...readFileSync('index.html', 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+      expect(scripts.length).toBeGreaterThan(0);
+      const policy = html['content-security-policy-report-only'].value;
+      for (const text of scripts) {
+        const hash = createHash('sha256').update(text.replace(/\r\n?/g, '\n')).digest('base64');
+        expect(policy).toContain(`'sha256-${hash}'`);
+      }
+    });
   });
 });

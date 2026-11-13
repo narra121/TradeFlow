@@ -27,10 +27,10 @@ export interface AuthErrorInfo {
   retryAfter?: number;
 }
 
-/** The backend sends the wait as `errors[0].retryAfter`; the older `error.details.retryAfter` is read as a fallback. */
+/** The wait in seconds: `error.retryAfter` in the one error envelope; `errors[0].retryAfter` and `error.details.retryAfter` are the shapes before it. */
 function readRetryAfter(err: unknown): number | undefined {
-  const e = (err ?? {}) as { data?: { errors?: { retryAfter?: unknown }[]; error?: { details?: { retryAfter?: unknown } } } };
-  const v = e.data?.errors?.[0]?.retryAfter ?? e.data?.error?.details?.retryAfter;
+  const e = (err ?? {}) as { data?: { errors?: { retryAfter?: unknown }[]; error?: { retryAfter?: unknown; details?: { retryAfter?: unknown } } } };
+  const v = e.data?.error?.retryAfter ?? e.data?.errors?.[0]?.retryAfter ?? e.data?.error?.details?.retryAfter;
   return typeof v === 'number' && v > 0 ? Math.ceil(v) : undefined;
 }
 

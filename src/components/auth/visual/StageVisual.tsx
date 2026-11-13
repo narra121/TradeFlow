@@ -4,6 +4,7 @@ import type { AuthScene, StageData } from '@/components/auth/scenes';
 
 const JournalDemo = lazy(() => import('./demos').then((m) => ({ default: m.JournalDemo })));
 const SignupDemo = lazy(() => import('./demos').then((m) => ({ default: m.SignupDemo })));
+const StillJournal = lazy(() => import('./demos').then((m) => ({ default: m.StillJournal })));
 
 interface StageVisualProps {
   scene: AuthScene;
@@ -130,9 +131,18 @@ export function StageVisual({ scene, data, paused, seen }: StageVisualProps) {
         </div>
       )}
       {scene === 'reset' && (
-        <div className="stage-reveal" key="reset">
-          <ResetCard step={data.resetStep} />
-        </div>
+        <>
+          <div className="stage-under" aria-hidden="true">
+            {seen && (
+              <Suspense fallback={null}>
+                <StillJournal />
+              </Suspense>
+            )}
+          </div>
+          <div className="stage-reveal" key="reset">
+            <ResetCard step={data.resetStep} />
+          </div>
+        </>
       )}
       {scene === 'closed' && (
         <div className="stage-reveal" key="closed">

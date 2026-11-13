@@ -1,14 +1,10 @@
-import { formatMoney } from '@/lib/format';
+import { formatDateShort, formatMoney } from '@/lib/format';
 import type { EntitlementsView } from '@/hooks/useEntitlements';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** `4 Nov 2026`, or `4 Nov` when `withYear` is false (D.3). Empty for a missing or invalid date. */
+/** `04 Nov 2026`, or `04 Nov` when `withYear` is false (D.3). Empty for a missing or invalid date. */
 export function formatDay(iso: string | undefined | null, withYear = true): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getDate()} ${MONTHS[d.getMonth()]}${withYear ? ` ${d.getFullYear()}` : ''}`;
+  const text = formatDateShort(iso, withYear);
+  return text === '—' ? '' : text;
 }
 
 /** The days after a trial ends during which the "what changed" block and notice are shown. */

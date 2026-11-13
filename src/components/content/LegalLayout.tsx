@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ContentPageShell } from './ContentPageShell';
+import { COMPANY_FACTS, SUPPORT_EMAIL } from '@/content/product-facts';
 
 export interface LegalSection {
   id: string;
@@ -61,21 +62,21 @@ export function ContactBlock() {
   return (
     <ul className="!list-none !pl-0">
       <li>
-        <span className="font-medium text-foreground">Business:</span> TradeQutJournal
+        <span className="font-medium text-foreground">Business:</span> {COMPANY_FACTS.business}
       </li>
       <li>
-        <span className="font-medium text-foreground">Address:</span> 3-187/2, Regonda, Regonda, Bhupalpally, Telangana - 506348
+        <span className="font-medium text-foreground">Address:</span> {COMPANY_FACTS.address.street}, {COMPANY_FACTS.address.locality}, {COMPANY_FACTS.address.region} - {COMPANY_FACTS.address.postalCode}
       </li>
       <li>
         <span className="font-medium text-foreground">Email:</span>{' '}
-        <a href="mailto:support@tradequt.com" className="text-primary hover:underline">
-          support@tradequt.com
+        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">
+          {SUPPORT_EMAIL}
         </a>
       </li>
       <li>
         <span className="font-medium text-foreground">Phone:</span>{' '}
-        <a href="tel:+918501018125" className="text-primary hover:underline">
-          +91 8501018125
+        <a href={`tel:${COMPANY_FACTS.phone.e164}`} className="text-primary hover:underline">
+          {COMPANY_FACTS.phone.display}
         </a>
       </li>
     </ul>

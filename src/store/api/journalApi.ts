@@ -19,6 +19,7 @@ export interface DayNotesArgs {
 export const NOTE_MAX = 2000;
 
 export const journalApi = api.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     getDayNotes: builder.query<DayNote[], DayNotesArgs>({
       query: ({ from, to, scope }) => ({ url: '/journal/days', params: { from, to, accountId: scope } }),

@@ -14,7 +14,8 @@ export const useLandingMotion = () => useContext(MotionContext);
 
 /** Starts paused under prefers-reduced-motion, as Forma does; the visitor can switch either way (WCAG 2.2.2). */
 export function LandingMotionProvider({ children }: { children: ReactNode }) {
-  const [paused, setPaused] = useState(false);
+  // Read before the first commit, so a reduced-motion visitor never sees the first frames animate.
+  const [paused, setPaused] = useState(() => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const sync = () => setPaused(mq.matches);
@@ -70,6 +71,21 @@ export function scrollToProgress(section: HTMLElement, sticky: HTMLElement, p: n
   const top = parseFloat(getComputedStyle(sticky).top || '0');
   const start = section.getBoundingClientRect().top + window.scrollY - top;
   window.scrollTo({ top: start + (section.offsetHeight - sticky.offsetHeight) * p, behavior: 'smooth' });
+}
+
+/**
+ * For an in-page link to a section just below: glides there instead of jumping, and moves focus like useHashScroll.
+ * Under `still` it leaves the click alone, so the link jumps as usual.
+ */
+export function glideTo(id: string, still: boolean) {
+  return (e: { preventDefault: () => void }) => {
+    const el = document.getElementById(id);
+    if (still || !el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+    el.focus({ preventScroll: true });
+  };
 }
 
 /** The 2 px reading-progress line at the top of the page. */

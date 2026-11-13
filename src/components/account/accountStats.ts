@@ -1,4 +1,6 @@
-import { differenceInCalendarDays, format } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
+import { appToday, dayKeyIn } from '@/lib/appTimeZone';
+import { formatDateShort, parseLocalDate } from '@/lib/format';
 import type { Trade, TradingAccount } from '@/types/trade';
 
 export interface AccountTally {
@@ -24,11 +26,11 @@ export function lastTradeText(iso: string | undefined, now: Date = new Date()): 
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  const days = differenceInCalendarDays(now, d);
+  const days = differenceInCalendarDays(appToday(now), parseLocalDate(dayKeyIn(d)));
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';
   if (days <= 7) return `${days} days ago`;
-  return format(d, 'd MMM yyyy');
+  return formatDateShort(iso, true);
 }
 
 export function netSinceStart(a: TradingAccount): { amount: number; pct: number | null } {

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import * as PopoverPrimitive from '@radix-ui/react-popover';
-import { ExternalLink } from 'lucide-react';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { CHANGELOG_ENTRIES, type ChangelogEntry } from '@/content/changelog/entries';
 import { formatDateShort } from '@/lib/format';
 
@@ -16,15 +15,9 @@ interface WhatsNewPopoverProps {
 export function WhatsNewPopover({ open, onOpenChange, children, entries = CHANGELOG_ENTRIES }: WhatsNewPopoverProps) {
   const shown = useMemo(() => entries.filter((e) => e.inApp !== false).slice(0, 3), [entries]);
   return (
-    <PopoverPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <PopoverPrimitive.Anchor asChild>{children}</PopoverPrimitive.Anchor>
-      <PopoverPrimitive.Portal>
-        <PopoverPrimitive.Content
-          align="end"
-          sideOffset={6}
-          aria-label="What’s new"
-          className="z-popover w-80 rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-md outline-none"
-        >
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverAnchor asChild>{children}</PopoverAnchor>
+      <PopoverContent align="end" aria-label="What’s new" className="w-80 p-3">
           <h2 className="text-sm font-semibold">What’s new</h2>
           {shown.length === 0 ? (
             <p className="mt-2 text-13 text-muted-foreground">Nothing new yet.</p>
@@ -41,11 +34,10 @@ export function WhatsNewPopover({ open, onOpenChange, children, entries = CHANGE
               ))}
             </ul>
           )}
-          <a href="/changelog" target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline">
-            All changes <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          <a href="/changelog" className="mt-2 inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline">
+            All changes
           </a>
-        </PopoverPrimitive.Content>
-      </PopoverPrimitive.Portal>
-    </PopoverPrimitive.Root>
+      </PopoverContent>
+    </Popover>
   );
 }

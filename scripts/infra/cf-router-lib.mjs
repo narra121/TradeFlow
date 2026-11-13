@@ -3,7 +3,7 @@
  * against a mocked S3 / CloudFront client (src/content/__tests__/cf-router-apply.test.ts).
  *
  * Order enforced by `apply`: preflight (objects exist in the bucket) -> backup -> function test -> publish -> associate -> wait ->
- * verify -> automatic revert if verify fails. The preflight exists because the associated error responses point at
+ * verify -> automatic revert if verify fails (distribution config AND the function's previous LIVE code). The preflight exists because the associated error responses point at
  * /_spa.html and /error.html: applying before the first deploy of dist/ would break every /app and /auth/callback URL.
  */
 
@@ -14,6 +14,11 @@ export const ENVS = {
 
 /** Any published article works as the probe; this one has existed since the first prerendered build. */
 export const DEFAULT_PROBE_SLUG = 'how-to-keep-trading-journal';
+
+/** What the router puts on an HTML page (scripts/seo/cf-router.ts): HSTS, an enforced frame-ancestors, and the Report-Only policy that carries the inline-script hash. `h` maps lowercase header names to values. */
+function hasSecurityHeaders(h) {
+  return !!h['strict-transport-security'] && h['content-security-policy'] === "frame-ancestors 'none'" && /'sha256-/.test(h['content-security-policy-report-only'] ?? '');
+}
 
 export function createRouter(deps) {
   const { envName, cfg, aws, fetchImpl, readFile, writeFile, ensureDir, tmp, sleep, log, routerPath, backupDir, now } = deps;
@@ -42,12 +47,25 @@ export function createRouter(deps) {
     log(`preflight OK: s3://${cfg.bucket} has ${requiredKeys().join(', ')}`);
   }
 
+  /** The function's LIVE code and config before this run publishes over it, or null when it has never been published. */
+  function liveFunction() {
+    const live = describeFunction('LIVE');
+    if (!live) return null;
+    const out = tmp('previous-router.js', '');
+    aws(['cloudfront', 'get-function', '--name', cfg.fn, '--stage', 'LIVE', out]);
+    return { config: live.FunctionSummary.FunctionConfig, code: readFile(out) };
+  }
+
   function saveBackup() {
     ensureDir(backupDir);
     const dist = getDistribution();
     const stamp = now().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '_');
     const file = `${backupDir}/${envName}-${cfg.distribution}-${stamp}.json`;
-    writeFile(file, JSON.stringify({ env: envName, distribution: cfg.distribution, ETag: dist.ETag, DistributionConfig: dist.DistributionConfig, newFunctionCode: readFile(routerPath) }, null, 2));
+    const previousFunction = liveFunction();
+    writeFile(
+      file,
+      JSON.stringify({ env: envName, distribution: cfg.distribution, ETag: dist.ETag, DistributionConfig: dist.DistributionConfig, previousFunction, newFunctionCode: readFile(routerPath) }, null, 2),
+    );
     return { file, dist };
   }
 
@@ -75,6 +93,11 @@ export function createRouter(deps) {
       name: 'noindex off canonical host',
       ev: event('viewer-response', '/x', 'dev.tradequt.com', { response: { statusCode: 200, headers: {} } }),
       check: (o) => (envName === 'prod' ? true : o.response?.headers?.['x-robots-tag']?.value === 'noindex, nofollow'),
+    },
+    {
+      name: 'security headers on html',
+      ev: event('viewer-response', '/x', cfg.host, { response: { statusCode: 200, headers: { 'content-type': { value: 'text/html' } } } }),
+      check: (o) => hasSecurityHeaders(Object.fromEntries(Object.entries(o.response?.headers ?? {}).map(([k, v]) => [k, v.value]))),
     },
   ];
 
@@ -120,7 +143,8 @@ export function createRouter(deps) {
   async function head(path, hostHeader) {
     const r = await fetchImpl(`${cfg.site}${path}`, { redirect: 'manual', headers: hostHeader ? { host: hostHeader } : {} });
     const text = r.status === 200 || r.status === 404 ? await r.text() : '';
-    return { status: r.status, title: /<title[^>]*>([^<]*)</.exec(text)?.[1] ?? '', robots: r.headers.get('x-robots-tag'), location: r.headers.get('location') };
+    const security = Object.fromEntries(['strict-transport-security', 'content-security-policy', 'content-security-policy-report-only'].map((name) => [name, r.headers.get(name)]));
+    return { status: r.status, title: /<title[^>]*>([^<]*)</.exec(text)?.[1] ?? '', robots: r.headers.get('x-robots-tag'), location: r.headers.get('location'), security };
   }
 
   /** Live checks against the site; returns the number of failed checks. */
@@ -142,20 +166,37 @@ export function createRouter(deps) {
     expect(cb.status === 200, '/auth/callback returns the SPA shell with 200 (Google sign-in)', cb);
     const slash = await head('/blog/');
     expect(slash.status === 301, '/blog/ redirects to /blog', slash);
+    expect(hasSecurityHeaders(home.security), 'HSTS, frame-ancestors and the Report-Only CSP on the home page', home.security);
     if (envName !== 'prod') expect(/noindex/.test(home.robots ?? ''), 'x-robots-tag noindex on the non-canonical host', home);
     return bad;
   }
 
-  /** Restores the saved distribution config, waits for it to deploy and deletes the function. */
+  /**
+   * Restores the saved distribution config and waits for it to deploy, then puts the function back: its previous LIVE code is
+   * published again when it existed before the apply, otherwise the function is deleted. A failed step throws.
+   */
   function revert(backupFile) {
     const backup = JSON.parse(readFile(backupFile));
     if (backup.distribution !== cfg.distribution) throw new Error('backup is for a different distribution');
     const { ETag } = getDistribution();
     aws(['cloudfront', 'update-distribution', '--id', cfg.distribution, '--if-match', ETag, '--distribution-config', `file://${tmp('restore.json', JSON.stringify(backup.DistributionConfig))}`]);
     deps.waitDeployed();
-    const fn = describeFunction('DEVELOPMENT');
-    if (fn) aws(['cloudfront', 'delete-function', '--name', cfg.fn, '--if-match', fn.ETag], { allowFail: true });
     log(`reverted distribution config from ${backupFile}`);
+    const fn = describeFunction('DEVELOPMENT');
+    if (!fn) return;
+    if (backup.previousFunction) {
+      const { config, code } = backup.previousFunction;
+      const updated = aws(['cloudfront', 'update-function', '--name', cfg.fn, '--if-match', fn.ETag, '--function-config', JSON.stringify(config), '--function-code', `fileb://${tmp('restore-router.js', code)}`]);
+      aws(['cloudfront', 'publish-function', '--name', cfg.fn, '--if-match', updated.ETag]);
+      log(`restored the previous LIVE code of ${cfg.fn}`);
+      return;
+    }
+    try {
+      aws(['cloudfront', 'delete-function', '--name', cfg.fn, '--if-match', fn.ETag]);
+    } catch (e) {
+      throw new Error(`the distribution config was restored but ${cfg.fn} was not deleted, so its LIVE code is still the new router (${e.message})`);
+    }
+    log(`deleted ${cfg.fn}`);
   }
 
   /** Dry run: reads only. */

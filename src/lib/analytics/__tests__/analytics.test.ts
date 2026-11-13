@@ -6,14 +6,15 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   __resetAnalyticsForTests,
   initAnalytics,
-  isAdEligiblePath,
   sanitizeLocation,
+
   saveConsent,
   readConsent,
   needsConsentBanner,
   inConsentRegionByTimezone,
   trackBeginCheckout,
   trackFirstTrade,
+  trackLogin,
   trackPageView,
   trackPurchase,
   trackSignUp,
@@ -123,7 +124,17 @@ describe('events', () => {
 
   it('sends sign_up with the method', () => {
     trackSignUp('google');
-    expect(events('sign_up')[0][2]).toEqual({ method: 'google' });
+    expect(events('sign_up')[0][2]).toEqual({ method: 'google', page_location: 'https://tradequt.com/' });
+  });
+
+  it('every event carries the sanitized URL, so the OAuth code and the Checkout session id never reach GA', () => {
+    window.history.replaceState({}, '', '/auth/callback?code=secret&state=x&utm_source=ad');
+    trackLogin('google');
+    expect(events('login')[0][2]).toEqual({ method: 'google', page_location: 'https://tradequt.com/auth/callback?utm_source=ad' });
+    window.history.replaceState({}, '', '/app/billing?session_id=cs_9');
+    trackPurchase('cs_9');
+    expect(JSON.stringify(dataLayerCalls())).not.toMatch(/secret|state=x|session_id=cs_9/);
+    window.history.replaceState({}, '', '/');
   });
 
   it('sends first_trade once per user', () => {
@@ -145,6 +156,6 @@ describe('events', () => {
 
   it('sends purchase without value when the checkout intent was lost', () => {
     expect(trackPurchase('cs_test_2')).toBe(true);
-    expect(events('purchase')[0][2]).toEqual({ transaction_id: 'cs_test_2' });
+    expect(events('purchase')[0][2]).toEqual({ transaction_id: 'cs_test_2', page_location: 'https://tradequt.com/' });
   });
 });

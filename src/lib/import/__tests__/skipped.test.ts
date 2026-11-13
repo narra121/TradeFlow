@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 import type { NormalizedTrade } from '@/types/import';
 import { applyEdit, rowStatus, validateTrade } from '../rows';
 import { base64ToText, findSkippedLines, recoverSkipped } from '../skipped';
@@ -10,6 +11,13 @@ const parsedTrade = (p: Partial<NormalizedTrade>): NormalizedTrade => ({
 
 const HEADER = 'Symbol,Side,Quantity,Entry Price,Exit Price,Open Time,Close Time,Fees,Trade ID';
 const csv = (...lines: string[]) => [HEADER, ...lines].join('\n');
+
+// The recovered times are read on the app time zone's clock, as the parse request asks of the parser.
+beforeEach(() => patchUiState({ timeZone: 'Asia/Kolkata' }));
+afterEach(() => {
+  localStorage.clear();
+  resetUiStateCache();
+});
 
 describe('findSkippedLines', () => {
   const text = csv(
@@ -35,6 +43,13 @@ describe('findSkippedLines', () => {
     expect(findSkippedLines(text, parsed.slice(0, 1), 1)).toEqual([]);
     expect(findSkippedLines(text, parsed, 0)).toEqual([]);
     expect(findSkippedLines('a,b\n1,2', [], 1)).toEqual([]);
+  });
+
+  it('reads the times of a recovered line on the clock of another saved zone', () => {
+    patchUiState({ timeZone: 'Asia/Dubai' }); // UTC+4, no daylight saving
+    const [line] = findSkippedLines(text, parsed, 1);
+    expect(line.trade?.openDate).toBe('2026-11-03T06:05:00.000Z');
+    expect(line.trade?.closeDate).toBe('2026-11-03T10:20:00.000Z');
   });
 
   it('a line whose direction cannot be read is listed without a row to edit', () => {

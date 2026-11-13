@@ -39,8 +39,8 @@ jobs:
           echo "VITE_API_URL=${{ secrets.VITE_API_URL_DEV }}" > .env.development
           echo "VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN_DEV }}" >> .env.development
           echo "VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID_DEV }}" >> .env.development
+          echo "VITE_COGNITO_USER_POOL_ID=${{ secrets.VITE_COGNITO_USER_POOL_ID_DEV }}" >> .env.development
           echo "VITE_GA_MEASUREMENT_ID=${{ secrets.VITE_GA_MEASUREMENT_ID_DEV }}" >> .env.development
-          echo "VITE_EXTRACT_TRADES_URL=${{ secrets.VITE_EXTRACT_TRADES_URL_DEV }}" >> .env.development
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium

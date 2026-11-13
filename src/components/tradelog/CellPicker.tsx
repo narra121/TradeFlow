@@ -20,10 +20,12 @@ interface CellPickerProps {
   onCreate: (value: string) => void;
   onApply: (op: BulkOp, targets: Trade[]) => void;
   onClose: () => void;
+  /** An update is running: picks are ignored until it ends, so none starts from trades as they were before it. */
+  busy?: boolean;
 }
 
 /** E-043: the journal cell's picker, anchored to the cell or row; single choices save on select, multi choices as they are toggled. */
-export function CellPicker({ kind, targets, anchor, options, onCreate, onApply, onClose }: CellPickerProps) {
+export function CellPicker({ kind, targets, anchor, options, onCreate, onApply, onClose, busy = false }: CellPickerProps) {
   const label = LABEL[kind];
   const state = useMemo(() => {
     if (kind !== 'mistakes' && kind !== 'tags') return {};
@@ -41,7 +43,7 @@ export function CellPicker({ kind, targets, anchor, options, onCreate, onApply, 
   return (
     <Popover open onOpenChange={(o) => !o && onClose()}>
       <PopoverAnchor virtualRef={{ current: anchor }} />
-      <PopoverContent align="start" className="w-72 p-2" onCloseAutoFocus={(e) => { e.preventDefault(); anchor.focus(); }}>
+      <PopoverContent align="start" aria-label={label} className="w-72 p-2" onCloseAutoFocus={(e) => { e.preventDefault(); anchor.focus(); }}>
         <p className="mb-1.5 px-1 text-xs text-muted-foreground">
           {label}
           {targets.length > 1 ? ` · ${targets.length} trades` : ''}
@@ -53,7 +55,7 @@ export function CellPicker({ kind, targets, anchor, options, onCreate, onApply, 
             options={values.map((v) => ({ value: v }))}
             state={state}
             onCreate={onCreate}
-            onToggle={(value, next) => onApply({ kind, add: next === 'on' ? [value] : [], remove: next === 'off' ? [value] : [] }, targets)}
+            onToggle={(value, next) => !busy && onApply({ kind, add: next === 'on' ? [value] : [], remove: next === 'off' ? [value] : [] }, targets)}
             autoFocus
           />
         ) : (
@@ -64,6 +66,7 @@ export function CellPicker({ kind, targets, anchor, options, onCreate, onApply, 
             value={current}
             onCreate={onCreate}
             onChange={(value) => {
+              if (busy) return;
               onApply({ kind, value }, targets);
               onClose();
             }}

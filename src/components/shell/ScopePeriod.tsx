@@ -14,7 +14,11 @@ export function shiftRange(preset: DatePreset, start: string, end: string, dir: 
   const from = parseLocalDate(start);
   const to = parseLocalDate(end);
   const fmt = formatLocalDateOnly;
-  if (preset === 'thisWeek') return { startDate: fmt(addDays(from, 7 * dir)), endDate: fmt(addDays(to, 7 * dir)) };
+  if (preset === 'thisWeek') {
+    // The whole Monday-Sunday week before or after, not the partial "this week" moved by seven days.
+    const monday = addDays(addDays(from, -((from.getDay() + 6) % 7)), 7 * dir);
+    return { startDate: fmt(monday), endDate: fmt(addDays(monday, 6)) };
+  }
   if (preset === 'thisMonth' || preset === 'last2Months' || preset === 'last3Months' || preset === 'last6Months') {
     const months = preset === 'thisMonth' ? 1 : preset === 'last2Months' ? 2 : preset === 'last3Months' ? 3 : 6;
     const nf = addMonths(from, months * dir);

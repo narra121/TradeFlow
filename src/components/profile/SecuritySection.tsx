@@ -8,12 +8,12 @@ import { LogoutAllDialog } from './LogoutAllDialog';
 import { SectionHeading, SettingRow } from './layout';
 
 export function SecuritySection() {
-  const { email, method, isLoading, isError, refetch } = useProfile();
+  const { email, method, isLoading, isError, error, refetch } = useProfile();
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
 
   if (isLoading) return <Skeleton className="h-40" aria-label="Loading sign-in settings" />;
-  if (isError) return <ErrorState title="Couldn't load your sign-in settings" description="Check your connection and try again." onRetry={refetch} />;
+  if (isError) return <ErrorState title="Couldn't load your sign-in settings" description="Try again." error={error} onRetry={refetch} />;
 
   return (
     <section aria-labelledby="security-heading">

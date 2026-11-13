@@ -11,7 +11,7 @@ import type { Trade, TradingAccount } from '@/types/trade';
 const acc = (id: string, over: Partial<TradingAccount> = {}): TradingAccount =>
   ({ id, name: id, broker: 'B', type: 'personal', status: 'active', balance: 1000, initialBalance: 1000, currency: 'USD', createdAt: '', ...over }) as TradingAccount;
 
-let query: { data?: { accounts: TradingAccount[] }; isLoading: boolean; isError: boolean } = { isLoading: false, isError: false };
+let query: { data?: { accounts: TradingAccount[] }; isLoading: boolean; isError: boolean; error?: unknown } = { isLoading: false, isError: false };
 const refetch = vi.fn();
 const createAccount = vi.fn();
 const updateAccount = vi.fn();
@@ -90,6 +90,17 @@ describe('AccountsView', () => {
     expect(screen.queryByRole('row', { name: /Old challenge/ })).not.toBeInTheDocument();
   });
 
+  it('shows the API message of a failed load; the connection message only without a response', () => {
+    query = { isLoading: false, isError: true, error: { status: 503, data: { message: 'Accounts are being migrated.' } } };
+    const { unmount } = setup();
+    expect(screen.getByRole('alert')).toHaveTextContent('Accounts are being migrated.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    unmount();
+    query = { isLoading: false, isError: true, error: { status: 'FETCH_ERROR' } };
+    setup();
+    expect(screen.getByRole('alert')).toHaveTextContent(/Check your internet connection/);
+  });
+
   it('unfolds Other and shows the status next to the name', async () => {
     setup();
     await userEvent.setup().click(screen.getByRole('button', { name: /Other · 1/ }));
@@ -158,6 +169,20 @@ describe('AccountsView', () => {
     await user.click(screen.getByRole('button', { name: 'Add account' }));
     expect(createAccount).toHaveBeenCalledWith(expect.objectContaining({ name: 'UI-test', initialBalance: 5000, balance: 5000, currency: 'USD' }));
     await vi.waitFor(() => expect(screen.getByTestId('where')).not.toHaveTextContent('account=new'));
+  });
+
+  it('saving an edit never sends the cached balance, so a stale one cannot overwrite the live balance (X-007)', async () => {
+    const user = userEvent.setup();
+    setup('/app/accounts?account=a2');
+    await screen.findByRole('heading', { name: 'Edit Zerodha F&O' });
+    await user.clear(screen.getByLabelText(/^Name/));
+    await user.type(screen.getByLabelText(/^Name/), 'Zerodha renamed');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(updateAccount).toHaveBeenCalledTimes(1);
+    const { id, payload } = updateAccount.mock.calls[0][0];
+    expect(id).toBe('a2');
+    expect(payload).toMatchObject({ name: 'Zerodha renamed', initialBalance: 500000 });
+    expect(JSON.parse(JSON.stringify(payload))).not.toHaveProperty('balance');
   });
 
   it('keeps the pane open and says what went wrong when the save fails', async () => {

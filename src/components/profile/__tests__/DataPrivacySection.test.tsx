@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { DataPrivacySection } from '../DataPrivacySection';
 import { emailMatches } from '../helpers';
 import { exportFileName, formatFileSize } from '../useDataExport';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 
 const useProfile = vi.fn();
 vi.mock('@/hooks/useProfile', () => ({ useProfile: () => useProfile() }));
@@ -13,7 +14,7 @@ const exportMyData = vi.fn();
 const deleteAccount = vi.fn();
 vi.mock('@/store/api/profileApi', () => ({
   useExportMyDataMutation: () => [exportMyData, { isLoading: false }],
-  useDeleteAccountMutation: () => [deleteAccount, { isLoading: false }],
+  useDeleteUserAccountMutation: () => [deleteAccount, { isLoading: false }],
 }));
 const clearLocal = vi.fn();
 vi.mock('@/store/api/authApi', () => ({ useLogoutMutation: () => [clearLocal, { isLoading: false }] }));
@@ -21,7 +22,7 @@ const openConsentSettings = vi.fn();
 vi.mock('@/lib/analytics/consent', () => ({ openConsentSettings: () => openConsentSettings() }));
 
 const ok = (v?: unknown) => ({ unwrap: () => Promise.resolve(v), abort: vi.fn() });
-const fail = () => ({ unwrap: () => Promise.reject({ status: 500 }), abort: vi.fn() });
+const fail = (e: unknown = { status: 500 }) => ({ unwrap: () => Promise.reject(e), abort: vi.fn() });
 const base = { email: 'Ada@Example.com', method: 'password', isLoading: false, isError: false, refetch: vi.fn() };
 const renderIt = () => render(<MemoryRouter><DataPrivacySection /></MemoryRouter>);
 
@@ -68,6 +69,18 @@ describe('DataPrivacySection', () => {
     expect(await screen.findByRole('link', { name: /Download export/ })).toBeInTheDocument();
   });
 
+  it('shows the API message of a failed export, and the connection message when nothing answered', async () => {
+    exportMyData
+      .mockReturnValueOnce(fail({ status: 429, data: { message: 'You can export your data once an hour.' } }))
+      .mockReturnValueOnce(fail({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' }));
+    const user = userEvent.setup();
+    renderIt();
+    await user.click(screen.getByRole('button', { name: 'Export my data' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('You can export your data once an hour.');
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/internet connection/i));
+  });
+
   it('states what AI receives and opens cookie settings', async () => {
     const user = userEvent.setup();
     renderIt();
@@ -109,6 +122,19 @@ describe('DataPrivacySection', () => {
     expect(clearLocal).not.toHaveBeenCalled();
   });
 
+  it('delete failure shows the API message, not a connection hint', async () => {
+    deleteAccount.mockReturnValue(fail({ status: 409, data: { message: 'Cancel your subscription first.' } }));
+    const user = userEvent.setup();
+    renderIt();
+    await user.click(screen.getByRole('button', { name: 'Delete account…' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.type(within(dialog).getByLabelText(/Type .* to confirm/), 'ada@example.com');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete account' }));
+    const alert = await within(dialog).findByRole('alert');
+    expect(alert).toHaveTextContent('Cancel your subscription first.');
+    expect(alert).not.toHaveTextContent(/connection/i);
+  });
+
   it('offers the export from inside the delete dialog', async () => {
     exportMyData.mockReturnValue(ok({ exportVersion: 1, exportedAt: '2026-11-11T00:00:00Z' }));
     const user = userEvent.setup();
@@ -124,6 +150,17 @@ describe('DataPrivacySection', () => {
     renderIt();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
+
+  it('shows the API message of a failed profile load; the connection message only without a response', () => {
+    useProfile.mockReturnValue({ ...base, isError: true, error: { status: 502, data: '<html>Bad Gateway</html>' } });
+    const { unmount } = renderIt();
+    expect(screen.getByRole('alert')).toHaveTextContent('TradeQut is temporarily unavailable.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    unmount();
+    useProfile.mockReturnValue({ ...base, isError: true, error: { status: 'TIMEOUT_ERROR' } });
+    renderIt();
+    expect(screen.getByRole('alert')).toHaveTextContent(/timed out/i);
+  });
 });
 
 describe('helpers', () => {
@@ -138,6 +175,12 @@ describe('helpers', () => {
     expect(formatFileSize(2048)).toBe('2.0 KB');
     expect(formatFileSize(2.1 * 1024 * 1024)).toBe('2.1 MB');
     expect(exportFileName('2026-11-11T10:00:00Z')).toBe('tradequt-export-2026-11-11.json');
-    expect(exportFileName(undefined, new Date('2026-01-02T00:00:00Z'))).toBe('tradequt-export-2026-01-02.json');
+    patchUiState({ timeZone: 'UTC' });
+    try {
+      expect(exportFileName(undefined, new Date('2026-01-02T00:00:00Z'))).toBe('tradequt-export-2026-01-02.json');
+    } finally {
+      localStorage.removeItem('tq.ui');
+      resetUiStateCache();
+    }
   });
 });

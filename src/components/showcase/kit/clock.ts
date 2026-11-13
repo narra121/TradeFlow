@@ -80,7 +80,7 @@ export const clock = {
  * in a scene reads the same on every render.
  */
 export function installVirtualClock(opts: { fps?: number; epoch?: number; onLayout?: () => void } = {}): ClockControl {
-  const w = window as any
+  const w = window as unknown as Host & Record<string, unknown>
   if (w.__stageshow?.clock) return w.__stageshow.clock
   const fps = opts.fps ?? 60
   const RealDate = Date
@@ -118,7 +118,7 @@ export function installVirtualClock(opts: { fps?: number; epoch?: number; onLayo
   const dateNow = () => Math.floor(epoch + (vt - BASE))
   const VDate = function (this: unknown, ...a: unknown[]) {
     if (!new.target) return new RealDate(dateNow()).toString()
-    return a.length ? new (RealDate as any)(...a) : new RealDate(dateNow())
+    return a.length ? new (RealDate as new (...args: unknown[]) => Date)(...a) : new RealDate(dateNow())
   } as unknown as DateConstructor
   Object.assign(VDate, { prototype: RealDate.prototype, now: dateNow, parse: RealDate.parse, UTC: RealDate.UTC })
   w.Date = VDate

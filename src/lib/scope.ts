@@ -63,8 +63,9 @@ export function getDateRangeFromPreset(
   if (preset === 'last3Months') return { from: startOfMonth(subMonths(now, 2)), to: now };
   if (preset === 'last6Months') return { from: startOfMonth(subMonths(now, 5)), to: now };
   if (preset === 'last1Year') return { from: startOfMonth(subMonths(now, 11)), to: now };
+  // Both ends are inclusive: "Last 7 days" is today and the six days before it.
   const days = typeof preset === 'number' ? preset : 30;
-  return { from: subDays(now, days), to: now };
+  return { from: subDays(now, days - 1), to: now };
 }
 
 export interface PersistedScope {

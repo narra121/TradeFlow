@@ -22,9 +22,9 @@ const STATS: { label: string; value: string; hint: string; tone?: 'pos' | 'neg' 
 
 /** What an account commits you to: facts the code proves (CONTRACT §4; CLAIMS-EVIDENCE S14). No counts, ratings or security claims. */
 const FACTS: [string, string][] = [
-  ['Free after the trial', 'Unless you upgrade. No card on file.'],
+  ['Free after the trial', 'Unless you upgrade.'],
   ['Export any time', 'Your trades, from Settings.'],
-  ['Delete any time', 'Your account and your journal.'],
+  ['Delete any time', 'Your account and journal.'],
 ];
 
 /** The bar that closes the stage: the scene's note, its cells, and the control that stops every animation on the page (WCAG 2.2.2). */

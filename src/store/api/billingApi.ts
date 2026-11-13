@@ -4,6 +4,7 @@ import { api } from './baseApi';
 const apiWithTags = api.enhanceEndpoints({ addTagTypes: ['Entitlements'] });
 
 export const billingApi = apiWithTags.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     getEntitlements: builder.query<EntitlementsResponse, void>({
       query: () => '/me/entitlements',

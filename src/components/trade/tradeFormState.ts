@@ -1,4 +1,5 @@
 import type { AssetClass, Trade, TradeDirection, TradeImage, TradeOutcome } from '@/types/trade';
+import { fromZonedInput, toZonedInput } from '@/lib/appTimeZone';
 import { defaultLotSize, inferAssetClass } from '@/lib/tradePreview';
 
 export interface TradeFormState {
@@ -36,29 +37,27 @@ export interface TradeFormState {
   images: TradeImage[];
 }
 
-/** `YYYY-MM-DDTHH:mm` in local time, the value format of <input type="datetime-local">. */
-export function toLocalInput(value: string | Date | null | undefined): string {
-  if (!value) return '';
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-}
+/** `YYYY-MM-DDTHH:mm` on the app time zone's clock (Settings), the value format of <input type="datetime-local">. */
+export const toLocalInput = toZonedInput;
 
 export function fromLocalInput(value: string): Date | null {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
+  return value ? fromZonedInput(value) : null;
 }
 
+/** Plain digits with an optional decimal part, or comma-grouped thousands ("1,234.50"); "1,5" is ambiguous and rejected. */
+const NUMBER_TEXT = /^[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)?(?:\.\d*)?$/;
+
+/** `null` for empty text and for anything that is not a number; the Unicode minus (U+2212) counts as "-". */
 export function parseNum(value: string): number | null {
-  const t = value.trim();
-  if (t === '') return null;
-  const n = Number(t);
+  const t = value.trim().replace(/\u2212/g, '-');
+  if (!NUMBER_TEXT.test(t) || !/\d/.test(t)) return null;
+  const n = Number(t.replace(/,/g, ''));
   return Number.isFinite(n) ? n : null;
 }
 
 const str = (n: number | undefined | null) => (n === undefined || n === null || Number.isNaN(n) || n === 0 ? '' : String(n));
+/** Like `str`, but a stored 0 stays "0": an option can expire worthless. */
+const strKeepZero = (n: number | undefined | null) => (n === undefined || n === null || Number.isNaN(n) ? '' : String(n));
 
 export interface NewFormDefaults {
   accountIds: string[];
@@ -133,7 +132,7 @@ export function formFromTrade(t: Trade): TradeFormState {
     entryPrice: str(t.entryPrice),
     stopLoss: str(t.stopLoss),
     takeProfit: str(t.takeProfit),
-    exitPrice: str(t.exitPrice),
+    exitPrice: strKeepZero(t.exitPrice),
     quantity: str(t.size),
     entryTime: toLocalInput(t.entryDate),
     exitTime: toLocalInput(t.exitDate),
@@ -157,6 +156,32 @@ export function formFromTrade(t: Trade): TradeFormState {
 
 export type FormErrors = Partial<Record<keyof TradeFormState | 'form', string>>;
 
+/** Longest values the API accepts (JournalAWSSetup src/schemas/trade-create.schema.json). */
+export const LIMITS = { notes: 4000, keyLesson: 256, strategy: 64, session: 32, marketCondition: 64, newsEvent: 128, mistake: 64, tag: 24, tags: 10, accountIds: 10, imageDescription: 256 } as const;
+
+/** What the dirty check compares for screenshots: new ones are large data, so only id, timeframe and description count. */
+export const imagesKey = (images: TradeImage[]) => images.map((i) => `${i.id}|${i.timeframe}|${i.description}`).join('\n');
+
+/** API field name (create/update body) -> the form field that shows its error. */
+const SERVER_FIELD: Record<string, keyof TradeFormState> = {
+  symbol: 'symbol', side: 'direction', quantity: 'quantity', entryPrice: 'entryPrice', exitPrice: 'exitPrice', stopLoss: 'stopLoss', takeProfit: 'takeProfit',
+  openDate: 'entryTime', closeDate: 'exitTime', pnl: 'manualPnl', fees: 'fees', contractMultiplier: 'lotSize', setupType: 'strategy', tradingSession: 'session',
+  marketCondition: 'marketCondition', tradeNotes: 'notes', lessons: 'keyLesson', newsEvents: 'newsEvent', mistakes: 'mistakes', tags: 'tags', accountIds: 'accountIds',
+  brokenRuleIds: 'brokenRuleIds', images: 'images', optionType: 'optionType', strike: 'strike', expiry: 'expiry',
+};
+
+/** Field errors of a 400 (`error.fields`: `[{ field, message }]`) placed on the form fields they belong to. */
+export function serverFieldErrors(err: unknown): FormErrors {
+  const fields = (err as { data?: { error?: { fields?: unknown } } } | null)?.data?.error?.fields;
+  const out: FormErrors = {};
+  if (!Array.isArray(fields)) return out;
+  for (const item of fields as { field?: unknown; message?: unknown }[]) {
+    const key = SERVER_FIELD[String(item?.field ?? '').split('.')[0]];
+    if (key && typeof item.message === 'string' && !out[key]) out[key] = item.message;
+  }
+  return out;
+}
+
 export function validateForm(f: TradeFormState, ctx: { hasAccounts: boolean; pnlAvailable: boolean; now?: Date }): FormErrors {
   const e: FormErrors = {};
   if (ctx.hasAccounts && f.accountIds.length === 0) e.accountIds = 'Choose at least one account.';
@@ -166,7 +191,6 @@ export function validateForm(f: TradeFormState, ctx: { hasAccounts: boolean; pnl
   const qty = parseNum(f.quantity);
   if (entry === null || entry <= 0) e.entryPrice = 'Enter a price above 0.';
   if (exit === null || exit < 0) e.exitPrice = 'Enter the exit price.';
-  else if (exit === 0) e.exitPrice = 'Exit price cannot be 0.';
   if (qty === null || qty <= 0) e.quantity = 'Enter a quantity above 0.';
   for (const k of ['stopLoss', 'takeProfit', 'fees'] as const) {
     const v = f[k].trim();
@@ -183,6 +207,20 @@ export function validateForm(f: TradeFormState, ctx: { hasAccounts: boolean; pnl
     if (parseNum(f.strike) === null) e.strike = 'Enter the strike.';
     if (!f.expiry) e.expiry = 'Enter the expiry date.';
   }
-  if (!ctx.pnlAvailable) e.manualPnl = 'Enter the net P&L.';
+  const tooLong = (key: 'notes' | 'keyLesson' | 'strategy' | 'session' | 'marketCondition' | 'newsEvent', label: string) => {
+    if (f[key].length > LIMITS[key]) e[key] = `${label} can have at most ${LIMITS[key]} characters.`;
+  };
+  tooLong('notes', 'Notes');
+  tooLong('keyLesson', 'Key lesson');
+  tooLong('strategy', 'Strategy');
+  tooLong('session', 'Session');
+  tooLong('marketCondition', 'Market condition');
+  tooLong('newsEvent', 'News event');
+  if (f.mistakes.some((m) => m.length > LIMITS.mistake)) e.mistakes = `A mistake can have at most ${LIMITS.mistake} characters.`;
+  if (f.tags.length > LIMITS.tags) e.tags = `A trade can have at most ${LIMITS.tags} tags.`;
+  else if (f.tags.some((t) => t.length > LIMITS.tag)) e.tags = `A tag can have at most ${LIMITS.tag} characters.`;
+  if (f.accountIds.length > LIMITS.accountIds) e.accountIds = `Choose at most ${LIMITS.accountIds} accounts.`;
+  if (f.manualPnl.trim() !== '' && parseNum(f.manualPnl) === null) e.manualPnl = 'Enter a number.';
+  else if (!ctx.pnlAvailable) e.manualPnl = 'Enter the net P&L.';
   return e;
 }

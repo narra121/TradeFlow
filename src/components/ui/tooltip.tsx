@@ -3,7 +3,10 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
 import { cn } from "@/lib/utils";
 
-const TooltipProvider = TooltipPrimitive.Provider;
+/** Tooltips open 400 ms after hover or focus (D.2 `Tooltip`). */
+const TooltipProvider = ({ delayDuration = 400, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) => (
+  <TooltipPrimitive.Provider delayDuration={delayDuration} {...props} />
+);
 
 const Tooltip = TooltipPrimitive.Root;
 
@@ -18,7 +21,7 @@ const TooltipContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-tooltip overflow-hidden rounded-md border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-overlay animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        "z-tooltip max-w-xs rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-overlay popup-motion",
         className,
       )}
       {...props}

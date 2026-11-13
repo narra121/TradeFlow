@@ -1,6 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import React, { lazy, Suspense } from 'react';
 
 // We cannot import ChunkErrorBoundary directly since it's not exported.
 // Re-create the same logic to test in isolation — this keeps the test

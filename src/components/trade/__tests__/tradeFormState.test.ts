@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyForm, formFromTrade, fromLocalInput, parseNum, toLocalInput, validateForm, type TradeFormState } from '../tradeFormState';
+import { emptyForm, formFromTrade, fromLocalInput, imagesKey, LIMITS, parseNum, serverFieldErrors, toLocalInput, validateForm, type TradeFormState } from '../tradeFormState';
 import type { Trade } from '@/types/trade';
 
 const valid = (over: Partial<TradeFormState> = {}): TradeFormState => ({
@@ -23,10 +23,30 @@ describe('validateForm', () => {
     expect(Object.keys(errors).sort()).toEqual(['accountIds', 'entryPrice', 'entryTime', 'exitPrice', 'manualPnl', 'quantity', 'symbol']);
   });
 
-  it('blocks an exit before the entry and a zero or negative exit price', () => {
+  it('blocks an exit before the entry and a negative exit price', () => {
     expect(validateForm(valid({ exitTime: '2026-11-04T14:00' }), { hasAccounts: true, pnlAvailable: true }).exitTime).toMatch(/before/);
     expect(validateForm(valid({ exitPrice: '-1' }), { hasAccounts: true, pnlAvailable: true }).exitPrice).toBeDefined();
-    expect(validateForm(valid({ exitPrice: '0' }), { hasAccounts: true, pnlAvailable: true }).exitPrice).toBeDefined();
+  });
+
+  it('accepts an exit price of 0, as the API does (an option that expired worthless, FE-015)', () => {
+    expect(validateForm(valid({ exitPrice: '0' }), { hasAccounts: true, pnlAvailable: true }).exitPrice).toBeUndefined();
+  });
+
+  it('rejects a manual net P&L that is not a number instead of letting it save as 0 (FE-004)', () => {
+    for (const text of ['$50', 'abc', '-', '1.2.3']) {
+      expect(validateForm(valid({ manualPnl: text }), { hasAccounts: true, pnlAvailable: true }).manualPnl).toBe('Enter a number.');
+    }
+    for (const text of ['1,234.50', '\u221250', '-50', '0']) {
+      expect(validateForm(valid({ manualPnl: text }), { hasAccounts: true, pnlAvailable: true }).manualPnl).toBeUndefined();
+    }
+  });
+
+  it('flags text longer than the API allows before the request (X-011)', () => {
+    const e = validateForm(valid({ notes: 'x'.repeat(LIMITS.notes + 1), keyLesson: 'y'.repeat(LIMITS.keyLesson + 1), tags: Array.from({ length: LIMITS.tags + 1 }, (_, i) => `t${i}`) }), { hasAccounts: true, pnlAvailable: true });
+    expect(e.notes).toMatch(/4000/);
+    expect(e.keyLesson).toMatch(/256/);
+    expect(e.tags).toMatch(/10 tags/);
+    expect(validateForm(valid({ notes: 'x'.repeat(LIMITS.notes) }), { hasAccounts: true, pnlAvailable: true }).notes).toBeUndefined();
   });
 
   it('requires option fields for options and does not require an account when there are none', () => {
@@ -45,6 +65,11 @@ describe('form <-> trade', () => {
     entryDate: '2026-11-04T09:15:00.000Z', exitDate: '2026-11-04T09:31:00.000Z', outcome: 'TP', pnl: 5.8, riskRewardRatio: 0,
     accountId: 'acc-1', mistakes: ['FOMO'], assetClass: 'commodity', contractMultiplier: 100, fees: 1.2,
   } as Trade;
+
+  it('keeps a stored exit price of 0 in the form (FE-015)', () => {
+    expect(formFromTrade({ ...trade, exitPrice: 0 }).exitPrice).toBe('0');
+    expect(formFromTrade({ ...trade, takeProfit: 0 }).takeProfit).toBe('');
+  });
 
   it('keeps the stored P&L as a manual value on edit', () => {
     const f = formFromTrade(trade);
@@ -81,6 +106,27 @@ describe('helpers', () => {
     expect(parseNum(' 1.5 ')).toBe(1.5);
     expect(parseNum('')).toBeNull();
     expect(parseNum('1,5')).toBeNull();
+  });
+
+  it('accepts thousands separators and the Unicode minus, and rejects other text (FE-004)', () => {
+    expect(parseNum('1,234.50')).toBe(1234.5);
+    expect(parseNum('-1,234,567')).toBe(-1234567);
+    expect(parseNum('\u221250')).toBe(-50);
+    expect(parseNum('+5')).toBe(5);
+    expect(parseNum('.5')).toBe(0.5);
+    for (const text of ['$50', '-', '.', '1e5', '0x10', 'Infinity', '12,34', '1.2.3', '50%']) expect(parseNum(text)).toBeNull();
+  });
+
+  it('compares screenshots by id, timeframe and description only (FE-012)', () => {
+    const img = { id: 'a', timeframe: '1H', description: 'x', url: 'data:image/png;base64,AAAA' };
+    expect(imagesKey([img])).toBe(imagesKey([{ ...img, url: 'data:image/png;base64,BBBB' }]));
+    expect(imagesKey([img])).not.toBe(imagesKey([{ ...img, description: 'y' }]));
+  });
+
+  it("puts a 400's field errors on the form fields (X-011)", () => {
+    const err = { status: 400, data: { error: { fields: [{ field: 'tradeNotes', message: 'Notes can have at most 4000 characters' }, { field: 'lessons.0', message: 'Lesson can have at most 256 characters' }, { field: 'unknown', message: 'x' }] } } };
+    expect(serverFieldErrors(err)).toEqual({ notes: 'Notes can have at most 4000 characters', keyLesson: 'Lesson can have at most 256 characters' });
+    expect(serverFieldErrors({ status: 500, data: null })).toEqual({});
   });
 });
 

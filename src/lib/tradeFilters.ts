@@ -1,3 +1,4 @@
+import { accountCurrency } from '@/lib/format';
 import { rMultiple } from '@/lib/pnl';
 import { TRADELOG_KEY } from '@/lib/scope';
 import type { Trade, TradingAccount } from '@/types/trade';
@@ -179,7 +180,7 @@ export function summarise(trades: Trade[], accounts: Map<string, TradingAccount>
       noAccount += 1;
       continue;
     }
-    const cur = acc.currency || 'USD';
+    const cur = accountCurrency(acc);
     const row = map.get(cur) ?? { currency: cur, trades: 0, net: 0 };
     row.trades += 1;
     row.net += t.pnl ?? 0;

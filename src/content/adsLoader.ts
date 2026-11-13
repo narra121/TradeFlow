@@ -5,7 +5,11 @@ import { injectScript } from '@/lib/analytics/gtag';
  * The AdSense script loader for public content pages. It lives under src/content (public-only code) so the app bundle never
  * references ad scripts; the gate `no-app-ads` enforces that.
  */
-export const ADSENSE_CLIENT = 'ca-pub-6988708088431977';
+
+/** The publisher id has one copy: the `google-adsense-account` meta tag in index.html, which Google reads from the static HTML without running scripts. */
+function adsenseClient(): string {
+  return document.querySelector<HTMLMetaElement>('meta[name="google-adsense-account"]')?.content ?? '';
+}
 
 let adsLoaded = false;
 
@@ -17,8 +21,10 @@ export function adsEnabled(): boolean {
 /** Loads AdSense once, only on public content paths, only for real visitors, and only after consent defaults are set. */
 export function loadAdSense(pathname: string): boolean {
   if (adsLoaded || !adsEnabled() || !isAdEligiblePath(pathname) || !isRealVisitor()) return false;
+  const client = adsenseClient();
+  if (!client) return false;
   bootConsent();
-  injectScript(`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`, {
+  injectScript(`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`, {
     crossorigin: 'anonymous',
   });
   adsLoaded = true;

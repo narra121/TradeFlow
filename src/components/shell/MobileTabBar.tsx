@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { CalendarDays, CircleHelp, ExternalLink, LayoutDashboard, ListOrdered, MoreHorizontal, Plus } from 'lucide-react';
+import { CalendarDays, CircleHelp, LayoutDashboard, ListOrdered, MoreHorizontal, Plus } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ContactSupportDialog, FeedbackDialog } from '@/components/help';
 import { ALL_NAV_ITEMS, TAB_ITEMS } from '@/components/shell/navItems';
@@ -90,9 +90,8 @@ export function MobileTabBar({ onAddTrade }: MobileTabBarProps) {
               Help
             </li>
             <li>
-              <a href={guideLink('')} target="_blank" rel="noopener noreferrer" className="flex min-h-12 w-full items-center justify-between gap-3 rounded-md px-2 text-sm hover:bg-muted">
-                <span className="flex items-center gap-3"><CircleHelp className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> Guide</span>
-                <ExternalLink className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <a href={guideLink('')} className="flex min-h-12 w-full items-center gap-3 rounded-md px-2 text-sm hover:bg-muted">
+                <CircleHelp className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> Guide
               </a>
             </li>
             <li>
@@ -106,8 +105,8 @@ export function MobileTabBar({ onAddTrade }: MobileTabBarProps) {
               </button>
             </li>
             <li>
-              <a href="/status" target="_blank" rel="noopener noreferrer" className="flex min-h-12 w-full items-center justify-between gap-3 rounded-md px-2 text-sm hover:bg-muted">
-                System status <ExternalLink className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <a href="/status" className="flex min-h-12 w-full items-center gap-3 rounded-md px-2 text-sm hover:bg-muted">
+                System status
               </a>
             </li>
           </ul>

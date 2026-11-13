@@ -25,7 +25,8 @@ test.describe('Trade Cache Sync', () => {
     // 2. Read sync-keys count from IndexedDB
     const keysBefore = await page.evaluate(() => {
       return new Promise<number>((resolve) => {
-        const token = localStorage.getItem('idToken');
+        const last = Object.keys(localStorage).find((k) => /^CognitoIdentityServiceProvider\.[^.]+\.LastAuthUser$/.test(k));
+        const token = last ? localStorage.getItem(`${last.slice(0, -'LastAuthUser'.length)}${localStorage.getItem(last)}.idToken`) : null;
         if (!token) { resolve(0); return; }
         const sub = JSON.parse(atob(token.split('.')[1])).sub;
         const req = indexedDB.open(`tradequt-cache-${sub}`);
@@ -72,7 +73,8 @@ test.describe('Trade Cache Sync', () => {
     // 4. Check sync-keys after update — should have fewer entries
     const keysAfter = await page.evaluate(() => {
       return new Promise<number>((resolve) => {
-        const token = localStorage.getItem('idToken');
+        const last = Object.keys(localStorage).find((k) => /^CognitoIdentityServiceProvider\.[^.]+\.LastAuthUser$/.test(k));
+        const token = last ? localStorage.getItem(`${last.slice(0, -'LastAuthUser'.length)}${localStorage.getItem(last)}.idToken`) : null;
         if (!token) { resolve(0); return; }
         const sub = JSON.parse(atob(token.split('.')[1])).sub;
         const req = indexedDB.open(`tradequt-cache-${sub}`);
@@ -102,7 +104,8 @@ test.describe('Trade Cache Sync', () => {
 
     await page.evaluate(() => {
       return new Promise<void>((resolve) => {
-        const token = localStorage.getItem('idToken');
+        const last = Object.keys(localStorage).find((k) => /^CognitoIdentityServiceProvider\.[^.]+\.LastAuthUser$/.test(k));
+        const token = last ? localStorage.getItem(`${last.slice(0, -'LastAuthUser'.length)}${localStorage.getItem(last)}.idToken`) : null;
         if (!token) { resolve(); return; }
         const sub = JSON.parse(atob(token.split('.')[1])).sub;
         const req = indexedDB.open(`tradequt-cache-${sub}`);

@@ -1,6 +1,7 @@
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SaveImportedResult } from '@/types/import';
+import { formatCount } from '@/lib/format';
 
 interface ResultRowProps {
   result: SaveImportedResult;
@@ -13,7 +14,7 @@ interface ResultRowProps {
   onRetry: () => void;
 }
 
-const count = (v: number, one: string) => `${v.toLocaleString()} ${v === 1 ? one : `${one}s`}`;
+const count = (v: number, one: string) => `${formatCount(v)} ${v === 1 ? one : `${one}s`}`;
 
 /** Replaces the footer after a save; the grid stays above it. */
 export function ResultRow({ result, accountName, busy, error, onView, onAnother, onUndo, onRetry }: ResultRowProps) {
@@ -25,19 +26,19 @@ export function ResultRow({ result, accountName, busy, error, onView, onAnother,
         <span>
           {failed ? (
             <>
-              {result.created.toLocaleString()} imported · {result.failed.toLocaleString()} failed to send
+              {formatCount(result.created)} imported · {formatCount(result.failed)} failed to send
             </>
           ) : (
             <>
               {count(result.created, 'trade')} imported into {accountName} · 0 failed
-              {result.skipped > 0 && <span className="text-muted-foreground"> · {result.skipped.toLocaleString()} already existed and were skipped</span>}
-              {result.errors > 0 && <span className="text-loss"> · {result.errors.toLocaleString()} rejected by the server</span>}
+              {result.skipped > 0 && <span className="text-muted-foreground"> · {formatCount(result.skipped)} already existed and were skipped</span>}
+              {result.errors > 0 && <span className="text-loss"> · {formatCount(result.errors)} rejected by the server</span>}
             </>
           )}
         </span>
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        {failed && <Button type="button" onClick={onRetry} disabled={busy}>Retry {result.failed.toLocaleString()} failed</Button>}
+        {failed && <Button type="button" onClick={onRetry} disabled={busy}>Retry {formatCount(result.failed)} failed</Button>}
         {result.created > 0 && (
           <Button type="button" variant={failed ? 'outline' : 'default'} onClick={onView} disabled={busy}>
             View imported trades

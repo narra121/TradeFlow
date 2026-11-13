@@ -397,7 +397,7 @@ export function GuidePage() {
               <div className="max-w-3xl space-y-16 pt-6 lg:space-y-20 lg:pt-0">
                 <Content />
 
-                <div className="border-t border-border py-12">
+                <div className="signed-out-only border-t border-border py-12">
                   <h2 className="mb-3 text-2xl font-semibold text-foreground">Ready to start?</h2>
                   <p className="mb-6 text-muted-foreground">Start journaling with the Free plan. No card required.</p>
                   <Button asChild size="lg">

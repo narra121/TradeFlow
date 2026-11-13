@@ -256,16 +256,18 @@
   grid-column: 2;
 }
 
-/* 01 · from the broker file to the month (Forma's assembly section) */
+/* From the broker file to the month (Forma's assembly section). The pinned scroll is 1500 px at any viewport height. */
 .lp-asm {
   position: relative;
-  height: 2400px;
+  height: calc(100vh + 1500px);
+  height: calc(100svh + 1500px);
 }
 .lp-asm__sticky {
   position: sticky;
   top: 56px;
   height: calc(100vh - 56px);
-  min-height: 680px;
+  height: calc(100svh - 56px);
+  min-height: 600px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -279,7 +281,7 @@
 .lp-asm__titles {
   position: relative;
   margin: 18px 0 0;
-  height: 2.2em;
+  height: 1.1em;
   font-size: clamp(36px, 3.6vw, 52px);
   line-height: 1.09;
   font-weight: 500;
@@ -302,8 +304,11 @@
   line-height: 1.75;
   color: hsl(var(--muted-foreground));
 }
-.lp-asm__aside strong {
+.lp-asm__aside strong,
+.lp-asm__aside .lp-asm__more {
   display: block;
+}
+.lp-asm__aside strong {
   font-weight: 500;
   color: hsl(var(--foreground));
 }
@@ -314,20 +319,39 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  margin: 20px 0 0;
+  margin-top: 20px;
   overflow: hidden;
+  container-type: size;
 }
+/* Over the calendar: the trades land in its cells. */
 .lp-asm__scene canvas {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
+/* Sized by the scene's height as well as its width, so the week of 16 Nov (the last with trades) is never cut: the
+   wide calendar is 1000 px wide with that week ending at 444 px, the compact one 358 px with it ending at 300 px. */
 .lp-asm__reveal {
   position: absolute;
-  inset: 4% 8% 0;
-  transform-origin: 50% 0;
-  will-change: transform, opacity;
+  top: 12px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  width: min(100%, calc((100cqh - 12px) * 2.05));
+  margin-inline: auto;
+  transition: opacity 0.4s var(--lp-ease);
+}
+/* Set by the scene once the dots have drawn the outline; without script the calendar simply shows. */
+.lp-asm__reveal[data-on='false'] {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s var(--lp-ease), visibility 0s 0.4s;
+}
+.lp[data-still='true'] .lp-asm__reveal {
+  transition: none;
 }
 .lp-asm__foot {
   display: flex;
@@ -477,10 +501,10 @@
   color: hsl(var(--primary));
 }
 
-/* The story: sticky steps beside the dashboard */
+/* The story: sticky steps beside the dashboard; 1200 px of pinned scroll for the three steps at any viewport height. */
 .lp-story {
   position: relative;
-  height: 2100px;
+  height: calc(100vh + 1200px);
 }
 .lp-story__sticky {
   position: sticky;
@@ -805,6 +829,17 @@
   height: 16px;
 }
 
+/* Short screens (a 768 px laptop): the scene gets the height of the aside's second sentence, which "What did each
+   trade really make?" repeats below. */
+@media (max-height: 820px) and (min-width: 768px) {
+  .lp-asm__top {
+    padding-top: 28px;
+  }
+  .lp-asm__aside .lp-asm__more {
+    display: none;
+  }
+}
+
 /* Tablet and below */
 @media (max-width: 1023px) {
   .lp-hero {
@@ -863,6 +898,12 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 28px;
   }
+  /* Not pinned here, so no scroll opens a step: every step shows its sentence. */
+  .lp-story__step span {
+    max-height: none;
+    margin-top: 10px;
+    opacity: 1;
+  }
   .lp-faq__grid,
   .lp-services__grid,
   .lp-final__grid,
@@ -904,16 +945,36 @@
     padding-top: 65px;
   }
   .lp-asm {
-    height: 2000px;
+    height: calc(100vh + 1100px);
+    height: calc(100svh + 1100px);
+  }
+  .lp-asm__sticky {
+    min-height: 560px;
+  }
+  .lp-asm__top {
+    gap: 0;
+    padding-top: 28px;
   }
   .lp-asm__titles {
-    height: 3.3em;
+    height: 2.2em;
   }
   .lp-asm__title {
     white-space: normal;
   }
+  /* The scene needs the height on a phone; the same sentence is in "What did each trade really make?" below. */
+  .lp-asm__aside .lp-asm__more,
+  .lp-asm__file .lp-asm__more {
+    display: none;
+  }
+  .lp-asm__aside {
+    padding-top: 12px;
+  }
+  .lp-asm__status {
+    margin-top: 10px;
+  }
   .lp-asm__reveal {
-    inset: 4% 0 0;
+    width: 100%;
+    width: min(100%, calc((100cqh - 12px) * 1.19));
   }
   .lp-asm__foot {
     flex-direction: column;
@@ -976,6 +1037,7 @@
 
 .lp-asm__file {
   position: absolute;
+  z-index: 2;
   left: 50%;
   top: 48%;
   padding: 10px 14px;
@@ -989,9 +1051,6 @@
   white-space: nowrap;
   transform: translate(-50%, -50%);
   pointer-events: none;
-}
-.lp[data-still='true'] .lp-asm__file {
-  display: none;
 }
 
 .lp-figcap {

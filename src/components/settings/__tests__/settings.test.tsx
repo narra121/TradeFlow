@@ -9,6 +9,7 @@ const updatePrefs = vi.fn();
 const updateNotifs = vi.fn();
 let saved: Record<string, string[]> | undefined;
 let savedError = false;
+let savedFailure: unknown;
 const writeOptions = vi.fn();
 let trades: Partial<Trade>[] = [];
 let plan: 'free' | 'pro' = 'pro';
@@ -19,7 +20,7 @@ vi.mock('@/store/api/userApi', () => ({
   useUpdateNotificationsMutation: () => [(a: unknown) => ({ unwrap: () => updateNotifs(a) }), { isLoading: false }],
 }));
 vi.mock('@/store/api/savedOptionsApi', () => ({
-  useGetSavedOptionsQuery: () => ({ data: saved, isLoading: false, isError: savedError, refetch: vi.fn() }),
+  useGetSavedOptionsQuery: () => ({ data: saved, isLoading: false, isError: savedError, error: savedFailure, refetch: vi.fn() }),
   useUpdateSavedOptionsMutation: () => [(a: unknown) => ({ unwrap: () => writeOptions(a) }), { isLoading: false }],
 }));
 vi.mock('@/hooks/useScopeTrades', () => ({ useScopeTrades: () => ({ trades, isLoading: false, truncated: false }) }));
@@ -42,6 +43,7 @@ beforeEach(() => {
   profileLoading = false;
   saved = { strategies: ['Breakout', 'Pullback'], sessions: [], marketConditions: [], mistakes: [], newsEvents: [], tags: [], symbols: [], timeframes: [] };
   savedError = false;
+  savedFailure = undefined;
   trades = [];
   plan = 'pro';
   [updatePrefs, updateNotifs, writeOptions].forEach((m) => m.mockReset());
@@ -122,9 +124,17 @@ describe('OptionList', () => {
   });
 
   it('a failed save is an inline alert', async () => {
-    setup({ onAdd: vi.fn().mockRejectedValue(new Error('x')) });
+    setup({ onAdd: vi.fn().mockRejectedValue({ status: 400, data: { message: 'A list can hold at most 50 entries.' } }) });
     await userEvent.type(screen.getByLabelText('Add a strategy'), 'Range fade{Enter}');
-    expect(await screen.findByRole('alert')).toHaveTextContent('Couldn\'t add "Range fade". Try again.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Couldn\'t add "Range fade". A list can hold at most 50 entries.');
+  });
+
+  it('a failure with no HTTP response shows the connection message, and a body-less one says Try again', async () => {
+    setup({ onAdd: vi.fn().mockRejectedValueOnce({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' }).mockRejectedValueOnce({ status: 500 }) });
+    await userEvent.type(screen.getByLabelText('Add a strategy'), 'Range fade{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Couldn't add "Range fade"\. .*internet connection/i);
+    await userEvent.type(screen.getByLabelText('Add a strategy'), 'Fade two{Enter}');
+    await vi.waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Couldn\'t add "Fade two". Try again.'));
   });
 });
 
@@ -158,6 +168,19 @@ describe('OptionsSection', () => {
     expect(writeOptions.mock.calls[1][0].strategies).toEqual(['Breakout', 'Pullback', 'One', 'Two']);
   });
 
+  it('a failed load shows the API message; the connection message only without a response', () => {
+    saved = undefined;
+    savedError = true;
+    savedFailure = { status: 500, data: { message: 'Your options are being restored.' } };
+    const { unmount } = render(<OptionsSection />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Your options are being restored.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    unmount();
+    savedFailure = { status: 'FETCH_ERROR' };
+    render(<OptionsSection />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/Check your internet connection/);
+  });
+
   it('a failed load shows an error panel with no edit control (M40)', () => {
     saved = undefined;
     savedError = true;
@@ -189,11 +212,18 @@ describe('PreferencesSection', () => {
   });
 
   it('a refused save puts the control back and says so inline', async () => {
-    updatePrefs.mockRejectedValue(new Error('no'));
+    updatePrefs.mockRejectedValue({ status: 400, data: { message: 'That palette is not available' } });
+    render(<PreferencesSection />);
+    await userEvent.click(screen.getByRole('radio', { name: 'Blue / orange' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't save. That palette is not available. The value was put back.");
+    expect(screen.getByRole('radio', { name: 'Green / red' })).toBeChecked();
+  });
+
+  it('a refused save with no message from the API keeps the plain sentence', async () => {
+    updatePrefs.mockRejectedValue({ status: 500 });
     render(<PreferencesSection />);
     await userEvent.click(screen.getByRole('radio', { name: 'Blue / orange' }));
     expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't save. The value was put back.");
-    expect(screen.getByRole('radio', { name: 'Green / red' })).toBeChecked();
   });
 
   it('density is a device setting and needs no request', async () => {

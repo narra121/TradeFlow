@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { api } from './baseApi';
-import { refreshToken } from '@/lib/api/tokenRefresh';
+import { getIdToken } from '@/lib/auth/authService';
 import { API_BASE_URL } from '@/lib/api/config';
+import { readApiError, readResponseError } from '@/lib/apiError';
 
 const CACHE_NAME = 'tradequt-images-v1';
 
 // ---------------------------------------------------------------------------
 // LRU Cache — bounded in-memory cache with automatic eviction
 // Uses Map insertion-order semantics: delete + re-insert moves to "newest".
-// On eviction the blob object URL is revoked to free browser memory.
+// Eviction does not revoke the object URL: RTK may still hold it (see `onCacheEntryAdded` below).
 // ---------------------------------------------------------------------------
 class LRUCache {
   private cache: Map<string, string>;
@@ -35,11 +36,7 @@ class LRUCache {
     } else if (this.cache.size >= this.maxSize) {
       // Evict the least-recently-used entry (first in iteration order)
       const firstEntry = this.cache.entries().next();
-      if (!firstEntry.done) {
-        const [evictedKey, evictedUrl] = firstEntry.value;
-        URL.revokeObjectURL(evictedUrl);
-        this.cache.delete(evictedKey);
-      }
+      if (!firstEntry.done) this.cache.delete(firstEntry.value[0]);
     }
     this.cache.set(key, value);
   }
@@ -67,7 +64,7 @@ const MAX_MEMORY_CACHE_SIZE = 200;
 // ---------------------------------------------------------------------------
 // Layer 1 — In-memory LRU cache (instant, per-session)
 // Stores object URLs created from blobs. Fastest possible lookup.
-// Bounded to MAX_MEMORY_CACHE_SIZE entries; evicts LRU and revokes blob URLs.
+// Bounded to MAX_MEMORY_CACHE_SIZE entries; evicts LRU.
 // ---------------------------------------------------------------------------
 const memoryCache = new LRUCache(MAX_MEMORY_CACHE_SIZE);
 
@@ -116,6 +113,7 @@ const inflightRequests = new Map<string, Promise<string>>();
 // RTK Query endpoint
 // ---------------------------------------------------------------------------
 export const imageApi = api.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     getImage: builder.query<string, string>({
       queryFn: async (imageId, queryApi) => {
@@ -146,17 +144,26 @@ export const imageApi = api.injectEndpoints({
             inflightRequests.delete(imageId);
           }
         } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error: error instanceof Error ? error.message : 'Failed to fetch image',
-            },
-          };
+          const info = readApiError(error, 'Failed to fetch image');
+          const noResponse = info.kind === 'network' || info.kind === 'timeout';
+          return { error: noResponse ? { status: 'FETCH_ERROR' as const, error: info.message } : { status: 'CUSTOM_ERROR' as const, error: info.message, data: info.message } };
         }
       },
       // Keep unsubscribed entries for 1 hour; the Browser Cache API still
       // provides persistence across sessions for longer-term caching.
       keepUnusedDataFor: 3600,
+      // RTK serves the cached URL (and never re-runs `queryFn`) until it drops the entry, so the URL is revoked then.
+      async onCacheEntryAdded(imageId, { cacheDataLoaded, cacheEntryRemoved }) {
+        let url: string;
+        try {
+          url = (await cacheDataLoaded).data;
+        } catch {
+          return; // the request failed: there is no URL
+        }
+        await cacheEntryRemoved;
+        URL.revokeObjectURL(url);
+        if (memoryCache.get(imageId) === url) memoryCache.delete(imageId);
+      },
     }),
   }),
 });
@@ -174,7 +181,7 @@ async function fetchImage(imageId: string, queryApi: any): Promise<string> {
   const url = `${baseUrl}/images/${cleanImageId}`;
 
   // Try fetching with current token, refresh and retry once on 401
-  let token = localStorage.getItem('idToken');
+  const token = await getIdToken();
   if (!token) throw new Error('No authentication token available');
 
   let response = await fetch(url, {
@@ -184,20 +191,24 @@ async function fetchImage(imageId: string, queryApi: any): Promise<string> {
   if (response.status === 401) {
     // Token expired — attempt refresh and retry
     try {
-      const newToken = await refreshToken();
-      token = newToken;
-      response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const renewed = await getIdToken({ forceRefresh: true });
+      if (renewed) {
+        response = await fetch(url, {
+          headers: { Authorization: `Bearer ${renewed}` },
+        });
+      }
     } catch {
       // Refresh failed — fall through to the error handling below
     }
   }
 
+  // The same rule as baseApi and chatStream: one renewal, then a 401 that remains sends the app to login.
+  if (response.status === 401) window.dispatchEvent(new CustomEvent('unauthorized'));
+
   if (!response.ok) {
-    if (response.status === 404) throw new Error('Image not found');
-    if (response.status === 401) throw new Error('Unauthorized - please log in again');
-    throw new Error(`Failed to fetch image: ${response.statusText}`);
+    const fallback =
+      response.status === 404 ? 'Image not found' : response.status === 401 ? 'Unauthorized - please log in again' : `Failed to fetch image: ${response.statusText}`;
+    throw new Error((await readResponseError(response, fallback)).message);
   }
 
   const blob = await response.blob();

@@ -60,6 +60,7 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
 
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState<string>(ent.currency);
+  const currencyChosen = useRef(false);
   const [balance, setBalance] = useState('');
   const [errors, setErrors] = useState<{ name?: string; balance?: string; form?: string }>({});
   const [announce, setAnnounce] = useState('');
@@ -73,7 +74,10 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
 
   const step = Math.min(3, gs.done + 1);
   usePageChrome({ statement: `Set up your journal · step ${step} of 3` });
-  useEffect(() => setCurrency(ent.currency), [ent.currency]);
+  // The billing currency is only a default: it must not replace what the user picked once entitlements resolve.
+  useEffect(() => {
+    if (!currencyChosen.current) setCurrency(ent.currency);
+  }, [ent.currency]);
 
   // Signup stores the email's local part as the name until the user says otherwise.
   const needsName = !nameSaved && !profile.isLoading && !!profile.email && (!profile.hasName || profile.name === fallbackName(profile.email));
@@ -100,7 +104,7 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
       if (heldFile) return handOff(heldFile, account.id);
       window.setTimeout(() => dropZone.current?.focus(), 0);
     } catch (err) {
-      setErrors({ form: readApiError(err, "Couldn't create the account. Check your connection and try again.").message });
+      setErrors({ form: readApiError(err, "Couldn't create the account.").message });
     }
   };
 
@@ -157,7 +161,7 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
                 </Field>
                 <Field label="Currency">
                   {(a) => (
-                    <Select value={currency} onValueChange={setCurrency}>
+                    <Select value={currency} onValueChange={(c) => { currencyChosen.current = true; setCurrency(c); }}>
                       <SelectTrigger id={a.id} className="[@media(pointer:coarse)]:h-11"><SelectValue /></SelectTrigger>
                       <SelectContent>{currencyOptions(currency).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                     </Select>

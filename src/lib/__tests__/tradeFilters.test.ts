@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_FILTERS, applyFilters, chunk, distinctValues, hasActiveFilters, loadListState, saveListState, sortTrades, summarise } from '../tradeFilters';
+import { EMPTY_FILTERS, applyFilters, chunk, distinctValues, hasActiveFilters, loadListState, realisedR, saveListState, sortTrades, summarise } from '../tradeFilters';
+import { computePreview } from '../tradePreview';
+import { computePnl } from '../pnl';
 import type { Trade, TradingAccount } from '@/types/trade';
 
 const acc = (id: string, currency: string, name = id) => ({ id, currency, name }) as TradingAccount;
@@ -82,5 +84,21 @@ describe('helpers', () => {
     expect(loadListState()).toBeNull();
     saveListState({ ...EMPTY_FILTERS, q: 'eur', page: 3 });
     expect(loadListState()).toMatchObject({ q: 'eur', page: 3 });
+  });
+});
+
+describe('R multiple: one definition (net P&L over initial risk)', () => {
+  // The pinned vector of lib/pnl: short, 4 units, entry 50, exit 53, stop 52, fees 0.4 -> net -12.4, R -1.55.
+  const short = { entryPrice: 50, exitPrice: 53, stopLoss: 52, size: 4, direction: 'SHORT' as const, pnl: -12.4 };
+
+  it('the trade list, the pnl module and the form preview give the same R when the lot size is known', () => {
+    const fromList = realisedR(t('s', { ...short, contractMultiplier: 1 }));
+    const fromPnl = computePnl({ side: 'SELL', quantity: 4, entryPrice: 50, exitPrice: 53, stopLoss: 52, fees: 0.4 }).rMultiple;
+    const fromPreview = computePreview({ direction: 'SHORT', assetClass: 'stock', symbol: 'ABC', entryPrice: 50, exitPrice: 53, stopLoss: 52, takeProfit: null, quantity: 4, lotSize: null, fees: 0.4, accountCurrency: 'USD', entryTime: null, exitTime: null }).realisedR;
+    expect([fromList, fromPnl, fromPreview]).toEqual([-1.55, -1.55, -1.55]);
+  });
+
+  it('a trade saved without a lot size falls back to the price move, which cannot include fees (-1.5)', () => {
+    expect(realisedR(t('s', short))).toBe(-1.5);
   });
 });

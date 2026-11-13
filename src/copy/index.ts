@@ -28,11 +28,13 @@ export const copy = {
   },
 
   trades: {
-    loadError: { title: "Couldn't load trades", description: 'Your trades are safe. Check your connection and try again.' },
+    loadError: { title: "Couldn't load trades", description: 'Your trades are safe.' },
     emptyScope: { title: 'No trades in this period.', description: 'The account and period selected above have no trades.', action: 'Show all accounts and dates' },
     emptyMatch: { title: 'No trades match these filters.', action: 'Clear filters' },
     ceiling: 'Showing the newest 5,000 trades. Narrow the period to see older ones.',
     outsideScope: 'This trade is outside the current account or period.',
+    // What the duplicate copies: tradeFormState.ts (duplicate source).
+    duplicate: { label: 'New trade from this one', hint: 'Same account, symbol, size, stop and target' },
   },
 
   frame: {

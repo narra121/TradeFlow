@@ -5,7 +5,8 @@ import { Money } from '@/components/ui/money';
 import { Panel } from '@/components/ui/panel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useScopeTrades } from '@/hooks/useScopeTrades';
-import { buildMonth, gridRange, monthKey, tintStep, type DayCell } from '@/lib/calendar';
+import { buildMonth, gridRange, monthKey, tintClass, tintStep, type DayCell } from '@/lib/calendar';
+import { readApiError } from '@/lib/apiError';
 import { formatCompactMoney, formatMoney, parseLocalDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TradingAccount } from '@/types/trade';
@@ -19,16 +20,6 @@ interface MonthHeatProps {
 
 const DAY_HEAD = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
-const TINT = {
-  profit: ['bg-[hsl(var(--tint-profit-1))]', 'bg-[hsl(var(--tint-profit-2))]', 'bg-[hsl(var(--tint-profit-3))]'],
-  loss: ['bg-[hsl(var(--tint-loss-1))]', 'bg-[hsl(var(--tint-loss-2))]', 'bg-[hsl(var(--tint-loss-3))]'],
-} as const;
-
-function tintClass(net: number, step: 0 | 1 | 2 | 3): string {
-  if (step === 0) return 'bg-muted/40';
-  return TINT[net >= 0 ? 'profit' : 'loss'][step - 1];
-}
-
 function cellName(day: DayCell, currency: string | undefined): string {
   const date = format(day.date, 'EEEE d MMMM');
   if (day.trades.length === 0) return `${date}, no trades`;
@@ -39,7 +30,7 @@ function cellName(day: DayCell, currency: string | undefined): string {
 /** The month at a glance: a day cell per day, tinted by net P&L, each a link to that day in Calendar (F-130). */
 export function MonthHeat({ accountId, accounts, anchor }: MonthHeatProps) {
   const month = useMemo(() => startOfMonth(anchor), [anchor]);
-  const { trades, isLoading, isError } = useScopeTrades({ accountId, ...gridRange(month) });
+  const { trades, isLoading, isError, error } = useScopeTrades({ accountId, ...gridRange(month) });
   const model = useMemo(() => buildMonth(trades, month, accounts), [trades, month, accounts]);
   const maxAbs = useMemo(() => {
     const m = new Map<string, number>();
@@ -57,7 +48,7 @@ export function MonthHeat({ accountId, accounts, anchor }: MonthHeatProps) {
       }
     >
       {isError ? (
-        <p className="text-sm text-muted-foreground">Could not load this month.</p>
+        <p className="text-sm text-muted-foreground">Could not load this month. {readApiError(error, '').message}</p>
       ) : isLoading ? (
         <Skeleton className="h-28" aria-busy="true" />
       ) : (
@@ -71,7 +62,7 @@ export function MonthHeat({ accountId, accounts, anchor }: MonthHeatProps) {
               const single = day.byCurrency.length === 1 ? day.byCurrency[0] : undefined;
               const net = single?.net ?? 0;
               const step = single ? tintStep(net, maxAbs.get(single.currency) ?? 0) : day.trades.length ? 1 : 0;
-              const compact = day.byCurrency.length === 1 ? formatCompactMoney(net) : String(day.trades.length);
+              const compact = day.byCurrency.length === 1 ? formatCompactMoney(net, { currency: single?.currency, symbol: false }) : String(day.trades.length);
               return (
                 <li key={day.key}>
                   <Link

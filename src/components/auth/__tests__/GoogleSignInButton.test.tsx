@@ -16,30 +16,35 @@ vi.mock('@/store/api/authApi', () => {
         signup: { matchFulfilled: createMatcher('authApi/signup/fulfilled') },
         login: { matchFulfilled: createMatcher('authApi/login/fulfilled') },
         logout: { matchFulfilled: createMatcher('authApi/logout/fulfilled') },
+        logoutEverywhere: { matchFulfilled: createMatcher('authApi/logoutEverywhere/fulfilled') },
       },
     },
   };
 });
 
-describe('GoogleSignInButton + useGoogleSignIn', () => {
-  const originalLocation = window.location;
+// Amplify does the redirect; the hook only starts it
+const svc = vi.hoisted(() => ({ startGoogleSignIn: vi.fn() }));
+vi.mock('@/lib/auth/authService', () => svc);
 
+describe('GoogleSignInButton + useGoogleSignIn', () => {
   beforeEach(() => {
-    sessionStorage.clear();
-    Object.defineProperty(window, 'location', { value: { ...originalLocation, href: '', origin: 'https://tradequt.com' }, writable: true, configurable: true });
+    svc.startGoogleSignIn.mockReset();
+    svc.startGoogleSignIn.mockReturnValue(new Promise(() => {}));
   });
 
   afterEach(() => {
-    Object.defineProperty(window, 'location', { value: originalLocation, writable: true, configurable: true });
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
 
+  function stubConfigured() {
+    vi.stubEnv('VITE_COGNITO_USER_POOL_ID', 'us-east-1_Pool');
+    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
+    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
+  }
+
   async function renderHost(opts: { configured: boolean; from?: string | null; onError?: () => void; label?: string }) {
-    if (opts.configured) {
-      vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
-      vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
-    }
+    if (opts.configured) stubConfigured();
     vi.resetModules();
     const { GoogleSignInButton } = await import('../GoogleSignInButton');
     const { useGoogleSignIn } = await import('../useGoogleSignIn');
@@ -67,42 +72,31 @@ describe('GoogleSignInButton + useGoogleSignIn', () => {
     expect(screen.getByRole('button', { name: 'Try Google again' })).toBeInTheDocument();
   });
 
-  it('constructs the Cognito authorize URL with state and PKCE on click', async () => {
+  it('starts Amplify Google sign-in on click, with no destination by default', async () => {
     await renderHost({ configured: true });
-
     await userEvent.click(screen.getByRole('button', { name: /continue with google/i }));
-
-    await vi.waitFor(() => expect(window.location.href).toContain('oauth2/authorize'));
-    const url = new URL(window.location.href);
-    expect(url.origin + url.pathname).toBe('https://auth.test.com/oauth2/authorize');
-    expect(url.searchParams.get('client_id')).toBe('test-client-id');
-    expect(url.searchParams.get('redirect_uri')).toBe('https://tradequt.com/auth/callback');
-    expect(url.searchParams.get('identity_provider')).toBe('Google');
-    expect(url.searchParams.get('scope')).toBe('openid email profile');
-    expect(url.searchParams.get('code_challenge_method')).toBe('S256');
-    expect(url.searchParams.get('code_challenge')).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    const state = url.searchParams.get('state');
-    expect(state).toBeTruthy();
-    expect(JSON.parse(sessionStorage.getItem('tq.oauth') ?? '{}').state).toBe(state);
+    expect(svc.startGoogleSignIn).toHaveBeenCalledTimes(1);
+    expect(svc.startGoogleSignIn).toHaveBeenCalledWith(null);
   });
 
-  it('stores the destination the user was heading for next to the state', async () => {
+  it('passes on the destination the user was heading for', async () => {
     await renderHost({ configured: true, from: '/app/trades?trade=t1' });
     await userEvent.click(screen.getByRole('button', { name: /continue with google/i }));
-    await vi.waitFor(() => expect(window.location.href).toContain('oauth2/authorize'));
-    expect(JSON.parse(sessionStorage.getItem('tq.oauth') ?? '{}').from).toBe('/app/trades?trade=t1');
+    expect(svc.startGoogleSignIn).toHaveBeenCalledWith('/app/trades?trade=t1');
   });
 
-  it('reads Opening Google… and is aria-disabled (still focusable) once clicked', async () => {
+  it('reads Opening Google… and is aria-disabled (still focusable) once clicked, and a second click starts nothing', async () => {
     await renderHost({ configured: true });
     const button = screen.getByRole('button', { name: /continue with google/i });
 
+    await userEvent.click(button);
     await userEvent.click(button);
 
     expect(screen.getByText('Opening Google…')).toBeInTheDocument();
     expect(screen.queryByText('Continue with Google')).not.toBeInTheDocument();
     expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button).not.toBeDisabled();
+    expect(svc.startGoogleSignIn).toHaveBeenCalledTimes(1);
   });
 
   it('shows the spinner in place of the Google mark while opening', async () => {
@@ -115,22 +109,12 @@ describe('GoogleSignInButton + useGoogleSignIn', () => {
 
   it('calls onError and becomes usable again when the start fails', async () => {
     const onError = vi.fn();
-    vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
-    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
-    vi.resetModules();
-    vi.doMock('@/lib/oauth', () => ({ startOAuth: () => Promise.reject(new Error('no crypto')) }));
-    const { GoogleSignInButton } = await import('../GoogleSignInButton');
-    const { useGoogleSignIn } = await import('../useGoogleSignIn');
-    const { render } = await import('@/test/test-utils');
-    function Host() {
-      return <GoogleSignInButton google={useGoogleSignIn(null, onError)} />;
-    }
-    render(<Host />);
+    svc.startGoogleSignIn.mockRejectedValue(new Error('no config'));
+    await renderHost({ configured: true, onError });
 
     await userEvent.click(screen.getByRole('button', { name: /continue with google/i }));
 
     await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
     expect(screen.getByRole('button', { name: /continue with google/i })).not.toHaveAttribute('aria-disabled');
-    vi.doUnmock('@/lib/oauth');
   });
 });

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAccounts } from '@/hooks/useAccounts';
 import { formatMoney } from '@/lib/format';
+import { popupOption } from '@/components/ui/popup';
 import { cn } from '@/lib/utils';
 import type { TradingAccount } from '@/types/trade';
 
@@ -20,7 +21,10 @@ export function AccountSwitcher({ className }: { className?: string }) {
   const [query, setQuery] = useState('');
   const [showOther, setShowOther] = useState(false);
 
-  const active = useMemo(() => accounts.filter((a) => a.status === 'active'), [accounts]);
+  const active = useMemo(() => {
+    const rows = accounts.filter((a) => a.status === 'active');
+    return [...rows.filter((a) => a.id === selectedAccountId), ...rows.filter((a) => a.id !== selectedAccountId)];
+  }, [accounts, selectedAccountId]);
   const other = useMemo(() => accounts.filter((a) => a.status !== 'active'), [accounts]);
   const q = query.trim().toLowerCase();
   const match = (a: TradingAccount) => !q || a.name.toLowerCase().includes(q) || a.broker?.toLowerCase().includes(q);
@@ -40,7 +44,7 @@ export function AccountSwitcher({ className }: { className?: string }) {
         type="button"
         onClick={() => choose(id)}
         aria-current={selectedAccountId === id || (id === null && !selectedAccountId) ? 'true' : undefined}
-        className="flex min-h-9 w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-muted [@media(pointer:coarse)]:min-h-11"
+        className={cn(popupOption, 'gap-2')}
       >
         <span className="min-w-0 flex-1">
           <span className="block truncate">{name}</span>
@@ -61,25 +65,27 @@ export function AccountSwitcher({ className }: { className?: string }) {
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-2">
+      <PopoverContent align="end" aria-label="Switch account" className="w-80 p-2">
         {accounts.length > 7 && (
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search accounts…" aria-label="Search accounts" className="mb-2" />
         )}
-        <ul aria-label="Accounts">
-          {!q && row(null, 'All accounts', currencies.length > 1 ? `${currencies.join(' + ')} — money is shown per currency` : currencies[0] ?? '')}
-          {active.filter(match).map((a) => row(a.id, a.name, `${a.broker || 'No broker'} · ${a.currency || 'USD'}`, formatMoney(a.balance, a.currency)))}
-        </ul>
-        {other.length > 0 && (
-          <div className="mt-1 border-t border-border pt-1">
-            <button type="button" className="flex h-8 w-full items-center justify-between px-2 text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => setShowOther((v) => !v)} aria-expanded={showOther}>
-              Other ({other.length})
-              <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', showOther && 'rotate-180')} aria-hidden="true" />
-            </button>
-            {showOther && <ul aria-label="Other accounts">{other.filter(match).map((a) => row(a.id, a.name, `${a.status} · ${a.currency || 'USD'}`))}</ul>}
-          </div>
-        )}
+        <div className="max-h-[min(20rem,calc(var(--radix-popover-content-available-height,100vh)-7rem))] overflow-y-auto overscroll-contain">
+          <ul aria-label="Accounts">
+            {!q && row(null, 'All accounts', currencies.length > 1 ? `${currencies.join(' + ')} — money is shown per currency` : currencies[0] ?? '')}
+            {active.filter(match).map((a) => row(a.id, a.name, `${a.broker || 'No broker'} · ${a.currency || 'USD'}`, formatMoney(a.balance, a.currency)))}
+          </ul>
+          {other.length > 0 && (
+            <div className="mt-1 border-t border-border pt-1">
+              <button type="button" className="flex h-8 w-full items-center justify-between px-2 text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => setShowOther((v) => !v)} aria-expanded={showOther}>
+                Other ({other.length})
+                <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', showOther && 'rotate-180')} aria-hidden="true" />
+              </button>
+              {showOther && <ul aria-label="Other accounts">{other.filter(match).map((a) => row(a.id, a.name, `${a.status} · ${a.currency || 'USD'}`))}</ul>}
+            </div>
+          )}
+        </div>
         <div className="mt-1 border-t border-border pt-1">
-          <Link to="/app/accounts" onClick={() => setOpen(false)} className="flex h-9 items-center rounded px-2 text-sm text-primary hover:bg-muted">
+          <Link to="/app/accounts" onClick={() => setOpen(false)} className={cn(popupOption, 'text-primary')}>
             Manage accounts →
           </Link>
         </div>

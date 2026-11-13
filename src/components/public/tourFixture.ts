@@ -23,9 +23,6 @@ export const SAMPLE_DAYS: SampleDay[] = [
   { day: 16, pnl: 61.2, trades: 3 },
 ];
 
-/** Winning trades per day, aligned with SAMPLE_DAYS (18 of 29). Shared with the auth pane (DESIGN-SHARED S8a). */
-export const SAMPLE_WINS: number[] = [2, 0, 3, 2, 1, 3, 1, 2, 1, 0, 3];
-
 /** The days whose trades broke a rule (every trade that day). */
 export const SAMPLE_RULE_BREAK_DAYS: number[] = [3, 10];
 
@@ -48,6 +45,48 @@ export const SAMPLE_RECENT: SampleRecentTrade[] = [
   { day: 13, time: '10:20', symbol: 'USDJPY', direction: 'Long', pnl: -8, r: -0.2 },
   { day: 12, time: '11:48', symbol: 'EURUSD', direction: 'Long', pnl: 18.5, r: 0.5 },
 ];
+
+export interface SampleTrade {
+  day: number;
+  symbol: string;
+  pnl: number;
+}
+
+/** Every trade of the month, oldest first: each day's rows sum to its SAMPLE_DAYS entry, and the last six are SAMPLE_RECENT. */
+export const SAMPLE_TRADES: SampleTrade[] = [
+  { day: 2, symbol: 'EURUSD', pnl: 62 },
+  { day: 2, symbol: 'GBPUSD', pnl: -18 },
+  { day: 2, symbol: 'XAUUSD', pnl: 41.5 },
+  { day: 3, symbol: 'USDJPY', pnl: -17.5 },
+  { day: 3, symbol: 'GBPUSD', pnl: -24.5 },
+  { day: 4, symbol: 'EURUSD', pnl: 54 },
+  { day: 4, symbol: 'XAUUSD', pnl: 72.25 },
+  { day: 4, symbol: 'GBPUSD', pnl: -25 },
+  { day: 4, symbol: 'USDJPY', pnl: 19 },
+  { day: 5, symbol: 'EURUSD', pnl: 38 },
+  { day: 5, symbol: 'AUDUSD', pnl: 26 },
+  { day: 6, symbol: 'XAUUSD', pnl: 22.5 },
+  { day: 6, symbol: 'GBPUSD', pnl: -30 },
+  { day: 6, symbol: 'EURUSD', pnl: -24 },
+  { day: 9, symbol: 'XAUUSD', pnl: 82 },
+  { day: 9, symbol: 'EURUSD', pnl: 36 },
+  { day: 9, symbol: 'USDJPY', pnl: 22 },
+  { day: 10, symbol: 'GBPUSD', pnl: -41 },
+  { day: 10, symbol: 'EURUSD', pnl: -33.75 },
+  { day: 10, symbol: 'USDJPY', pnl: 18 },
+  { day: 10, symbol: 'XAUUSD', pnl: -19.5 },
+  { day: 11, symbol: 'EURUSD', pnl: 31.8 },
+  { day: 11, symbol: 'AUDUSD', pnl: 21 },
+  { day: 12, symbol: 'EURUSD', pnl: 18.5 },
+  { day: 13, symbol: 'USDJPY', pnl: -8 },
+  { day: 13, symbol: 'EURUSD', pnl: -14 },
+  { day: 16, symbol: 'XAUUSD', pnl: 15 },
+  { day: 16, symbol: 'GBPUSD', pnl: -21.8 },
+  { day: 16, symbol: 'EURUSD', pnl: 68 },
+];
+
+/** Winning trades per day, aligned with SAMPLE_DAYS and counted from SAMPLE_TRADES. Shared with the auth pane (DESIGN-SHARED S8a). */
+export const SAMPLE_WINS: number[] = SAMPLE_DAYS.map((d) => SAMPLE_TRADES.filter((t) => t.day === d.day && t.pnl > 0).length);
 
 export const SAMPLE_TRADE = {
   symbol: 'EURUSD',

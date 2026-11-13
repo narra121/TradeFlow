@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Money } from '@/components/ui/money';
 import { DirectionChip } from '@/components/ui/chips';
-import { formatDateTime, formatPrice, formatQuantity } from '@/lib/format';
+import { formatCount, formatDateTime, formatPrice, formatQuantity } from '@/lib/format';
 import { PAGE_SIZE, STATUS_LABEL } from '@/lib/import/labels';
-import { rowStatus, validateTrade, type EditableField, type ReviewRow, type RowErrors, type RowStatus } from '@/lib/import/rows';
+import { fromZonedInput, toZonedInput } from '@/lib/appTimeZone';
+import { parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow, type RowErrors, type RowStatus } from '@/lib/import/rows';
 import { cn } from '@/lib/utils';
 
 const FIELD_LABEL: Record<EditableField, string> = {
@@ -44,17 +45,11 @@ const COLS: Col[] = [
   { id: 'pnl', header: 'Net P&L', field: 'pnl', align: 'right', width: 'w-28' },
 ];
 
-const toLocalInput = (iso: string) => {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-};
-const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : '');
+const fromLocalInput = (v: string) => fromZonedInput(v)?.toISOString() ?? '';
 
 function rawValue(row: ReviewRow, field: EditableField): string {
   const t = row.trade;
-  if (field === 'openDate' || field === 'closeDate') return toLocalInput(t[field]);
+  if (field === 'openDate' || field === 'closeDate') return toZonedInput(t[field]);
   return String(t[field] ?? '');
 }
 
@@ -63,8 +58,7 @@ function parseInput(field: EditableField, raw: string): string | number {
   if (field === 'symbol') return raw.trim().toUpperCase();
   if (field === 'side') return raw;
   if (field === 'openDate' || field === 'closeDate') return fromLocalInput(raw);
-  const n = Number(raw.replace(/,/g, ''));
-  return raw.trim() === '' ? Number.NaN : n;
+  return parseNumberCell(raw);
 }
 
 interface ReviewGridProps {
@@ -303,7 +297,7 @@ export function ReviewGrid({
       {pages > 1 && (
         <nav aria-label="Review pages" className="flex items-center justify-between gap-2 py-2 text-sm text-muted-foreground">
           <span className="font-mono text-xs tabular-nums">
-            {(start + 1).toLocaleString()}–{Math.min(total, start + PAGE_SIZE).toLocaleString()} of {total.toLocaleString()}
+            {formatCount(start + 1)}–{formatCount(Math.min(total, start + PAGE_SIZE))} of {formatCount(total)}
           </span>
           <span className="flex items-center gap-1">
             <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(page - 1)}>

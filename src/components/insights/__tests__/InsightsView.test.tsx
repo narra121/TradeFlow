@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -16,6 +16,9 @@ const openTrade = vi.fn();
 let insights: Insight[] = [];
 let usage = { used: 4, limit: 30 as number | null };
 let mobile = false;
+let listFailure: unknown;
+let nextCursor: string | null = null;
+const loadPage = vi.fn();
 let accountsState: { accounts: { id: string; name: string; currency: string; status?: string }[]; selectedAccountId: string | null } = { accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD' }], selectedAccountId: 'a1' };
 const setSelectedAccountId = vi.fn();
 
@@ -27,7 +30,8 @@ vi.mock('@/hooks/useEntitlements', () => ({
   useEntitlements: () => ({ usage: [{ feature: 'ai_insight', ...usage }], periodResetsAt: '2026-12-01T00:00:00.000Z' }),
 }));
 vi.mock('@/store/api/insightsApi', () => ({
-  useListInsightsQuery: () => ({ data: { insights }, isLoading: false, isError: false, refetch: vi.fn() }),
+  useListInsightsQuery: () => ({ data: { insights, nextCursor }, isLoading: false, isError: !!listFailure, error: listFailure, refetch: vi.fn() }),
+  useLazyListInsightsQuery: () => [loadPage, { isFetching: false }],
   useGenerateInsightMutation: () => [generate, { isLoading: false }],
 }));
 vi.mock('@/lib/analytics', () => ({ trackAiInsightGenerated: vi.fn() }));
@@ -78,10 +82,13 @@ const renderView = (route = '/app/insights') => {
 
 beforeEach(() => {
   generate.mockReset();
+  loadPage.mockReset();
+  nextCursor = null;
   openTrade.mockReset();
   insights = [insight()];
   usage = { used: 4, limit: 30 };
   mobile = false;
+  listFailure = undefined;
   accountsState = { accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD' }], selectedAccountId: 'a1' };
   setSelectedAccountId.mockReset();
 });
@@ -97,10 +104,10 @@ describe('InsightsView report', () => {
     expect(screen.getByText(/How this is calculated/)).toBeInTheDocument();
   });
 
-  it('View n trades opens the first cited trade; Make this a rule is offered on leaks only and goes to Goals with the wording', async () => {
+  it('View n trades opens the first cited trade with the whole cited list to step through; Make this a rule is offered on leaks only and goes to Goals with the wording', async () => {
     renderView();
     await userEvent.click(screen.getByRole('button', { name: 'View 3 trades' }));
-    expect(openTrade).toHaveBeenCalledWith('t3');
+    expect(openTrade).toHaveBeenCalledWith('t3', { ids: ['t3', 't4', 't5'] });
     expect(screen.getAllByRole('button', { name: 'Make this a rule' })).toHaveLength(1);
     await userEvent.click(screen.getByRole('button', { name: 'Make this a rule' }));
     expect(screen.getByTestId('where')).toHaveTextContent('/app/goals?addRule=Avoid%20this%3A%20trades%20after%2020%3A00%20lose');
@@ -117,6 +124,37 @@ describe('InsightsView report', () => {
     const nav = screen.getByRole('navigation', { name: 'Reports' });
     expect(nav).toHaveTextContent('September 2026');
     expect(nav).toHaveTextContent('All accounts · 41 trades');
+  });
+
+  it('a report built from a truncated trade load says it covers the oldest trades only', () => {
+    insights = [insight({ truncated: true, tradeCount: 5000 })];
+    renderView();
+    expect(screen.getByText(/Based on the oldest 5000 trades of the period/)).toBeInTheDocument();
+  });
+
+  it('a complete report carries no such note', () => {
+    renderView();
+    expect(screen.queryByText(/Based on the oldest/)).toBeNull();
+  });
+
+  it('offers Load more only while the API has a next page, and appends the older reports', async () => {
+    renderView();
+    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull();
+    cleanup();
+    nextCursor = 'c1';
+    loadPage.mockReturnValue(call({ insights: [insight({ id: 'old', period: { from: '2025-01-01', to: '2025-01-31' } })], nextCursor: null }));
+    renderView();
+    await userEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    expect(loadPage).toHaveBeenCalledWith({ limit: 50, cursor: 'c1' });
+    expect(await screen.findByText('January 2025')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull();
+  });
+
+  it('an account without a currency does not make an All-accounts report look mixed', () => {
+    insights = [insight({ accountId: null })];
+    accountsState = { accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD' }, { id: 'a2', name: 'Paper', currency: '' }], selectedAccountId: 'a1' };
+    renderView();
+    expect(screen.queryByText(/Figures mix currencies/)).toBeNull();
   });
 
   it('with no reports explains what a report needs and offers the first one', () => {
@@ -164,6 +202,26 @@ describe('InsightsView generating', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('A report needs at least 5 closed trades in the period — this scope has 3.');
   });
 
+  it('shows the API message of a failed attempt, and the connection message only without a response', async () => {
+    generate.mockReturnValueOnce(call({ status: 500, data: { errorCode: 'INTERNAL_ERROR', message: 'The report service is busy.' } }, true));
+    const { unmount } = renderView();
+    await userEvent.click(generateButton());
+    expect(await screen.findByRole('alert')).toHaveTextContent('The report service is busy.');
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    unmount();
+    generate.mockReturnValueOnce(call({ status: 'FETCH_ERROR', data: 'x' }, true));
+    renderView();
+    await userEvent.click(generateButton());
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Check your internet connection/);
+  });
+
+  it('shows the API message when the report list fails to load', () => {
+    listFailure = { status: 500, data: { message: 'Your reports are being restored.' } };
+    renderView();
+    expect(screen.getByRole('alert')).toHaveTextContent('Your reports are being restored.');
+  });
+
   it('a failed attempt shows Retry and the report list stays', async () => {
     generate.mockReturnValueOnce(call({ status: 500 }, true));
     renderView();
@@ -195,13 +253,14 @@ describe('InsightsView mixed currencies', () => {
     accountsState = { accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD' }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR' }], selectedAccountId: null };
   };
 
-  it('with accounts in two currencies and no account chosen, Generate is disabled and the reason and account buttons are shown', async () => {
+  it('with accounts in two currencies and no account chosen, Generate is disabled and the reason and an account picker are shown', async () => {
     mixedScope();
     insights = [];
     renderView();
     expect(generateButton()).toBeDisabled();
     expect(screen.getByText('Reports are per currency — choose an account')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Zerodha F&O · INR' }));
+    await userEvent.click(screen.getByRole('combobox', { name: 'Reports are per currency — choose an account' }));
+    await userEvent.click(screen.getByRole('option', { name: /Zerodha F&O.*INR/ }));
     expect(setSelectedAccountId).toHaveBeenCalledWith('a2');
     expect(generate).not.toHaveBeenCalled();
   });

@@ -3,12 +3,13 @@ import {
   SAMPLE_MONTH,
   SAMPLE_RECENT,
   SAMPLE_RULE_BREAK_DAYS,
+  SAMPLE_TRADES,
   SAMPLE_WINS,
   type SampleDay,
 } from '@/components/public/tourFixture';
 import { formatMoney, formatPercent } from '@/lib/format';
 
-export { SAMPLE_DAYS, SAMPLE_MONTH, SAMPLE_RECENT, SAMPLE_RULE_BREAK_DAYS, SAMPLE_WINS };
+export { SAMPLE_DAYS, SAMPLE_MONTH, SAMPLE_RECENT, SAMPLE_RULE_BREAK_DAYS, SAMPLE_TRADES, SAMPLE_WINS };
 
 /** The sample account's currency; every figure in the showcase visuals is in it. */
 export const SAMPLE_CURRENCY = 'USD';

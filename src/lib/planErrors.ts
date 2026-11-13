@@ -37,8 +37,3 @@ export function emitPlanSignal(signal: PlanSignal): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent<PlanSignal>(PLAN_SIGNAL_EVENT, { detail: signal }));
 }
-
-export function isPlanError(error: unknown): boolean {
-  const e = error as { status?: unknown; response?: { status?: unknown } } | null;
-  return e?.status === 402 || e?.response?.status === 402;
-}

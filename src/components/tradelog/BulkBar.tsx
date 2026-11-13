@@ -39,9 +39,13 @@ interface BulkBarProps {
   /** Set after an edit so the bar offers Undo for it. */
   canUndo: boolean;
   failedCount: number;
+  /** The API's message for the failed updates, shown after the count. */
+  failedReason?: string;
   onSelectAllMatching: () => void;
   onClear: () => void;
   onApply: (op: BulkOp) => void;
+  /** Saves a value typed into a list picker's "Create" row to the options lists, so the form and filters offer it too. */
+  onCreateOption?: (kind: 'mistakes' | 'tags', value: string) => void;
   onUndo: () => void;
   onRetryFailed: () => void;
   onExport: () => void;
@@ -52,7 +56,7 @@ type ListKind = 'mistakes' | 'tags' | 'brokenRules';
 type SingleKind = 'strategy' | 'session' | 'market' | 'account';
 
 /** Selection bar (E-044 / F-123): counts and totals, tri-state pickers for tags, single pickers for fields, Export, Delete. */
-export function BulkBar({ inline = false, selectedTrades, summary, matchingCount, options, progress, canUndo, failedCount, onSelectAllMatching, onClear, onApply, onUndo, onRetryFailed, onExport, onDelete }: BulkBarProps) {
+export function BulkBar({ inline = false, selectedTrades, summary, matchingCount, options, progress, canUndo, failedCount, failedReason, onSelectAllMatching, onClear, onApply, onCreateOption, onUndo, onRetryFailed, onExport, onDelete }: BulkBarProps) {
   const online = useOnline();
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -85,14 +89,14 @@ export function BulkBar({ inline = false, selectedTrades, summary, matchingCount
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" size="sm" className="shrink-0" disabled={tooMany || !!progress}>{label}</Button>
       </PopoverTrigger>
-      <PopoverContent align="start" side="top" className="w-72 p-2">
+      <PopoverContent align="start" side="top" aria-label={label} className="w-72 p-2">
         <Picker
           mode="multi"
           label={label}
           options={opts}
           state={listStates[kind]}
-          onCreate={canCreate ? () => undefined : undefined}
-          onToggle={(value, next) => onApply({ kind, add: next === 'on' ? [value] : [], remove: next === 'off' ? [value] : [] })}
+          onCreate={canCreate && onCreateOption && kind !== 'brokenRules' ? (value) => onCreateOption(kind, value) : undefined}
+          onToggle={(value, next) => !progress && onApply({ kind, add: next === 'on' ? [value] : [], remove: next === 'off' ? [value] : [] })}
           autoFocus
         />
       </PopoverContent>
@@ -104,13 +108,13 @@ export function BulkBar({ inline = false, selectedTrades, summary, matchingCount
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" size="sm" className="shrink-0" disabled={tooMany || !!progress}>{label}</Button>
       </PopoverTrigger>
-      <PopoverContent align="start" side="top" className="w-64 p-2">
+      <PopoverContent align="start" side="top" aria-label={label} className="w-64 p-2">
         <Picker
           mode="single"
           label={label}
           options={opts}
           value=""
-          onChange={(v) => onApply(kind === 'account' ? { kind: 'account', accountId: v } : { kind, value: v })}
+          onChange={(v) => !progress && onApply(kind === 'account' ? { kind: 'account', accountId: v } : { kind, value: v })}
           autoFocus
         />
       </PopoverContent>
@@ -152,7 +156,7 @@ export function BulkBar({ inline = false, selectedTrades, summary, matchingCount
           )}
           {!progress && failedCount > 0 && (
             <span role="alert" className="ml-2 text-error">
-              {failedCount} could not be updated. <button type="button" className="underline" onClick={onRetryFailed}>Retry failed</button>
+              {failedCount} could not be updated. {failedReason ? `${failedReason} ` : ''}<button type="button" className="underline" onClick={onRetryFailed}>Retry failed</button>
             </span>
           )}
         </div>
@@ -163,7 +167,7 @@ export function BulkBar({ inline = false, selectedTrades, summary, matchingCount
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {count} {count === 1 ? 'trade' : 'trades'}?</AlertDialogTitle>
             <AlertDialogDescription>
-              {totals ? `Their net P&L (${totals}) leaves your statistics. ` : ''}Screenshots are removed too. This cannot be undone.
+              {totals ? `Their net P&L (${totals}) leaves your statistics. ` : ''}Screenshots are removed too. You can undo for 10 seconds.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -102,12 +102,15 @@ describe('FeedbackDialog', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Feedback is sent by email for now');
   });
 
-  it('shows a retryable error when the endpoint exists but the request fails', async () => {
-    vi.spyOn(feedback, 'sendFeedback').mockResolvedValue('failed');
+  it('shows a retryable error with the API message when the endpoint exists but the request fails', async () => {
+    vi.spyOn(feedback, 'sendFeedback').mockResolvedValue({ failed: 'Feedback is limited to 5 messages an hour.' });
     setup();
     await userEvent.type(screen.getByRole('textbox', { name: /Your message/ }), 'Idea');
     await userEvent.click(screen.getByRole('button', { name: 'Send feedback' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Couldn’t send your feedback');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Couldn’t send your feedback.');
+    expect(alert).toHaveTextContent('Feedback is limited to 5 messages an hour.');
+    expect(alert).not.toHaveTextContent(/connection/i);
     expect(screen.getByRole('button', { name: 'Send feedback' })).toBeEnabled();
   });
 });
@@ -125,15 +128,19 @@ describe('sendFeedback', () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  it('maps the response: 2xx sent, 404 unavailable (remembered), other failures failed', async () => {
+  it('maps the response: 2xx sent, 404 unavailable (remembered), other failures carry the API message', async () => {
     vi.stubEnv('VITE_FEEDBACK_API', 'true');
     const f = vi.spyOn(globalThis, 'fetch');
     f.mockResolvedValueOnce(new Response('{}', { status: 200 }));
     expect(await feedback.sendFeedback('idea', 'hi', null)).toBe('sent');
-    f.mockResolvedValueOnce(new Response('{}', { status: 500 }));
-    expect(await feedback.sendFeedback('idea', 'hi', null)).toBe('failed');
-    f.mockRejectedValueOnce(new TypeError('network'));
-    expect(await feedback.sendFeedback('idea', 'hi', null)).toBe('failed');
+    f.mockResolvedValueOnce(new Response(JSON.stringify({ success: false, message: 'Feedback is limited to 5 messages an hour.', errorCode: 'RATE_LIMITED' }), { status: 429 }));
+    expect(await feedback.sendFeedback('idea', 'hi', null)).toEqual({ failed: 'Feedback is limited to 5 messages an hour.' });
+    f.mockResolvedValueOnce(new Response('<html>Bad gateway</html>', { status: 502 }));
+    expect(await feedback.sendFeedback('idea', 'hi', null)).toEqual({ failed: 'TradeQut is temporarily unavailable. Please try again in a moment.' });
+    f.mockResolvedValueOnce(new Response('', { status: 500 }));
+    expect(await feedback.sendFeedback('idea', 'hi', null)).toEqual({ failed: 'Try again.' });
+    f.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    expect(await feedback.sendFeedback('idea', 'hi', null)).toEqual({ failed: expect.stringMatching(/internet connection/i) });
     f.mockResolvedValueOnce(new Response('{}', { status: 404 }));
     expect(await feedback.sendFeedback('idea', 'hi', null)).toBe('unavailable');
     const calls = f.mock.calls.length;

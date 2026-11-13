@@ -3,7 +3,8 @@ import { format } from 'date-fns/format';
 import { Money } from '@/components/ui/money';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Meter } from '@/components/stats/Meter';
-import { formatMoney, formatPercent } from '@/lib/format';
+import { appToday } from '@/lib/appTimeZone';
+import { formatDateShort, formatMoney, formatPercent } from '@/lib/format';
 import type { TodaySummary, WeekGoal } from '@/lib/dashboard';
 import type { WeekGoalsState } from './useWeekGoals';
 
@@ -34,7 +35,7 @@ function GoalSegment({ goal, label }: { goal: WeekGoal; label: string }) {
  * The "may I keep trading?" line: today's result and this week's limits. It always shows today and this week,
  * whatever the period control says (E-021). Each segment links to where its figure comes from.
  */
-export function TodayStrip({ today, todayLoading, week, todayKey, now = new Date() }: TodayStripProps) {
+export function TodayStrip({ today, todayLoading, week, todayKey, now = appToday() }: TodayStripProps) {
   const tradesGoal = week.goals.find((g) => g.type === 'tradeCount');
   const drawdownGoal = week.goals.find((g) => g.type === 'maxDrawdown');
   const limitsSet = !!tradesGoal || !!drawdownGoal;
@@ -44,7 +45,7 @@ export function TodayStrip({ today, todayLoading, week, todayKey, now = new Date
       <h2 id="today-h" className="sr-only">Today</h2>
       <div className="flex flex-wrap divide-border sm:divide-x [&>*]:flex-1 [&>*]:basis-48">
         <Link to={`/app/tradelog?on=${todayKey}&src=dashboard`} className={SEGMENT}>
-          <span className="font-medium">Today · {format(now, 'EEE d MMM')}</span>
+          <span className="font-medium">Today · {format(now, 'EEE')} {formatDateShort(now)}</span>
           {todayLoading ? (
             <Skeleton className="h-4 w-24" />
           ) : today.count === 0 ? (

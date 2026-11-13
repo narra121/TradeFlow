@@ -17,7 +17,13 @@ src/content/route-registry.ts  (the one list of public routes; lastmod comes fro
   a meta description, parseable JSON-LD, or the right robots value. Fix the page, never the check.
 - CloudFront Function (viewer-request): `www` redirects to the apex; `/path` serves `/path/index.html`; `/app/*` and `/auth/*`
   serve `/_spa.html` (the SPA shell, status 200); `/x/index.html` and trailing slashes redirect (301) to the clean path.
-  Viewer-response: hosts other than `tradequt.com` get `x-robots-tag: noindex, nofollow`.
+  Viewer-response: hosts other than `tradequt.com` get `x-robots-tag: noindex, nofollow`; every response gets HSTS
+  (`max-age=31536000`), `x-content-type-options: nosniff` and `referrer-policy: strict-origin-when-cross-origin`; HTML responses
+  also get an enforced `content-security-policy: frame-ancestors 'none'` and the full policy as
+  `content-security-policy-report-only` (sources in `scripts/seo/cf-router.ts`; the `'sha256-...'` of the inline boot script in
+  `index.html` is computed from that file, so editing the script makes `cf-router.test` fail until you regenerate).
+  Report-Only logs violations in the browser console and blocks nothing: after a deploy, browse the site and fix the policy for
+  any violation before moving it to `content-security-policy`.
 - Origin failures (500, 502, 503, 504): CloudFront returns `/error.html` (static, inline CSS, brand mark) with the original
   status code. `public/maintenance.html` is the full-page maintenance screen; to use it, copy it over `index.html` on the
   bucket (and invalidate) only while the API is switched off, then redeploy to restore.
@@ -66,11 +72,12 @@ What `--apply` does, in order:
    (`blog/how-to-keep-trading-journal/index.html`, override with `--probe-slug`). If any is missing it stops before any write and
    prints `Deploy dist/ first, then apply, then verify`.
 2. **Backup** of the whole distribution config to `infra/cloudfront/backups/` (git-ignored; keep a copy elsewhere).
-3. **Function tests**: eight `test-function` cases (root, article, `/app/*`, `/auth/callback`, trailing slash, assets, `www`
-   redirect, `noindex` off the canonical host) against the DEVELOPMENT stage; nothing is associated if one fails.
+3. **Function tests**: nine `test-function` cases (root, article, `/app/*`, `/auth/callback`, trailing slash, assets, `www`
+   redirect, `noindex` off the canonical host, security headers on HTML) against the DEVELOPMENT stage; nothing is associated if
+   one fails.
 4. Publish, associate (viewer-request and viewer-response), set the error responses, wait for the deployment.
 5. **Verify** against the live site: own pages, a real 404, `/app/dashboard` and `/auth/callback` answer 200 with the shell,
-   `/blog/` redirects, dev sends `noindex`.
+   `/blog/` redirects, the home page carries HSTS, `frame-ancestors` and the Report-Only CSP, dev sends `noindex`.
 6. **Automatic revert**: if verify fails, the saved config is restored (and the function deleted) and the command exits
    non-zero. If that revert also fails, the message names the exact `--revert "<backup>"` command to run by hand.
 

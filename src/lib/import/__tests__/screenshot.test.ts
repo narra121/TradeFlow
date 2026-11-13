@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { batchLabel, batches, classifyFile, fromExtracted } from '../screenshot';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { batchLabel, batches, classifyFile, fitScreenshot, fromExtracted, MAX_SCREENSHOT_BYTES } from '../screenshot';
 import { forgetMapping, headerSignature, loadMapping, missingFields, saveMapping } from '../mappingMemory';
 
 describe('classifyFile', () => {
@@ -59,5 +59,42 @@ describe('mapping memory', () => {
     expect(missingFields({ symbol: 'a', side: 'b', quantity: 'c', price: 'd', time: 'e' })).toEqual([]);
     expect(missingFields({ symbol: 'a', side: 'b', quantity: 'c', entryPrice: 'd' })).toEqual(['Exit price', 'Open time']);
     expect(missingFields({ symbol: 'a', side: 'b', quantity: 'c', price: 'd' })).toEqual(['Time (one row per execution)']);
+  });
+});
+
+describe('fitScreenshot', () => {
+  const file = (size: number, name = 'shot.png') => new File([new Uint8Array(size)], name, { type: 'image/png' });
+  const blob = (size: number) => new Blob([new Uint8Array(size)], { type: 'image/jpeg' });
+
+  it('leaves a screenshot under the limit alone', async () => {
+    const f = file(MAX_SCREENSHOT_BYTES);
+    const render = vi.fn();
+    expect(await fitScreenshot(f, render)).toBe(f);
+    expect(render).not.toHaveBeenCalled();
+  });
+
+  it('re-encodes an oversized capture as JPEG, gentlest attempt first, and keeps its name', async () => {
+    const render = vi.fn(async () => blob(900_000));
+    const out = await fitScreenshot(file(3 * 1024 * 1024, 'broker.table.png'), render);
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(render).toHaveBeenCalledWith(expect.any(File), 2000, 0.85);
+    expect(out.name).toBe('broker.table.jpg');
+    expect(out.type).toBe('image/jpeg');
+    expect(out.size).toBe(900_000);
+  });
+
+  it('tries smaller attempts until one fits', async () => {
+    const sizes = [2_000_000, 1_500_000, 1_000_000];
+    const render = vi.fn(async (_file: File, _edge: number, _quality: number) => blob(sizes.shift() ?? 100));
+    const out = await fitScreenshot(file(3 * 1024 * 1024), render);
+    expect(render.mock.calls.map((c) => [c[1], c[2]])).toEqual([[2000, 0.85], [2000, 0.7], [1400, 0.7]]);
+    expect(out.size).toBe(1_000_000);
+  });
+
+  it('returns the original when nothing gets under the limit, or the browser cannot decode it, so the caller can reject it', async () => {
+    const big = file(3 * 1024 * 1024);
+    expect(await fitScreenshot(big, async () => blob(2 * 1024 * 1024))).toBe(big);
+    expect(await fitScreenshot(big, async () => null)).toBe(big);
+    expect(await fitScreenshot(big, async () => { throw new Error('decode'); })).toBe(big);
   });
 });

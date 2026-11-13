@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DataTable, type DataColumn } from '../data-table';
 
@@ -139,5 +139,43 @@ describe('DataTable (E-041, E-034, E-035, R-fe-app-009)', () => {
     await userEvent.keyboard('{Enter}');
     expect(onResize).toHaveBeenLastCalledWith('name', null);
     expect(screen.getByRole('columnheader', { name: /Name/ })).toHaveStyle({ width: '120px' });
+  });
+
+  describe('dragging the resize handle (FE-076)', () => {
+    const pointer = (el: Element, type: string, clientX: number) => fireEvent(el, new MouseEvent(type, { clientX, bubbles: true }));
+    const setup = () => {
+      const onResize = vi.fn();
+      const cols: DataColumn<Row>[] = [{ ...columns[0], resizable: true }, columns[1]];
+      render(<DataTable caption="Things" rows={rows} columns={cols} getRowId={(r) => r.id} columnWidths={{ name: 120 }} onResizeColumn={onResize} />);
+      return { onResize, handle: screen.getByRole('separator', { name: 'Resize Name column' }) };
+    };
+
+    it('follows the pointer while it is down', () => {
+      const { onResize, handle } = setup();
+      pointer(handle, 'pointerdown', 100);
+      pointer(handle, 'pointermove', 140);
+      expect(onResize).toHaveBeenLastCalledWith('name', expect.any(Number));
+      expect(onResize).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops on pointerup, on a cancelled touch and when the capture is lost', () => {
+      for (const end of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+        const { onResize, handle } = setup();
+        pointer(handle, 'pointerdown', 100);
+        pointer(handle, end, 100);
+        onResize.mockClear();
+        pointer(handle, 'pointermove', 200);
+        expect(onResize).not.toHaveBeenCalled();
+        cleanup();
+      }
+    });
+
+    it('captures the pointer on the handle, so the drag cannot outlive it on the window', () => {
+      const { handle } = setup();
+      const capture = vi.fn();
+      (handle as HTMLElement & { setPointerCapture: unknown }).setPointerCapture = capture;
+      fireEvent(handle, Object.assign(new MouseEvent('pointerdown', { clientX: 100, bubbles: true }), { pointerId: 7 }));
+      expect(capture).toHaveBeenCalledWith(7);
+    });
   });
 });

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 import { buildMonth, summarizeDays, dayMetric, defaultMetric, gridRange, isoWeek, metricScale, metricTint, monthKey, parseMetric, parseMonth, tintStep, tradeDayKey } from '../calendar';
 import type { Trade, TradingAccount } from '@/types/trade';
 
@@ -52,6 +53,31 @@ describe('calendar model', () => {
 
   it('puts a late-evening local trade on its own day', () => {
     expect(tradeDayKey(t('1', '2026-11-04T23:30:00', 1))).toBe('2026-11-04');
+  });
+
+  describe('with a saved time zone (the zone /stats buckets by)', () => {
+    afterEach(() => {
+      localStorage.clear();
+      resetUiStateCache();
+    });
+
+    it('a trade closed at 2026-11-03T20:30Z is on the 3rd in New York and the 4th in Kolkata', () => {
+      const trade = t('1', '2026-11-03T20:30:00.000Z', 1);
+      patchUiState({ timeZone: 'America/New_York' });
+      expect(tradeDayKey(trade)).toBe('2026-11-03');
+      patchUiState({ timeZone: 'Asia/Kolkata' });
+      expect(tradeDayKey(trade)).toBe('2026-11-04');
+    });
+
+    it('the month grid puts the trade in the cell of the saved zone', () => {
+      const trade = t('1', '2026-11-03T20:30:00.000Z', 5);
+      const cellOf = (zone: string) => {
+        patchUiState({ timeZone: zone });
+        return buildMonth([trade], new Date(2026, 10, 1), accounts).weeks.flatMap((w) => w.days).find((d) => d.trades.length)?.key;
+      };
+      expect(cellOf('America/New_York')).toBe('2026-11-03');
+      expect(cellOf('Asia/Kolkata')).toBe('2026-11-04');
+    });
   });
 });
 

@@ -1,3 +1,4 @@
+import { dayKeyIn } from '@/lib/appTimeZone';
 import { holdingMinutes, plannedRR, realisedR, riskAmount } from '@/lib/tradeFilters';
 import type { Trade, TradingAccount } from '@/types/trade';
 
@@ -35,7 +36,7 @@ export function tradesToCsv(trades: Trade[], accounts: Map<string, TradingAccoun
 }
 
 export function exportFileName(scope: 'view' | 'selection' | 'scope', now: Date = new Date()): string {
-  return `tradequt-trades-${scope}-${now.toISOString().slice(0, 10)}.csv`;
+  return `tradequt-trades-${scope}-${dayKeyIn(now)}.csv`;
 }
 
 export function downloadCsv(csv: string, name: string): void {

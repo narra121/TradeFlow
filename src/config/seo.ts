@@ -35,7 +35,7 @@ export const ORGANIZATION_SCHEMA = {
     '@type': 'ContactPoint',
     contactType: 'Customer Service',
     email: SUPPORT_EMAIL,
-    telephone: '+91-8501018125',
+    telephone: COMPANY_FACTS.phone.e164,
   },
 };
 
@@ -154,14 +154,14 @@ export const CONTACT_SCHEMA = {
     '@type': 'Organization',
     name: 'TradeQut',
     email: SUPPORT_EMAIL,
-    telephone: '+91-8501018125',
+    telephone: COMPANY_FACTS.phone.e164,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: '3-187/2, Regonda',
-      addressLocality: 'Bhupalpally',
-      postalCode: '506348',
-      addressRegion: 'Telangana',
-      addressCountry: 'IN',
+      streetAddress: COMPANY_FACTS.address.street,
+      addressLocality: COMPANY_FACTS.address.locality,
+      postalCode: COMPANY_FACTS.address.postalCode,
+      addressRegion: COMPANY_FACTS.address.region,
+      addressCountry: COMPANY_FACTS.address.country,
     },
   },
 };

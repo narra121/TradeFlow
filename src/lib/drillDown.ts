@@ -1,4 +1,5 @@
 import { tradeDayKey } from '@/lib/calendar';
+import { WEEKDAY_NAMES } from '@/lib/format';
 import type { Trade } from '@/types/trade';
 
 export type MissingKind = 'account' | 'strategy' | 'screenshot' | 'lesson';
@@ -16,19 +17,50 @@ export interface DrillDown {
   session?: string;
   direction?: 'LONG' | 'SHORT';
   assetClass?: string;
-  /** English day name, UTC, as `/stats` reports it. */
+  /** English day name of the entry in `zone`, as `/stats` reports it. */
   weekday?: string;
-  /** 0-23, UTC hour of the entry. */
+  /** 0-23, hour of the entry in `zone`. */
   hour?: number;
+  /** IANA zone `/stats` bucketed weekday and hour in (the user's time zone preference); UTC when the link carries none. */
+  zone?: string;
   mistake?: string;
   /** Rule ids; a trade matches when it broke any of them. */
   rules?: string[];
 }
 
 /** URL parameters this module owns, so a caller can strip them again. */
-export const DRILL_KEYS = ['src', 'missing', 'on', 'symbol', 'strategy', 'session', 'direction', 'assetClass', 'weekday', 'hour', 'mistake', 'rule', 'broken'] as const;
+export const DRILL_KEYS = ['src', 'missing', 'on', 'symbol', 'strategy', 'session', 'direction', 'assetClass', 'weekday', 'hour', 'zone', 'mistake', 'rule', 'broken'] as const;
 
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+function zoneFormatter(zone: string): Intl.DateTimeFormat {
+  let f = formatters.get(zone);
+  if (!f) {
+    try {
+      f = new Intl.DateTimeFormat('en-US', { timeZone: zone, weekday: 'long', hour: '2-digit', hourCycle: 'h23' });
+    } catch {
+      f = zoneFormatter('UTC');
+    }
+    formatters.set(zone, f);
+  }
+  return f;
+}
+
+/** English weekday name and 0-23 hour of an instant in an IANA zone (an unknown zone reads as UTC). */
+function zonedWeekdayHour(date: Date, zone: string): { weekday: string; hour: number } {
+  const parts = zoneFormatter(zone).formatToParts(date);
+  return { weekday: parts.find((p) => p.type === 'weekday')?.value ?? '', hour: Number(parts.find((p) => p.type === 'hour')?.value) };
+}
+
+function validZone(zone: string | undefined): string | undefined {
+  if (!zone) return undefined;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone });
+    return zone;
+  } catch {
+    return undefined;
+  }
+}
 
 /** `null` when the URL carries no filter (`src` alone is not one). */
 export function parseDrillDown(search: string): DrillDown | null {
@@ -46,18 +78,21 @@ export function parseDrillDown(search: string): DrillDown | null {
   if (direction === 'LONG' || direction === 'SHORT') d.direction = direction;
   d.assetClass = get('assetClass');
   const weekday = get('weekday');
-  if (weekday && WEEKDAYS.includes(weekday)) d.weekday = weekday;
+  if (weekday && WEEKDAY_NAMES.includes(weekday)) d.weekday = weekday;
   const hour = get('hour');
   if (hour !== undefined && /^\d{1,2}$/.test(hour) && Number(hour) < 24) d.hour = Number(hour);
+  d.zone = validZone(get('zone'));
   d.mistake = get('mistake');
   const rules = [...(get('broken')?.split(',') ?? []), ...(get('rule') ? [get('rule') as string] : [])].map((r) => r.trim()).filter(Boolean);
   if (rules.length) d.rules = rules;
-  const { src, ...filters } = d;
+  const { src, zone, ...filters } = d;
   void src;
+  void zone;
   return Object.values(filters).some((v) => v !== undefined) ? d : null;
 }
 
-export function drillMatch(t: Trade, d: DrillDown): boolean {
+/** `zone` is the one `/stats` used for weekday and hour; it defaults to the link's own `zone`, then UTC. */
+export function drillMatch(t: Trade, d: DrillDown, zone: string = d.zone ?? 'UTC'): boolean {
   if (d.missing) {
     const hit = d.missing === 'account' ? !t.accountId : d.missing === 'strategy' ? !(t.strategy || t.setup) : d.missing === 'screenshot' ? !t.images || t.images.length === 0 : t.pnl < 0 && !t.keyLesson;
     if (!hit) return false;
@@ -73,14 +108,15 @@ export function drillMatch(t: Trade, d: DrillDown): boolean {
   if (d.weekday !== undefined || d.hour !== undefined) {
     const entry = new Date(t.entryDate);
     if (Number.isNaN(entry.getTime())) return false;
-    if (d.weekday !== undefined && WEEKDAYS[entry.getUTCDay()] !== d.weekday) return false;
-    if (d.hour !== undefined && entry.getUTCHours() !== d.hour) return false;
+    const local = zonedWeekdayHour(entry, zone);
+    if (d.weekday !== undefined && local.weekday !== d.weekday) return false;
+    if (d.hour !== undefined && local.hour !== d.hour) return false;
   }
   return true;
 }
 
 /** `From Analytics: Strategy = Breakout`; several filters are joined with `·`. */
-export function drillLabel(d: DrillDown, ruleName: (id: string) => string = () => 'Rule'): string {
+export function drillLabel(d: DrillDown, ruleName: (id: string) => string = () => 'Rule', zone: string = d.zone ?? 'UTC'): string {
   const parts: string[] = [];
   if (d.missing) parts.push(MISSING_LABEL[d.missing]);
   if (d.on) parts.push(`Day = ${d.on}`);
@@ -89,8 +125,8 @@ export function drillLabel(d: DrillDown, ruleName: (id: string) => string = () =
   if (d.session) parts.push(`Session = ${d.session}`);
   if (d.direction) parts.push(`Direction = ${d.direction === 'LONG' ? 'Long' : 'Short'}`);
   if (d.assetClass) parts.push(`Asset class = ${d.assetClass}`);
-  if (d.weekday) parts.push(`Weekday = ${d.weekday}`);
-  if (d.hour !== undefined) parts.push(`Hour = ${String(d.hour).padStart(2, '0')}:00 UTC`);
+  if (d.weekday) parts.push(`Weekday = ${d.weekday}${d.hour === undefined ? ` (${zone})` : ''}`);
+  if (d.hour !== undefined) parts.push(`Hour = ${String(d.hour).padStart(2, '0')}:00 ${zone}`);
   if (d.mistake) parts.push(`Mistake = ${d.mistake}`);
   if (d.rules) parts.push(`Broken rule = ${[...new Set(d.rules.map(ruleName))].join(', ')}`);
   const origin = d.src === 'analytics' ? 'From Analytics: ' : d.src === 'dashboard' ? 'From Dashboard: ' : '';

@@ -15,6 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTradeParam } from '@/hooks/useTradeParam';
 import { useCreateChatSessionMutation, useDeleteChatSessionMutation, useGetChatMessagesQuery, useListChatSessionsQuery, useSendChatMessageMutation } from '@/store/api/chatApi';
 import { useListInsightsQuery } from '@/store/api/insightsApi';
+import { readApiError } from '@/lib/apiError';
 import { starterQuestions } from '@/lib/ai/chatFormat';
 import { citedTradeIds, renderAnswer } from '@/lib/ai/markdown';
 import { formatDateShort } from '@/lib/format';
@@ -31,7 +32,7 @@ interface Turn {
   refused?: boolean;
 }
 
-function Message({ role, content, onTrade, actions, note, pending }: { role: 'user' | 'assistant'; content: string; onTrade: (id: string) => void; actions?: React.ReactNode; note?: string; pending?: boolean }) {
+function Message({ role, content, onTrade, actions, note, pending }: { role: 'user' | 'assistant'; content: string; onTrade: (id: string, ids?: string[]) => void; actions?: React.ReactNode; note?: string; pending?: boolean }) {
   const cited = role === 'assistant' ? citedTradeIds(content) : [];
   return (
     <div className="space-y-1">
@@ -42,7 +43,7 @@ function Message({ role, content, onTrade, actions, note, pending }: { role: 'us
         <div className="space-y-2 text-sm leading-relaxed">{content ? renderAnswer(content, { onTrade }) : pending ? <span className="text-muted-foreground">Thinking…</span> : null}</div>
       )}
       {cited.length > 1 && (
-        <button type="button" onClick={() => onTrade(cited[0])} className="inline-flex h-6 items-center text-xs text-primary underline-offset-2 hover:underline">
+        <button type="button" onClick={() => onTrade(cited[0], cited)} className="inline-flex h-6 items-center text-xs text-primary underline-offset-2 hover:underline">
           View all {cited.length} trades →
         </button>
       )}
@@ -66,8 +67,8 @@ export function ChatView() {
   const sessionId = params.get('s');
   const insightId = params.get('insight');
   const ref = params.get('ref');
-  const { data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, refetch: refetchSessions } = useListChatSessionsQuery();
-  const { data: messages = [], isFetching: messagesFetching, isError: messagesError, refetch: refetchMessages } = useGetChatMessagesQuery(sessionId ?? '', { skip: !sessionId });
+  const { data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, error: sessionsErrorDetail, refetch: refetchSessions } = useListChatSessionsQuery();
+  const { data: messages = [], isFetching: messagesFetching, isError: messagesError, error: messagesErrorDetail, refetch: refetchMessages } = useGetChatMessagesQuery(sessionId ?? '', { skip: !sessionId });
   const { data: insightList } = useListInsightsQuery({ limit: 1 });
   const [createSession] = useCreateChatSessionMutation();
   const [deleteSession] = useDeleteChatSessionMutation();
@@ -80,6 +81,8 @@ export function ChatView() {
   const [announce, setAnnounce] = useState('');
   const [atBottom, setAtBottom] = useState(true);
   const abort = useRef<AbortController | null>(null);
+  const sending = useRef(false);
+  const createdSession = useRef<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
@@ -96,6 +99,11 @@ export function ChatView() {
   }, [messages.length, turn]);
 
   useEffect(() => {
+    // The session this view just created arrives in the URL after its first turn started: keep that turn.
+    if (sessionId && sessionId === createdSession.current) {
+      createdSession.current = null;
+      return;
+    }
     setTurn(null);
     setProblem(null);
   }, [sessionId]);
@@ -117,21 +125,31 @@ export function ChatView() {
     if (sessionId) return sessionId;
     try {
       const s = await createSession(insightId ? { insightId } : undefined).unwrap();
+      createdSession.current = s.id;
       setParams({ s: s.id }, { replace: true });
       return s.id;
     } catch (e) {
-      if ((e as { status?: number })?.status !== 402) setProblem('Couldn’t start a chat. Check your connection and try again.');
+      if ((e as { status?: number })?.status !== 402) setProblem(readApiError(e, 'Couldn’t start a chat.').message);
       return null;
     }
   }, [sessionId, createSession, insightId, setParams]);
 
   const submit = async (content: string) => {
     const text = content.trim();
-    if (!text || turn?.status === 'streaming') return;
+    if (!text || sending.current || turn?.status === 'streaming') return;
     if (atLimit && row?.limit !== null && row) {
       emitPlanSignal({ code: 'QUOTA_EXCEEDED', feature: 'ai_chat', limit: row.limit ?? undefined, resetsAt: ent.periodResetsAt, message: 'You have reached your plan limit.', kind: 'mutation' });
       return;
     }
+    sending.current = true;
+    try {
+      await sendTurn(text);
+    } finally {
+      sending.current = false;
+    }
+  };
+
+  const sendTurn = async (text: string) => {
     setProblem(null);
     const id = await ensureSession();
     if (!id) return;
@@ -149,7 +167,7 @@ export function ChatView() {
       else if (err?.status === 402) setTurn(null);
       else {
         setTurn((c) => (c ? { ...c, status: 'error' } : c));
-        setProblem('The answer couldn’t be completed. Your question was not lost.');
+        setProblem(`${readApiError(e, 'The answer couldn’t be completed.').message.replace(/[.!?]*$/, '.')} Your question was not lost.`);
       }
     } finally {
       abort.current = null;
@@ -157,6 +175,7 @@ export function ChatView() {
   };
 
   const stop = () => abort.current?.abort();
+  const openCited = (id: string, ids?: string[]) => trade.openTrade(id, ids ? { ids } : undefined);
 
   const copy = async (text: string) => {
     try {
@@ -178,7 +197,7 @@ export function ChatView() {
   };
 
   const sessionsPane = sessionsError ? (
-    <ErrorState title="Couldn’t load your chats." onRetry={refetchSessions} />
+    <ErrorState title="Couldn’t load your chats." error={sessionsErrorDetail} onRetry={refetchSessions} />
   ) : (
     <ChatSessions sessions={sessions} loading={sessionsLoading} activeId={sessionId} onSelect={select} onDelete={setConfirmDelete} />
   );
@@ -222,10 +241,10 @@ export function ChatView() {
 
         <div ref={scroller} onScroll={onScroll} role="log" aria-label="Conversation" aria-busy={turn?.status === 'streaming'} className="relative max-h-[calc(100vh-17rem)] min-h-[40vh] flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[760px] space-y-4 py-2">
-            {sessionId && messagesFetching && stored.length === 0 ? (
+            {sessionId && messagesFetching && stored.length === 0 && !turn ? (
               <Skeleton className="h-24" />
             ) : sessionId && messagesError ? (
-              <ErrorState title="Couldn’t load this chat." onRetry={refetchMessages} />
+              <ErrorState title="Couldn’t load this chat." error={messagesErrorDetail} onRetry={refetchMessages} />
             ) : empty ? (
               <div className="space-y-3 py-6">
                 <h2 className="text-sm font-semibold">Ask about your own trades</h2>
@@ -235,6 +254,7 @@ export function ChatView() {
                     <Button key={q} type="button" variant="outline" size="sm" disabled={atLimit} onClick={() => void submit(q)} className="h-auto whitespace-normal py-1.5 text-left">{q}</Button>
                   ))}
                 </div>
+                {problem && <p role="alert" className="text-sm text-loss">{problem}</p>}
               </div>
             ) : (
               <>
@@ -243,19 +263,19 @@ export function ChatView() {
                     key={m.id}
                     role={m.role}
                     content={m.content}
-                    onTrade={(id) => trade.openTrade(id)}
+                    onTrade={openCited}
                     actions={m.role === 'assistant' ? <button type="button" className="inline-flex h-6 items-center px-1 text-muted-foreground underline-offset-2 hover:underline" onClick={() => void copy(m.content)}>Copy</button> : undefined}
                   />
                 ))}
                 {turn && (
                   <>
-                    {userShown && <Message role="user" content={turn.user} onTrade={(id) => trade.openTrade(id)} />}
+                    {userShown && <Message role="user" content={turn.user} onTrade={openCited} />}
                     {(turn.status !== 'done' || stored.length < turn.baseCount + 2) && (
                       <Message
                         role="assistant"
                         content={turn.text}
                         pending={turn.status === 'streaming'}
-                        onTrade={(id) => trade.openTrade(id)}
+                        onTrade={openCited}
                         note={turn.status === 'stopped' ? 'Stopped' : undefined}
                         actions={
                           turn.status === 'stopped' || turn.status === 'error' ? (
@@ -344,8 +364,8 @@ export function ChatView() {
                 try {
                   await deleteSession(id).unwrap();
                   if (sessionId === id) setParams({}, { replace: true });
-                } catch {
-                  toast('Couldn’t delete the chat. Try again.');
+                } catch (e) {
+                  toast('Couldn’t delete the chat.', { description: readApiError(e, 'Try again.').message });
                 }
               }}
             >

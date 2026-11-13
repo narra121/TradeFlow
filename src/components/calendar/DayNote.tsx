@@ -33,7 +33,7 @@ export function DayNote({ date, scope, note, range, readOnly }: DayNoteProps) {
       await save({ date, scope, [field]: next, range }).unwrap();
       setSaved(field);
     } catch (e) {
-      setError(readApiError(e).message || `Couldn't save the ${LABEL[field].toLowerCase()}. Check your connection and try again.`);
+      setError(readApiError(e, `Couldn't save the ${LABEL[field].toLowerCase()}.`).message);
     }
   };
 

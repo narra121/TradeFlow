@@ -23,6 +23,7 @@ const waitOnline = () => new Promise<void>((resolve) => window.addEventListener(
 const BATCH_SCAN_PAGES = 10;
 
 export const importApi = apiWithTags.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     getImportSources: builder.query<ImportSource[], void>({
       query: () => '/import/sources',
@@ -46,6 +47,7 @@ export const importApi = apiWithTags.injectEndpoints({
         const end = new Date(Date.now() + 366 * 86_400_000).toISOString().slice(0, 10);
         const all: RawBatchTrade[] = [];
         let failed = 0;
+        let firstError: unknown;
         await Promise.all(
           accountIds.map(async (accountId) => {
             let cursor: string | undefined;
@@ -53,6 +55,7 @@ export const importApi = apiWithTags.injectEndpoints({
               const r = await baseQuery({ url: '/trades', params: { accountId, startDate: '2000-01-01', endDate: end, limit: 100, ...(cursor ? { cursor } : {}) } });
               if (r.error) {
                 failed += 1;
+                firstError ??= r.error;
                 return;
               }
               const d = (r.data ?? {}) as { trades?: RawBatchTrade[]; pagination?: { nextCursor?: string | null; hasMore?: boolean } };
@@ -62,7 +65,7 @@ export const importApi = apiWithTags.injectEndpoints({
             }
           }),
         );
-        if (failed > 0 && all.length === 0) return { error: { status: 'FETCH_ERROR', error: 'Could not load past imports' } as never };
+        if (failed > 0 && all.length === 0) return { error: firstError as never };
         return { data: groupBatches(all) };
       },
       providesTags: ['ImportBatches'],

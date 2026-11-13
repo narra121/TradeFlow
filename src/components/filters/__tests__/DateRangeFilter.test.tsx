@@ -48,7 +48,7 @@ describe('getDateRangeFromPreset', () => {
   });
 
   it('uses the supplied clock, not a cached date', () => {
-    expect(getDateRangeFromPreset(7, undefined, now).from.getDate()).toBe(4);
+    expect(getDateRangeFromPreset(7, undefined, now).from.getDate()).toBe(5); // 5..11 Nov is seven days, both ends included
     expect(getDateRangeFromPreset('thisMonth', undefined, now).from.getDate()).toBe(1);
     expect(getDateRangeFromPreset('all', undefined, now).from.getFullYear()).toBe(2000);
   });

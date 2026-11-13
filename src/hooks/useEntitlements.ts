@@ -26,6 +26,8 @@ export interface UsageRow {
 export interface EntitlementsView {
   isLoading: boolean;
   isError: boolean;
+  /** The failed request's error, for `<ErrorState error>`. */
+  error?: unknown;
   plan: PlanName | null;
   /** Pro features are on (Pro or trialing). */
   isPro: boolean;
@@ -69,7 +71,7 @@ export function daysLeft(iso: string | undefined, now: Date = new Date()): numbe
 
 /** One definition of "is Pro" for every screen: the server's entitlements, never the legacy subscription. */
 export function useEntitlements(): EntitlementsView {
-  const { data, isLoading, isError, refetch } = useGetEntitlementsQuery();
+  const { data, isLoading, isError, error, refetch } = useGetEntitlementsQuery();
 
   return useMemo<EntitlementsView>(() => {
     const e = data?.entitlements;
@@ -85,6 +87,7 @@ export function useEntitlements(): EntitlementsView {
     return {
       isLoading,
       isError,
+      error,
       plan: e?.plan ?? null,
       isPro: e?.plan === 'pro' || e?.plan === 'trial',
       isTrial: e?.plan === 'trial',
@@ -107,5 +110,5 @@ export function useEntitlements(): EntitlementsView {
       writableAccountIds: data?.writableAccountIds ?? null,
       refetch: () => void refetch(),
     };
-  }, [data, isLoading, isError, refetch]);
+  }, [data, isLoading, isError, error, refetch]);
 }

@@ -1,3 +1,5 @@
+import { wallClock, type WallClock } from '@/lib/appTimeZone';
+
 const MINUS = '−';
 export const PROFIT_FACTOR_SENTINEL = 999.99;
 
@@ -7,6 +9,10 @@ export function currencySymbol(currency?: string): string {
   if (!currency) return '';
   return SYMBOLS[currency.toUpperCase()] ?? `${currency.toUpperCase()} `;
 }
+
+/** An account saved without a currency is shown, summed and grouped as USD. */
+export const DEFAULT_CURRENCY = 'USD';
+export const accountCurrency = (account: { currency?: string } | null | undefined): string => account?.currency || DEFAULT_CURRENCY;
 
 function isNum(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
@@ -38,10 +44,10 @@ function trim(n: number, d = 1): string {
   return n.toFixed(d).replace(/\.0+$/, '');
 }
 
-/** Compact money for calendar cells: −1.4k, +12k, 340. */
+/** Compact money for calendar cells: −1.4k, +12k, 340. `currency` picks the unit (₹ in L and Cr) and prints its symbol unless `symbol` is false (axis ticks, heat cells). */
 export function formatCompactMoney(
   value: number | null | undefined,
-  opts: { sign?: boolean; currency?: string } = {},
+  opts: { sign?: boolean; currency?: string; symbol?: boolean } = {},
 ): string {
   if (!isNum(value)) return '—';
   const abs = Math.abs(value);
@@ -52,7 +58,7 @@ export function formatCompactMoney(
   else body = trim(abs, abs < 100 ? 1 : 0);
   if (body === '0') return '0';
   const prefix = value < 0 ? MINUS : opts.sign ? '+' : '';
-  return `${prefix}${opts.currency ? currencySymbol(opts.currency) : ''}${body}`;
+  return `${prefix}${opts.currency && opts.symbol !== false ? currencySymbol(opts.currency) : ''}${body}`;
 }
 
 export function formatPrice(value: number | null | undefined, maxDecimals = 5): string {
@@ -79,9 +85,11 @@ export function formatR(value: number | null | undefined): string {
   return `${rounded < 0 ? MINUS : '+'}${Math.abs(rounded).toFixed(2)}R`;
 }
 
-/** `∞` for the API's no-loss sentinel (999.99), `—` when there are no trades. */
+/** `∞` for no losses (the API sends `null`, older data 999.99) when there were wins, `—` when there are no trades. */
 export function formatProfitFactor(value: number | null | undefined, wins = 1, trades = 1): string {
-  if (!trades || !isNum(value)) return '—';
+  if (!trades) return '—';
+  if (value === null) return wins > 0 ? '∞' : '—';
+  if (!isNum(value)) return '—';
   if (value >= PROFIT_FACTOR_SENTINEL) return wins > 0 ? '∞' : '—';
   return value.toFixed(2);
 }
@@ -108,29 +116,44 @@ export function parseLocalDate(value: string | Date): Date {
   return new Date(value);
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-/** `04 Nov` / `04 Nov 2026` (D.3: day first). */
-export function formatDateShort(value: string | Date | null | undefined, withYear = false): string {
-  if (!value) return '—';
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** `1,234`: counts always group the US way, whatever the browser's locale. */
+export const formatCount = (n: number): string => n.toLocaleString('en-US');
+
+const INSTANT = /^\d{4}-\d{2}-\d{2}[T ]/;
+
+/**
+ * What a value shows. An ISO date-time is an instant and reads on the app time zone's clock (Settings); a date-only
+ * string or a Date is a calendar value already and is read as written.
+ */
+function clockOf(value: string | Date | null | undefined): WallClock | null {
+  if (!value) return null;
   const d = parseLocalDate(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  return `${String(d.getDate()).padStart(2, '0')} ${MONTHS[d.getMonth()]}${withYear ? ` ${d.getFullYear()}` : ''}`;
+  if (Number.isNaN(d.getTime())) return null;
+  if (typeof value === 'string' && INSTANT.test(value)) return wallClock(d);
+  return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), hour: d.getHours(), minute: d.getMinutes() };
+}
+
+/** `04 Nov` / `04 Nov 2026` (D.3: day first, two digits, here and in every date format). */
+export function formatDateShort(value: string | Date | null | undefined, withYear = false): string {
+  const c = clockOf(value);
+  if (!c) return '—';
+  return `${pad2(c.day)} ${MONTHS_SHORT[c.month - 1]}${withYear ? ` ${c.year}` : ''}`;
 }
 
 export function formatTime(value: string | Date | null | undefined): string {
-  if (!value) return '—';
-  const d = parseLocalDate(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const c = clockOf(value);
+  return c ? `${pad2(c.hour)}:${pad2(c.minute)}` : '—';
 }
 
 /** `23 Oct 17:06` (D.3: day, short month, time). */
 export function formatDateTime(value: string | Date | null | undefined): string {
-  if (!value) return '—';
-  const d = parseLocalDate(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${formatTime(value)}`;
+  const c = clockOf(value);
+  return c ? `${pad2(c.day)} ${MONTHS_SHORT[c.month - 1]} ${pad2(c.hour)}:${pad2(c.minute)}` : '—';
 }
 
 export function signOf(value: number | null | undefined): 'positive' | 'negative' | 'zero' {

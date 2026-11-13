@@ -51,8 +51,6 @@ aws cloudformation describe-stacks --stack-name tradequt-dev \
 | `VITE_COGNITO_USER_POOL_ID` | Backend stack output `UserPoolId` |
 | `VITE_COGNITO_CLIENT_ID` | Backend stack output `UserPoolClientId` |
 | `VITE_COGNITO_DOMAIN` | Cognito hosted UI domain (e.g. `auth-tradequt-dev.tradequt.com`) |
-| `VITE_EXTRACT_TRADES_URL` | Lambda Function URL for AI trade extraction |
-| `VITE_GENERATE_INSIGHTS_URL` | Lambda Function URL for AI insights |
 
 ## Build
 
@@ -81,8 +79,7 @@ Go to Actions -> "Deploy to Production" -> Run workflow.
 
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 - `VITE_API_URL_DEV` / `_PROD`, `VITE_COGNITO_DOMAIN_DEV` / `_PROD`
-- `VITE_COGNITO_CLIENT_ID_DEV` / `_PROD`
-- `VITE_EXTRACT_TRADES_URL_DEV` / `_PROD`, `VITE_GENERATE_INSIGHTS_URL_DEV` / `_PROD`
+- `VITE_COGNITO_CLIENT_ID_DEV` / `_PROD`, `VITE_COGNITO_USER_POOL_ID_DEV` / `_PROD`
 - `CF_DISTRIBUTION_ID_DEV` / `_PROD`
 - Optional: `VITE_GA_MEASUREMENT_ID_DEV` / `_PROD`, `VITE_GSC_VERIFICATION`, `VITE_BING_VERIFICATION`
 

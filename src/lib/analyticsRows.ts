@@ -1,3 +1,5 @@
+import { WEEKDAY_NAMES } from '@/lib/format';
+
 export interface DistributionRow {
   /** Raw key from `/stats` (a rule id for broken rules); `name` is what is shown. */
   key: string;
@@ -28,7 +30,6 @@ export function distributionRows(record: Record<string, Entry> | undefined, opts
     .sort((a, b) => b.trades - a.trades || a.name.localeCompare(b.name));
 }
 
-export const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 /** Monday-first display order of `WEEKDAY_NAMES`. */
 export const WEEKDAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 

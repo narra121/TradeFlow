@@ -1,4 +1,6 @@
-import { render, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DynamicSelect } from '../DynamicSelect';
 
@@ -271,5 +273,28 @@ describe('DynamicSelect – additional coverage', () => {
     );
 
     expect(screen.getByRole('combobox')).toHaveTextContent('Select...');
+  });
+});
+
+describe('DynamicSelect typing a value that already exists (FE-050)', () => {
+  it('selects it and closes the popover instead of doing nothing', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onAddNew = vi.fn();
+    render(<DynamicSelect value="" onChange={onChange} options={['London', 'Tokyo']} onAddNew={onAddNew} />);
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByText('Add New'));
+    await user.type(screen.getByPlaceholderText('Enter new value...'), 'London{Enter}');
+    expect(onChange).toHaveBeenCalledWith('London');
+    expect(onAddNew).not.toHaveBeenCalled();
+    expect(screen.queryByPlaceholderText('Enter new value...')).not.toBeInTheDocument();
+  });
+
+  it('limits a new value to maxLength', async () => {
+    const user = userEvent.setup();
+    render(<DynamicSelect value="" onChange={vi.fn()} options={[]} onAddNew={vi.fn()} maxLength={5} />);
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByText('Add New'));
+    expect(screen.getByPlaceholderText('Enter new value...')).toHaveAttribute('maxlength', '5');
   });
 });

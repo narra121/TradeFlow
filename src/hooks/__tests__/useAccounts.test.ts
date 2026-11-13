@@ -86,9 +86,11 @@ describe('useAccounts', () => {
     const { result, rerender } = renderHook(() => useAccounts());
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isError).toBe(false);
-    mockGetAccountsQuery.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch });
+    const failure = { status: 500, data: { message: 'Accounts are being moved.' } };
+    mockGetAccountsQuery.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: failure, refetch });
     rerender();
     expect(result.current.isError).toBe(true);
+    expect(result.current.error).toBe(failure);
     result.current.refetch();
     expect(refetch).toHaveBeenCalled();
   });

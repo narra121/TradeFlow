@@ -24,9 +24,10 @@ export function Row({ label, helper, children, htmlFor, helperId }: { label: str
 }
 
 
-/** The outcome line of an auto-saving section: `Saving…` → `All changes saved`, or the failure and what happened to the control. */
-export function SaveStatus({ state, errorText = "Couldn't save. The value was put back." }: { state: SaveState; errorText?: string }) {
-  const text = state === 'saving' ? 'Saving…' : state === 'saved' ? 'All changes saved' : state === 'error' ? errorText : '';
+/** The outcome line of an auto-saving section: `Saving…` → `All changes saved`, or the failure (with the API's `reason`) and what happened to the control. */
+export function SaveStatus({ state, reason, errorText = "Couldn't save. The value was put back." }: { state: SaveState; reason?: string; errorText?: string }) {
+  const failure = reason ? `Couldn't save. ${reason.replace(/[.!?]?$/, '.')} The value was put back.` : errorText;
+  const text = state === 'saving' ? 'Saving…' : state === 'saved' ? 'All changes saved' : state === 'error' ? failure : '';
   return (
     <p role={state === 'error' ? 'alert' : 'status'} className={cn('h-5 text-xs', state === 'error' ? 'text-error' : 'text-muted-foreground')}>
       {text}

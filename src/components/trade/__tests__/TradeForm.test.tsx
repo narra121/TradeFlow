@@ -62,7 +62,7 @@ describe('TradeForm dates (R-fe-app-013)', () => {
     expect(opened).toHaveAttribute('placeholder', '4 Nov 2026, 14:30');
     await userEvent.type(opened, '4 Nov 2026, 14:30');
     await userEvent.tab();
-    expect(opened).toHaveValue('4 Nov 2026, 14:30');
+    expect(opened).toHaveValue('04 Nov 2026, 14:30'); // typed unpadded, shown in the one date format
   });
 
   it('flags text that is not a date and keeps it for correction', async () => {

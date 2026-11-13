@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronDown, Search } from 'lucide-react';
+import { AccountPicker } from '@/components/account/AccountPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Money } from '@/components/ui/money';
@@ -11,7 +12,8 @@ import { useEntitlements } from '@/hooks/useEntitlements';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGetImportSourcesQuery } from '@/store/api/importApi';
 import { importFlow, useImportFlow } from '@/lib/importFlowStore';
-import { sourceLabel } from '@/lib/import/labels';
+import { appTimeZone } from '@/lib/appTimeZone';
+import { PAGE_SIZE, sourceLabel } from '@/lib/import/labels';
 import { canMerge, filterRows, firstProblemKey, parseTruncation, summarise } from '@/lib/import/rows';
 import { SCREENSHOT_SOURCE, type ImportSourceId } from '@/types/import';
 import { ColumnMapping } from './ColumnMapping';
@@ -24,8 +26,9 @@ import { SourceGuide } from './SourceGuide';
 import { SourcePreview } from './SourcePreview';
 import { StatusChips } from './StatusChips';
 import { useImportActions } from './useImportActions';
+import { formatCount } from '@/lib/format';
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+const plural = (n: number, one: string, many = `${one}s`) => `${formatCount(n)} ${n === 1 ? one : many}`;
 
 export function ImportCenter() {
   const flow = useImportFlow();
@@ -54,7 +57,15 @@ export function ImportCenter() {
     const ids = ent.writableAccountIds;
     return accounts.filter((a) => a.status === 'active' && (!ids || ids.includes(a.id)));
   }, [accounts, ent.writableAccountIds]);
-  const accountId = flow.accountId ?? (selectedAccountId && writable.some((a) => a.id === selectedAccountId) ? selectedAccountId : writable[0]?.id) ?? null;
+  // Active accounts the plan made read-only stay listed, with the reason, so a missing account is explained.
+  const accountOptions = useMemo(
+    () => [...writable, ...accounts.filter((a) => a.status === 'active' && !writable.includes(a)).map((a) => ({ ...a, disabledReason: 'Read-only on Free' }))],
+    [accounts, writable],
+  );
+  // The plan can arrive after the accounts: a default taken while every account still looked writable is dropped
+  // once it turns out read-only. A review in progress keeps its account, because its duplicates were checked there.
+  const kept = flow.accountId && (flow.rows.length > 0 || writable.some((a) => a.id === flow.accountId)) ? flow.accountId : null;
+  const accountId = kept ?? (selectedAccountId && writable.some((a) => a.id === selectedAccountId) ? selectedAccountId : writable[0]?.id) ?? null;
   const account = accounts.find((a) => a.id === accountId);
   const accountName = (id?: string | null) => accounts.find((a) => a.id === id)?.name ?? 'the selected account';
 
@@ -173,16 +184,15 @@ export function ImportCenter() {
         <label id="imp-account" className="text-xs font-medium text-foreground-soft">
           Account <span aria-hidden="true" className="text-loss">*</span>
         </label>
-        <Select value={accountId ?? ''} onValueChange={(v) => importFlow.set({ accountId: v })} disabled={busy || hasRows}>
-          <SelectTrigger aria-labelledby="imp-account" className="h-8">
-            <SelectValue placeholder={writable.length === 0 ? 'No account yet' : 'Choose an account'} />
-          </SelectTrigger>
-          <SelectContent>
-            {writable.map((a) => (
-              <SelectItem key={a.id} value={a.id}>{a.name} · {a.currency}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <AccountPicker
+          label="Account"
+          labelledBy="imp-account"
+          accounts={accountOptions}
+          value={accountId}
+          onChange={(v) => importFlow.set({ accountId: v })}
+          disabled={busy || hasRows}
+          placeholder={writable.length === 0 ? 'No account yet' : 'Choose an account'}
+        />
       </div>
       <div className="space-y-1.5">
         <label id="imp-source" className="text-xs font-medium text-foreground-soft">Source</label>
@@ -258,10 +268,16 @@ export function ImportCenter() {
               <Button type="button" size="sm" variant="outline" onClick={() => act(`Excluded ${plural(selection.size, 'row')}`, () => actions.toggle([...selection], false))} disabled={readOnly}>Exclude</Button>
               <Button type="button" size="sm" variant="outline" onClick={() => act(`Included ${plural(selection.size, 'row')}`, () => actions.toggle([...selection], true))} disabled={readOnly}>Include</Button>
               <Button type="button" size="sm" variant="outline" disabled={readOnly || !mergeable} title={mergeable ? undefined : 'Merge needs two or more rows with the same symbol and direction'} onClick={() => act(`Merged ${plural(selection.size, 'row')} into one`, () => actions.merge([...selection]))}>Merge</Button>
-              <Select value="" onValueChange={(id) => act(`Moved ${plural(selection.size, 'row')} to ${accountName(id)}`, () => actions.move([...selection], id === accountId ? undefined : id))} disabled={readOnly}>
-                <SelectTrigger aria-label="Move selected rows to account" className="h-7 w-40 text-xs"><SelectValue placeholder="Move to account…" /></SelectTrigger>
-                <SelectContent>{writable.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
-              </Select>
+              <AccountPicker
+                size="sm"
+                className="w-40"
+                label="Move selected rows to account"
+                placeholder="Move to account…"
+                accounts={accountOptions}
+                value={null}
+                onChange={(id) => act(`Moved ${plural(selection.size, 'row')} to ${accountName(id)}`, () => actions.move([...selection], id === accountId ? undefined : id))}
+                disabled={readOnly}
+              />
               <Button type="button" size="sm" variant="ghost" onClick={() => setSelection(new Set())}>Clear</Button>
             </>
           ) : (
@@ -279,7 +295,7 @@ export function ImportCenter() {
         <div className={flow.detected === SCREENSHOT_SOURCE && !isMobile ? 'grid gap-4 2xl:grid-cols-[minmax(0,1fr)_22rem]' : undefined}>
           {isMobile ? (
             <MobileReview
-              rows={visible.slice((page - 1) * 100, page * 100)}
+              rows={visible.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)}
               currency={account?.currency}
               readOnly={readOnly}
               onInclude={(k, inc) => actions.toggle([k], inc)}
@@ -294,7 +310,7 @@ export function ImportCenter() {
               currency={account?.currency}
               selection={selection}
               onSelect={onSelect}
-              onToggleSelectAll={(c) => actions.toggle(visible.slice((page - 1) * 100, page * 100).map((r) => r.key), c)}
+              onToggleSelectAll={(c) => actions.toggle(visible.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((r) => r.key), c)}
               onInclude={(k, inc) => actions.toggle([k], inc)}
               onEdit={actions.edit}
               onFocusRow={(r) => setFocusRow(r.key)}
@@ -322,11 +338,11 @@ export function ImportCenter() {
           </div>
         </div>
       )}
-      {isMobile && visible.length > 100 && (
+      {isMobile && visible.length > PAGE_SIZE && (
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</Button>
-          <span className="font-mono tabular-nums">{page} / {Math.ceil(visible.length / 100)}</span>
-          <Button type="button" size="sm" variant="outline" disabled={page * 100 >= visible.length} onClick={() => setPage(page + 1)}>Next</Button>
+          <span className="font-mono tabular-nums">{page} / {Math.ceil(visible.length / PAGE_SIZE)}</span>
+          <Button type="button" size="sm" variant="outline" disabled={page * PAGE_SIZE >= visible.length} onClick={() => setPage(page + 1)}>Next</Button>
         </div>
       )}
     </>
@@ -365,10 +381,7 @@ export function ImportCenter() {
         <div className="grid gap-3 border-y border-border py-3 sm:grid-cols-[minmax(0,16rem)_minmax(0,14rem)_auto] sm:items-end">
           <div className="space-y-1.5">
             <label id="chg-account" className="text-xs font-medium text-foreground-soft">Account</label>
-            <Select value={draftAccount ?? ''} onValueChange={setDraftAccount}>
-              <SelectTrigger aria-labelledby="chg-account" className="h-8"><SelectValue /></SelectTrigger>
-              <SelectContent>{writable.map((a) => <SelectItem key={a.id} value={a.id}>{a.name} · {a.currency}</SelectItem>)}</SelectContent>
-            </Select>
+            <AccountPicker label="Account" labelledBy="chg-account" accounts={accountOptions} value={draftAccount} onChange={setDraftAccount} />
           </div>
           {flow.detected !== SCREENSHOT_SOURCE && (
             <div className="space-y-1.5">
@@ -430,6 +443,7 @@ export function ImportCenter() {
               </>
             )}
             {flow.mapping?.remembered && <> · Using your saved column mapping</>}
+            {flow.detected === 'generic_csv' && <> · Times read in {appTimeZone()}</>}
           </p>
           {showSkipped && (
             <ul className="space-y-0.5 text-xs text-muted-foreground">
@@ -443,7 +457,7 @@ export function ImportCenter() {
           {showWarnings && <ul className="list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">{otherWarnings.map((w, i) => <li key={`${i}-${w}`}>{w}</li>)}</ul>}
           {(flow.truncated > 0 || serverCut) && (
             <p role="status" className="text-xs text-warning">
-              This file has {(serverCut?.total ?? summary.all + flow.truncated).toLocaleString()} trades. The first {(serverCut?.shown ?? summary.all).toLocaleString()} are shown. Split the file by date to import the rest.
+              This file has {formatCount(serverCut?.total ?? summary.all + flow.truncated)} trades. The first {formatCount(serverCut?.shown ?? summary.all)} are shown. Split the file by date to import the rest.
             </p>
           )}
         </div>
@@ -470,8 +484,8 @@ export function ImportCenter() {
                 flow.progress?.label
               ) : (
                 <>
-                  <span className="font-medium">{summary.ready.toLocaleString()}</span> of {summary.all.toLocaleString()} will be imported · Net <Money value={summary.net} currency={account?.currency} />
-                  {summary.fix > 0 && <> · <button type="button" className="text-loss underline underline-offset-2" onClick={() => { importFlow.set({ filter: 'fix' }); setJump(firstProblemKey(flow.rows)); }}>{summary.fix.toLocaleString()} need a fix</button></>}
+                  <span className="font-medium">{formatCount(summary.ready)}</span> of {formatCount(summary.all)} will be imported · Net <Money value={summary.net} currency={account?.currency} />
+                  {summary.fix > 0 && <> · <button type="button" className="text-loss underline underline-offset-2" onClick={() => { importFlow.set({ filter: 'fix' }); setJump(firstProblemKey(flow.rows)); }}>{formatCount(summary.fix)} need a fix</button></>}
                 </>
               )}
             </p>

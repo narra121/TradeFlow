@@ -50,7 +50,7 @@ export function useUpgrade(): UpgradeApi {
       const { url } = await run();
       window.location.assign(url);
     } catch (e) {
-      setError(readApiError(e).code === 'ALREADY_SUBSCRIBED' ? 'You already have an active Pro subscription.' : failure);
+      setError(readApiError(e, failure).message);
       setBusy(null);
     }
   }, []);

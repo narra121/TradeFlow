@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import { useGetSavedOptionsQuery, useUpdateSavedOptionsMutation } from '@/store/api';
 import type { SavedOptions } from '@/store/api';
 import { toast } from 'sonner';
+import { readApiError } from '@/lib/apiError';
 
 /** Starter lists; Settings › Trade options resets to them. */
 export const defaultOptions: SavedOptions = {
@@ -40,10 +41,17 @@ export function useSavedOptions() {
   }, [apiOptions]);
 
   // Edits are applied one after another to the latest value, so two quick edits cannot overwrite each other.
+  // `latest` follows the cache only when the cache object changes and no write is queued, so a render cannot undo a queued edit.
   const latest = useRef<SavedOptions>(options);
-  latest.current = options;
+  const saved = useRef<SavedOptions>(options);
+  const seen = useRef(apiOptions);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const pending = useRef(0);
+  if (apiOptions !== seen.current) {
+    seen.current = apiOptions;
+    saved.current = options;
+    if (pending.current === 0) latest.current = options;
+  }
   const loaded = !!apiOptions;
 
   const updateWithNewOptions = useCallback(
@@ -62,9 +70,15 @@ export function useSavedOptions() {
       pending.current += 1;
       // Each queued edit already contains the earlier ones (computed from `latest`); the first runs at once.
       const started = pending.current === 1 ? run() : queue.current.then(run);
-      queue.current = started.catch(() => undefined).finally(() => {
-        pending.current -= 1;
-      });
+      queue.current = started
+        .catch((err) => {
+          // Nothing was saved: the next edit starts from the stored lists, not from this one.
+          if (pending.current === 1) latest.current = saved.current;
+          toast.error("Couldn't save your options.", { description: readApiError(err, 'Try again.').message });
+        })
+        .finally(() => {
+          pending.current -= 1;
+        });
     },
     [loaded, updateOptions]
   );

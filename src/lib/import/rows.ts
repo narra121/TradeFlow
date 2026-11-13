@@ -41,6 +41,11 @@ export function makeRows(trades: NormalizedTrade[], source: string, opts: { batc
 const validDate = (iso: string | undefined) => !!iso && !Number.isNaN(new Date(iso).getTime());
 
 /** One message per field, phrased as the rule (D.5). Empty object = the row can be saved. */
+/** A number typed into a cell: a comma is a thousands separator, and an empty cell is NaN so validation flags it instead of saving 0. */
+export function parseNumberCell(raw: string): number {
+  return raw.trim() === '' ? Number.NaN : Number(raw.replace(/,/g, ''));
+}
+
 export function validateTrade(t: NormalizedTrade): RowErrors {
   const e: RowErrors = {};
   if (!t.symbol.trim()) e.symbol = 'Enter a symbol.';
@@ -188,11 +193,13 @@ export function mergeTrades(trades: NormalizedTrade[]): NormalizedTrade {
 export function mergeRows(rows: ReviewRow[], keys: ReadonlySet<string>): ReviewRow[] {
   const picked = rows.filter((r) => keys.has(r.key) && !r.saved);
   if (!canMerge(picked)) return rows;
+  const trade = mergeTrades(picked.map((r) => r.trade));
   const merged: ReviewRow = {
     ...picked[0],
     key: `merged|${shortHash(picked.map((r) => r.key).join('|'))}`,
-    trade: mergeTrades(picked.map((r) => r.trade)),
-    included: true,
+    trade,
+    // Fills that were all already imported stay "Already imported" until the user re-includes the merged row.
+    included: !trade.duplicate,
     mergedFrom: picked.flatMap((r) => r.mergedFrom ?? [r.trade.externalId]),
   };
   const at = rows.findIndex((r) => picked.includes(r));

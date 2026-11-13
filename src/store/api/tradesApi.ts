@@ -1,43 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { api } from './baseApi';
-import type {
-  CreateTradePayload,
-  TradesQueryParams,
-  BulkImportPayload,
-} from '@/lib/api';
+import type { CreateTradePayload } from '@/lib/api';
 import type { Trade } from '@/types/trade';
-import { backgroundCacheStoreTrades, backgroundCacheDeleteTrades } from '@/lib/cache/proactive-cache';
-
-// --- Paginated trades types ---
-
-export interface PaginatedTradesQueryParams extends TradesQueryParams {
-  limit?: number;
-  cursor?: string;
-}
-
-export interface PaginationInfo {
-  nextCursor: string | null;
-  hasMore: boolean;
-  limit: number;
-}
-
-export interface PaginatedTradesResponse {
-  trades: Trade[];
-  pagination: PaginationInfo;
-}
+import { wallToInstant } from '@/lib/appTimeZone';
 
 // DynamoDB Streams are async — after a trade mutation the stream handler
 // recalculates account balances and DailyStats (which goals/rules progress
 // depend on), but it hasn't finished by the time the mutation response
 // arrives.  A short delay before refetching gives the stream handler time
-// to write the updated data.
+// to write the updated data.  The trade lists are not refetched: every
+// mutation below patches them in place.
 const STREAM_PROPAGATION_DELAY_MS = 4000;
 
 let streamDebounceTimer: ReturnType<typeof setTimeout>;
 const debouncedInvalidateStreamDeps = (dispatch: any) => {
   clearTimeout(streamDebounceTimer);
   streamDebounceTimer = setTimeout(() => {
-    dispatch(api.util.invalidateTags(['Accounts', 'Goals', 'Rules', 'SavedOptions', 'Stats', { type: 'Trades', id: 'LIST' }]));
+    dispatch(api.util.invalidateTags(['Accounts', 'Goals', 'Rules', 'SavedOptions', 'Stats']));
   }, STREAM_PROPAGATION_DELAY_MS);
 };
 
@@ -62,19 +41,25 @@ export const mapExtraFieldsToBackend = (payload: Partial<CreateTradePayload>): R
 
 export const SCOPE_TRADE_CEILING = 5000;
 const SCOPE_PAGE_SIZE = 100;
-export const TRADE_LIST_ENDPOINTS = ['getTrades', 'getScopeTrades'];
+export const TRADE_LIST_ENDPOINTS = ['getScopeTrades'];
+
+type ScopeArgs = { accountId?: string; startDate?: string; endDate?: string; importBatchId?: string };
+const tradeDay = (t: Trade) => (t.exitDate || t.entryDate || '').slice(0, 10);
+
+/** Whether a trade belongs in a scope list. The list of one import batch only changes by refetch. */
+const inScope = ({ accountId, startDate, endDate, importBatchId }: ScopeArgs, t: Trade) => {
+  if (importBatchId) return false;
+  if (accountId && accountId !== 'ALL' && t.accountId !== accountId) return false;
+  const day = tradeDay(t);
+  return (!startDate || day >= startDate) && (!endDate || day <= endDate);
+};
 
 /** Adds saved trades to every cached scope list they belong to; the list endpoint reads an eventually consistent index, so an immediate refetch can miss them. */
 const insertIntoScopeCaches = (dispatch: any, getState: any, trades: Trade[]) => {
   const queries = getState()?.[api.reducerPath]?.queries || {};
   for (const entry of Object.values<any>(queries)) {
     if (entry?.endpointName !== 'getScopeTrades') continue;
-    const { accountId, startDate, endDate } = entry.originalArgs ?? {};
-    const fits = trades.filter((t) => {
-      if (accountId && accountId !== 'ALL' && t.accountId !== accountId) return false;
-      const day = (t.exitDate || t.entryDate || '').slice(0, 10);
-      return (!startDate || day >= startDate) && (!endDate || day <= endDate);
-    });
+    const fits = trades.filter((t) => inScope(entry.originalArgs ?? {}, t));
     if (!fits.length) continue;
     dispatch((tradesApi.util.updateQueryData as any)('getScopeTrades', entry.originalArgs, (draft: Trade[]) => {
       for (const t of fits) if (!draft.some((d) => d.id === t.id)) draft.push(t);
@@ -134,72 +119,49 @@ const mapBackendTradeToTrade = (trade: any): Trade => {
 const OPEN_START = '2000-01-01';
 const OPEN_END = '2099-12-31';
 
+/**
+ * A day (YYYY-MM-DD) as the instant it starts or ends on the app zone's clock. The backend reads the openDate index in UTC
+ * and takes an ISO instant as it is, so a local day sent as a bare date would drop a New York evening trade (next UTC day)
+ * or an Indian early-morning one (previous UTC day).
+ */
+export function dayBound(day: string, edge: 'start' | 'end'): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!m) return day;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (edge === 'start') return wallToInstant({ year: y, month: mo, day: d, hour: 0, minute: 0 }).toISOString();
+  const next = new Date(Date.UTC(y, mo - 1, d + 1));
+  return new Date(wallToInstant({ year: next.getUTCFullYear(), month: next.getUTCMonth() + 1, day: next.getUTCDate(), hour: 0, minute: 0 }).getTime() - 1).toISOString();
+}
+
 type ScopeResult = { data?: unknown; error?: any };
 type ScopeFetch = (arg: { url: string; params: Record<string, unknown> }) => ScopeResult | PromiseLike<ScopeResult>;
 
+/** Pages `/trades` (newest first) until `max` trades are read; the default is the scope ceiling. */
 export async function fetchAllScopeTrades(
-  params: { accountId?: string; startDate?: string; endDate?: string; importBatchId?: string },
+  params: ScopeArgs,
   fetchPage: ScopeFetch,
+  max = SCOPE_TRADE_CEILING,
 ): Promise<{ data: Trade[] } | { error: any }> {
   const all: Trade[] = [];
   let cursor: string | undefined;
-  for (let page = 0; page <= Math.ceil(SCOPE_TRADE_CEILING / SCOPE_PAGE_SIZE); page++) {
-    const res = await fetchPage({ url: '/trades', params: { ...params, startDate: params.startDate || OPEN_START, endDate: params.endDate || OPEN_END, limit: SCOPE_PAGE_SIZE, ...(cursor ? { cursor } : {}) } });
+  const pageSize = Math.min(SCOPE_PAGE_SIZE, max);
+  for (let page = 0; page <= Math.ceil(max / pageSize); page++) {
+    const res = await fetchPage({ url: '/trades', params: { ...params, startDate: dayBound(params.startDate || OPEN_START, 'start'), endDate: dayBound(params.endDate || OPEN_END, 'end'), limit: pageSize, ...(cursor ? { cursor } : {}) } });
     if (res.error) return { error: res.error };
     const body: any = res.data;
     const list: any[] = Array.isArray(body) ? body : body?.trades ?? [];
     all.push(...list.map(mapBackendTradeToTrade));
     cursor = body?.pagination?.hasMore ? body.pagination.nextCursor ?? undefined : undefined;
-    if (!cursor || all.length >= SCOPE_TRADE_CEILING) break;
+    if (!cursor || all.length >= max) break;
   }
-  return { data: all.slice(0, SCOPE_TRADE_CEILING) };
+  return { data: all.slice(0, max) };
 }
 
 export const tradesApi = api.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
-    getTrades: builder.query<Trade[], TradesQueryParams | void>({
-      query: (params) => ({
-        url: '/trades',
-        params: params || undefined,
-      }),
-      transformResponse: (response: any) => {
-        // Handle case where response might be { trades: [...] } or just [...]
-        const tradesArray = Array.isArray(response) ? response : (response?.trades || []);
-        
-        // Map backend response to frontend Trade type
-        const mappedTrades = tradesArray.map(mapBackendTradeToTrade);
-
-        // Preserve _apiMessage from baseApi
-        if (response?._apiMessage) {
-            Object.defineProperty(mappedTrades, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
-
-        return mappedTrades;
-      },
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map(({ id }) => ({ type: 'Trades' as const, id })),
-              { type: 'Trades', id: 'LIST' },
-            ]
-          : [{ type: 'Trades', id: 'LIST' }],
-      async onQueryStarted(_params, { queryFulfilled }) {
-        try {
-          const { data: trades } = await queryFulfilled;
-          backgroundCacheStoreTrades(trades).catch(() => {});
-        } catch {
-          // the local cache is best effort
-        }
-      },
-    }),
-
     /** Every trade in the scope (account + date range): pages `/trades` to completion, newest 5,000 at most. */
-    getScopeTrades: builder.query<Trade[], { accountId?: string; startDate?: string; endDate?: string; importBatchId?: string }>({
+    getScopeTrades: builder.query<Trade[], ScopeArgs>({
       queryFn: (params, _api, _extra, fetchWithBQ) => fetchAllScopeTrades(params, fetchWithBQ),
       providesTags: (result) => [
         ...(result ?? []).map(({ id }) => ({ type: 'Trades' as const, id })),
@@ -207,59 +169,16 @@ export const tradesApi = api.injectEndpoints({
       ],
     }),
 
-    getTradesPaginated: builder.query<PaginatedTradesResponse, PaginatedTradesQueryParams | void>({
-      query: (params) => {
-        const p = params || {};
-        return {
-          url: '/trades',
-          params: {
-            ...p,
-            limit: ('limit' in p && p.limit) ? p.limit : 50,
-            ...('cursor' in p && p.cursor ? { cursor: p.cursor } : {}),
-          },
-        };
-      },
-      transformResponse: (response: any, _meta: unknown, arg: PaginatedTradesQueryParams | void) => {
-        // Handle both paginated { trades, pagination } and legacy array responses
-        const tradesArray = Array.isArray(response) ? response : (response?.trades || []);
-        const mappedTrades = tradesArray.map(mapBackendTradeToTrade);
-
-        const requestedLimit = (arg as PaginatedTradesQueryParams)?.limit ?? 50;
-
-        const pagination: PaginationInfo = response?.pagination
-          ? {
-              nextCursor: response.pagination.nextCursor ?? null,
-              hasMore: response.pagination.hasMore ?? false,
-              limit: response.pagination.limit ?? requestedLimit,
-            }
-          : {
-              // Fallback for legacy backend that returns all trades at once
-              nextCursor: null,
-              hasMore: false,
-              limit: requestedLimit,
-            };
-
-        return { trades: mappedTrades, pagination };
-      },
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.trades.map(({ id }) => ({ type: 'Trades' as const, id })),
-              { type: 'Trades', id: 'PAGINATED_LIST' },
-            ]
-          : [{ type: 'Trades', id: 'PAGINATED_LIST' }],
-      async onQueryStarted(_params, { queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          backgroundCacheStoreTrades(data.trades).catch(() => {});
-        } catch {
-          // the local cache is best effort
-        }
-      },
+    /** The newest trade of the scope, one request: what Calendar needs to open on its latest month. Refetched when a trade is written. */
+    getNewestTrade: builder.query<Trade[], ScopeArgs>({
+      queryFn: (params, _api, _extra, fetchWithBQ) => fetchAllScopeTrades(params, fetchWithBQ, 1),
+      providesTags: [{ type: 'Trades', id: 'PAGINATED_LIST' }],
     }),
 
-    createTrade: builder.mutation<Trade, CreateTradePayload>({
-      query: (payload) => {
+    // `idempotencyKey` goes in the `Idempotency-Key` header, so a repeated request returns the trade it already created.
+    // The API answers `{ trade }` for one account and `{ trades, count }` for several: here always a list, one trade per account.
+    createTrade: builder.mutation<Trade[], CreateTradePayload & { idempotencyKey?: string }>({
+      query: ({ idempotencyKey, ...payload }) => {
         // Map UI fields to backend API fields
         const backendPayload = {
           symbol: payload.symbol,
@@ -293,33 +212,33 @@ export const tradesApi = api.injectEndpoints({
           url: '/trades',
           method: 'POST',
           body: backendPayload,
+          ...(idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {}),
         };
       },
-      transformResponse: (response: any) => {
-        const trade = response.trade || response;
-        const mappedTrade = mapBackendTradeToTrade(trade);
-        
-        if (response?._apiMessage) {
-             Object.defineProperty(mappedTrade, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
-        return mappedTrade;
+      transformResponse: (response: any): Trade[] => {
+        const list: any[] = Array.isArray(response?.trades) ? response.trades : [response?.trade ?? response];
+        return list.map(mapBackendTradeToTrade);
       },
       invalidatesTags: [{ type: 'Trades', id: 'PAGINATED_LIST' }],
       async onQueryStarted(_, { dispatch, getState, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          insertIntoScopeCaches(dispatch, getState, [data]);
-          // Refetch accounts and the lists after a delay to allow the DynamoDB Stream
-          // handler and the index to catch up
+          insertIntoScopeCaches(dispatch, getState, data);
+          // Refetch accounts and stats after a delay to allow the DynamoDB Stream handler to catch up
           debouncedInvalidateStreamDeps(dispatch);
-          backgroundCacheStoreTrades([data]).catch(() => {});
         } catch { /* handled elsewhere */ }
       },
+    }),
+
+    /** One trade by id, for a trade the scope list does not hold. Any trade write refetches it through the list tag. */
+    getTrade: builder.query<Trade, string>({
+      query: (id) => `/trades/${id}`,
+      // The list endpoint answers an image's `id` as its S3 key; this one returns the stored record, so do the same here.
+      transformResponse: (response: any) => {
+        const trade = response.trade || response;
+        return mapBackendTradeToTrade({ ...trade, images: (trade.images ?? []).map((im: any) => (im.key ? { ...im, id: im.key } : im)) });
+      },
+      providesTags: (_result, _error, id) => [{ type: 'Trades', id }, { type: 'Trades', id: 'PAGINATED_LIST' }],
     }),
 
     updateTrade: builder.mutation<{ updatedTrade: Trade; createdTrades: Trade[]; message?: string }, { id: string; payload: Partial<CreateTradePayload> }>({
@@ -366,23 +285,12 @@ export const tradesApi = api.injectEndpoints({
         const trade = response.trade || response;
         const mappedTrade = mapBackendTradeToTrade(trade);
         // Also map any additional trades created for other accounts
-        const createdTrades = response.createdTrades 
+        const createdTrades = response.createdTrades
           ? response.createdTrades.map(mapBackendTradeToTrade)
           : [];
-        
-        const result = { updatedTrade: mappedTrade, createdTrades, message: response.message };
 
-        if (response?._apiMessage) {
-             Object.defineProperty(result, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
-        return result;
+        return { updatedTrade: mappedTrade, createdTrades, message: response.message };
       },
-      invalidatesTags: [{ type: 'Trades', id: 'PAGINATED_LIST' }],
       async onQueryStarted({ id }, { dispatch, getState, queryFulfilled }) {
         try {
           // Wait for update to succeed and use the mutation response as the source of truth.
@@ -390,30 +298,28 @@ export const tradesApi = api.injectEndpoints({
           const updatedTrade = data.updatedTrade;
           const createdTrades = data.createdTrades || [];
 
-          // Patch all cached getTrades query results in-place (no network refetch).
+          // Patch every cached scope list in place (no network refetch).
           const state: any = getState();
           const queries = state?.[api.reducerPath]?.queries || {};
-          for (const entry of Object.values<any>(queries)) {
-            if (!TRADE_LIST_ENDPOINTS.includes(entry?.endpointName)) continue;
-
+          const entries = Object.values<any>(queries).filter((e) => TRADE_LIST_ENDPOINTS.includes(e?.endpointName));
+          const before: Trade | undefined = entries.flatMap((e) => (e.data ?? []) as Trade[]).find((t) => t.id === id);
+          // A trade that changed account or day may have left some lists and belong in others.
+          const moved = !!before && (before.accountId !== updatedTrade.accountId || tradeDay(before) !== tradeDay(updatedTrade));
+          for (const entry of entries) {
             dispatch(
               (tradesApi.util.updateQueryData as any)(entry.endpointName, entry.originalArgs, (draft: Trade[]) => {
                 const index = draft.findIndex((t) => t.id === id);
-                if (index !== -1) {
-                  draft[index] = updatedTrade;
-                }
-                // Add any newly created trades (for additional accounts)
-                if (createdTrades.length > 0) {
-                  draft.push(...createdTrades);
-                }
+                if (index === -1) return;
+                if (moved && !inScope(entry.originalArgs ?? {}, updatedTrade)) draft.splice(index, 1);
+                else draft[index] = updatedTrade;
               })
             );
           }
 
-          insertIntoScopeCaches(dispatch, getState, createdTrades);
+          // The copies for other accounts go only into the lists they belong to.
+          insertIntoScopeCaches(dispatch, getState, moved ? [updatedTrade, ...createdTrades] : createdTrades);
           // Delayed refetch for account balance (DynamoDB Stream needs time)
           debouncedInvalidateStreamDeps(dispatch);
-          backgroundCacheStoreTrades([updatedTrade, ...createdTrades]).catch(() => {});
         } catch {
           // No-op: if update/refetch fails, leave cache as-is.
         }
@@ -425,28 +331,12 @@ export const tradesApi = api.injectEndpoints({
         url: `/trades/${id}`,
         method: 'DELETE',
       }),
-      transformResponse: (response: any) => {
-        const result = {
-            message: response.message || 'Deleted',
-            trade: response.trade ? mapBackendTradeToTrade(response.trade) : undefined
-        };
-
-        if (response?._apiMessage) {
-             Object.defineProperty(result, '_apiMessage', {
-                value: response._apiMessage,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            });
-        }
-        return result;
-      },
-      // Only invalidate Stats, Analytics - not Trades (we update cache manually)
-      // Accounts invalidated after delay in onQueryStarted (DynamoDB Stream needs time)
-      invalidatesTags: (result, error) => {
-        if (error) return [];
-        return [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats'];
-      },
+      transformResponse: (response: any) => ({
+        message: response.message || 'Deleted',
+        trade: response.trade ? mapBackendTradeToTrade(response.trade) : undefined,
+      }),
+      // Not Trades/LIST: the lists are patched below. Accounts are invalidated after a delay (DynamoDB Stream needs time).
+      invalidatesTags: (_result, error) => (error ? [] : [{ type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats']),
       async onQueryStarted(id, { dispatch, getState, queryFulfilled }) {
         // Optimistic delete from all getTrades caches
         const patchResults: any[] = [];
@@ -471,58 +361,10 @@ export const tradesApi = api.injectEndpoints({
           await queryFulfilled;
           // Delayed refetch for account balance (DynamoDB Stream needs time)
           debouncedInvalidateStreamDeps(dispatch);
-          backgroundCacheDeleteTrades([id]).catch(() => {});
         } catch {
           // Revert optimistic updates on error
           patchResults.forEach(patchResult => patchResult.undo());
         }
-      },
-    }),
-
-    bulkImportTrades: builder.mutation<any, BulkImportPayload>({
-      query: (payload) => {
-        // Map each item from frontend (CreateTradePayload) to backend API fields
-        // Must match the same mapping used in createTrade mutation
-        const mappedItems = payload.items.map(item => ({
-          symbol: item.symbol,
-          side: item.direction === 'LONG' ? 'BUY' : 'SELL',
-          quantity: item.size,
-          entryPrice: item.entryPrice ?? 0,
-          exitPrice: item.exitPrice,
-          stopLoss: item.stopLoss || 0,
-          takeProfit: item.takeProfit || 0,
-          openDate: item.entryDate,
-          closeDate: item.exitDate,
-          outcome: item.outcome,
-          pnl: item.pnl || 0,
-          riskRewardRatio: item.riskRewardRatio || 0,
-          setupType: item.strategy,
-          tradingSession: item.session,
-          marketCondition: item.marketCondition,
-          newsEvents: item.newsEvents,
-          mistakes: item.mistakes,
-          lessons: item.keyLesson ? [item.keyLesson] : undefined,
-          tradeNotes: item.notes,
-          tags: item.tags,
-          accountIds: item.accountIds || (item.accountId ? [item.accountId] : undefined),
-          brokenRuleIds: item.brokenRuleIds,
-          images: item.images,
-          ...mapExtraFieldsToBackend(item),
-        }));
-
-        return {
-          url: '/trades',
-          method: 'POST',
-          body: { items: mappedItems },
-        };
-      },
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats'],
-      async onQueryStarted(_, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          debouncedInvalidateStreamDeps(dispatch);
-          backgroundCacheStoreTrades(data?.trades || []).catch(() => {});
-        } catch { /* handled elsewhere */ }
       },
     }),
 
@@ -541,19 +383,56 @@ export const tradesApi = api.injectEndpoints({
       },
     }),
 
+    /**
+     * One change set for up to 200 trades (BE bulk-update). The server merges `add` / `remove` into each trade's lists, so two
+     * quick edits cannot overwrite each other. `patches` (id -> changed fields) is not sent: it updates the cached lists.
+     */
+    bulkUpdateTrades: builder.mutation<
+      { updated: number; updatedIds: string[]; notFound: string[]; failed: { tradeId: string; message: string }[] },
+      { tradeIds: string[]; set?: Record<string, string | null>; add?: Record<string, string[]>; remove?: Record<string, string[]>; patches: Record<string, Partial<Trade>> }
+    >({
+      query: ({ patches: _patches, ...body }) => ({ url: '/trades/bulk-update', method: 'POST', body }),
+      transformResponse: (r: any) => ({ updated: r?.updated ?? 0, updatedIds: r?.updatedIds ?? [], notFound: r?.notFound ?? [], failed: r?.failed ?? [] }),
+      async onQueryStarted({ patches }, { dispatch, getState, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const queries = (getState() as any)?.[api.reducerPath]?.queries || {};
+          for (const entry of Object.values<any>(queries)) {
+            if (!TRADE_LIST_ENDPOINTS.includes(entry?.endpointName)) continue;
+            dispatch(
+              (tradesApi.util.updateQueryData as any)(entry.endpointName, entry.originalArgs, (draft: Trade[]) => {
+                for (const id of data.updatedIds) {
+                  const trade = draft.find((t) => t.id === id);
+                  if (trade && patches[id]) Object.assign(trade, patches[id]);
+                }
+              }),
+            );
+          }
+          debouncedInvalidateStreamDeps(dispatch);
+        } catch {
+          // reported by the caller
+        }
+      },
+    }),
+
     bulkDeleteTrades: builder.mutation<any, { tradeIds: string[] }>({
       query: (payload) => ({
         url: '/trades/bulk-delete',
         method: 'POST',
         body: payload,
       }),
-      invalidatesTags: [{ type: 'Trades', id: 'LIST' }, { type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats'],
+      invalidatesTags: [{ type: 'Trades', id: 'PAGINATED_LIST' }, 'Stats'],
       async onQueryStarted({ tradeIds }, { dispatch, getState, queryFulfilled }) {
         // Optimistic delete from all getTrades caches
         const patchResults: any[] = [];
         const state: any = getState();
         const queries = state?.[api.reducerPath]?.queries || {};
         const idsSet = new Set(tradeIds);
+        const removed = new Map<string, Trade>();
+        for (const entry of Object.values<any>(queries)) {
+          if (!TRADE_LIST_ENDPOINTS.includes(entry?.endpointName)) continue;
+          for (const t of (entry.data ?? []) as Trade[]) if (idsSet.has(t.id)) removed.set(t.id, t);
+        }
 
         for (const entry of Object.values<any>(queries)) {
           if (!TRADE_LIST_ENDPOINTS.includes(entry?.endpointName)) continue;
@@ -566,9 +445,11 @@ export const tradesApi = api.injectEndpoints({
         }
 
         try {
-          await queryFulfilled;
+          const { data } = await queryFulfilled;
+          // A 200 can carry per-trade failures (`errors`): those trades still exist, so they go back into the lists.
+          const failed = ((data?.errors ?? []) as { tradeId: string }[]).map((e) => removed.get(e.tradeId)).filter((t): t is Trade => !!t);
+          if (failed.length) insertIntoScopeCaches(dispatch, getState, failed);
           debouncedInvalidateStreamDeps(dispatch);
-          backgroundCacheDeleteTrades(tradeIds).catch(() => {});
         } catch {
           patchResults.forEach(p => p.undo());
         }
@@ -578,15 +459,13 @@ export const tradesApi = api.injectEndpoints({
 });
 
 export const {
-  useGetTradesQuery,
   useGetScopeTradesQuery,
-  useLazyGetTradesQuery,
-  useGetTradesPaginatedQuery,
-  useLazyGetTradesPaginatedQuery,
+  useGetNewestTradeQuery,
   useCreateTradeMutation,
+  useGetTradeQuery,
   useUpdateTradeMutation,
   useDeleteTradeMutation,
-  useBulkImportTradesMutation,
   useBulkDeleteTradesMutation,
+  useBulkUpdateTradesMutation,
   useRestoreTradesMutation,
 } = tradesApi;

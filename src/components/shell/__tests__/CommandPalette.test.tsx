@@ -5,7 +5,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 
-vi.mock('@/hooks/useAccounts', () => ({ useAccounts: () => ({ accounts: [{ id: 'a1', name: 'FTMO', currency: 'USD' }, { id: 'a2', name: 'Zerodha', currency: 'INR' }], setSelectedAccountId: vi.fn() }) }));
+let accountList: { id: string; name: string; currency?: string }[] = [{ id: 'a1', name: 'FTMO', currency: 'USD' }, { id: 'a2', name: 'Zerodha', currency: 'INR' }];
+vi.mock('@/hooks/useAccounts', () => ({ useAccounts: () => ({ accounts: accountList, setSelectedAccountId: vi.fn() }) }));
 
 const TRADES = [
   { id: 't1', symbol: 'RELIANCE', pnl: -1476.84, accountId: 'a2', entryDate: '2026-11-04T10:00:00', exitDate: '2026-11-04T11:00:00' },
@@ -43,6 +44,13 @@ describe('CommandPalette', () => {
     expect(screen.getByText('Period: Last 30 days')).toBeInTheDocument();
     expect(screen.getByText('Switch account: FTMO · USD')).toBeInTheDocument();
     expect(screen.getByText('Keyboard shortcuts')).toBeInTheDocument();
+  });
+
+  it('names an account saved without a currency as USD, never "undefined" (FE-060)', () => {
+    accountList = [{ id: 'a3', name: 'Legacy' }];
+    setup();
+    expect(screen.getByText('Switch account: Legacy · USD')).toBeInTheDocument();
+    accountList = [{ id: 'a1', name: 'FTMO', currency: 'USD' }, { id: 'a2', name: 'Zerodha', currency: 'INR' }];
   });
 
   it('finds a screen by a synonym', async () => {

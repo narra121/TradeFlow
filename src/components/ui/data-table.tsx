@@ -296,16 +296,20 @@ export function DataTable<T>({
 
   const startResize = (e: React.PointerEvent, c: DataColumn<T>) => {
     e.preventDefault();
-    const th = (e.currentTarget as HTMLElement).closest('th');
+    const handle = e.currentTarget as HTMLElement;
+    const th = handle.closest('th');
     const startX = e.clientX;
     const startW = th?.getBoundingClientRect().width ?? MIN_COL_PX;
+    // The handle captures the pointer, so the drag ends on it however it ends (release, cancel, capture lost) and it dies with the handle.
+    handle.setPointerCapture?.(e.pointerId);
     const move = (ev: PointerEvent) => onResizeColumn?.(c.id, Math.max(MIN_COL_PX, Math.round(startW + ev.clientX - startX)));
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
+    const end = () => {
+      for (const type of ['pointermove', 'pointerup', 'pointercancel', 'lostpointercapture'] as const) handle.removeEventListener(type, type === 'pointermove' ? move : end);
     };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+    handle.addEventListener('lostpointercapture', end);
   };
 
   const renderRow = (it: Extract<Item<T>, { kind: 'row' }>, abs: number) => {
@@ -460,7 +464,7 @@ export function DataTable<T>({
                       else return;
                       e.preventDefault();
                     }}
-                    className="absolute inset-y-1 right-0 w-1.5 cursor-col-resize rounded hover:bg-primary/40 focus-visible:bg-primary/50"
+                    className="absolute inset-y-1 right-0 w-1.5 cursor-col-resize touch-none rounded hover:bg-primary/40 focus-visible:bg-primary/50"
                   />
                 )}
               </th>

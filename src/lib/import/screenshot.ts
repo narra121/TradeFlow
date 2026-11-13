@@ -23,6 +23,45 @@ export interface ScreenshotFile {
   url: string;
 }
 
+/** Long edge and JPEG quality of each attempt to bring an oversized screenshot under the limit, gentlest first. */
+const FIT_ATTEMPTS: [edge: number, quality: number][] = [[2000, 0.85], [2000, 0.7], [1400, 0.7], [1000, 0.7]];
+
+export type RenderJpeg = (file: File, edge: number, quality: number) => Promise<Blob | null>;
+
+/** Draws the image on a canvas with its long edge at most `edge` and encodes it as JPEG; null when the browser cannot decode it. */
+const renderJpeg: RenderJpeg = async (file, edge, quality) => {
+  if (typeof createImageBitmap !== 'function') return null;
+  const bitmap = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, edge / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.fillStyle = '#fff'; // JPEG has no transparency
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+  } finally {
+    bitmap.close();
+  }
+};
+
+/**
+ * A screenshot over the size limit, shrunk and re-encoded as JPEG so a retina or 1440p capture imports without cropping.
+ * Returned unchanged when it already fits, the browser cannot decode it, or no attempt gets under the limit: the caller rejects what is still too large.
+ */
+export async function fitScreenshot(file: File, render: RenderJpeg = renderJpeg): Promise<File> {
+  if (file.size <= MAX_SCREENSHOT_BYTES) return file;
+  for (const [edge, quality] of FIT_ATTEMPTS) {
+    const blob = await render(file, edge, quality).catch(() => null);
+    if (!blob) return file;
+    if (blob.size <= MAX_SCREENSHOT_BYTES) return new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, { type: 'image/jpeg' });
+  }
+  return file;
+}
+
 export function readAsDataUrl(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

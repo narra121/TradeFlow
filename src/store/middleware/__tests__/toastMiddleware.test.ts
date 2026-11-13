@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const success = vi.fn();
 const error = vi.fn();
-vi.mock('sonner', () => ({ toast: { success: (m: string) => success(m), error: (m: string) => error(m) } }));
+vi.mock('sonner', () => ({ toast: { success: (m: string) => success(m), error: (m: string, o?: { description?: string }) => error(m, o) } }));
 
 import { toastMiddleware, _resetToastDebounce } from '../toastMiddleware';
 
@@ -38,14 +38,29 @@ describe('toastMiddleware (D.6)', () => {
   });
 
   it('announces only the opt-in results, in our own words', () => {
-    run(fulfilled('deleteAccount', { message: 'server text' }));
+    run(fulfilled('deleteUserAccount', { message: 'server text' }));
     expect(success).toHaveBeenCalledWith('Account deleted');
   });
 
-  it('never shows the raw server message of a failure', () => {
+  it('says what failed in our words and why in the API message', () => {
     run(rejected('deleteTrade'));
-    expect(error).toHaveBeenCalledWith("Couldn't delete the trade. Try again.");
-    expect(JSON.stringify(error.mock.calls)).not.toContain('boom');
+    expect(error).toHaveBeenCalledWith("Couldn't delete the trade. Try again.", { description: 'boom' });
+  });
+
+  it('shows the API message of a 4xx, and the connection message only when nothing answered', () => {
+    run(rejected('deleteRule', { status: 409, data: { success: false, message: 'This rule is used by 3 trades', errorCode: 'RULE_IN_USE' } }));
+    expect(error).toHaveBeenLastCalledWith("Couldn't delete the rule. Try again.", { description: 'This rule is used by 3 trades' });
+    _resetToastDebounce();
+    run(rejected('deleteRule', { status: 'FETCH_ERROR', data: 'x' }));
+    expect(error.mock.calls.at(-1)?.[1]?.description).toMatch(/internet connection/i);
+    _resetToastDebounce();
+    run(rejected('deleteRule', { status: 502, data: '<html>Bad Gateway</html>' }));
+    expect(error.mock.calls.at(-1)?.[1]?.description).toMatch(/temporarily unavailable/);
+  });
+
+  it('shows only our title when the failure carries no payload', () => {
+    run({ type: 'api/executeMutation/rejected', meta: { arg: { endpointName: 'deleteTrade' }, requestStatus: 'rejected', requestId: 'r' }, error: { message: 'Rejected' } });
+    expect(error).toHaveBeenCalledWith("Couldn't delete the trade. Try again.", undefined);
   });
 
   it('leaves failures of in-place saves to the control that made them', () => {

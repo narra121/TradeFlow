@@ -103,6 +103,11 @@ export const COMPANY_FACTS = {
   country: 'India',
   founded: '2026',
   logo: `${SITE_URL}/favicon-512.png`,
+  /** Legal name shown on the contact block. */
+  business: 'TradeQutJournal',
+  /** `e164` for `tel:` links and JSON-LD, `display` for the page. */
+  phone: { e164: '+918501018125', display: '+91 8501018125' },
+  address: { street: '3-187/2, Regonda', locality: 'Bhupalpally', region: 'Telangana', postalCode: '506348', country: 'IN' },
 };
 
 export interface FaqItem {
@@ -116,6 +121,12 @@ const inrMonth = proPrice('INR', 'month').display;
 const inrYear = proPrice('INR', 'year').display;
 
 /** Product FAQ: visible on the home and pricing pages and emitted as FAQPage JSON-LD. */
+/** Asked on the landing page and on /pricing: one wording for both, built from the trial length. */
+export const TRIAL_END_FAQ: FaqItem = {
+  question: 'What happens when the Pro trial ends?',
+  answer: `The ${TRIAL_DAYS}-day Pro trial starts when you sign up and needs no card. When it ends you move to the Free plan and nothing is charged. Your trades stay in your account.`,
+};
+
 export const PRODUCT_FAQ: FaqItem[] = [
   { question: 'What is TradeQut?', answer: PRODUCT_DEFINITION },
   {

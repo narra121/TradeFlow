@@ -95,4 +95,36 @@ describe('StatusPage', () => {
     renderWithProviders(<StatusPage />);
     expect(screen.getByRole('status')).toHaveTextContent('Checking status...');
   });
+
+  it('does not call the status file while the page is being prerendered, so its saved HTML never claims "normal" (FE-077)', () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    (window as { __PRERENDER__?: boolean }).__PRERENDER__ = true;
+    try {
+      renderWithProviders(<StatusPage />);
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(screen.getByRole('status')).toHaveTextContent('Checking status...');
+    } finally {
+      delete (window as { __PRERENDER__?: boolean }).__PRERENDER__;
+    }
+  });
+
+  it('never renders a javascript: or protocol-relative link from the status file', async () => {
+    stubFetch(json({ id: 'inc-3', level: 'identified', message: 'Imports are slow.', link: 'javascript:alert(1)', from: '2026-01-01T00:00:00Z' }));
+    renderWithProviders(<StatusPage />);
+    expect(await screen.findByText('Imports are slow.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'More detail' })).toBeNull();
+  });
+});
+
+describe('parseIncident links (FE-077)', () => {
+  const base = { id: 'i', level: 'identified', message: 'm' };
+  it('keeps http(s) and same-site paths and drops anything else', () => {
+    expect(parseIncident({ ...base, link: 'https://example.com/x' })?.link).toBe('https://example.com/x');
+    expect(parseIncident({ ...base, link: 'http://example.com' })?.link).toBe('http://example.com');
+    expect(parseIncident({ ...base, link: '/status#a' })?.link).toBe('/status#a');
+    for (const link of ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', '//evil.example', 'data:text/html,x', 'mailto:a@b.c', 'evil.example']) {
+      expect(parseIncident({ ...base, link })?.link).toBeUndefined();
+    }
+  });
 });

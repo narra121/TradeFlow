@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PLAN_SIGNAL_EVENT, classifyPlanError, emitPlanSignal, isPlanError } from '../planErrors';
+import { PLAN_SIGNAL_EVENT, classifyPlanError, emitPlanSignal } from '../planErrors';
 
 describe('classifyPlanError', () => {
   it('ignores non-402 responses', () => {
@@ -23,19 +23,12 @@ describe('classifyPlanError', () => {
   });
 });
 
-describe('emitPlanSignal / isPlanError', () => {
+describe('emitPlanSignal', () => {
   it('dispatches a window event', () => {
     const handler = vi.fn();
     window.addEventListener(PLAN_SIGNAL_EVENT, handler);
     emitPlanSignal({ code: 'QUOTA_EXCEEDED', message: 'x', kind: 'mutation' });
     expect(handler).toHaveBeenCalledTimes(1);
     window.removeEventListener(PLAN_SIGNAL_EVENT, handler);
-  });
-
-  it('detects 402 from RTK and axios shapes', () => {
-    expect(isPlanError({ status: 402 })).toBe(true);
-    expect(isPlanError({ response: { status: 402 } })).toBe(true);
-    expect(isPlanError({ status: 500 })).toBe(false);
-    expect(isPlanError(null)).toBe(false);
   });
 });

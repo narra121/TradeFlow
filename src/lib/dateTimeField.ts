@@ -1,5 +1,7 @@
-const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+import { wallClock } from '@/lib/appTimeZone';
+import { MONTHS_SHORT } from '@/lib/format';
+
+const MONTHS = MONTHS_SHORT.map((m) => m.toLowerCase());
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -8,12 +10,12 @@ export function toLocalValue(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** `4 Nov 2026, 14:30` (D.3, 24-hour) for a local value; empty for none. */
+/** `04 Nov 2026, 14:30` (D.3, 24-hour) for a local value; empty for none. */
 export function formatField(value: string): string {
   if (!value) return '';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '';
-  return `${d.getDate()} ${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getDate())} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function build(y: number, m: number, d: number, h: number, min: number): string | null {
@@ -31,14 +33,17 @@ function build(y: number, m: number, d: number, h: number, min: number): string 
 export function parseField(text: string, current: string, now: Date = new Date()): string | null {
   const t = text.trim().toLowerCase();
   if (!t) return '';
-  if (t === 'now') return toLocalValue(now);
+  // `now` on the app time zone's clock, as the wall-clock Date the rest of this parser reads with local getters.
+  const clock = wallClock(now);
+  const wallNow = new Date(clock.year, clock.month - 1, clock.day, clock.hour, clock.minute);
+  if (t === 'now') return toLocalValue(wallNow);
   const cur = current ? new Date(current) : null;
   const keep = (cur && !Number.isNaN(cur.getTime()) ? cur : null) ?? null;
   const time = (h?: string, m?: string): [number, number] => (h !== undefined && m !== undefined ? [Number(h), Number(m)] : [keep?.getHours() ?? 0, keep?.getMinutes() ?? 0]);
 
   let m = /^(\d{1,2}):(\d{2})$/.exec(t);
   if (m) {
-    const base = keep ?? now;
+    const base = keep ?? wallNow;
     return build(base.getFullYear(), base.getMonth(), base.getDate(), Number(m[1]), Number(m[2]));
   }
   m = /^(\d{1,2})\s+([a-z]{3,9})\.?,?\s+(\d{4})(?:,?\s+(\d{1,2}):(\d{2}))?$/.exec(t);

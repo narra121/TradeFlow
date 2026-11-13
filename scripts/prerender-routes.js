@@ -15,6 +15,10 @@ const { routes } = JSON.parse(readFileSync(join(distDir, '_seo', 'routes.json'),
 async function renderRoute(browser, base, path) {
   const page = await browser.newPage();
   try {
+    // Pages that show live data (/status) check this flag and keep their loading state in the saved HTML.
+    await page.addInitScript(() => {
+      window.__PRERENDER__ = true;
+    });
     await page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
     const canonical = path === '/' ? SITE : `${SITE}${path}`;
     // The route's own <SEO> must have run, not a previous route's or the shell's.

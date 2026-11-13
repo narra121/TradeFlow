@@ -1,5 +1,4 @@
 import { forwardRef, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { addDays, format } from 'date-fns';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,8 @@ import { cn } from '@/lib/utils';
 import type { DayNote as DayNoteData, DayNotesArgs } from '@/store/api/journalApi';
 import type { Trade, TradingAccount } from '@/types/trade';
 
-function sortByTime(trades: Trade[]): Trade[] {
+/** Trades in the order the panel lists them (close time); the pane walks the same order. */
+export function sortByTime(trades: Trade[]): Trade[] {
   return [...trades].sort((a, b) => new Date(a.exitDate || a.entryDate).getTime() - new Date(b.exitDate || b.entryDate).getTime());
 }
 

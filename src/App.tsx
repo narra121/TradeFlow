@@ -1,17 +1,18 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearAuth } from "@/store/slices/authSlice";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { HelmetProvider } from 'react-helmet-async';
-import { decodeJwtPayload, isJwtExpired } from '@/lib/jwt';
+import { discardSession, getIdToken, onSessionEnded } from '@/lib/auth/authService';
+import { hasStoredSession, readStoredClaims } from '@/lib/auth/storedSession';
 import { AnalyticsRoot } from '@/components/analytics';
-import { ChunkErrorBoundary, PageLoadingFallback, ReloadGuardReset, queryClient } from '@/appRoot/shared';
+import { ChunkErrorBoundary, PageLoadingFallback, ReloadGuardReset } from '@/appRoot/shared';
 import { LandingPage, NotFound, PublicRoutes } from '@/PublicRoutes';
+import { useHashScroll } from '@/components/public/useHashScroll';
 
 // App and auth pages (the public pages live in PublicRoutes.tsx)
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -22,6 +23,8 @@ const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage').then(m =>
 function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
+  // The public pages also call it through PublicLayout; this covers login, signup and the app.
+  useHashScroll();
   const dispatch = useAppDispatch();
   const isHandlingUnauthorized = useRef(false);
 
@@ -39,6 +42,8 @@ function AppRoutes() {
       }
       
       isHandlingUnauthorized.current = true;
+      // Clear what is stored too, or a reload would start the full app on the same unusable session.
+      void discardSession();
       dispatch(clearAuth());
       navigate('/login', { replace: true, state: { from: location, reason: 'session-ended' } });
       
@@ -49,40 +54,34 @@ function AppRoutes() {
     };
 
     window.addEventListener('unauthorized', handleUnauthorized);
-    
+    // Amplify reports a sign-out in another tab and a refresh Cognito refused the same way.
+    const stopListening = onSessionEnded(handleUnauthorized);
+
     return () => {
       window.removeEventListener('unauthorized', handleUnauthorized);
+      stopListening();
     };
   }, [dispatch, navigate, location.pathname]);
 
-  // Gate protected routes until token is confirmed valid or refreshed
+  // Gate protected routes until the stored session is confirmed valid or renewed (an unexpired ID token needs no wait).
   const [authReady, setAuthReady] = useState(() => {
-    const token = localStorage.getItem('idToken');
-    if (!token) return true;
-    return !isJwtExpired(token);
+    if (!hasStoredSession()) return true;
+    const exp = readStoredClaims()?.exp;
+    return typeof exp === 'number' && exp * 1000 > Date.now();
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('idToken');
-    if (!token) return;
-
-    if (!decodeJwtPayload(token)) {
+    if (!hasStoredSession() || authReady) return;
+    const endSession = () => {
+      void discardSession();
       dispatch(clearAuth());
       navigate('/login', { replace: true });
-      return;
-    }
-    if (isJwtExpired(token)) {
-      import('@/lib/api/tokenRefresh').then(({ refreshToken }) => {
-        refreshToken()
-          .then(() => {
-            setAuthReady(true);
-          })
-          .catch(() => {
-            dispatch(clearAuth());
-            navigate('/login', { replace: true });
-          });
-      });
-    }
+    };
+    // No token means Amplify has no usable session (malformed, or refused by Cognito). An error is a failed refresh, e.g.
+    // offline: the session stays and the next request retries.
+    getIdToken()
+      .then((token) => (token ? setAuthReady(true) : endSession()))
+      .catch(() => setAuthReady(true));
   }, []);
 
   const { isAuthenticated } = useAppSelector((state) => state.auth);
@@ -117,18 +116,16 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner duration={5000} closeButton />
-      <HelmetProvider>
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <AnalyticsRoot />
-          <AppRoutes />
-        </BrowserRouter>
-      </HelmetProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <TooltipProvider>
+    <Toaster />
+    <Sonner duration={5000} closeButton />
+    <HelmetProvider>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AnalyticsRoot />
+        <AppRoutes />
+      </BrowserRouter>
+    </HelmetProvider>
+  </TooltipProvider>
 );
 
 export default App;

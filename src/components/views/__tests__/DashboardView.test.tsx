@@ -116,6 +116,26 @@ describe('DashboardView', () => {
     expect(screen.getByLabelText('Period statistics')).toBeInTheDocument();
   });
 
+  it('shows the API message of a failed trade list, statistics and accounts load', () => {
+    scopeTrades.mockReturnValue({ trades: [], isLoading: false, isError: true, error: { status: 500, data: { message: 'Trades are unavailable right now.' } }, truncated: false, refetch: vi.fn() });
+    periodStats.mockReturnValue(period({ isError: true, error: { status: 400, data: { message: 'The period is too long.' } } }));
+    const { unmount } = renderWithProviders(<DashboardView />);
+    expect(screen.getByText('Trades are unavailable right now.')).toBeInTheDocument();
+    expect(screen.getAllByText('The period is too long.').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/internet connection/i)).toBeNull();
+    unmount();
+
+    capital.mockReturnValue({ accounts: [], selectedAccountId: null, totalCapital: 0, accountsReady: false, accountsLoading: false, accountsError: true, accountsErrorDetail: { status: 503, data: { message: 'Accounts are unavailable.' } } });
+    renderWithProviders(<DashboardView />);
+    expect(screen.getByText('Accounts are unavailable.')).toBeInTheDocument();
+  });
+
+  it('says to check the connection only when no response came back', () => {
+    scopeTrades.mockReturnValue({ trades: [], isLoading: false, isError: true, error: { status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' }, truncated: false, refetch: vi.fn() });
+    renderWithProviders(<DashboardView />);
+    expect(screen.getByText(/Check your internet connection/)).toBeInTheDocument();
+  });
+
   it('shows the first-run page when there is no account yet', () => {
     capital.mockReturnValue({ accounts: [], selectedAccountId: null, totalCapital: 0, accountsReady: false, accountsLoading: false, accountsError: false });
     renderWithProviders(<DashboardView />);

@@ -1,3 +1,10 @@
+import { proPrice } from './product-facts';
+
+const usdMonth = proPrice('USD', 'month').display;
+const usdYear = proPrice('USD', 'year').display;
+const inrMonth = proPrice('INR', 'month').display;
+const inrYear = proPrice('INR', 'year').display;
+
 /** Metadata for the stand-alone SEO pages rendered from src/pages/seo (routes wired via src/content/routes.ts). */
 export interface SeoPageMeta {
   path: string;
@@ -12,9 +19,9 @@ export interface SeoPageMeta {
 export const SEO_PAGES: SeoPageMeta[] = [
   {
     path: '/pricing',
-    title: 'TradeQut Pricing: Free Plan, Pro at $9.99 or ₹199 a Month',
+    title: `TradeQut Pricing: Free Plan, Pro at ${usdMonth} or ${inrMonth} a Month`,
     description:
-      'Free trading journal plan and Pro at $9.99/month or $79/year (₹199/month or ₹1,499/year in India). 14-day Pro trial, no card. Trial, currency and cancel FAQ.',
+      `Free trading journal plan and Pro at ${usdMonth}/month or ${usdYear}/year (${inrMonth}/month or ${inrYear}/year in India). 14-day Pro trial, no card. Trial, currency and cancel FAQ.`,
     label: 'Pricing',
     publishedAt: '2026-11-11',
     updatedAt: '2026-11-12',

@@ -1,4 +1,5 @@
 import { ChatStreamError, streamChat } from '@/lib/ai/chatStream';
+import { connectionMessage } from '@/lib/apiError';
 import type { ChatDonePayload, ChatMessage, ChatSession, CreateSessionRequest } from '@/types/chat';
 import { api } from './baseApi';
 
@@ -19,6 +20,7 @@ export interface SendChatMessageResult {
 }
 
 export const chatApi = apiWithTags.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     listChatSessions: builder.query<ChatSession[], void>({
       query: () => '/chat/sessions',
@@ -66,7 +68,7 @@ export const chatApi = apiWithTags.injectEndpoints({
             return { error: { status: e.status, data: { errorCode: e.code, message: e.message, error: { code: e.code, feature: e.feature, limit: e.limit, resetsAt: e.resetsAt } }, partial: text } as never };
           }
           if ((e as Error)?.name === 'AbortError') return { error: { status: 'CUSTOM_ERROR', error: 'aborted', data: { aborted: true, partial: text } } as never };
-          return { error: { status: 'FETCH_ERROR', error: String(e), data: 'Network error. Please try again.' } as never };
+          return { error: { status: 'FETCH_ERROR', error: String(e), data: connectionMessage('network') } as never };
         }
       },
       invalidatesTags: (_r, _e, { sessionId }) => [{ type: 'ChatMessages', id: sessionId }, { type: 'ChatSessions', id: 'LIST' }, 'Entitlements'],

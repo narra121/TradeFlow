@@ -6,6 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { popupOption } from '@/components/ui/popup';
 import { cn } from '@/lib/utils';
 import { Check, ChevronDown, Plus, X } from 'lucide-react';
 
@@ -15,6 +16,8 @@ interface DynamicSelectProps {
   options: string[];
   onAddNew?: (value: string) => void;
   onRemove?: (value: string) => void;
+  /** Longest value a new option may have. */
+  maxLength?: number;
   placeholder?: string;
   className?: string;
 }
@@ -25,6 +28,7 @@ export function DynamicSelect({
   options,
   onAddNew,
   onRemove,
+  maxLength,
   placeholder = 'Select...',
   className,
 }: DynamicSelectProps) {
@@ -38,13 +42,13 @@ export function DynamicSelect({
   };
 
   const handleAddNew = () => {
-    if (onAddNew && newValue.trim() && !options.includes(newValue.trim())) {
-      onAddNew(newValue.trim());
-      onChange(newValue.trim());
-      setNewValue('');
-      setIsAdding(false);
-      setIsOpen(false);
-    }
+    const value = newValue.trim();
+    if (!value || !onAddNew) return;
+    if (!options.includes(value)) onAddNew(value);
+    onChange(value);
+    setNewValue('');
+    setIsAdding(false);
+    setIsOpen(false);
   };
 
   return (
@@ -54,6 +58,7 @@ export function DynamicSelect({
           variant="outline"
           role="combobox"
           aria-expanded={isOpen}
+          aria-label={value ? `${placeholder}: ${value}` : placeholder}
           className={cn(
             'w-full justify-between font-normal',
             !value && 'text-muted-foreground',
@@ -64,20 +69,20 @@ export function DynamicSelect({
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[180px] p-0 bg-popover border-border" align="start">
+      <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[180px] p-1" align="start" aria-label={placeholder}>
         <div className="max-h-48 sm:max-h-60 overflow-y-auto">
           {(options || []).map((option) => (
             <div
               key={option}
-              className="group flex items-center hover:bg-muted transition-colors"
+              className="group flex items-center rounded-md hover:bg-secondary"
             >
               <button
                 type="button"
                 onClick={() => handleSelect(option)}
-                className="flex-1 px-3 py-2 text-left text-sm flex items-center justify-between"
+                className="flex min-h-8 flex-1 items-center justify-between rounded-md px-2 py-1.5 text-left text-13 -outline-offset-2 [@media(pointer:coarse)]:min-h-11"
               >
                 {option}
-                {value === option && <Check className="w-4 h-4 text-primary" />}
+                {value === option && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />}
               </button>
               {onRemove && (
                 <button
@@ -87,7 +92,8 @@ export function DynamicSelect({
                     if (value === option) onChange('');
                     onRemove(option);
                   }}
-                  className="px-2 py-2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                  aria-label={`Remove ${option}`}
+                  className="rounded-md px-2 py-2 text-muted-foreground opacity-0 -outline-offset-2 hover:text-error focus-visible:opacity-100 group-hover:opacity-100"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -96,13 +102,14 @@ export function DynamicSelect({
           ))}
         </div>
         {onAddNew && (
-          <div className="border-t border-border">
+          <div className="mt-1 border-t border-border pt-1">
             {isAdding ? (
-              <div className="p-2 flex gap-1.5 sm:gap-2">
+              <div className="flex gap-2 p-1">
                 <Input
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
                   placeholder="Enter new value..."
+                  maxLength={maxLength}
                   className="h-8 text-sm min-w-0 flex-1"
                   autoFocus
                   onKeyDown={(e) => {
@@ -130,9 +137,9 @@ export function DynamicSelect({
               <button
                 type="button"
                 onClick={() => setIsAdding(true)}
-                className="w-full px-3 py-2 text-left text-sm bg-secondary/50 hover:bg-secondary transition-colors flex items-center gap-2 text-primary"
+                className={cn(popupOption, 'gap-2 text-primary')}
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="h-4 w-4" aria-hidden="true" />
                 Add New
               </button>
             )}

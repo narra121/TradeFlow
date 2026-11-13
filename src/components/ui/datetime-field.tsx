@@ -76,9 +76,10 @@ export function DateTimeField({ id, value, onChange, onBlur, showNow, className,
               <CalendarIcon className="h-4 w-4" aria-hidden="true" />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-auto p-2">
+          <PopoverContent align="end" aria-label="Date and time" className="w-auto p-2">
             <Calendar
               mode="single"
+              className="p-1"
               selected={date}
               defaultMonth={date}
               onSelect={(d) => {
@@ -88,7 +89,7 @@ export function DateTimeField({ id, value, onChange, onBlur, showNow, className,
                 onChange(toLocalValue(d));
               }}
             />
-            <label className="mt-1 flex items-center justify-between gap-2 border-t border-border px-2 pt-2 text-sm">
+            <label className="mt-2 flex items-center justify-between gap-2 border-t border-border px-1 pt-2 text-13">
               Time (24 h)
               <Input
                 aria-label="Time, 24 hour"

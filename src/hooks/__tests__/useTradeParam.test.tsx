@@ -16,6 +16,14 @@ describe('useTradeParam', () => {
     expect(result.current.p.trade).toBeNull();
   });
 
+  it('returns the same object while nothing in the URL changes, so memos that depend on it hold', () => {
+    const { result, rerender } = setup('/app/tradelog?trade=t1');
+    const first = result.current.p;
+    rerender();
+    rerender();
+    expect(result.current.p).toBe(first);
+  });
+
   it('opens a trade (push) and reads view / edit / new modes', () => {
     const { result } = setup();
     act(() => result.current.p.openTrade('t1'));

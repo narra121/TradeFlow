@@ -5,14 +5,14 @@ import { PublicLayout } from '@/components/public/PublicLayout';
 import { PricingTable } from '@/components/public/PricingTable';
 import { Button } from '@/components/ui/button';
 import { LANDING_PAGE_SCHEMA, faqSchema } from '@/config/seo';
-import { IMPORT_SOURCES, PRODUCT_FAQ, TRIAL_DAYS, type FaqItem } from '@/content/product-facts';
+import { IMPORT_SOURCES, PRODUCT_FAQ, TRIAL_DAYS, TRIAL_END_FAQ, type FaqItem } from '@/content/product-facts';
 import { HEADLINE_PARTS } from '@/components/showcase/copy';
 import { Eyebrow } from '@/components/showcase/Eyebrow';
 import { SampleDataChip } from '@/components/showcase/SampleDataChip';
 import { TradeReviewDemo } from '@/components/showcase/TradeReviewDemo';
 import { BehaviourCostCard, ImportReviewDemo, InsightsAnswerDemo } from '@/components/showcase/AnswerCards';
 import { AccountsStill, IndiaChargesStill, PhoneDashboard, PropLimitsStill } from '@/components/showcase/SegmentStills';
-import { LandingMotionProvider, MotionToggle, PageProgress, useLandingMotion } from '@/components/landing/motion';
+import { LandingMotionProvider, MotionToggle, PageProgress, glideTo, useLandingMotion } from '@/components/landing/motion';
 import { ParticleAssembly } from '@/components/landing/ParticleAssembly';
 import { Manifesto } from '@/components/landing/Manifesto';
 import { StorySection } from '@/components/landing/StorySection';
@@ -76,10 +76,7 @@ const LANDING_FAQ: FaqItem[] = [
     question: 'Do I need to connect my broker account?',
     answer: 'No. You download the trade file from your broker or MetaTrader and upload it. TradeQut never asks for your broker login. Automatic sync is planned, not available.',
   },
-  {
-    question: 'What happens when the Pro trial ends?',
-    answer: `The ${TRIAL_DAYS}-day Pro trial needs no card. When it ends you move to the Free plan and nothing is charged. Your trades stay in your account.`,
-  },
+  TRIAL_END_FAQ,
 ];
 
 const JSON_LD = {
@@ -97,7 +94,7 @@ function LandingBody() {
 
       <section className="lp-hero" aria-labelledby="hero-heading">
         <div className="lp-hero__top">
-          <a href="#import" className="lp-announce">
+          <a href="#import" className="lp-announce" onClick={glideTo('import', still)}>
             <span className="lp-announce__tag">Import</span>
             Zerodha, Dhan, Upstox, Angel One, Groww, MetaTrader and any CSV
             <ArrowRight aria-hidden="true" />
@@ -134,7 +131,7 @@ function LandingBody() {
           <figcaption>Sample data</figcaption>
         </figure>
         <div className="lp-hero__foot">
-          <a href="#how" className="lp-scroll-cue">
+          <a href="#how" className="lp-scroll-cue" onClick={glideTo('how', still)}>
             <span>
               <ArrowDown aria-hidden="true" />
             </span>

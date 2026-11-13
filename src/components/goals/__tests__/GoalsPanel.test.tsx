@@ -38,6 +38,14 @@ describe('GoalsPanel', () => {
     expect(screen.getByText(/58\.3% of 65\.0% · 12 trades/)).toBeInTheDocument();
   });
 
+  it('says a drawdown limit needs a starting balance instead of showing a percentage of nothing (X-016)', () => {
+    setup({ tracks: tracks.map((t) => (t.type === 'maxDrawdown' ? { ...t, current: 99.8, unavailable: 'Set a starting balance on the account to track drawdown.' } : t)) });
+    expect(screen.getByText('Set a starting balance on the account to track drawdown.')).toBeInTheDocument();
+    expect(screen.queryByText(/99\.8/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar', { name: 'Max drawdown — limit target' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Within limit')).not.toBeInTheDocument();
+  });
+
   it('gives a default target no verdict and no history strip', () => {
     setup();
     expect(screen.getByText('Default — set your own')).toBeInTheDocument();
@@ -89,10 +97,20 @@ describe('GoalsPanel', () => {
 
   it('shows the failure of a save under the field and keeps it open', async () => {
     const user = userEvent.setup();
-    setup({ onSave: vi.fn().mockRejectedValue(new Error('x')) });
+    setup({ onSave: vi.fn().mockRejectedValue({ status: 400, data: { message: 'A target must be above zero.' } }) });
     await user.click(screen.getByRole('button', { name: 'Edit Profit target' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Couldn’t save the target');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('A target must be above zero.');
+    expect(alert).not.toHaveTextContent(/connection/i);
+  });
+
+  it('a save with no HTTP response says the connection failed', async () => {
+    const user = userEvent.setup();
+    setup({ onSave: vi.fn().mockRejectedValue({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' }) });
+    await user.click(screen.getByRole('button', { name: 'Edit Profit target' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/internet connection/i);
   });
 
   it('has no edit buttons in a past period', () => {

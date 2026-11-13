@@ -3,7 +3,9 @@ import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Wallet } from 'lu
 import { Stage } from './kit/stage';
 import type { Act } from './kit/act';
 import { Popover } from './kit/motion/Popover';
+import { Count } from './kit/motion/Count';
 import { formatCompactMoney } from '@/lib/format';
+import { sampleNet } from '@/components/public/tourFixture';
 import { SAMPLE_DAYS, SAMPLE_MONTH, SAMPLE_RULE_BREAK_DAYS, SAMPLE_WINS, dayTintStep, money, monthCells, plural, sampleStats } from './sampleJournal';
 import { SampleDataChip } from './SampleDataChip';
 import './look.css';
@@ -16,6 +18,7 @@ type S = { open: number | null; filled?: number };
 const POSTER: S = { open: 10 };
 /** The landing page's design size. */
 const WIDE = { width: 1000, height: 600 };
+const COMPACT = { below: 600, width: 358, height: 430 };
 
 async function script(a: Act<S>) {
   await a.wait(700);
@@ -47,6 +50,17 @@ function withFillIn(pending: { current: boolean }) {
   };
 }
 
+/**
+ * The loop for a host-driven fill: it waits for the whole month instead of being switched on then. A stage with no
+ * script is a still, and a still's transitions are off (kit/stage.css), so the days could not ease in as they fill.
+ */
+function onceComplete(complete: { current: boolean }) {
+  return async (a: Act<S>) => {
+    while (!complete.current) await a.wait(150);
+    await script(a);
+  };
+}
+
 function dayFacts(day: number) {
   const i = SAMPLE_DAYS.findIndex((d) => d.day === day);
   const d = SAMPLE_DAYS[i];
@@ -61,22 +75,31 @@ export interface CalendarStageProps {
   size?: { width: number; height: number };
   /** Before the first loop only: the month starts empty and its trading days tint in one by one. */
   fillIn?: boolean;
+  /**
+   * Host-driven fill (the landing's scroll scene): how many trading days are drawn, oldest first. The month total counts
+   * only those days and no day opens until all are in. The compact design then prints each day's figure and opens a
+   * day beside its cell, because the host may show only the weeks with trades. Absent: the whole month.
+   */
+  filled?: number;
 }
 
 /**
  * The Calendar page for the sample month: each day tinted by its net P&L, `!` on days a rule was broken. The cursor
  * hovers a rule-break day, then the best day, and each opens the day's summary. `play={false}` shows the poster.
  */
-export function CalendarStage({ play = true, className = '', size = WIDE, fillIn = false }: CalendarStageProps) {
+export function CalendarStage({ play = true, className = '', size = WIDE, fillIn = false, filled }: CalendarStageProps) {
   const s0 = sampleStats();
   const introPending = useRef(fillIn);
-  const loop = useMemo(() => (fillIn ? withFillIn(introPending) : script), [fillIn]);
+  const hosted = filled !== undefined;
+  const complete = useRef(true);
+  complete.current = !hosted || filled >= SAMPLE_DAYS.length;
+  const loop = useMemo(() => (hosted ? onceComplete(complete) : fillIn ? withFillIn(introPending) : script), [hosted, fillIn]);
   const rest = { x: size.width - 70, y: size.height - 40 };
   return (
     <Stage
       width={size.width}
       height={size.height}
-      compact={{ below: 600, width: 358, height: 430 }}
+      compact={COMPACT}
       initial={{ open: null } as S}
       poster={POSTER}
       script={play ? loop : undefined}
@@ -86,12 +109,15 @@ export function CalendarStage({ play = true, className = '', size = WIDE, fillIn
     >
       {(s, rect, layout) => {
         const compact = layout === 'compact';
-        const open = s.open !== null ? dayFacts(s.open) : null;
-        const anchor = s.open !== null ? rect(`day-${s.open}`) : null;
-        const drawn = (day: number) => s.filled === undefined || SAMPLE_DAYS.findIndex((d) => d.day === day) < s.filled;
+        const count = filled ?? s.filled;
+        const openDay = complete.current ? s.open : null;
+        const open = openDay !== null ? dayFacts(openDay) : null;
+        const anchor = openDay !== null ? rect(`day-${openDay}`) : null;
+        const drawn = (day: number) => count === undefined || SAMPLE_DAYS.findIndex((d) => d.day === day) < count;
+        const total = filled === undefined ? s0.net : sampleNet(SAMPLE_DAYS.slice(0, filled));
         return (
           <>
-            <div className="tq-frame cs-frame" style={!compact && size !== WIDE ? { width: size.width, height: size.height + 60 } : undefined}>
+            <div className="tq-frame cs-frame" data-hosted={hosted || undefined} style={!compact && size !== WIDE ? { width: size.width, height: size.height + 60 } : undefined}>
               <div className="tq-frame__main">
                 <div className="tq-frame__title">
                   <span>Calendar</span>
@@ -100,7 +126,7 @@ export function CalendarStage({ play = true, className = '', size = WIDE, fillIn
                 <div className="tq-frame__scope">
                   <span className="tq-chip-ctl">
                     <Wallet />
-                    {compact ? 'Sample · USD' : 'Sample account · USD'}
+                    {compact ? 'USD' : 'Sample account · USD'}
                     <ChevronDown />
                   </span>
                   {!compact && <ChevronLeft className="cs-nav" />}
@@ -110,7 +136,11 @@ export function CalendarStage({ play = true, className = '', size = WIDE, fillIn
                     <ChevronDown />
                   </span>
                   {!compact && <ChevronRight className="cs-nav" />}
-                  <span className={`cs-total tq-num ${s0.net < 0 ? 'tq-neg' : 'tq-pos'}`}>{money(s0.net)}</span>
+                  {filled === undefined ? (
+                    <span className={`cs-total tq-num ${total < 0 ? 'tq-neg' : 'tq-pos'}`}>{money(total)}</span>
+                  ) : (
+                    <Count className={`cs-total tq-num ${total < 0 ? 'tq-neg' : total > 0 ? 'tq-pos' : 'tq-muted'}`} value={total} format={money} duration={500} />
+                  )}
                 </div>
                 <div className="cs-head">
                   {WEEKDAYS.map((d) => (
@@ -119,22 +149,23 @@ export function CalendarStage({ play = true, className = '', size = WIDE, fillIn
                 </div>
                 <div className="cs-grid">
                   {monthCells().map((cell, i) => {
-                    const c = cell && cell.data && !drawn(cell.day) ? { day: cell.day, data: undefined, broke: false } : cell;
+                    const waiting = !!cell?.data && !drawn(cell.day);
+                    // Hosted: a day not yet drawn keeps its figures in place, hidden, so they ease in (data-pending).
+                    const c = cell && waiting && !hosted ? { day: cell.day, data: undefined, broke: false } : cell;
                     return c ? (
                       <div
                         key={i}
-                        className={`cs-cell${c.data ? ` tq-tint-${c.data.pnl < 0 ? 'l' : 'p'}${dayTintStep(c.data.pnl)}` : ''}`}
+                        className={`cs-cell${c.data && !waiting ? ` tq-tint-${c.data.pnl < 0 ? 'l' : 'p'}${dayTintStep(c.data.pnl)}` : ''}`}
                         data-target={`day-${c.day}`}
-                        data-open={s.open === c.day || undefined}
+                        data-open={openDay === c.day || undefined}
+                        data-pending={(hosted && waiting) || undefined}
                       >
                         <span className="cs-day tq-num">{c.day}</span>
                         {c.broke && <b className="cs-mark">!</b>}
-                        {c.data && !compact && (
-                          <>
-                            <span className={`cs-pnl tq-num ${c.data.pnl < 0 ? 'tq-neg' : 'tq-pos'}`}>{formatCompactMoney(c.data.pnl, { sign: true, currency: 'USD' })}</span>
-                            <span className="cs-count">{plural(c.data.trades, 'trade')}</span>
-                          </>
+                        {c.data && (!compact || hosted) && (
+                          <span className={`cs-pnl tq-num ${c.data.pnl < 0 ? 'tq-neg' : 'tq-pos'}`}>{formatCompactMoney(c.data.pnl, { sign: true, currency: 'USD' })}</span>
                         )}
+                        {c.data && !compact && <span className="cs-count">{plural(c.data.trades, 'trade')}</span>}
                       </div>
                     ) : (
                       <div key={i} className="cs-cell cs-cell--blank" />
@@ -146,8 +177,16 @@ export function CalendarStage({ play = true, className = '', size = WIDE, fillIn
             <Popover
               show={!!open}
               className="cs-pop"
-              origin={compact ? 'bottom' : 'top left'}
-              style={anchor ? (compact ? { left: 16, right: 16, bottom: 16 } : { left: anchor.x + anchor.width + 8, top: anchor.y }) : undefined}
+              origin={compact ? (hosted ? 'bottom left' : 'bottom') : 'top left'}
+              style={
+                !anchor
+                  ? undefined
+                  : !compact
+                    ? { left: anchor.x + anchor.width + 8, top: anchor.y }
+                    : hosted
+                      ? { left: anchor.x + anchor.width + 6, bottom: COMPACT.height - anchor.y - anchor.height, width: 196 }
+                      : { left: 16, right: 16, bottom: 16 }
+              }
             >
               {open && (
                 <>

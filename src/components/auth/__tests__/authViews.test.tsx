@@ -13,11 +13,14 @@ vi.mock('@/store/api', async (orig) => ({
   useLogoutMutation: () => [() => ({ unwrap: () => logout() }), { isLoading: false }],
 }));
 
+import { AuthFrame } from '../AuthFrame';
 import { AuthNotice } from '../AuthNotice';
-import { FactsList } from '../FactsList';
 import { LoggedOutView } from '../LoggedOutView';
-import { ProductPane } from '../ProductPane';
+import { SCENES } from '../scenes';
+import { StageBar } from '../StageBar';
 import { StatusView } from '../StatusView';
+import { StepRow } from '../StepRow';
+import { StageVisual } from '../visual/StageVisual';
 import { LOGGED_OUT_URL, useLogout } from '../useLogout';
 import { RequireAuth } from '../RequireAuth';
 import { setLoggingOut } from '../loggingOut';
@@ -54,12 +57,16 @@ describe('LoggedOutView (DESIGN-AUTH §3.9)', () => {
     expect(screen.getByText(/Your other devices are asked to log in again the next time their session renews\./)).toBeInTheDocument();
     expect(screen.queryByText(/within an hour/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Reset it now' })).toHaveAttribute('href', '/login?view=forgot');
+    expect(within(screen.getByRole('complementary')).getByText('Other devices')).toBeInTheDocument();
   });
 
-  it('is announced as a status, carries the sample dashboard and is noindex', async () => {
+  it('is announced as a status, sets the closed stage with what log out removed, and is noindex', async () => {
     const { container } = render(shell(<LoggedOutView everywhere={false} />));
     expect(container.querySelector('[role=status]')).toHaveTextContent("You're logged out");
-    expect(screen.getByRole('complementary', { name: 'What TradeQut looks like' })).toBeInTheDocument();
+    const stage = screen.getByRole('complementary', { name: 'About this step' });
+    expect(stage.querySelector('.auth-display')).toHaveTextContent('Your journal is closed on this browser.');
+    expect(within(stage).getAllByRole('term').map((t) => t.textContent)).toEqual(['Session on this browser', 'Cached trades and images', 'Unsaved trade drafts']);
+    expect(within(stage).queryByText('Sample data')).toBeNull();
     await waitFor(() => expect(document.title).toBe('Logged out – TradeQut'));
     expect(document.querySelector('meta[name=robots]')).toHaveAttribute('content', 'noindex, nofollow');
   });
@@ -104,22 +111,119 @@ describe('AuthNotice', () => {
   });
 });
 
-describe('FactsList and ProductPane', () => {
-  it('lists the import brokers from IMPORT_SOURCES and the trial terms', () => {
-    render(<FactsList />);
-    expect(screen.getByText('Zerodha, Dhan, Upstox, Angel One, Groww, MT4 and MT5 files, or any CSV.')).toBeInTheDocument();
-    expect(screen.getByText('You stay on Free unless you upgrade. No card on file, so nothing to cancel.')).toBeInTheDocument();
-    expect(screen.getAllByRole('term')).toHaveLength(4);
+describe('AuthFrame (DESIGN-AUTH-V2 §2)', () => {
+  it('keeps the document order header, form, stage, legal, with one copy of the head in the header and one in the stage', () => {
+    const { container } = render(shell(<AuthFrame alternate={{ prompt: 'New here?', note: 'Trial', label: 'Create account', to: '/signup' }}><h1>Log in</h1></AuthFrame>));
+    const order = [...container.querySelectorAll('.tq-auth > header, .tq-auth > main, .tq-auth > aside, .tq-auth > footer')].map((e) => e.tagName);
+    expect(order).toEqual(['HEADER', 'MAIN', 'ASIDE', 'FOOTER']);
+    expect(within(screen.getByRole('banner')).getByText('Welcome back')).toBeInTheDocument();
+    expect(within(screen.getByRole('complementary')).getByText('Welcome back')).toBeInTheDocument();
+    expect(container.querySelector('header .auth-head')).toHaveClass('is-top');
+    expect(container.querySelector('aside .auth-head')).toHaveClass('is-stage');
+    // Tab order: logo, the form, the other way in, the pause control, the legal links.
+    const stops = [...container.querySelectorAll('a, button')].map((e) => e.getAttribute('aria-label') ?? e.textContent);
+    expect(stops).toEqual(['TradeQut home', 'Create account', 'Pause animations', 'Privacy', 'Terms', 'Security', 'Status']);
   });
 
-  it('puts the picture in one labelled image and exposes nothing focusable inside the pane', () => {
-    const { container } = render(<ProductPane variant="journal" />);
-    expect(screen.getByRole('img', { name: /Sample data, not your account/ })).toBeInTheDocument();
-    expect(screen.getByText('November 2026 on the dashboard')).toBeInTheDocument();
-    expect(container.querySelector('a, button, input, [tabindex]')).toBeNull();
-    expect(container.querySelector('h2')).toBeNull();
-    expect(screen.getAllByText('+$370.50').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('−$118.25').length).toBeGreaterThan(0);
+  it('pauses and resumes every animation from one control', async () => {
+    render(shell(<AuthFrame><h1>Log in</h1></AuthFrame>));
+    const pause = screen.getByRole('button', { name: 'Pause animations' });
+    expect(pause).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(pause);
+    expect(screen.getByRole('button', { name: 'Play animations' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('without a stage is one card: no aside, no pause control, no sample data', () => {
+    const { container } = render(shell(<AuthFrame pane="none"><h1>Gone</h1></AuthFrame>));
+    expect(screen.queryByRole('complementary')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(container.querySelector('.tq-auth')).toHaveAttribute('data-scene', 'none');
+    expect(container.textContent).not.toContain('Sample data');
+  });
+
+  it('does not load the demos or the field before the frame has been on screen', () => {
+    const { container } = render(shell(<AuthFrame><h1>Log in</h1></AuthFrame>));
+    expect(container.querySelector('canvas')).toBeNull();
+    expect(container.querySelector('.stage-box')).toBeEmptyDOMElement();
+  });
+
+  it('mounts the field and the live demo once the frame is on screen', async () => {
+    class Seen {
+      constructor(private cb: IntersectionObserverCallback) {}
+      observe(el: Element) {
+        queueMicrotask(() => this.cb([{ isIntersecting: true, target: el } as IntersectionObserverEntry], this as unknown as IntersectionObserver));
+      }
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', Seen);
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext;
+    try {
+      const { container } = render(shell(<AuthFrame><h1>Log in</h1></AuthFrame>));
+      expect(await screen.findByRole('img', { name: /Sample data: the TradeQut calendar for November 2026/ }, { timeout: 15_000 })).toBeInTheDocument();
+      await waitFor(() => expect(container.querySelector('canvas.auth-field')).toBeInTheDocument());
+      // The picture is one labelled image; nothing inside it takes focus.
+      expect(container.querySelector('.stage-box a, .stage-box button, .stage-box input, .stage-box [tabindex]')).toBeNull();
+    } finally {
+      HTMLCanvasElement.prototype.getContext = getContext;
+      vi.unstubAllGlobals();
+    }
+  }, 20_000);
+});
+
+describe('StageBar, StepRow and the stage cards', () => {
+  it('prints the sample month from the one fixture and labels it Sample data', () => {
+    render(<StageBar meta={SCENES.journal} paused={false} onToggle={() => {}} />);
+    expect(screen.getByText('Sample data')).toBeInTheDocument();
+    expect(screen.getAllByRole('term').map((t) => t.textContent)).toEqual(['Net P&L', 'Win rate', 'Best day']);
+    expect(screen.getByText('+$370.50')).toBeInTheDocument();
+    expect(screen.getByText('29 trades · 11 days')).toBeInTheDocument();
+    expect(screen.getByText('17 W · 12 L')).toBeInTheDocument();
+    expect(screen.getByText('+$140.00')).toBeInTheDocument();
+  });
+
+  it('a scene without a picture has a sentence, no chip and no cells', () => {
+    render(<StageBar meta={SCENES.reset} paused={false} onToggle={() => {}} />);
+    expect(screen.getByText('Nothing in your journal changes when you reset your password.')).toBeInTheDocument();
+    expect(screen.queryByText('Sample data')).toBeNull();
+    expect(screen.queryByRole('term')).toBeNull();
+  });
+
+  it('marks the current sign-up step and the ones done', () => {
+    render(<StepRow current={2} />);
+    const items = screen.getAllByRole('listitem');
+    expect(items.map((li) => li.getAttribute('aria-current'))).toEqual([null, 'step', null]);
+    expect(items[0]).toHaveTextContent('Create account (done)');
+    expect(items[2]).toHaveTextContent('03First run');
+  });
+
+  it('reset shows the three steps and the one thing a reset changes', () => {
+    render(<StageVisual scene="reset" data={{ resetStep: 2 }} paused={false} seen={false} />);
+    const steps = within(screen.getByRole('list', { name: 'Password reset steps' })).getAllByRole('listitem');
+    expect(steps.map((li) => li.getAttribute('aria-current'))).toEqual([null, 'step', null]);
+    expect(screen.getByText('Password').nextElementSibling).toHaveTextContent('New');
+    for (const kept of ['Trades, notes and screenshots', 'Goals and rules', 'Plan and billing']) {
+      expect(screen.getByText(kept).nextElementSibling).toHaveTextContent('Unchanged');
+    }
+  });
+
+  it('the mail card names the address, shows how many digits are in, and turns to accepted', () => {
+    const { container, rerender } = render(<StageVisual scene="mail" data={{ email: 'ann@example.com', codeLength: 2 }} paused={false} seen={false} />);
+    expect(screen.getByRole('img', { name: 'A message with a 6-digit code for ann@example.com.' })).toBeInTheDocument();
+    expect(container.querySelectorAll('.mail__code i[data-on]')).toHaveLength(2);
+    rerender(<StageVisual scene="mail" data={{ email: 'ann@example.com', codeLength: 6, verified: true }} paused={false} seen={false} />);
+    expect(container.querySelector('.mail__code')).toHaveAttribute('data-done');
+    expect(container).toHaveTextContent('Code accepted.');
+  });
+
+  it('the Google wait shows what is happening without a product picture', () => {
+    render(<StageVisual scene="opening" data={{}} paused={false} seen={false} />);
+    expect(screen.getByText('Checking your Google account')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).toBeNull();
   });
 });
 

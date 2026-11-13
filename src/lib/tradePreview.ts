@@ -89,16 +89,17 @@ export function computePreview(i: PreviewInput): Preview {
 
   const hasInputs = num(i.entryPrice) && num(i.exitPrice) && num(i.quantity) && multiplier !== null;
   const pnl = hasInputs
-    ? computePnl({ side: i.direction === 'LONG' ? 'BUY' : 'SELL', quantity: i.quantity!, entryPrice: i.entryPrice!, exitPrice: i.exitPrice!, multiplier: multiplier!, fees: num(i.fees) ? i.fees : 0 })
+    ? computePnl({ side: i.direction === 'LONG' ? 'BUY' : 'SELL', quantity: i.quantity!, entryPrice: i.entryPrice!, exitPrice: i.exitPrice!, multiplier: multiplier!, fees: num(i.fees) ? i.fees : 0, stopLoss: num(i.stopLoss) ? i.stopLoss : null })
     : null;
   const gross = pnl ? pnl.grossPnl : null;
   const canAuto = hasInputs && reason === null;
-  const fees = num(i.fees) ? i.fees : 0;
-  const net = pnl && canAuto ? pnl.netPnl : null;
+  const net = pnl
+ && canAuto ? pnl.netPnl : null;
 
   const stopDistance = num(i.entryPrice) && num(i.stopLoss) && i.stopLoss > 0 ? Math.abs(i.entryPrice - i.stopLoss) : null;
   const riskAmount = stopDistance !== null && num(i.quantity) && multiplier !== null ? stopDistance * i.quantity * multiplier : null;
-  const realisedR = riskAmount && riskAmount > 0 && gross !== null ? (canAuto ? (gross - fees) / riskAmount : gross / riskAmount) : null;
+  // Net P&L over initial risk, from the one definition in lib/pnl; with a P&L the user types, the price-based gross stands in.
+  const realisedR = canAuto ? (pnl?.rMultiple ?? null) : riskAmount && riskAmount > 0 && gross !== null ? gross / riskAmount : null;
   const plannedRR =
     stopDistance && stopDistance > 0 && num(i.entryPrice) && num(i.takeProfit) && i.takeProfit > 0
       ? Math.abs(i.takeProfit - i.entryPrice) / stopDistance

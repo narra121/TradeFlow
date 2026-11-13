@@ -114,7 +114,7 @@ export function PricingTable({ headingLevel = 2 }: { headingLevel?: 2 | 3 }) {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-4">
-        <Button asChild>
+        <Button asChild className="signed-out-only">
           <Link to="/signup">Start free</Link>
         </Button>
         <p className="max-w-prose text-sm text-muted-foreground">{PRICING_NOTE}</p>

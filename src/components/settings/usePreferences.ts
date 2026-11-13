@@ -33,18 +33,20 @@ export interface PreferencesApi {
   prefs: ServerPreferences | undefined;
   isLoading: boolean;
   isError: boolean;
+  error?: unknown;
   /** Rejects when the server refuses the change. */
   save: (patch: Partial<ServerPreferences>) => Promise<void>;
 }
 
 export function usePreferences(): PreferencesApi {
-  const { data, isLoading, isError } = useGetProfileQuery();
+  const { data, isLoading, isError, error } = useGetProfileQuery();
   const [update] = useUpdatePreferencesMutation();
   const prefs = (data as { preferences?: ServerPreferences } | undefined)?.preferences;
   return {
     prefs,
     isLoading,
     isError,
+    error,
     save: async (patch) => {
       await update(patch as never).unwrap();
     },

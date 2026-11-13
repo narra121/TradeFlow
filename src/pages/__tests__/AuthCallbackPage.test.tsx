@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+// Each test re-imports the page after `vi.resetModules()`; on a busy machine that alone can pass the 5 s default.
+vi.setConfig({ testTimeout: 20_000 });
+
 // Mock authApi endpoints
 vi.mock('@/store/api/authApi', () => {
   const createMatcher = (type: string) => {
@@ -16,6 +19,7 @@ vi.mock('@/store/api/authApi', () => {
         signup: { matchFulfilled: createMatcher('authApi/signup/fulfilled') },
         login: { matchFulfilled: createMatcher('authApi/login/fulfilled') },
         logout: { matchFulfilled: createMatcher('authApi/logout/fulfilled') },
+        logoutEverywhere: { matchFulfilled: createMatcher('authApi/logoutEverywhere/fulfilled') },
       },
     },
   };
@@ -23,6 +27,12 @@ vi.mock('@/store/api/authApi', () => {
 
 const track = vi.hoisted(() => ({ trackSignUp: vi.fn(), trackLogin: vi.fn() }));
 vi.mock('@/lib/analytics', () => track);
+
+// Amplify exchanges the code on its own; the page only waits for the result
+const svc = vi.hoisted(() => ({ finishGoogleSignIn: vi.fn(), startGoogleSignIn: vi.fn() }));
+vi.mock('@/lib/auth/authService', () => svc);
+const hex = (s: string) => s.split('').map((c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+const googleUser = { id: 'g1', name: 'Gia', email: 'g@x.io' };
 
 // Mock react-router-dom hooks
 const mockNavigate = vi.fn();
@@ -39,27 +49,26 @@ vi.mock('react-router-dom', async () => {
 
 describe('AuthCallbackPage', () => {
   const originalLocation = window.location;
-  let localStorageSetItemSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockSearchParams = new URLSearchParams();
-    localStorage.clear();
-    sessionStorage.setItem('tq.oauth', JSON.stringify({ state: 's1', verifier: 'verifier-1' }));
+    svc.finishGoogleSignIn.mockReset();
+    svc.startGoogleSignIn.mockReset();
+    svc.startGoogleSignIn.mockResolvedValue(undefined);
 
     // Stub env vars before resetting modules so the component picks them up
+    vi.stubEnv('VITE_COGNITO_USER_POOL_ID', 'us-east-1_Pool');
     vi.stubEnv('VITE_COGNITO_DOMAIN', 'auth.test.com');
     vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'test-client-id');
 
     Object.defineProperty(window, 'location', { value: { ...originalLocation, href: '', origin: 'https://tradequt.com' }, writable: true, configurable: true });
 
-    localStorageSetItemSpy = vi.spyOn(localStorage, 'setItem');
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     Object.defineProperty(window, 'location', { value: originalLocation, writable: true, configurable: true });
-    localStorageSetItemSpy.mockRestore();
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.useRealTimers();
@@ -72,9 +81,9 @@ describe('AuthCallbackPage', () => {
     return render(<AuthCallbackPage />);
   }
 
-  it('shows a polite loading status with a spinner while the code is exchanged', async () => {
+  it('shows a polite loading status with a spinner while Amplify exchanges the code', async () => {
     mockSearchParams = new URLSearchParams('?code=test-code&state=s1');
-    vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
+    svc.finishGoogleSignIn.mockReturnValue(new Promise(() => {}));
 
     const { container } = await importAndRender();
 
@@ -87,7 +96,7 @@ describe('AuthCallbackPage', () => {
   it('admits it is slow after 10 seconds and offers a way back', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockSearchParams = new URLSearchParams('?code=test-code&state=s1');
-    vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
+    svc.finishGoogleSignIn.mockReturnValue(new Promise(() => {}));
 
     await importAndRender();
     expect(screen.queryByText('This is taking longer than usual.')).toBeNull();
@@ -133,88 +142,63 @@ describe('AuthCallbackPage', () => {
     expect(screen.getByRole('link', { name: 'Back to log in' })).toHaveAttribute('href', '/login');
   });
 
-  it('exchanges code for tokens and navigates to /app on success', { timeout: 15000 }, async () => {
-    const payload = { sub: 'google-user-1', name: 'Test User', email: 'test@gmail.com' };
-    const fakeIdToken = `header.${btoa(JSON.stringify(payload))}.signature`;
-
+  it('finishes the sign-in: records the user, counts a log in and opens the app', async () => {
     mockSearchParams = new URLSearchParams('?code=auth-code-123&state=s1');
-
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ id_token: fakeIdToken, refresh_token: 'refresh-tok-123' }),
-    } as Response);
+    svc.finishGoogleSignIn.mockResolvedValue({ ok: true, user: googleUser, destination: null, firstSignIn: false });
 
     await importAndRender();
 
-    await waitFor(() => {
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        'https://auth.test.com/oauth2/token',
-        expect.objectContaining({ method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }),
-      );
-    }, { timeout: 10000 });
-
-    await waitFor(() => {
-      expect(localStorage.getItem('idToken')).toBe(fakeIdToken);
-      expect(mockNavigate).toHaveBeenCalledWith('/app', { replace: true });
-    }, { timeout: 10000 });
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/app', { replace: true }));
+    expect(track.trackLogin).toHaveBeenCalledWith('google');
+    expect(track.trackSignUp).not.toHaveBeenCalled();
   });
 
   it('returns to the page the user was heading for when Google sign-in started', async () => {
-    sessionStorage.setItem('tq.oauth', JSON.stringify({ state: 's1', verifier: 'verifier-1', from: '/app/trades?trade=t1' }));
     mockSearchParams = new URLSearchParams('?code=c&state=s1');
-    const idToken = `header.${btoa(JSON.stringify({ sub: 'g1', email: 'a@b.co' }))}.signature`;
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve({ id_token: idToken }) } as Response);
+    svc.finishGoogleSignIn.mockResolvedValue({ ok: true, user: googleUser, destination: '/app/trades?trade=t1', firstSignIn: false });
 
     await importAndRender();
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/app/trades?trade=t1', { replace: true }));
   });
 
-  it('counts a sign-in that created the Google identity as a sign up, any other as a log in', async () => {
-    const make = (dateCreated: number) => `header.${btoa(JSON.stringify({ sub: 'g1', email: 'a@b.co', identities: [{ providerName: 'Google', dateCreated }] }))}.signature`;
-    for (const [created, expected] of [[Date.now() - 5_000, 'trackSignUp'], [Date.now() - 86_400_000, 'trackLogin']] as const) {
-      track.trackSignUp.mockClear();
-      track.trackLogin.mockClear();
-      sessionStorage.setItem('tq.oauth', JSON.stringify({ state: 's1', verifier: 'verifier-1' }));
-      mockSearchParams = new URLSearchParams('?code=c&state=s1');
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: () => Promise.resolve({ id_token: make(created) }) } as Response);
-      const { unmount } = await importAndRender();
-      await waitFor(() => expect(track[expected]).toHaveBeenCalledWith('google'));
-      unmount();
-    }
+  it('counts a sign-in that created the Google identity as a sign up', async () => {
+    mockSearchParams = new URLSearchParams('?code=c&state=s1');
+    svc.finishGoogleSignIn.mockResolvedValue({ ok: true, user: googleUser, destination: null, firstSignIn: true });
+
+    await importAndRender();
+
+    await waitFor(() => expect(track.trackSignUp).toHaveBeenCalledWith('google'));
+    expect(track.trackLogin).not.toHaveBeenCalled();
   });
 
-  it('a failed token exchange is our failure view, not the provider text', async () => {
+  it('a failed exchange is our failure view, not provider text', async () => {
     mockSearchParams = new URLSearchParams('?code=bad-code&state=s1');
-
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: false,
-      json: () => Promise.resolve({ error: 'invalid_grant', error_description: 'Code expired' }),
-    } as Response);
+    svc.finishGoogleSignIn.mockResolvedValue({ ok: false, expired: false });
 
     await importAndRender();
 
     expect(await screen.findByRole('heading', { name: "Couldn't finish Google sign-in" })).toBeInTheDocument();
-    expect(document.body.textContent).not.toContain('Code expired');
-    expect(localStorage.getItem('idToken')).toBeNull();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('rejects a callback whose state does not match and never calls the token endpoint', async () => {
+  it('a callback that no sign-in of this browser started is the expired view', async () => {
     mockSearchParams = new URLSearchParams('?code=abc&state=forged');
-    globalThis.fetch = vi.fn();
+    svc.finishGoogleSignIn.mockResolvedValue({ ok: false, expired: true });
+
     await importAndRender();
+
     expect(await screen.findByRole('heading', { name: 'This sign-in link has expired' })).toBeInTheDocument();
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('Try Google again starts a new sign-in that remembers the destination', async () => {
-    sessionStorage.setItem('tq.oauth', JSON.stringify({ state: 's1', verifier: 'v', from: '/app/goals' }));
-    mockSearchParams = new URLSearchParams('?error=server_error&state=s1');
+  it('Try Google again starts a new sign-in that remembers the destination carried in the state', async () => {
+    mockSearchParams = new URLSearchParams(`?error=server_error&state=Ab12-${hex('/app/goals')}`);
     await importAndRender();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Try Google again' }));
 
-    await waitFor(() => expect(window.location.href).toContain('https://auth.test.com/oauth2/authorize'));
-    expect(JSON.parse(sessionStorage.getItem('tq.oauth') ?? '{}').from).toBe('/app/goals');
+    await waitFor(() => expect(svc.startGoogleSignIn).toHaveBeenCalledWith('/app/goals'));
+    expect(svc.finishGoogleSignIn).not.toHaveBeenCalled();
   });
 });

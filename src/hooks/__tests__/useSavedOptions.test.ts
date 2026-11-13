@@ -583,6 +583,26 @@ describe('useSavedOptions - Error States', () => {
     expect(mockToastError).toHaveBeenCalled();
   });
 
+  it('a failed write is reported with the API message and does not block the next edit', async () => {
+    mockUseGetSavedOptionsQuery.mockReturnValue({ data: customOptions, isLoading: false, isFetching: false });
+    mockUpdateOptions
+      .mockReturnValueOnce({ unwrap: () => Promise.reject({ status: 400, data: { message: 'A list can hold at most 50 entries.' } }) })
+      .mockReturnValue({ unwrap: () => Promise.resolve() });
+    mockToastError.mockClear();
+
+    const { result } = renderHook(() => useSavedOptions());
+    await act(async () => {
+      result.current.addStrategy('A');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await vi.waitFor(() => expect(mockToastError).toHaveBeenCalledWith("Couldn't save your options.", { description: 'A list can hold at most 50 entries.' }));
+    await act(async () => {
+      result.current.addStrategy('B');
+    });
+    expect(mockUpdateOptions).toHaveBeenCalledTimes(2);
+  });
+
   it('applies two quick edits one after another without losing the first', async () => {
     mockUseGetSavedOptionsQuery.mockReturnValue({ data: customOptions, isLoading: false, isFetching: false });
     let release: () => void = () => undefined;
@@ -603,5 +623,45 @@ describe('useSavedOptions - Error States', () => {
     });
     expect(mockUpdateOptions).toHaveBeenCalledTimes(2);
     expect(mockUpdateOptions.mock.calls[1][0].strategies).toEqual(['Breakout', 'Scalping', 'A', 'B']);
+  });
+
+  it('a re-render between two quick adds does not make the second start from the stored copy', async () => {
+    mockUseGetSavedOptionsQuery.mockReturnValue({ data: customOptions, isLoading: false, isFetching: false });
+    let release: () => void = () => undefined;
+    mockUpdateOptions
+      .mockReturnValueOnce({ unwrap: () => new Promise<void>((res) => { release = res; }) })
+      .mockReturnValue({ unwrap: () => Promise.resolve() });
+
+    const { result, rerender } = renderHook(() => useSavedOptions());
+    act(() => result.current.addTag('Scalp'));
+    rerender();
+    act(() => result.current.addTag('Swing'));
+    rerender();
+    await act(async () => {
+      release();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mockUpdateOptions.mock.calls[1][0].tags).toEqual(['A+ setup', 'Scalp', 'Swing']);
+  });
+
+  it('after a failed save the next edit starts from the stored lists, not from the failed edit', async () => {
+    mockUseGetSavedOptionsQuery.mockReturnValue({ data: customOptions, isLoading: false, isFetching: false });
+    mockToastError.mockClear();
+    mockUpdateOptions
+      .mockReturnValueOnce({ unwrap: () => Promise.reject({ status: 500 }) })
+      .mockReturnValue({ unwrap: () => Promise.resolve() });
+
+    const { result } = renderHook(() => useSavedOptions());
+    await act(async () => {
+      result.current.addTag('Lost');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await vi.waitFor(() => expect(mockToastError).toHaveBeenCalled());
+    await act(async () => {
+      result.current.addTag('Kept');
+    });
+    expect(mockUpdateOptions.mock.calls[1][0].tags).toEqual(['A+ setup', 'Kept']);
   });
 });

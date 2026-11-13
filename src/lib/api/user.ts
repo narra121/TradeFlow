@@ -6,7 +6,7 @@ export interface UserProfile {
     preferences: {
       darkMode: boolean;
       currency: string;
-      timezone: string;
+      timeZone: string;
       carryForwardGoalsRules?: boolean;
       notifications: {
         tradeReminders: boolean;
@@ -25,7 +25,7 @@ export interface UpdateProfilePayload {
 export interface UpdatePreferencesPayload {
   darkMode?: boolean;
   currency?: 'USD' | 'EUR' | 'GBP';
-  timezone?: string;
+  timeZone?: string;
   carryForwardGoalsRules?: boolean;
 }
 

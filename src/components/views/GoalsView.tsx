@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { AccountPicker } from '@/components/account/AccountPicker';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
@@ -19,6 +20,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useOnline } from '@/hooks/useOnline';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useScopeTrades } from '@/hooks/useScopeTrades';
+import { drawdownBasis } from '@/components/stats/useScopeCapital';
 import {
   useCreateGoalMutation,
   useCreateRuleMutation,
@@ -33,6 +35,7 @@ import { useAppDispatch } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { readApiError } from '@/lib/apiError';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
+import { appToday } from '@/lib/appTimeZone';
 import { parseLocalDate } from '@/lib/format';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -41,7 +44,7 @@ export function GoalsView() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { accounts, isLoading: accountsLoading, selectedAccountId, selectedAccount, setSelectedAccountId } = useAccounts();
+  const { accounts, isLoading: accountsLoading, selectedAccount, setSelectedAccountId } = useAccounts();
   const isMobile = useIsMobile();
   const [adding, setAdding] = useState(false);
   const [prefill, setPrefill] = useState<string | undefined>();
@@ -63,7 +66,8 @@ export function GoalsView() {
   // The period unit and the anchor date are the only period state; key, range and the current flag derive from them.
   const periodType: GoalPeriod = params.get('period') === 'month' ? 'monthly' : 'weekly';
   const anchorParam = params.get('on');
-  const anchor = anchorParam && ISO_DATE.test(anchorParam) ? parseLocalDate(anchorParam) : new Date();
+  // Memoised: a fresh `new Date()` on every render would recompute everything below that depends on the period.
+  const anchor = useMemo(() => (anchorParam && ISO_DATE.test(anchorParam) ? parseLocalDate(anchorParam) : appToday()), [anchorParam]);
   const ref = useMemo(() => periodOf(periodType, anchor), [periodType, anchor.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
   const live = isCurrentPeriod(ref);
   const noun = periodNoun(periodType);
@@ -91,6 +95,7 @@ export function GoalsView() {
   const currency = currencies.length === 1 ? currencies[0] : undefined;
   const needAccount = !selectedAccount && currencies.length > 1;
   const scopeId = selectedAccount ? selectedAccount.id : 'ALL';
+  const basis = useMemo(() => drawdownBasis(selectedAccount ? [selectedAccount] : activeAccounts), [selectedAccount, activeAccounts]);
   const totalCapital = useMemo(() => (selectedAccount ? selectedAccount.initialBalance || 0 : activeAccounts.reduce((sum, a) => sum + (a.initialBalance || 0), 0)), [selectedAccount, activeAccounts]);
 
   const rulesGoals = useGetRulesAndGoalsQuery({ periodKey: ref.key, currentPeriod: live });
@@ -125,9 +130,10 @@ export function GoalsView() {
         target: real?.target ?? DEFAULT_TARGETS[periodType][type],
         isDefault: !real,
         tradeCount: gp.tradeCount?.current ?? 0,
+        unavailable: type === 'maxDrawdown' && basis === 'balance' ? 'Set a starting balance on the account to track drawdown.' : undefined,
       };
     });
-  }, [gp, goals, periodType, selectedAccount]);
+  }, [gp, goals, periodType, selectedAccount, basis]);
 
   const saveGoal = async (type: GoalType, value: number) => {
     const real = goals.find((g) => g.goalType === type && g.period === periodType && (selectedAccount ? g.accountId === selectedAccount.id : true));
@@ -178,6 +184,7 @@ export function GoalsView() {
   const days = tradingDays(ref);
   const loading = rulesGoals.isLoading || progress.isLoading || accountsLoading;
   const failed = rulesGoals.isError || progress.isError || allRulesQuery.isError;
+  const failure = progress.error ?? rulesGoals.error ?? allRulesQuery.error;
   const online = useOnline();
   const readOnly = !live || !online;
 
@@ -202,16 +209,15 @@ export function GoalsView() {
       return (
         <Panel title="Goals" padded>
           <p className="text-13 text-foreground-soft">Goals are tracked per account. Your accounts use different currencies, so choose one.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {activeAccounts.map((a) => (
-              <Button key={a.id} type="button" variant="outline" size="sm" onClick={() => setSelectedAccountId(a.id)}>{a.name} · {a.currency}</Button>
-            ))}
+          <div className="mt-3 max-w-xs space-y-1.5">
+            <label id="goals-account" className="text-xs font-medium text-foreground-soft">Account</label>
+            <AccountPicker label="Account" labelledBy="goals-account" accounts={activeAccounts} value={null} onChange={setSelectedAccountId} />
           </div>
         </Panel>
       );
     }
     if (loading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
-    if (failed || !gp) return <ErrorState title="Couldn’t load your goals." description="Check your connection and try again." onRetry={retry} />;
+    if (failed || !gp) return <ErrorState title="Couldn’t load your goals." description="Try again." error={failure} onRetry={retry} />;
     return (
       <div className="space-y-2">
         <GoalsPanel tracks={tracks} period={ref} live={live} readOnly={readOnly} currency={currency} context={context} history={history.strips} historyLoading={history.loading} onSave={saveGoal} />
@@ -252,7 +258,7 @@ export function GoalsView() {
       {rulesGoals.isLoading || allRulesQuery.isLoading ? (
         <Skeleton className="h-48 w-full" aria-busy="true" />
       ) : rulesGoals.isError ? (
-        <ErrorState title="Couldn’t load your rules." description="Check your connection and try again." onRetry={retry} />
+        <ErrorState title="Couldn’t load your rules." description="Try again." error={rulesGoals.error} onRetry={retry} />
       ) : (
         <RulesPanel
           rows={ruleRows}

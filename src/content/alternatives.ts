@@ -1,4 +1,9 @@
-import type { FaqItem } from './product-facts';
+import { proPrice, type FaqItem } from './product-facts';
+
+const usdMonth = proPrice('USD', 'month').display;
+const usdYear = proPrice('USD', 'year').display;
+const inrMonth = proPrice('INR', 'month').display;
+const inrYear = proPrice('INR', 'year').display;
 
 /** Competitor facts for the /alternatives pages. Every fact carries its source; re-check `checked` monthly. */
 export interface Competitor {
@@ -40,7 +45,7 @@ export const COMPETITORS: Competitor[] = [
       'A broader product with higher tiers for heavy users.',
     ],
     tradequtFits: [
-      'A permanent Free plan, and Pro at $9.99/month or ₹199/month rather than $35 and up.',
+      `A permanent Free plan, and Pro at ${usdMonth}/month or ${inrMonth}/month rather than $35 and up.`,
       'Pricing in INR, and import of Zerodha, Dhan, Upstox, Angel One and Groww files with estimated Indian charges per trade.',
       'Rule tracking that records when you broke each rule and what the breaks cost.',
     ],
@@ -48,7 +53,7 @@ export const COMPETITORS: Competitor[] = [
       {
         question: 'Is TradeQut cheaper than TradeZella?',
         answer:
-          'On list prices checked on 12 November 2026, yes: TradeQut Pro is $9.99/month or $79/year, and there is a Free plan. TradeZella lists Essential at $35/month ($26/month billed yearly) and no free plan. TradeZella offers automatic broker sync that TradeQut does not have yet.',
+          `On list prices checked on 12 November 2026, yes: TradeQut Pro is ${usdMonth}/month or ${usdYear}/year, and there is a Free plan. TradeZella lists Essential at $35/month ($26/month billed yearly) and no free plan. TradeZella offers automatic broker sync that TradeQut does not have yet.`,
       },
       {
         question: 'Does TradeQut sync automatically with my broker like TradeZella?',
@@ -113,13 +118,13 @@ export const COMPETITORS: Competitor[] = [
       'A smaller, simpler journal built around rules and review habits.',
       'Free plan with 2 trading accounts, unlimited manual trades and every asset class.',
       'Estimated Indian charges on imported trades, and the cost of each broken rule.',
-      'Pro at ₹199/month or ₹1,499/year.',
+      `Pro at ${inrMonth}/month or ${inrYear}/year.`,
     ],
     faq: [
       {
         question: 'How does TradesViz compare with TradeQut for Indian traders?',
         answer:
-          'TradesViz is the more established product: it supports Zerodha tradebook import today and has a free plan with 3,000 executions a month. TradeQut is smaller and simpler, with rule tracking and lower Pro pricing (₹199/month or ₹1,499/year). Try both free plans with your own tradebook.',
+          `TradesViz is the more established product: it supports Zerodha tradebook import today and has a free plan with 3,000 executions a month. TradeQut is smaller and simpler, with rule tracking and lower Pro pricing (${inrMonth}/month or ${inrYear}/year). Try both free plans with your own tradebook.`,
       },
     ],
   },

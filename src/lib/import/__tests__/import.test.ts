@@ -74,7 +74,10 @@ describe('importErrorMessage', () => {
     expect(importErrorMessage({ status: 402, data: { errorCode: 'PLAN_REQUIRED', error: { code: 'PLAN_REQUIRED' } } }).upgrade?.code).toBe('PLAN_REQUIRED');
     expect(importErrorMessage({ status: 413 }).message).toMatch(/4 MB/);
     expect(importErrorMessage({ status: 400, data: { errorMessage: 'accountId must be a non-empty string.' } }).message).toBe('accountId must be a non-empty string.');
-    expect(importErrorMessage({ status: 'FETCH_ERROR', data: 'Network error. Please try again.' }).message).toBe('Network error. Please try again.');
+    expect(importErrorMessage({ status: 'FETCH_ERROR', data: 'x' }).message).toMatch(/internet connection/i);
+    expect(importErrorMessage({ status: 'TIMEOUT_ERROR' }).message).toMatch(/timed out/i);
+    expect(importErrorMessage({ status: 500, data: { message: 'The parser is down for maintenance.' } }).message).toBe('The parser is down for maintenance.');
+    expect(importErrorMessage({ status: 502, data: '<html>Bad Gateway</html>' }).message).toMatch(/temporarily unavailable/);
     expect(importErrorMessage(undefined).message).toMatch(/Something went wrong/);
     expect(importErrorMessage(new ImportFileError('The file is empty.')).message).toBe('The file is empty.');
   });

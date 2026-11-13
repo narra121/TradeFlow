@@ -4,6 +4,7 @@ import { CalendarDays, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { popupOption } from '@/components/ui/popup';
 import { cn } from '@/lib/utils';
 import { DatePreset, PRESET_OPTIONS, getDateRangeFromPreset, presetLabel } from '@/lib/scope';
 
@@ -60,7 +61,7 @@ export function DateRangeFilter({
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-1">
+      <PopoverContent align="start" aria-label="Date range" className="w-64 p-1 [@media(pointer:coarse)]:w-[21rem]">
         <ul role="listbox" aria-label="Date range presets">
           {PRESET_OPTIONS.map((p) => (
             <li key={String(p.value)} role="presentation">
@@ -69,7 +70,7 @@ export function DateRangeFilter({
                 role="option"
                 aria-selected={selectedPreset === p.value}
                 onClick={() => choose(p.value)}
-                className="flex h-9 w-full items-center justify-between rounded px-2 text-left text-sm hover:bg-muted [@media(pointer:coarse)]:h-11"
+                className={cn(popupOption, 'justify-between')}
               >
                 {p.label}
                 {selectedPreset === p.value && <Check className="h-4 w-4 text-primary" aria-hidden="true" />}
@@ -83,7 +84,7 @@ export function DateRangeFilter({
                 role="option"
                 aria-selected={selectedPreset === 'custom'}
                 onClick={() => choose('custom')}
-                className="flex h-9 w-full items-center justify-between rounded px-2 text-left text-sm hover:bg-muted [@media(pointer:coarse)]:h-11"
+                className={cn(popupOption, 'justify-between')}
               >
                 Custom range…
                 {selectedPreset === 'custom' && <Check className="h-4 w-4 text-primary" aria-hidden="true" />}

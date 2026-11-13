@@ -20,7 +20,8 @@ describe('entryFor', () => {
   });
 
   it('gives a signed-in user the full entry everywhere', () => {
-    expect(entryFor('/', 'token')).toBe('app');
-    expect(entryFor('/blog', 'token')).toBe('app');
+    expect(entryFor('/', true)).toBe('app');
+    expect(entryFor('/blog', true)).toBe('app');
+
   });
 });

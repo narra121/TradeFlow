@@ -9,9 +9,10 @@ import { clearPersistedViewState, clearTradeDrafts } from '@/lib/scope';
 /** When the session ends (logout or a global 401) nothing of the previous user may stay in memory or storage. */
 export const sessionResetMiddleware: Middleware = (store) => (next) => (action) => {
   const result = next(action);
-  if (clearAuth.match(action) || authApi.endpoints.logout.matchFulfilled(action)) {
+  const loggedOut = authApi.endpoints.logout.matchFulfilled(action) || authApi.endpoints.logoutEverywhere.matchFulfilled(action);
+  if (clearAuth.match(action) || loggedOut) {
     clearPersistedViewState();
-    if (authApi.endpoints.logout.matchFulfilled(action)) clearTradeDrafts();
+    if (loggedOut) clearTradeDrafts();
     store.dispatch(api.util.resetApiState());
     store.dispatch(setSelectedAccount(null));
     store.dispatch(clearFilters());

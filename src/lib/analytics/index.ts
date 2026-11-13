@@ -65,9 +65,10 @@ export function isAdEligiblePath(pathname: string): boolean {
   return !/^\/(app|auth|login|signup)(\/|$)/.test(pathname);
 }
 
+/** gtag attaches the page URL to every event, so each event carries the sanitized one unless it sets its own. */
 export function track(name: AnalyticsEvent, params: Record<string, unknown> = {}): boolean {
   if (!gaReady || !window.gtag) return false;
-  window.gtag('event', name, params);
+  window.gtag('event', name, { page_location: sanitizeLocation(window.location.href), ...params });
   return true;
 }
 

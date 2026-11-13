@@ -36,7 +36,7 @@ export function NotificationsSection() {
           }}
         />
       </Row>
-      <SaveStatus state={status.state} />
+      <SaveStatus state={status.state} reason={status.reason} />
     </section>
   );
 }

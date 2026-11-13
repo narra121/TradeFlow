@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 import { EXPORT_COLUMNS, csvCell, exportFileName, tradeToRow, tradesToCsv } from '../exportCsv';
 import type { Trade, TradingAccount } from '@/types/trade';
 
@@ -42,5 +43,16 @@ describe('csv export', () => {
 
   it('names the file by scope and date', () => {
     expect(exportFileName('selection', new Date('2026-11-11T10:00:00Z'))).toBe('tradequt-trades-selection-2026-11-11.csv');
+  });
+
+  it('names the file by the day of the saved zone, not the UTC date', () => {
+    patchUiState({ timeZone: 'Asia/Kolkata' });
+    try {
+      // 23:30 UTC on the 11th is already the 12th in Kolkata
+      expect(exportFileName('view', new Date('2026-11-11T23:30:00Z'))).toBe('tradequt-trades-view-2026-11-12.csv');
+    } finally {
+      localStorage.clear();
+      resetUiStateCache();
+    }
   });
 });

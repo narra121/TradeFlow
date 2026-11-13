@@ -22,5 +22,7 @@ export default defineConfig({
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    // Fake pool: e2e seeds a signed-in session (e2e/fixtures/auth.ts) and mocks the API, so Cognito is never called.
+    env: { VITE_COGNITO_USER_POOL_ID: 'us-east-1_e2etest', VITE_COGNITO_CLIENT_ID: 'e2eclientid' },
   },
 });

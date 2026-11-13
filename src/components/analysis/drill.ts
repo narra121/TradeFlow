@@ -22,6 +22,8 @@ export interface AnalyticsContext {
   currency?: string;
   /** Several currencies in scope: the drawdown percentage needs one account's starting balance, so it is not shown. */
   multi: boolean;
+  /** An account in scope has no starting balance: the drawdown percentage would read near 100%, so it is not shown. */
+  noBalance?: boolean;
   /** IANA zone the server bucketed hours and weekdays in. */
   zone: string;
   /** Pro or trialing: `advanced_analytics` is on. */
@@ -29,8 +31,9 @@ export interface AnalyticsContext {
 }
 
 /** Trades link of an explorer row, or null when Trades cannot filter by that value (an empty session, for one). */
-export function rowLink(dim: DimensionId, row: DistributionRow): string | null {
+export function rowLink(dim: DimensionId, row: DistributionRow, zone?: string): string | null {
   if (row.drill === null || row.drill === undefined) return null;
   if (dim === 'strategy' && row.drill === '') return '/app/tradelog?missing=strategy&src=analytics';
-  return tradesHref(dim, row.drill);
+  // Weekday and hour exist only in the zone `/stats` used, so the link names it.
+  return tradesHref(dim, row.drill, zone && (dim === 'weekday' || dim === 'hour') ? { zone } : {});
 }

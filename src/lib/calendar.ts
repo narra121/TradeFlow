@@ -1,5 +1,7 @@
 import { addDays, endOfMonth, startOfMonth, startOfWeek } from 'date-fns';
+import { dayKeyIn } from '@/lib/appTimeZone';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
+import { accountCurrency } from '@/lib/format';
 import { realisedR } from '@/lib/tradeFilters';
 import type { Trade, TradingAccount } from '@/types/trade';
 
@@ -37,10 +39,10 @@ export interface MonthModel extends DaysSummary {
   weeks: WeekRow[];
 }
 
-/** A trade belongs to the local calendar day of its exit time. */
+/** A trade belongs to the calendar day of its exit time in the app time zone (Settings), the zone `/stats` buckets by. */
 export function tradeDayKey(t: Trade): string {
   const d = new Date(t.exitDate || t.entryDate);
-  return Number.isNaN(d.getTime()) ? '' : formatLocalDateOnly(d);
+  return Number.isNaN(d.getTime()) ? '' : dayKeyIn(d);
 }
 
 function addNet(list: CurrencyNet[], currency: string, amount: number) {
@@ -158,7 +160,7 @@ export function buildMonth(trades: Trade[], month: Date, accounts: Map<string, T
         const r = realisedR(t);
         if (r !== null) sumR = (sumR ?? 0) + r;
         const acc = t.accountId ? accounts.get(t.accountId) : undefined;
-        if (acc) addNet(byCurrency, acc.currency || 'USD', t.pnl);
+        if (acc) addNet(byCurrency, accountCurrency(acc), t.pnl);
       }
       days.push({ date, key, inMonth, trades: dayTrades, wins, losses, byCurrency, ruleBreaks, sumR: sumR === null ? null : Math.round(sumR * 100) / 100 });
       if (dayTrades.length) {
@@ -234,6 +236,17 @@ export function metricScale(model: MonthModel, metric: CalendarMetric): number {
     }
   }
   return max;
+}
+
+const TINT_CLASSES = {
+  profit: ['bg-[hsl(var(--tint-profit-1))]', 'bg-[hsl(var(--tint-profit-2))]', 'bg-[hsl(var(--tint-profit-3))]'],
+  loss: ['bg-[hsl(var(--tint-loss-1))]', 'bg-[hsl(var(--tint-loss-2))]', 'bg-[hsl(var(--tint-loss-3))]'],
+} as const;
+
+/** Background of a heat cell for a net P&L and its step: the one scale of the dashboard month, the calendar and the timing grid. */
+export function tintClass(net: number, step: 0 | 1 | 2 | 3): string {
+  if (step === 0) return 'bg-muted/40';
+  return TINT_CLASSES[net >= 0 ? 'profit' : 'loss'][step - 1];
 }
 
 /** 0 = no tint; 1..3 by the day's |P&L| relative to the month's largest day. */

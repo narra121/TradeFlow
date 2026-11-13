@@ -1,20 +1,18 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronsDownUp, ChevronsUpDown, Download, Image as ImageIcon, NotebookPen, Tag as TagIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { copyTradeLink, openTradeInNewTab } from '@/lib/tradeLinks';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DirectionChip, OUTCOME_LABEL } from '@/components/ui/chips';
 import { Money, RMultiple } from '@/components/ui/money';
 import { ActivationPanel } from '@/components/onboarding/ActivationPanel';
-import { MultiSelectFilter } from '@/components/tradelog/MultiSelectFilter';
 import { ColumnsMenu } from '@/components/tradelog/ColumnsMenu';
 import { TradeTable } from '@/components/tradelog/TradeTable';
 import { BulkBar, type BulkProgress } from '@/components/tradelog/BulkBar';
@@ -39,16 +37,19 @@ import { useUiState, patchUiState } from '@/hooks/useUiState';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { setSelectedAccount } from '@/store/slices/accountsSlice';
-import { useBulkDeleteTradesMutation, useDeleteTradeMutation, useUpdateTradeMutation } from '@/store/api';
-import { BULK_EDIT_CAP, fanOut, inverseOf, patchFor, type BulkOp } from '@/lib/bulkPatch';
+import { useBulkUpdateTradesMutation, useUpdateTradeMutation } from '@/store/api';
+import { BULK_EDIT_CAP, fanOut, inverseOf, patchFor, type BulkOp, type FanOutResult } from '@/lib/bulkPatch';
+import { bulkUpdateBody, cachePatch } from '@/components/tradelog/bulkUpdate';
+import { readApiError } from '@/lib/apiError';
 import { downloadCsv, exportFileName, tradesToCsv } from '@/lib/exportCsv';
 import { formatDateShort, formatDateTime, formatMoney, formatPercent } from '@/lib/format';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
+import { appTimeZone } from '@/lib/appTimeZone';
 import { patchTradePayload } from '@/lib/patchTrade';
 import { BUILT_IN_VIEWS, isModified, loadCustomViews, matchesSpecial, needsJournal, newViewId, saveCustomViews, type TradeView } from '@/lib/savedViews';
 import { loadColumnConfig, presetColumns, saveColumnConfig, type ColumnConfig } from '@/lib/tradeColumns';
 import {
-  DEFAULT_SORT, EMPTY_FILTERS, applyFilters, chunk, distinctValues, hasActiveFilters, loadListState, realisedR, saveListState, sortTrades, summarise,
+  DEFAULT_SORT, EMPTY_FILTERS, applyFilters, distinctValues, hasActiveFilters, loadListState, realisedR, saveListState, sortTrades, summarise,
   type SortKey, type SortState, type TradeFilters,
 } from '@/lib/tradeFilters';
 import { GROUP_OPTIONS, groupTrades, type GroupBy } from '@/lib/tradeGroups';
@@ -57,7 +58,6 @@ import type { CreateTradePayload } from '@/lib/api';
 import type { Trade } from '@/types/trade';
 
 const SORT_KEY = 'tradequt-table-sort';
-const BULK_DELETE_CHUNK = 50;
 const ACTIVE_VIEW_KEY = 'tq.tradelog.activeView';
 
 function readSort(): SortState {
@@ -76,13 +76,12 @@ export function TradeLogView() {
   const { accounts, selectedAccountId } = useAccounts();
   const param = useTradeParam();
   const readOnlyIds = useReadOnlyAccounts();
-  const { presentation } = usePaneLayout();
+  const { presentation, setWalkOrder } = usePaneLayout();
   const isMobile = useIsMobile();
   const [ui] = useUiState();
   const { options: saved, addStrategy, addSession, addMarketCondition, addMistake, addTag } = useSavedOptions();
   const { rules } = useTradingRules();
-  const [bulkDelete] = useBulkDeleteTradesMutation();
-  const [deleteOne] = useDeleteTradeMutation();
+  const [bulkUpdate] = useBulkUpdateTradesMutation();
   const [updateTrade] = useUpdateTradeMutation();
 
   const savedList = useRef(loadListState());
@@ -99,15 +98,20 @@ export function TradeLogView() {
   const [progress, setProgress] = useState<BulkProgress | null>(null);
   const [undoStack, setUndoStack] = useState<{ id: string; patch: Partial<CreateTradePayload> }[] | null>(null);
   const [failed, setFailed] = useState<{ trade: Trade; patch: Partial<CreateTradePayload> }[]>([]);
+  const [failedReason, setFailedReason] = useState<string | undefined>();
   // Drill-downs arrive as URL parameters from the Dashboard, Analytics, Goals and the import result (lib/drillDown.ts).
   const { search, pathname } = useLocation();
   const navigate = useNavigate();
   const drill = useMemo(() => parseDrillDown(search), [search]);
+  // Weekday and hour links carry the zone /stats used; a link without one reads in the app's time zone (the preference).
+  const drillZone = drill?.zone ?? appTimeZone();
   const importBatch = useMemo(() => new URLSearchParams(search).get('importBatch') || undefined, [search]);
-  const { trades, isLoading, isFetching, isError, refetch, truncated } = useScopeTrades(
+  const { trades, isLoading, isFetching, isError, error: scopeError, refetch, truncated } = useScopeTrades(
     importBatch ? { accountId: filtersState.accountId, startDate: filtersState.startDate, endDate: filtersState.endDate, importBatchId: importBatch } : undefined,
   );
-  const lastClicked = useRef<number | null>(null);
+  const lastClicked = useRef<string | null>(null);
+  const bulkRunning = useRef(false);
+  const failedOp = useRef<BulkOp | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
@@ -121,11 +125,11 @@ export function TradeLogView() {
   const listSig = JSON.stringify([filters, activeViewId, sort, search, filtersState.accountId, filtersState.startDate, filtersState.endDate]);
   const filtered = useMemo(() => {
     let base = activeView.special ? trades.filter((t) => matchesSpecial(activeView.special, t)) : trades;
-    if (drill) base = base.filter((t) => drillMatch(t, drill));
+    if (drill) base = base.filter((t) => drillMatch(t, drill, drillZone));
     const fresh = sortTrades(applyFilters(base, filters), sort, accountMap);
     return withStickyRows(fresh, trades, sticky.current, listSig, (rows) => sortTrades(rows, sort, accountMap));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stickyTick re-runs the memo after Shift+R
-  }, [trades, filters, sort, accountMap, activeView.special, drill, listSig, stickyTick]);
+  }, [trades, filters, sort, accountMap, activeView.special, drill, drillZone, listSig, stickyTick]);
   // Every filtered trade (≤ 5,000) is in the list: the table mounts only the rows near the viewport (E-041).
   const pageTrades = filtered;
   const summary = useMemo(() => summarise(filtered, accountMap), [filtered, accountMap]);
@@ -161,7 +165,7 @@ export function TradeLogView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to the URL only
   }, [search]);
 
-  const drillText = drill ? drillLabel(drill, (id) => rules.find((r) => r.ruleId === id)?.rule ?? 'Rule removed') : `This import (${trades.length})`;
+  const drillText = drill ? drillLabel(drill, (id) => rules.find((r) => r.ruleId === id)?.rule ?? 'Rule removed', drillZone) : `This import (${trades.length})`;
   const clearDrill = () => {
     const q = new URLSearchParams(search);
     [...DRILL_KEYS, 'importBatch'].forEach((k) => q.delete(k));
@@ -258,6 +262,17 @@ export function TradeLogView() {
   // Grouping by a date unit only makes sense in date order; any other sort turns it off.
   const effectiveGroup: GroupBy = groupBy === 'day' || groupBy === 'week' || groupBy === 'month' ? (sort.key === 'date' ? groupBy : 'none') : groupBy;
   const groups = useMemo(() => groupTrades(pageTrades, effectiveGroup, accountMap), [pageTrades, effectiveGroup, accountMap]);
+  // The rows in the order the table shows them (group order when grouped): the pane's Prev / Next and Shift-click ranges follow it.
+  const visibleOrder = useMemo(() => (effectiveGroup === 'none' ? pageTrades : groups.flatMap((g) => g.trades)), [pageTrades, groups, effectiveGroup]);
+  const rangeOrder = useMemo(
+    () => (effectiveGroup === 'none' ? pageTrades : groups.filter((g) => !collapsedGroups.has(g.key)).flatMap((g) => g.trades)),
+    [pageTrades, groups, effectiveGroup, collapsedGroups],
+  );
+  useEffect(() => {
+    setWalkOrder(visibleOrder.map((t) => t.id));
+    return () => setWalkOrder(null);
+  }, [visibleOrder, setWalkOrder]);
+  const tradeById = useMemo(() => new Map(trades.map((t) => [t.id, t])), [trades]);
   const toggleGroup = (k: string) =>
     setCollapsedGroups((prev) => {
       const n = new Set(prev);
@@ -269,23 +284,25 @@ export function TradeLogView() {
   // ── selection ──────────────────────────────────────────────────────────────
   const toggle = useCallback(
     (id: string, e: { shiftKey: boolean }) => {
-      const idx = pageTrades.findIndex((t) => t.id === id);
+      // The range runs over the rows on screen, from the last row clicked, and skips the rows of collapsed groups.
+      const idx = rangeOrder.findIndex((t) => t.id === id);
+      const from = lastClicked.current === null ? -1 : rangeOrder.findIndex((t) => t.id === lastClicked.current);
       setSelected((prev) => {
         const next = new Set(prev);
-        if (e.shiftKey && lastClicked.current !== null && lastClicked.current < pageTrades.length) {
-          const [a, b] = [Math.min(lastClicked.current, idx), Math.max(lastClicked.current, idx)];
+        if (e.shiftKey && from !== -1 && idx !== -1) {
+          const [a, b] = [Math.min(from, idx), Math.max(from, idx)];
           const add = !prev.has(id);
           for (let i = a; i <= b; i++) {
-            if (add) next.add(pageTrades[i].id);
-            else next.delete(pageTrades[i].id);
+            if (add) next.add(rangeOrder[i].id);
+            else next.delete(rangeOrder[i].id);
           }
         } else if (next.has(id)) next.delete(id);
         else next.add(id);
         return next;
       });
-      lastClicked.current = idx;
+      lastClicked.current = id;
     },
-    [pageTrades],
+    [rangeOrder],
   );
   const togglePage = (checked: boolean) =>
     setSelected((prev) => {
@@ -295,8 +312,9 @@ export function TradeLogView() {
     });
   const selectedTrades = useMemo(() => filtered.filter((t) => selected.has(t.id)), [filtered, selected]);
 
-  // ── bulk edit (client fan-out: there is no bulk-update endpoint yet) ──────
-  const runPatches = async (items: { trade: Trade; patch: Partial<CreateTradePayload> }[]) => {
+  // ── bulk edit: one bulk-update call (the server merges lists); moving trades to an account and Undo stay one update per trade ──
+  type BulkItem = { trade: Trade; patch: Partial<CreateTradePayload> };
+  const runPatches = async (items: BulkItem[]) => {
     setProgress({ done: 0, total: items.length });
     const res = await fanOut(
       items,
@@ -309,15 +327,44 @@ export function TradeLogView() {
     return res;
   };
 
+  const runBulk = async (op: BulkOp, items: BulkItem[]): Promise<FanOutResult<BulkItem>> => {
+    const body = bulkUpdateBody(op);
+    if (!body) return runPatches(items);
+    setProgress({ done: 0, total: items.length });
+    try {
+      const patches = Object.fromEntries(items.map((i) => [i.trade.id, cachePatch(i.patch)]));
+      const res = await bulkUpdate({ tradeIds: items.map((i) => i.trade.id), ...body, patches }).unwrap();
+      const updated = new Set(res.updatedIds);
+      return {
+        done: items.filter((i) => updated.has(i.trade.id)),
+        failed: items.filter((i) => !updated.has(i.trade.id)),
+        reason: res.failed[0]?.message ?? (res.notFound.length > 0 ? 'Some of the trades no longer exist.' : undefined),
+      };
+    } catch (err) {
+      return { done: [], failed: items, reason: readApiError(err, '').message || undefined };
+    } finally {
+      setProgress(null);
+    }
+  };
+
   const applyBulk = async (op: BulkOp, targets: Trade[] = selectedTrades) => {
+    // A second pick while one is running would start from the trades as they were before the first.
+    if (bulkRunning.current) return;
     const items = targets
       .slice(0, BULK_EDIT_CAP)
       .map((trade) => ({ trade, patch: patchFor(trade, op) }))
-      .filter((i): i is { trade: Trade; patch: Partial<CreateTradePayload> } => !!i.patch);
+      .filter((i): i is BulkItem => !!i.patch);
     if (items.length === 0) return void toast.message('Nothing to change', { description: 'Every trade already has this value.' });
-    const res = await runPatches(items);
-    setFailed(res.failed);
-    setUndoStack(res.done.map((i) => ({ id: i.trade.id, patch: inverseOf(i.trade, i.patch) })));
+    bulkRunning.current = true;
+    try {
+      const res = await runBulk(op, items);
+      failedOp.current = op;
+      setFailed(res.failed);
+      setFailedReason(res.reason);
+      setUndoStack(res.done.map((i) => ({ id: i.trade.id, patch: inverseOf(i.trade, i.patch) })));
+    } finally {
+      bulkRunning.current = false;
+    }
   };
   const undoBulk = async () => {
     if (!undoStack) return;
@@ -327,10 +374,18 @@ export function TradeLogView() {
     await runPatches(items);
   };
   const retryFailed = async () => {
+    const op = failedOp.current;
+    if (!op || bulkRunning.current) return;
     const items = failed;
     setFailed([]);
-    const res = await runPatches(items);
-    setFailed(res.failed);
+    bulkRunning.current = true;
+    try {
+      const res = await runBulk(op, items);
+      setFailed(res.failed);
+      setFailedReason(res.reason);
+    } finally {
+      bulkRunning.current = false;
+    }
   };
 
   const undoableDelete = useUndoableDelete();
@@ -348,11 +403,14 @@ export function TradeLogView() {
 
   // ── cell pickers (E-043) and keys (E-052) ─────────────────────────────────
   const [cellPicker, setCellPicker] = useState<{ kind: CellKind; ids: string[]; anchor: HTMLElement } | null>(null);
-  const openCellPicker = (kind: CellKind, trade: Trade, anchor: HTMLElement) => {
-    if (trade.accountId && readOnlyIds.has(trade.accountId)) return;
-    if (!navigator.onLine) return void toast.message(copy.offline.pickerTitle, { description: copy.offline.pickerBody });
-    setCellPicker({ kind, ids: selected.has(trade.id) && selected.size > 1 ? [...selected] : [trade.id], anchor });
-  };
+  const openCellPicker = useCallback(
+    (kind: CellKind, trade: Trade, anchor: HTMLElement) => {
+      if (trade.accountId && readOnlyIds.has(trade.accountId)) return;
+      if (!navigator.onLine) return void toast.message(copy.offline.pickerTitle, { description: copy.offline.pickerBody });
+      setCellPicker({ kind, ids: selected.has(trade.id) && selected.size > 1 ? [...selected] : [trade.id], anchor });
+    },
+    [readOnlyIds, selected],
+  );
   const onRowKey = (e: React.KeyboardEvent, t: Trade): boolean => {
     if (!ui.singleKeyShortcuts || e.ctrlKey || e.metaKey || e.altKey) return false;
     const kind: CellKind | null = e.key === 's' ? 'strategy' : e.key === 't' ? 'mistakes' : e.key === 'T' ? 'tags' : null;
@@ -387,14 +445,12 @@ export function TradeLogView() {
     () => ({
       onEdit: (id: string) => param.openEdit(id),
       onDuplicate: (id: string) => param.openNew({ from: id }),
-      onCopyLink: copyTradeLink,
       onDelete: (id: string) => {
-        const t = trades.find((x) => x.id === id);
+        const t = tradeById.get(id);
         if (t) void undoableDelete([t]);
       },
-      openInNewTab: openTradeInNewTab,
     }),
-    [param, trades, undoableDelete],
+    [param, tradeById, undoableDelete],
   );
 
 
@@ -461,7 +517,12 @@ export function TradeLogView() {
   const statusLine = (sum: ReturnType<typeof summarise>, list: Trade[], withFees: boolean) => {
     const rs = list.map(realisedR).filter((r): r is number => r !== null);
     const avgR = rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null;
-    const fees = list.reduce((acc, t) => acc + (t.fees ?? 0), 0);
+    // Fees are per currency: a USD and an INR fee never add up to one figure.
+    const fees = new Map<string, number>();
+    for (const t of list) {
+      const currency = t.accountId ? accountMap.get(t.accountId)?.currency : undefined;
+      if (currency && t.fees) fees.set(currency, (fees.get(currency) ?? 0) + t.fees);
+    }
     return (
       <>
         {sum.byCurrency.map((c) => (
@@ -471,7 +532,7 @@ export function TradeLogView() {
         ))}
         {sum.winRate !== null && <span className="text-muted-foreground">Win {formatPercent(sum.winRate)}</span>}
         {avgR !== null && <span className="text-muted-foreground">Avg <RMultiple value={avgR} /></span>}
-        {withFees && fees > 0 && <span className="hidden text-muted-foreground lg:inline">Fees {formatMoney(fees, sum.byCurrency[0]?.currency)}</span>}
+        {withFees && fees.size > 0 && <span className="hidden text-muted-foreground lg:inline">Fees {[...fees].map(([currency, amount]) => formatMoney(amount, currency)).join(' · ')}</span>}
         {withFees && sum.noAccount > 0 && <span className="hidden text-muted-foreground xl:inline">{sum.noAccount} with no account not in totals</span>}
       </>
     );
@@ -493,8 +554,10 @@ export function TradeLogView() {
             accounts: accounts.filter((a) => a.status === 'active'),
           }}
           progress={progress}
+          onCreateOption={(kind, value) => (kind === 'mistakes' ? addMistake(value) : addTag(value))}
           canUndo={!!undoStack && undoStack.length > 0}
           failedCount={failed.length}
+          failedReason={failedReason}
           onSelectAllMatching={() => setSelected(new Set(filtered.map((t) => t.id)))}
           onClear={() => setSelected(new Set())}
           onApply={(op) => void applyBulk(op)}
@@ -561,9 +624,14 @@ export function TradeLogView() {
         )}
         {!isMobile && (<>
         <label htmlFor="group-by" className="sr-only">Group by</label>
-        <select id="group-by" value={groupBy} onChange={(e) => changeGroup(e.target.value as GroupBy)} className="h-7 rounded-md border border-input bg-background px-2 text-xs">
-          {GROUP_OPTIONS.map((g) => <option key={g.value} value={g.value}>Group: {g.label}</option>)}
-        </select>
+        <Select value={groupBy} onValueChange={(v) => changeGroup(v as GroupBy)}>
+          <SelectTrigger id="group-by" className="h-7 w-auto shrink-0 gap-1.5 px-2 text-xs">
+            <SelectValue>Group: {GROUP_OPTIONS.find((g) => g.value === groupBy)?.label}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {GROUP_OPTIONS.map((g) => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
         {effectiveGroup !== 'none' && (
           <Button type="button" variant="ghost" size="sm" className="shrink-0" aria-label={collapsedGroups.size ? 'Expand all groups' : 'Collapse all groups'} onClick={() => setCollapsedGroups(collapsedGroups.size ? new Set() : new Set(groups.map((g) => g.key)))}>
             {collapsedGroups.size ? <ChevronsUpDown className="h-3.5 w-3.5 2xl:hidden" aria-hidden="true" /> : <ChevronsDownUp className="h-3.5 w-3.5 2xl:hidden" aria-hidden="true" />}
@@ -589,7 +657,7 @@ export function TradeLogView() {
       {truncated && <p role="status" className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">{copy.trades.ceiling}</p>}
 
       {isError ? (
-        <ErrorState title={copy.trades.loadError.title} description={copy.trades.loadError.description} onRetry={refetch} />
+        <ErrorState title={copy.trades.loadError.title} description={copy.trades.loadError.description} error={scopeError} onRetry={refetch} />
       ) : isLoading ? (
         <div className="space-y-1.5" aria-busy="true" aria-label="Loading trades">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -635,7 +703,7 @@ export function TradeLogView() {
                 onToggle: toggle,
                 onTogglePage: togglePage,
                 label: (id) => {
-                  const t = trades.find((x) => x.id === id);
+                  const t = tradeById.get(id);
                   return t ? `Select ${t.symbol} ${formatDateTime(t.exitDate || t.entryDate)}` : 'Select trade';
                 },
               }}
@@ -736,6 +804,7 @@ export function TradeLogView() {
           anchor={cellPicker.anchor}
           options={pickerOptions(cellPicker.kind)}
           onCreate={pickerCreate(cellPicker.kind)}
+          busy={!!progress}
           onApply={(op, targets) => void applyBulk(op, targets)}
           onClose={() => setCellPicker(null)}
         />

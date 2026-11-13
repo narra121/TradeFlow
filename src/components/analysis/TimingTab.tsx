@@ -33,12 +33,12 @@ export function TimingTab({ ctx }: { ctx: AnalyticsContext }) {
         <div className="grid gap-4 2xl:grid-cols-2">
           <Section title="By hour" description={`Times in ${zone}`}>
             {hours.length === 0 ? <p className="px-4 pb-4 text-sm text-muted-foreground">No trades with a time in this period.</p> : (
-              <BreakdownExplorer dimension="Hour" rows={hours} currency={currency} caption="Breakdown by hour" rowHref={(r) => rowLink('hour', r)} />
+              <BreakdownExplorer dimension="Hour" rows={hours} currency={currency} caption="Breakdown by hour" rowHref={(r) => rowLink('hour', r, zone)} />
             )}
           </Section>
           <Section title="By weekday">
             {weekdays.length === 0 ? <p className="px-4 pb-4 text-sm text-muted-foreground">No trades in this period.</p> : (
-              <BreakdownExplorer dimension="Weekday" rows={weekdays} currency={currency} caption="Breakdown by weekday" rowHref={(r) => rowLink('weekday', r)} />
+              <BreakdownExplorer dimension="Weekday" rows={weekdays} currency={currency} caption="Breakdown by weekday" rowHref={(r) => rowLink('weekday', r, zone)} />
             )}
           </Section>
         </div>

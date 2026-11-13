@@ -20,7 +20,7 @@ export function OptionsSection() {
 
   if (o.isLoading && !o.loaded) return <Skeleton className="h-64" aria-busy="true" />;
   if (!o.loaded) {
-    return <ErrorState title="Your trade options didn't load." description="Editing is off until they load, so nothing is overwritten." onRetry={o.refetch} />;
+    return <ErrorState title="Your trade options didn't load." description="Editing is off until they load, so nothing is overwritten." error={o.error} onRetry={o.refetch} />;
   }
 
   const render = (def: ListDef) => (

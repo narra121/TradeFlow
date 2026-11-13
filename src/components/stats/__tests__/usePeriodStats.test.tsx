@@ -37,7 +37,7 @@ describe('usePeriodStats', () => {
     const calls = getStats.mock.calls.map((c) => c[0] as Record<string, unknown>);
     expect(calls).toEqual([
       { accountId: 'ALL', totalCapital: 100000, startDate: '2026-11-01', endDate: '2026-11-11', includeEquityCurve: undefined },
-      { accountId: 'ALL', totalCapital: 100000, startDate: '2026-10-01', endDate: '2026-10-31' },
+      { accountId: 'ALL', totalCapital: 100000, startDate: '2026-10-01', endDate: '2026-10-11' }, // the same eleven days of the month before (FE-022)
     ]);
     expect(screen.getByTestId('prev')).toHaveTextContent('has prev');
     expect(screen.getByTestId('range')).toHaveTextContent('Oct');

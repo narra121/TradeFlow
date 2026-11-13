@@ -23,7 +23,7 @@ const QUESTION: Record<DimensionId, string> = {
 
 /** Breakdown explorer: `Group by` one dimension, ranked rows with an inline bar, every row opens its trades. */
 export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
-  const { stats, pro, currency } = ctx;
+  const { stats, pro, currency, zone } = ctx;
   const ent = useEntitlements();
   const [params, setParams] = useSearchParams();
   const dims = useMemo(() => availableDimensions(stats), [stats]);
@@ -79,7 +79,7 @@ export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
               rows={rows}
               currency={currency}
               caption={`Breakdown by ${dim.label.toLowerCase()}`}
-              rowHref={(r) => rowLink(by, r)}
+              rowHref={(r) => rowLink(by, r, zone)}
             />
           )}
         </Panel>

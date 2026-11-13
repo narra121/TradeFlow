@@ -73,6 +73,26 @@
 .cs-demo .cs-cell--blank {
   background: none;
 }
+/* Host-driven fill (`filled`): a day takes its tint and figures as its trades land, instead of switching on. */
+.cs-demo .cs-frame[data-hosted] .cs-cell {
+  transition: background-color 0.32s var(--ease-in), box-shadow var(--dur-2) var(--ease-in);
+}
+.cs-demo .cs-frame[data-hosted] :is(.cs-pnl, .cs-count, .cs-mark) {
+  transition: opacity 0.32s var(--ease-in), transform 0.32s var(--ease-in);
+}
+.cs-demo .cs-frame[data-hosted] .cs-cell[data-pending] :is(.cs-pnl, .cs-count, .cs-mark) {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.cs-demo .ss-stage[data-layout='compact'] .cs-frame[data-hosted] .cs-cell {
+  justify-content: flex-start;
+  gap: 1px;
+  padding-top: 5px;
+}
+.cs-demo .ss-stage[data-layout='compact'] .cs-pnl {
+  font-size: 11px;
+  line-height: 14px;
+}
 .cs-demo .cs-cell[data-open] {
   box-shadow: inset 0 0 0 1px hsl(var(--foreground) / 0.5);
 }

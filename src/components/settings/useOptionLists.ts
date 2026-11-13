@@ -14,6 +14,7 @@ export interface OptionListsApi {
   loaded: boolean;
   isLoading: boolean;
   isError: boolean;
+  error?: unknown;
   refetch: () => void;
   /** The list being written right now, if any. */
   saving: ListKey | null;
@@ -23,7 +24,7 @@ export interface OptionListsApi {
 
 /** Edits to the saved option lists, applied one after another on the latest copy so two quick edits cannot overwrite each other. */
 export function useOptionLists(): OptionListsApi {
-  const { data, isLoading, isError, refetch } = useGetSavedOptionsQuery(undefined, { refetchOnMountOrArgChange: false });
+  const { data, isLoading, isError, error, refetch } = useGetSavedOptionsQuery(undefined, { refetchOnMountOrArgChange: false });
   const [write] = useUpdateSavedOptionsMutation();
   const [saving, setSaving] = useState<ListKey | null>(null);
 
@@ -63,5 +64,5 @@ export function useOptionLists(): OptionListsApi {
     [write],
   );
 
-  return { lists, loaded: !!data, isLoading, isError, refetch: () => void refetch(), saving, update };
+  return { lists, loaded: !!data, isLoading, isError, error, refetch: () => void refetch(), saving, update };
 }

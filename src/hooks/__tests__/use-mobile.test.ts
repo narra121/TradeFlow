@@ -39,6 +39,17 @@ describe('useIsMobile', () => {
     expect(result.current).toBe(false);
   });
 
+  it('is already true on the first render on a phone, so desktop-only children never mount', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
+    const seen: boolean[] = [];
+    renderHook(() => {
+      const mobile = useIsMobile();
+      seen.push(mobile);
+      return mobile;
+    });
+    expect(seen[0]).toBe(true);
+  });
+
   it('returns true for mobile width (< 768px)', () => {
     Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
 

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { AccountPicker } from '@/components/account/AccountPicker';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,14 +13,17 @@ import { useEntitlements } from '@/hooks/useEntitlements';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTradeParam } from '@/hooks/useTradeParam';
 import { useAppSelector } from '@/store/hooks';
-import { useGenerateInsightMutation, useListInsightsQuery } from '@/store/api/insightsApi';
+import { useGenerateInsightMutation, useLazyListInsightsQuery, useListInsightsQuery } from '@/store/api/insightsApi';
 import { clampedLabel, isMixedCurrency, periodLabel, reportAsText, reportRange, tradesInMessage } from '@/lib/ai/insightFormat';
 import { formatDateShort } from '@/lib/format';
+import { readApiError } from '@/lib/apiError';
 import { emitPlanSignal } from '@/lib/planErrors';
 import { trackAiInsightGenerated } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import type { Insight } from '@/types/insights';
 import { ReportBody } from './ReportBody';
+
+const REPORT_PAGE = 50;
 
 type Problem = { kind: 'min'; message: string } | { kind: 'failed'; message: string } | { kind: 'api'; message: string };
 
@@ -37,13 +41,22 @@ export function InsightsView() {
   const filters = useAppSelector((s) => s.trades.filters);
   const trade = useTradeParam();
   const [params, setParams] = useSearchParams();
-  const { data, isLoading, isError, refetch } = useListInsightsQuery({ limit: 50 });
+  const { data, isLoading, isError, error, refetch } = useListInsightsQuery({ limit: REPORT_PAGE });
+  const [loadPage, { isFetching: loadingMore }] = useLazyListInsightsQuery();
+  const [older, setOlder] = useState<Insight[]>([]);
+  // undefined: no older page loaded yet, so the cursor is the first page's.
+  const [olderCursor, setOlderCursor] = useState<string | null | undefined>(undefined);
   const [generate, { isLoading: generating }] = useGenerateInsightMutation();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [announce, setAnnounce] = useState('');
   const pending = useRef<{ abort: () => void } | null>(null);
 
-  const insights = useMemo(() => data?.insights ?? [], [data]);
+  const insights = useMemo(() => {
+    const first = data?.insights ?? [];
+    const have = new Set(first.map((i) => i.id));
+    return [...first, ...older.filter((i) => !have.has(i.id))];
+  }, [data, older]);
+  const nextCursor = olderCursor === undefined ? data?.nextCursor ?? null : olderCursor;
   const selectedId = params.get('id');
   const current = insights.find((i) => i.id === selectedId) ?? (isMobile ? null : insights[0] ?? null);
   const row = ent.usage.find((u) => u.feature === 'ai_insight');
@@ -57,6 +70,17 @@ export function InsightsView() {
   const scopeLabel = range.clamped ? clampedLabel(range.to) : periodLabel(range.from, range.to);
   // A report adds its figures up, so it is made for one currency: choose an account first.
   const mixed = isMixedCurrency(accounts, selectedAccountId);
+
+  const loadMore = async () => {
+    if (!nextCursor) return;
+    try {
+      const page = await loadPage({ limit: REPORT_PAGE, cursor: nextCursor }).unwrap();
+      setOlder((o) => [...o, ...page.insights]);
+      setOlderCursor(page.nextCursor);
+    } catch (e) {
+      toast('Couldn’t load more reports.', { description: readApiError(e, 'Try again.').message });
+    }
+  };
 
   const run = async () => {
     setProblem(null);
@@ -73,20 +97,15 @@ export function InsightsView() {
       setAnnounce('Report ready');
       trackAiInsightGenerated({ period: scopeLabel });
     } catch (e) {
-      const err = e as { status?: number; data?: { errorCode?: string; message?: string; errorMessage?: string; error?: { message?: string; code?: string } } };
-      if (err.status === 402 || (e as { name?: string }).name === 'AbortError') return;
-      const text = err.data?.errorMessage ?? err.data?.message ?? err.data?.error?.message;
-      const code = err.data?.errorCode ?? err.data?.error?.code;
-      if (code === 'NOT_ENOUGH_TRADES' || (err.status === 422 && tradesInMessage(text) !== null)) {
-        const n = tradesInMessage(text);
+      if ((e as { name?: string }).name === 'AbortError') return;
+      // A rejected request (400/422) says why and has nothing to retry; every other failure keeps Retry.
+      const info = readApiError(e, 'Couldn’t generate the report.');
+      if (info.status === 402) return;
+      if (info.code === 'NOT_ENOUGH_TRADES' || (info.status === 422 && tradesInMessage(info.message) !== null)) {
+        const n = tradesInMessage(info.message);
         setProblem({ kind: 'min', message: `A report needs at least 5 closed trades in the period${n !== null ? ` — this scope has ${n}` : ''}.` });
-      } else if (err.status === 400 || err.status === 422) {
-        // A rejected request says why; the text stays visible instead of a guess.
-        setProblem({ kind: 'api', message: text ?? 'The report request was not accepted.' });
-      } else if (code === 'AI_UNAVAILABLE' && text) {
-        // The API says whether the attempt was charged; show its words with Retry.
-        setProblem({ kind: 'failed', message: text });
-      } else setProblem({ kind: 'failed', message: 'Couldn’t generate the report. Check your connection and try again.' });
+      } else if (info.status === 400 || info.status === 422) setProblem({ kind: 'api', message: info.message });
+      else setProblem({ kind: 'failed', message: info.message });
     } finally {
       pending.current = null;
     }
@@ -105,7 +124,7 @@ export function InsightsView() {
     </>
   );
 
-  const openTrades = (ids: string[]) => ids[0] && trade.openTrade(ids[0]);
+  const openTrades = (ids: string[]) => ids[0] && trade.openTrade(ids[0], { ids });
   const makeRule = (text: string) => navigate(`/app/goals?addRule=${encodeURIComponent(text)}`);
   const copy = async (insight: Insight) => {
     try {
@@ -118,14 +137,8 @@ export function InsightsView() {
 
   const accountChoice = mixed ? (
     <div role="note" className="mb-4 space-y-2 border-l-2 border-warning pl-3">
-      <p className="text-13 text-foreground-soft">Reports are per currency — choose an account</p>
-      <div className="flex flex-wrap gap-2">
-        {accounts.filter((a) => a.status !== 'inactive').map((a) => (
-          <Button key={a.id} type="button" size="sm" variant="outline" onClick={() => setSelectedAccountId(a.id)}>
-            {a.name} · {a.currency}
-          </Button>
-        ))}
-      </div>
+      <p id="report-account" className="text-13 text-foreground-soft">Reports are per currency — choose an account</p>
+      <AccountPicker label="Account" labelledBy="report-account" accounts={accounts.filter((a) => a.status !== 'inactive')} value={null} onChange={setSelectedAccountId} className="max-w-xs" />
     </div>
   ) : null;
 
@@ -159,11 +172,16 @@ export function InsightsView() {
           })}
         </ul>
       )}
+      {nextCursor && (
+        <div className="px-3 py-2">
+          <Button type="button" size="sm" variant="outline" onClick={loadMore} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Load more'}</Button>
+        </div>
+      )}
     </nav>
   );
 
   const detail = isError ? (
-    <ErrorState title="Couldn’t load your reports." onRetry={refetch} />
+    <ErrorState title="Couldn’t load your reports." error={error} onRetry={refetch} />
   ) : generating ? (
     <div className="space-y-4" aria-busy="true" role="status" aria-label="Generating report">
       <div className="flex items-center justify-between gap-3">
@@ -182,7 +200,7 @@ export function InsightsView() {
       insight={current}
       title={`${periodLabel(current.period.from, current.period.to)} · ${accountName(current.accountId)}`}
       currency={accounts.find((a) => a.id === current.accountId)?.currency}
-      mixedCurrency={!current.accountId && new Set(accounts.map((a) => a.currency)).size > 1}
+      mixedCurrency={isMixedCurrency(accounts, current.accountId)}
       onOpenTrades={openTrades}
       onMakeRule={makeRule}
       onCopy={() => void copy(current)}

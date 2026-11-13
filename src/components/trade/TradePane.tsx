@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Copy, Lock, ExternalLink, Link2, Maximize2, Minimize2, MoreHorizontal, Pencil, Trash2, X } from 'lucide-react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, Copy, Lock, Maximize2, Minimize2, MoreHorizontal, Pencil, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ import { READ_ONLY_REASON } from '@/lib/accountWritable';
 import { useReadOnlyAccounts } from '@/hooks/useReadOnlyAccounts';
 import { copy } from '@/copy';
 import { useUndoableDelete } from '@/hooks/useUndoableDelete';
-import { copyTradeLink, openTradeInNewTab } from '@/lib/tradeLinks';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { InlineField } from '@/components/trade/InlineField';
 import { TradeForm, type TradeFormHandle } from '@/components/trade/TradeForm';
@@ -28,7 +27,7 @@ import { useSavedOptions } from '@/hooks/useSavedOptions';
 import { useTradingRules } from '@/hooks/useTradingRules';
 import { useUiState } from '@/hooks/useUiState';
 import { useTradeParam } from '@/hooks/useTradeParam';
-import { useDeleteTradeMutation, useUpdateTradeMutation } from '@/store/api';
+import { useGetTradeQuery, useUpdateTradeMutation } from '@/store/api';
 import { formatDateShort, formatDateTime, formatDurationMinutes, formatMoney, formatPrice, formatQuantity } from '@/lib/format';
 import { realisedR } from '@/lib/tradeFilters';
 import { patchTradePayload } from '@/lib/patchTrade';
@@ -42,10 +41,19 @@ interface TradePaneProps {
   trades: Trade[];
   isLoading: boolean;
   isError: boolean;
+  /** The failed load's error: its API message is shown with the retry. */
+  error?: unknown;
   onRetry: () => void;
   presentation: PanePresentation;
   /** Called after any close so the host can restore focus. */
   onClosed?: () => void;
+  /** The visible order of the list the pane was opened from (when the URL cites no `ids`). */
+  walkIds?: string[] | null;
+}
+
+export interface TradePaneHandle {
+  /** Closes the pane, asking first when the form has unsaved changes. */
+  requestClose: () => void;
 }
 
 type Guarded = () => void;
@@ -59,14 +67,13 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-export function TradePane({ trades, isLoading, isError, onRetry, presentation, onClosed }: TradePaneProps) {
+export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function TradePane({ trades, isLoading, isError, error, onRetry, presentation, onClosed, walkIds }, ref) {
   const param = useTradeParam();
   const { accounts, selectedAccountId } = useAccounts();
   const { options, addStrategy, addSession, addMarketCondition, addMistake, addTag } = useSavedOptions();
   const { rules, loading: rulesLoading } = useTradingRules();
   const [ui] = useUiState();
   const [updateTrade] = useUpdateTradeMutation();
-  const [deleteTrade, { isLoading: deleting }] = useDeleteTradeMutation();
   const formRef = useRef<TradeFormHandle>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [dirty, setDirty] = useState(false);
@@ -74,11 +81,16 @@ export function TradePane({ trades, isLoading, isError, onRetry, presentation, o
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const readOnlyIds = useReadOnlyAccounts();
-  const trade = param.mode === 'view' || param.mode === 'edit' ? trades.find((t) => t.id === param.trade) ?? null : null;
-  // Prev / Next walk the cited list (`&ids=`) when there is one, otherwise the list on screen.
-  const walk = useMemo(() => (param.ids ? param.ids.map((id) => trades.find((t) => t.id === id)).filter((t): t is Trade => !!t) : trades), [param.ids, trades]);
+  const showsTrade = param.mode === 'view' || param.mode === 'edit';
+  const listed = showsTrade ? trades.find((t) => t.id === param.trade) ?? null : null;
+  // A trade outside the scope list (an older Calendar month, a shared link) is fetched by id.
+  const needsFetch = showsTrade && !listed && !isLoading && !isError && !!param.trade;
+  const fetched = useGetTradeQuery(param.trade ?? '', { skip: !needsFetch });
+  const trade = listed ?? fetched.currentData ?? null;
+  // Prev / Next walk the cited list (`&ids=`), then the order the list screen shows, otherwise the scope list.
+  const walk = useMemo(() => param.ids ?? walkIds ?? trades.map((t) => t.id), [param.ids, walkIds, trades]);
   const readOnly = !!trade?.accountId && readOnlyIds.has(trade.accountId);
-  const index = trade ? walk.findIndex((t) => t.id === trade.id) : -1;
+  const index = trade ? walk.indexOf(trade.id) : -1;
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const account = trade?.accountId ? accountById.get(trade.accountId) : undefined;
   const currency = account?.currency;
@@ -112,6 +124,7 @@ export function TradePane({ trades, isLoading, isError, onRetry, presentation, o
   }, [param, onClosed, openTradeId]);
 
   const requestClose = () => guard(close);
+  useImperativeHandle(ref, () => ({ requestClose }));
 
   // The form takes focus itself (symbol); only the view mode moves focus to the heading.
   useEffect(() => {
@@ -121,7 +134,7 @@ export function TradePane({ trades, isLoading, isError, onRetry, presentation, o
   // A deleted trade, or a link to one outside the scope, shows a notice instead of an empty pane.
   const step = (delta: number) => {
     const next = walk[index + delta];
-    if (next) guard(() => param.stepTo(next.id));
+    if (next) guard(() => param.stepTo(next));
   };
 
   useEffect(() => {
@@ -174,7 +187,7 @@ export function TradePane({ trades, isLoading, isError, onRetry, presentation, o
     if (!trade) return;
     const next = walk[index + 1] ?? walk[index - 1];
     if (!(await undoableDelete([trade]))) return;
-    if (next) param.stepTo(next.id);
+    if (next) param.stepTo(next);
     else close();
   };
 
@@ -215,17 +228,15 @@ export function TradePane({ trades, isLoading, isError, onRetry, presentation, o
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => param.openNew({ from: trade.id })}>
-                <Copy className="mr-2 h-4 w-4" aria-hidden="true" /> Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => copyTradeLink(trade.id)}>
-                <Link2 className="mr-2 h-4 w-4" aria-hidden="true" /> Copy link
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => openTradeInNewTab(trade.id)}>
-                <ExternalLink className="mr-2 h-4 w-4" aria-hidden="true" /> Open in new tab
+              <DropdownMenuItem onSelect={() => param.openNew({ from: trade.id })} className="items-start">
+                <Copy className="mr-2 mt-0.5 h-4 w-4" aria-hidden="true" />
+                <span>
+                  {copy.trades.duplicate.label}
+                  <span className="block text-xs text-muted-foreground">{copy.trades.duplicate.hint}</span>
+                </span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => void onDelete()} className="text-loss focus:text-loss">
+              <DropdownMenuItem onSelect={() => void onDelete()} variant="destructive">
                 <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" /> Delete…
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -261,7 +272,7 @@ export function TradePane({ trades, isLoading, isError, onRetry, presentation, o
         }}
       />
     );
-  } else if (isLoading) {
+  } else if (isLoading || (needsFetch && fetched.isFetching)) {
     body = (
       <div className="space-y-3 p-4" aria-busy="true">
         <Skeleton className="h-8 w-40" />
@@ -270,7 +281,7 @@ export function TradePane({ trades, isLoading, isError, onRetry, presentation, o
       </div>
     );
   } else if (isError) {
-    body = <div className="p-4"><ErrorState title="Could not load trades" onRetry={onRetry} /></div>;
+    body = <div className="p-4"><ErrorState title="Could not load trades" error={error} onRetry={onRetry} /></div>;
   } else if (!trade) {
     body = (
       <div className="space-y-3 p-4">
@@ -468,8 +479,7 @@ export function TradePane({ trades, isLoading, isError, onRetry, presentation, o
                 onClick={async () => {
                   const action = pending;
                   setPending(null);
-                  await formRef.current?.submit();
-                  action?.();
+                  if (await formRef.current?.submit()) action?.();
                 }}
               >
                 Save
@@ -484,4 +494,4 @@ export function TradePane({ trades, isLoading, isError, onRetry, presentation, o
       </span>
     </div>
   );
-}
+});

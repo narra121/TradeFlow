@@ -45,6 +45,7 @@ function Column({ title, children, collapsible, defaultOpen }: { title: string; 
 export function StatementPanel({ ctx }: { ctx: AnalyticsContext }) {
   const mobile = useIsMobile();
   const { stats: s, prev, prevRange, multi, currency } = ctx;
+  const noDrawdown = multi || !!ctx.noBalance;
   const d = { name: prevRange?.name ?? '', spokenName: prevRange?.spokenName };
   const money = (v: number | undefined) => <Money value={v} currency={currency} />;
   const wins = s.wins ?? 0;
@@ -80,7 +81,7 @@ export function StatementPanel({ ctx }: { ctx: AnalyticsContext }) {
           value={hasR ? <RMultiple value={s.avgR as number} /> : s.avgRiskReward ? s.avgRiskReward.toFixed(2) : '—'}
           delta={prev ? (hasR ? <Delta kind="r" current={s.avgR as number} previous={prevR} {...d} /> : <Delta kind="ratio" current={s.avgRiskReward} previous={prev.avgRiskReward} {...d} />) : undefined}
         />
-        <Row metric="maxDrawdown" value={multi ? '—' : formatPercent(s.maxDrawdown)} delta={!multi && prev ? <Delta kind="pts" current={s.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...d} /> : undefined} />
+        <Row metric="maxDrawdown" value={noDrawdown ? '—' : formatPercent(s.maxDrawdown)} delta={!noDrawdown && prev ? <Delta kind="pts" current={s.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...d} /> : undefined} />
         <Row metric="winStreak" value={s.consecutiveWins ?? 0} />
         <Row metric="lossStreak" value={s.consecutiveLosses ?? 0} />
       </Column>

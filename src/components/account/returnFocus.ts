@@ -6,3 +6,12 @@ export function returnFocusByName(name: string | null | undefined, event: Event)
   event.preventDefault();
   target.focus();
 }
+
+/**
+ * `onOpenAutoFocus` of a popover that holds an `AccountListbox`: focus goes to its search field, or to the list when
+ * it is too short to have one. An `autoFocus` attribute loses to the focus trap of a dialog the popover sits in.
+ */
+export function focusAccountList(event: Event): void {
+  event.preventDefault();
+  (event.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('input[type=search], [role=listbox]')?.focus();
+}

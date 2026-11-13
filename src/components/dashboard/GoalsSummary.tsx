@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Panel } from '@/components/ui/panel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Meter } from '@/components/stats/Meter';
+import { readApiError } from '@/lib/apiError';
 import { formatMoney, formatPercent } from '@/lib/format';
 import type { WeekGoal } from '@/lib/dashboard';
 import type { WeekGoalsState } from './useWeekGoals';
@@ -29,7 +30,7 @@ export function GoalsSummary({ week, currency, mixed }: { week: WeekGoalsState; 
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-5" />)}
         </div>
       ) : week.isError ? (
-        <p className="text-sm text-muted-foreground">Could not load your goals. They are unchanged.</p>
+        <p className="text-sm text-muted-foreground">Could not load your goals. {readApiError(week.error, 'They are unchanged.').message}</p>
       ) : goals.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No weekly goals set. <Link to="/app/goals" className="text-primary underline underline-offset-2">Set weekly limits →</Link>

@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { FilterValueList, type FilterOption } from '@/components/tradelog/MultiSelectFilter';
 import type { TradeFilters } from '@/lib/tradeFilters';
+import { popupOption } from '@/components/ui/popup';
 import { cn } from '@/lib/utils';
 
 export type FilterFieldKey = 'symbols' | 'outcomes' | 'strategies' | 'sessions' | 'mistakes' | 'tags' | 'broken' | 'assets' | 'sides' | 'accounts' | 'result';
@@ -98,9 +99,9 @@ function FieldPanel({ filters, options, onChange, initialOpen }: Pick<FilterBarP
               type="button"
               aria-expanded={isOpen}
               onClick={() => setOpen(isOpen ? null : fd.key)}
-              className="flex min-h-9 w-full items-center gap-2 rounded px-2 text-left text-sm hover:bg-muted [@media(pointer:coarse)]:min-h-11"
+              className={cn(popupOption, 'gap-2')}
             >
-              {isOpen ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}
+              {isOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
               <span className="flex-1">{fd.label}</span>
               {sel.length > 0 && <span className="rounded bg-primary/15 px-1 text-xs text-primary">{sel.length}</span>}
             </button>
@@ -171,7 +172,7 @@ export function FilterBar({ filters, options, onChange, onFind, findRef, isMobil
                     <span className="text-muted-foreground">{fd.label}:</span> {valuesLabel(opts, sel)}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent align="start" className="w-64 p-2">
+                <PopoverContent align="start" aria-label={`${fd.label} filter`} className="w-64 p-2">
                   <FilterValueList label={fd.label} options={opts} selected={sel} onChange={(next) => (fd.key === 'result' ? onChange({ result: (next[next.length - 1] ?? '') as TradeFilters['result'] }) : onChange({ [fd.key]: next } as Partial<TradeFilters>))} />
                 </PopoverContent>
               </Popover>
@@ -189,7 +190,7 @@ export function FilterBar({ filters, options, onChange, onFind, findRef, isMobil
             {folded && <span className="rounded bg-primary/15 px-1 text-xs text-primary">{active.length}</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-72 p-2">
+        <PopoverContent align="start" aria-label="Filters" className="w-72 p-2">
           <FieldPanel key={panelField ?? 'none'} filters={filters} options={options} onChange={onChange} initialOpen={panelField} />
         </PopoverContent>
       </Popover>

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import type { ImportCreateItem, NormalizedTrade } from '@/types/import';
+import { readApiError } from '@/lib/apiError';
 
 export const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
 /** POST /trades accepts at most 50 items per request. */
@@ -82,7 +83,6 @@ export function importErrorMessage(err: unknown): ImportErrorInfo {
   const body = e.data && typeof e.data === 'object' ? e.data : {};
   const rawStatus = e.status;
   const status = typeof rawStatus === 'number' ? rawStatus : (body.statusCode as number | undefined);
-  const apiMessage: string | undefined = body.errorMessage || body.message || (typeof e.data === 'string' ? e.data : undefined);
   if (status === 402) {
     const info = (body.error && typeof body.error === 'object' ? body.error : {}) as Record<string, any>;
     const code = info.code === 'PLAN_REQUIRED' || body.errorCode === 'PLAN_REQUIRED' ? 'PLAN_REQUIRED' : 'QUOTA_EXCEEDED';
@@ -93,7 +93,5 @@ export function importErrorMessage(err: unknown): ImportErrorInfo {
     };
   }
   if (status === 413) return { message: 'The file is larger than 4 MB. Export a shorter date range.' };
-  if (status === 400) return { message: apiMessage || 'The request was not valid.' };
-  if (rawStatus === 'FETCH_ERROR' || rawStatus === 'TIMEOUT_ERROR') return { message: typeof e.data === 'string' ? e.data : 'Network error. Please try again.' };
-  return { message: apiMessage || e.message || 'Something went wrong while importing. Please try again.' };
+  return { message: readApiError(err, status === 400 ? 'The request was not valid.' : 'Something went wrong while importing. Please try again.').message };
 }

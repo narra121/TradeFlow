@@ -1,20 +1,10 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { tintStep } from '@/lib/calendar';
+import { tintClass, tintStep } from '@/lib/calendar';
 import { formatCompactMoney, formatMoney, formatPercent } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TimingGrid as Grid } from '@/lib/analyticsRows';
 import { tradesHref } from './drill';
-
-const TINT = {
-  profit: ['bg-[hsl(var(--tint-profit-1))]', 'bg-[hsl(var(--tint-profit-2))]', 'bg-[hsl(var(--tint-profit-3))]'],
-  loss: ['bg-[hsl(var(--tint-loss-1))]', 'bg-[hsl(var(--tint-loss-2))]', 'bg-[hsl(var(--tint-loss-3))]'],
-} as const;
-
-function tint(net: number, step: 0 | 1 | 2 | 3): string {
-  if (step === 0) return 'bg-muted/40';
-  return TINT[net >= 0 ? 'profit' : 'loss'][step - 1];
-}
 
 /** Weekday × hour: net printed in each cell, trade count and win rate in the accessible name; arrow keys move between cells. */
 export function TimingGrid({ grid, currency, zone }: { grid: Grid; currency?: string; zone: string }) {
@@ -57,15 +47,15 @@ export function TimingGrid({ grid, currency, zone }: { grid: Grid; currency?: st
                       ref={(el) => {
                         if (el) refs.current.set(`${r}-${c}`, el);
                       }}
-                      to={tradesHref('weekday', row.day, { hour: String(h) })}
+                      to={tradesHref('weekday', row.day, { hour: String(h), zone })}
                       tabIndex={active[0] === r && active[1] === c ? 0 : -1}
                       onFocus={() => setActive([r, c])}
                       onKeyDown={(e) => move(e, r, c)}
                       aria-label={name}
                       title={name}
-                      className={cn('flex h-8 w-11 items-center justify-center rounded-sm font-mono tabular-nums text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', tint(cell.net, tintStep(cell.net, maxAbs)))}
+                      className={cn('flex h-8 w-11 items-center justify-center rounded-sm font-mono tabular-nums text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', tintClass(cell.net, tintStep(cell.net, maxAbs)))}
                     >
-                      {formatCompactMoney(cell.net)}
+                      {formatCompactMoney(cell.net, { currency, symbol: false })}
                     </Link>
                   </td>
                 );

@@ -27,7 +27,8 @@ vi.mock('@/hooks/useScopeTrades', () => ({
 vi.mock('@/hooks/useAccounts', () => ({
   useAccounts: () => ({ accounts, selectedAccountId: null, selectedAccount: null, setSelectedAccountId: vi.fn() }),
 }));
-vi.mock('@/store/api', async (orig) => ({ ...(await orig<object>()), useBulkDeleteTradesMutation: () => [vi.fn(() => ({ unwrap: () => Promise.resolve({}) })), {}] }));
+const bulkUpdate = vi.hoisted(() => vi.fn());
+vi.mock('@/store/api', async (orig) => ({ ...(await orig<object>()), useBulkDeleteTradesMutation: () => [vi.fn(() => ({ unwrap: () => Promise.resolve({}) })), {}], useBulkUpdateTradesMutation: () => [bulkUpdate, {}] }));
 
 import { TradeLogView } from '../TradeLogView';
 import { ChromeProvider } from '@/components/shell/chrome';
@@ -91,7 +92,7 @@ describe('TradeLogView', () => {
     setup();
     const rows = dataRows();
     expect(rows[0]).toHaveTextContent('11:00');
-    expect(screen.getAllByRole('rowheader')[0]).toHaveTextContent('Mon 9 Nov 2026');
+    expect(screen.getAllByRole('rowheader')[0]).toHaveTextContent('Mon 09 Nov 2026');
     expect(screen.getByRole('columnheader', { name: /Date/ })).toHaveAttribute('aria-sort', 'descending');
   });
 
@@ -146,5 +147,94 @@ describe('TradeLogView', () => {
     first.unmount();
     setup();
     expect(screen.getByLabelText('Find in trades')).toHaveValue('xau');
+  });
+
+  it('Shift-click selects the rows between two clicks as they are shown, not as they sort (FE-018)', async () => {
+    sessionStorage.setItem('tq.tradelog.group', 'symbol');
+    scope = {
+      trades: [mk(1, { symbol: 'EURUSD' }), mk(2, { symbol: 'GBPUSD' }), mk(3, { symbol: 'EURUSD' }), mk(4, { symbol: 'GBPUSD' }), mk(5, { symbol: 'EURUSD' })],
+      isLoading: false,
+      isError: false,
+    };
+    setup();
+    const eur = screen.getAllByRole('checkbox', { name: /^Select EURUSD/ });
+    expect(eur).toHaveLength(3);
+    const user = userEvent.setup();
+    await user.click(eur[0]);
+    await user.keyboard('{Shift>}');
+    await user.click(eur[2]);
+    await user.keyboard('{/Shift}');
+    const bar = screen.getByRole('toolbar', { name: 'Selected trades' });
+    expect(within(bar).getByText('3 selected')).toBeInTheDocument();
+    for (const box of screen.getAllByRole('checkbox', { name: /^Select GBPUSD/ })) expect(box).not.toBeChecked();
+  });
+
+  it('Shift-click ranges over the sorted list when nothing is grouped', async () => {
+    sessionStorage.setItem('tq.tradelog.group', 'none');
+    scope = { trades: [mk(1), mk(2), mk(3), mk(4)], isLoading: false, isError: false };
+    setup();
+    const boxes = screen.getAllByRole('checkbox', { name: /^Select EURUSD/ });
+    const user = userEvent.setup();
+    await user.click(boxes[0]);
+    await user.keyboard('{Shift>}');
+    await user.click(boxes[2]);
+    await user.keyboard('{/Shift}');
+    expect(within(screen.getByRole('toolbar', { name: 'Selected trades' })).getByText('3 selected')).toBeInTheDocument();
+  });
+
+  describe('bulk edit (FE-019, X-013, FE-045)', () => {
+    const pickTags = async () => {
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Select all rows shown' }));
+      const bar = screen.getByRole('toolbar', { name: 'Selected trades' });
+      await userEvent.click(within(bar).getByRole('button', { name: 'Tags' }));
+    };
+
+    beforeEach(() => {
+      bulkUpdate.mockReset();
+      scope = { trades: [mk(1, { tags: ['A'] }), mk(2, { tags: [] }), mk(3, { tags: [] })], isLoading: false, isError: false };
+    });
+
+    it('sends one bulk-update with add/remove for the trades that change, not one PUT per trade', async () => {
+      bulkUpdate.mockReturnValue({ unwrap: () => Promise.resolve({ updated: 2, updatedIds: ['t2', 't3'], notFound: [], failed: [] }) });
+      setup();
+      await pickTags();
+      await userEvent.click(await screen.findByRole('option', { name: /^A/ }));
+      expect(bulkUpdate).toHaveBeenCalledTimes(1);
+      const arg = bulkUpdate.mock.calls[0][0];
+      expect(arg).toMatchObject({ tradeIds: ['t3', 't2'], add: { tags: ['A'] } });
+      expect(arg.set).toBeUndefined();
+      expect(arg.patches.t2).toEqual({ tags: ['A'] });
+    });
+
+    it('a second pick while the first is still running is ignored, so it cannot overwrite the first', async () => {
+      bulkUpdate.mockReturnValue({ unwrap: () => new Promise(() => undefined) });
+      setup();
+      await pickTags();
+      await userEvent.click(await screen.findByRole('option', { name: /^A/ }));
+      await userEvent.click(screen.getByRole('option', { name: /^A/ }));
+      expect(bulkUpdate).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(/Updating 0 of 2/)).toBeInTheDocument();
+    });
+
+    it('reports the trades the API refused with its message and retries only those', async () => {
+      bulkUpdate.mockReturnValueOnce({ unwrap: () => Promise.resolve({ updated: 1, updatedIds: ['t2'], notFound: [], failed: [{ tradeId: 't3', message: 'A trade can have at most 10 tags' }] }) });
+      setup();
+      await pickTags();
+      await userEvent.click(await screen.findByRole('option', { name: /^A/ }));
+      expect(await screen.findByText(/1 could not be updated\. A trade can have at most 10 tags/)).toBeInTheDocument();
+      bulkUpdate.mockReturnValueOnce({ unwrap: () => Promise.resolve({ updated: 1, updatedIds: ['t3'], notFound: [], failed: [] }) });
+      await userEvent.click(screen.getByRole('button', { name: 'Retry failed' }));
+      expect(bulkUpdate).toHaveBeenCalledTimes(2);
+      expect(bulkUpdate.mock.calls[1][0]).toMatchObject({ tradeIds: ['t3'], add: { tags: ['A'] } });
+      await vi.waitFor(() => expect(screen.queryByText(/could not be updated/)).toBeNull());
+    });
+  });
+
+  it('shows fees per currency, never one sum in the first currency (FE-055)', () => {
+    scope = { trades: [mk(1, { fees: 3 }), mk(2, { fees: 200, accountId: 'a2' })], isLoading: false, isError: false };
+    setup();
+    const footer = screen.getByRole('status').textContent ?? '';
+    expect(footer).toMatch(/Fees (₹200\.00 · \$3\.00|\$3\.00 · ₹200\.00)/);
+    expect(footer).not.toContain('203');
   });
 });

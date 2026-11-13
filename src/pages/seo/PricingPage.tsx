@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { PricingTable } from '@/components/public/PricingTable';
 import { Faq, H2, P, ShortAnswer } from '@/content/components/ArticleParts';
-import { PRODUCT_FAQ, TRIAL_DAYS, proPrice, type FaqItem } from '@/content/product-facts';
+import { PRODUCT_FAQ, TRIAL_DAYS, TRIAL_END_FAQ, proPrice, type FaqItem } from '@/content/product-facts';
 import { getSeoPage } from '@/content/seo-pages';
 import { SOFTWARE_APP_SCHEMA, seoPageSchema } from '@/config/seo';
 
@@ -13,10 +13,7 @@ const inrYear = proPrice('INR', 'year').display;
 
 /** Billing questions (trial, cancel, refunds, currency); visible below the table and emitted with the product FAQ as FAQPage JSON-LD. */
 const BILLING_FAQ: FaqItem[] = [
-  {
-    question: 'What happens when the Pro trial ends?',
-    answer: `The ${TRIAL_DAYS}-day Pro trial starts when you sign up and needs no card. When it ends you move to the Free plan and nothing is charged. Your trades stay in your account.`,
-  },
+  TRIAL_END_FAQ,
   {
     question: 'Which currency will I pay in?',
     answer: `Checkout charges in INR (${inrMonth}/month or ${inrYear}/year) when you are in India and in USD (${usdMonth}/month or ${usdYear}/year) everywhere else. Once you have paid in a currency, renewals stay in that currency. The USD and INR switch on this page only changes the prices shown.`,

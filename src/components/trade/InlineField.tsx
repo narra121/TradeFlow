@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Pencil } from 'lucide-react';
 import { useOnline } from '@/hooks/useOnline';
 import { cn } from '@/lib/utils';
+import { readApiError } from '@/lib/apiError';
 
 export interface InlineEditorApi<T> {
   draft: T;
@@ -41,7 +42,9 @@ export function InlineField<T>({ label, value, display, onCommit, children, equa
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<T>(value);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [reason, setReason] = useState('');
   const previous = useRef<T>(value);
+  const saving = useRef(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const timer = useRef<number>();
@@ -66,19 +69,25 @@ export function InlineField<T>({ label, value, display, onCommit, children, equa
 
   const commit = useCallback(
     async (next: T) => {
+      // Enter and then the blur it causes both commit: only the first one is sent.
+      if (saving.current) return;
       if (equals(next, value)) {
         setEditing(false);
         return;
       }
       previous.current = value;
+      saving.current = true;
       setStatus('saving');
       try {
         await onCommit(next);
         setEditing(false);
         flashSaved();
         requestAnimationFrame(() => buttonRef.current?.focus());
-      } catch {
+      } catch (err) {
+        setReason(readApiError(err, '').message);
         setStatus('error');
+      } finally {
+        saving.current = false;
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,7 +105,8 @@ export function InlineField<T>({ label, value, display, onCommit, children, equa
     try {
       await onCommit(previous.current);
       setStatus('idle');
-    } catch {
+    } catch (err) {
+      setReason(readApiError(err, '').message);
       setStatus('error');
     }
   };
@@ -126,13 +136,16 @@ export function InlineField<T>({ label, value, display, onCommit, children, equa
               }
             }}
             onBlur={(e) => {
-              if (!wrapRef.current?.contains(e.relatedTarget as Node | null)) void commit(draft);
+              const to = e.relatedTarget as HTMLElement | null;
+              // The editor's own popover is portalled outside the wrapper: focus moving into it is not leaving the field.
+              if (wrapRef.current?.contains(to) || to?.closest('[data-radix-popper-content-wrapper]')) return;
+              void commit(draft);
             }}
           >
             {children(api)}
             {status === 'error' && (
               <p role="alert" className="mt-1 text-xs text-loss">
-                Couldn’t save.{' '}
+                Couldn’t save.{reason ? ` ${reason}` : ''}{' '}
                 <button type="button" className="underline" onClick={() => void commit(draft)}>
                   Retry
                 </button>

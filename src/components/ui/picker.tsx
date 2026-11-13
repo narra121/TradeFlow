@@ -1,6 +1,7 @@
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { Check, Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { popupHighlight, popupItem } from '@/components/ui/popup';
 import { cn } from '@/lib/utils';
 
 export type PickState = 'on' | 'off' | 'mixed';
@@ -52,6 +53,10 @@ export function Picker(props: PickerProps) {
   const canCreate = !!onCreate && !!q && !options.some((o) => (o.label ?? o.value).toLowerCase() === q);
   const rows = [...shown.map((o) => ({ kind: 'option' as const, o })), ...(canCreate ? [{ kind: 'create' as const, o: { value: query.trim() } }] : [])];
 
+  useEffect(() => {
+    document.getElementById(`${listId}-${active}`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [active, listId]);
+
   const stateOf = (v: string): PickState => (props.mode === 'multi' ? props.state[v] ?? 'off' : props.value === v ? 'on' : 'off');
 
   const pick = (i: number) => {
@@ -98,7 +103,7 @@ export function Picker(props: PickerProps) {
         className="mb-1 h-8"
       />
       <ul id={listId} role="listbox" aria-label={label} aria-multiselectable={props.mode === 'multi'} className="max-h-56 overflow-y-auto">
-        {rows.length === 0 && <li className="px-2 py-2 text-sm text-muted-foreground">Nothing matches.</li>}
+        {rows.length === 0 && <li className="px-2 py-2 text-13 text-muted-foreground">Nothing matches.</li>}
         {rows.map((r, i) => {
           const st = r.kind === 'option' ? stateOf(r.o.value) : 'off';
           return (
@@ -109,8 +114,9 @@ export function Picker(props: PickerProps) {
               aria-selected={st === 'on'}
               aria-checked={props.mode === 'multi' ? (st === 'mixed' ? 'mixed' : st === 'on') : undefined}
               onMouseDown={(e) => e.preventDefault()}
+              onMouseMove={() => setActive(i)}
               onClick={() => pick(i)}
-              className={cn('flex min-h-8 cursor-pointer items-center gap-2 rounded-md px-2 text-13 hover:bg-muted [@media(pointer:coarse)]:min-h-11', active === i && 'bg-muted', r.kind === 'create' && 'text-primary')}
+              className={cn(popupItem, 'cursor-pointer gap-2', active === i && popupHighlight, r.kind === 'create' && 'text-primary')}
             >
               {r.kind === 'create' ? (
                 <>
@@ -118,12 +124,15 @@ export function Picker(props: PickerProps) {
                 </>
               ) : (
                 <>
-                  <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-input', st !== 'off' && 'border-primary bg-primary text-primary-foreground')}>
-                    {st === 'on' && <Check className="h-3 w-3" aria-hidden="true" />}
-                    {st === 'mixed' && <Minus className="h-3 w-3" aria-hidden="true" />}
-                  </span>
+                  {props.mode === 'multi' && (
+                    <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-input', st !== 'off' && 'border-primary bg-primary text-primary-foreground')}>
+                      {st === 'on' && <Check className="h-3 w-3" aria-hidden="true" />}
+                      {st === 'mixed' && <Minus className="h-3 w-3" aria-hidden="true" />}
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1 truncate">{r.o.label ?? r.o.value}</span>
                   {r.o.count !== undefined && <span className="font-mono text-xs tabular-nums text-muted-foreground">{r.o.count}</span>}
+                  {props.mode === 'single' && st === 'on' && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />}
                 </>
               )}
             </li>

@@ -54,7 +54,7 @@ export function TaxReport() {
   const pool = selectedAccountId ? accounts.filter((a) => a.id === selectedAccountId) : accounts.filter((a) => a.id && a.id !== '-1');
   const inr = pool.length > 0 && pool.every((a) => a.currency === CURRENCY);
   const allowed = ent.isError || ent.can('tax_report');
-  const { data, isLoading, isError, refetch } = useGetTaxReportQuery({ fy, accountId: selectedAccountId ?? undefined }, { skip: !allowed || !inr });
+  const { data, isLoading, isError, error, refetch } = useGetTaxReportQuery({ fy, accountId: selectedAccountId ?? undefined }, { skip: !allowed || !inr });
 
   const setFy = (next: string) => {
     const q = new URLSearchParams(params);
@@ -90,7 +90,7 @@ export function TaxReport() {
       </>
     );
   }
-  if (isError) return <>{picker}<ErrorState title="Couldn't load the tax report." description="Your trades are unchanged." onRetry={() => void refetch()} /></>;
+  if (isError) return <>{picker}<ErrorState title="Couldn't load the tax report." description="Your trades are unchanged." error={error} onRetry={() => void refetch()} /></>;
   if (isLoading || !data) return <>{picker}<Skeleton className="h-64" aria-busy="true" /></>;
 
   const lines: Line[] = [

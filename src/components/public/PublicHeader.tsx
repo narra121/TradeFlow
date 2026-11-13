@@ -3,9 +3,17 @@ import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from './BrandMark';
-import { HEADER_LINKS, RESOURCE_LINKS } from './nav';
+import { HEADER_LINKS, RESOURCE_LINKS, type NavLink } from './nav';
 
 const linkClass = 'inline-flex h-9 items-center rounded-md px-3 text-sm text-foreground-soft hover:bg-secondary hover:text-foreground';
+
+// signed-out-only / signed-in-only: shown by session state, CSS in index.html.
+const MENU_LINKS: (NavLink & { className?: string })[] = [
+  ...HEADER_LINKS,
+  ...RESOURCE_LINKS,
+  { to: '/login', label: 'Log in', className: 'signed-out-only' },
+  { to: '/app/dashboard', label: 'Dashboard', className: 'signed-in-only' },
+];
 
 /** Disclosure (not an ARIA menu): a button that shows a list of ordinary links. */
 function ResourcesMenu() {
@@ -33,10 +41,10 @@ function ResourcesMenu() {
         <ChevronDown className="h-4 w-4" aria-hidden="true" />
       </button>
       {open && (
-        <ul id="resources-list" className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover p-1 [box-shadow:var(--shadow-overlay)]">
+        <ul id="resources-list" data-side="bottom" className="popup-motion absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover p-1 shadow-overlay">
           {RESOURCE_LINKS.map((l) => (
             <li key={l.to}>
-              <Link to={l.to} className="flex h-9 items-center rounded-md px-3 text-sm text-foreground hover:bg-secondary">
+              <Link to={l.to} className="flex h-9 items-center rounded-md px-3 text-sm text-foreground -outline-offset-2 hover:bg-secondary [@media(pointer:coarse)]:h-11">
                 {l.label}
               </Link>
             </li>
@@ -76,11 +84,14 @@ export function PublicHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" asChild className="hidden md:inline-flex">
+          <Button variant="ghost" asChild className="signed-out-only hidden md:inline-flex">
             <Link to="/login">Log in</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="signed-out-only">
             <Link to="/signup">Start free</Link>
+          </Button>
+          <Button variant="outline" asChild className="signed-in-only">
+            <Link to="/app/dashboard">Dashboard</Link>
           </Button>
           <Button
             variant="ghost"
@@ -99,8 +110,8 @@ export function PublicHeader() {
       {open && (
         <nav id="public-menu" aria-label="Menu" className="fixed inset-x-0 bottom-0 top-14 z-40 overflow-y-auto bg-background p-4 md:hidden">
           <ul className="space-y-1">
-            {[...HEADER_LINKS, ...RESOURCE_LINKS, { to: '/login', label: 'Log in' }].map((l) => (
-              <li key={l.label}>
+            {MENU_LINKS.map((l) => (
+              <li key={l.label} className={l.className}>
                 <Link to={l.to} className="flex h-12 items-center rounded-md px-3 text-base text-foreground hover:bg-secondary">
                   {l.label}
                 </Link>

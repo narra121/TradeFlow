@@ -19,7 +19,7 @@ export const GUIDE_ANCHORS: Record<string, string> = {
   tradelog: 'trades',
   calendar: 'calendar',
   analytics: 'analytics',
-  insights: 'analytics',
+  insights: 'insights',
   goals: 'goals',
   accounts: 'accounts',
   settings: 'settings',

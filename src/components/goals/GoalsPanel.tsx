@@ -6,6 +6,7 @@ import { GoalMeter } from '@/components/goals/GoalMeter';
 import { HistoryStrip } from '@/components/goals/HistoryStrip';
 import { GOAL_LABEL, GOAL_ORDER, goalValue, isLimit, periodNoun, streakOf, streakText, trackStatus, validateTarget, type Glyph, type GoalType, type PeriodRef, type StatusTone } from '@/components/goals/goalMath';
 import { cn } from '@/lib/utils';
+import { readApiError } from '@/lib/apiError';
 
 export interface Track {
   type: GoalType;
@@ -14,6 +15,8 @@ export interface Track {
   /** No goal of the user's own: the starter target is shown without a verdict. */
   isDefault: boolean;
   tradeCount: number;
+  /** Why the figures are not shown (a drawdown limit with no starting balance to measure against). */
+  unavailable?: string;
 }
 
 interface GoalsPanelProps {
@@ -73,8 +76,8 @@ function TrackRow({ track, period, live, readOnly, currency, history, historyLoa
       await onSave(type, r.value);
       setEditing(false);
       requestAnimationFrame(() => editRef.current?.focus());
-    } catch {
-      setError('Couldn’t save the target. Check your connection and try again.');
+    } catch (err) {
+      setError(readApiError(err, 'Couldn’t save the target.').message);
     } finally {
       setSaving(false);
     }
@@ -112,6 +115,9 @@ function TrackRow({ track, period, live, readOnly, currency, history, historyLoa
               <Button type="button" size="sm" variant="ghost" onClick={cancel} disabled={saving}>Cancel</Button>
             </form>
           ) : (
+            track.unavailable ? (
+              <p className="text-13 text-muted-foreground">{track.unavailable}</p>
+            ) : (
             <>
               <p className="font-mono text-13 tabular-nums">{valueText}</p>
               <GoalMeter
@@ -123,14 +129,15 @@ function TrackRow({ track, period, live, readOnly, currency, history, historyLoa
                 tick={isLimit(type) ? shown.tick : undefined}
               />
             </>
+            )
           )}
         </div>
-        <p className={cn('text-13', TONE_TEXT[shown.tone])}>{!editing && shown.text}</p>
+        <p className={cn('text-13', TONE_TEXT[shown.tone])}>{!editing && !track.unavailable && shown.text}</p>
         <div className="justify-self-end">
           {!readOnly && !editing && <Button ref={editRef} type="button" size="sm" variant="outline" onClick={startEdit} aria-label={`Edit ${label}`}>Edit</Button>}
         </div>
       </div>
-      {!track.isDefault && (
+      {!track.isDefault && !track.unavailable && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground md:pl-[192px]">
           <span>Last 8 {periodNoun(period.period)}s</span>
           <HistoryStrip type={type} cells={strip} loading={historyLoading} label={`${label}, last 8 ${periodNoun(period.period)}s`} />

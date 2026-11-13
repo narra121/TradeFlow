@@ -1,20 +1,18 @@
 import { useParams, Navigate } from 'react-router-dom';
-import { Suspense, lazy, useMemo } from 'react';
+import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { AuthorBox } from '@/components/content/AuthorBox';
 import { ShareButtons } from '@/components/content/ShareButtons';
 import { caseStudySchema } from '@/config/seo';
 import { CASE_STUDIES } from '@/content/case-studies/studies';
+import { lazyContent } from '@/content/lazyContent';
 
 export function CaseStudyPage() {
   const { slug } = useParams<{ slug: string }>();
   const study = CASE_STUDIES.find((s) => s.slug === slug);
 
-  const Content = useMemo(() => {
-    if (!study) return null;
-    return lazy(study.content);
-  }, [study]);
+  const Content = study ? lazyContent(`case-study/${study.slug}`, study.content) : null;
 
   if (!study || !Content) {
     return <Navigate to="/case-studies" replace />;

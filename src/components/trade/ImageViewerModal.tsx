@@ -1,13 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCachedImage } from '@/hooks/useCachedImage';
+import { readApiError } from '@/lib/apiError';
 import { ZoomIn, ZoomOut, Minimize2, X, Eye, EyeOff, RotateCcw } from 'lucide-react';
 
 interface ImageViewerModalProps {
@@ -33,7 +35,21 @@ export function ImageViewerModal({
   
   // Use the cached image hook
   const { src: imageUrl, isLoading, error } = useCachedImage(imageId);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // The dialog content mounts after `isOpen` turns true, so the wheel listener is attached when the element arrives.
+  // It must be non-passive: a React `onWheel` is passive and cannot stop the page from scrolling.
+  const stopWheel = useRef<(() => void) | null>(null);
+  const containerRef = useCallback((el: HTMLDivElement | null) => {
+    stopWheel.current?.();
+    stopWheel.current = null;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setScale((prev) => Math.max(0.5, Math.min(5, prev + delta)));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    stopWheel.current = () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -75,12 +91,6 @@ export function ImageViewerModal({
     setIsDragging(false);
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setScale(prev => Math.max(0.5, Math.min(5, prev + delta)));
-  };
-
   // Keyboard shortcuts
   useEffect(() => {
     if (!isOpen) return;
@@ -97,7 +107,8 @@ export function ImageViewerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[98vw] max-w-[98vw] sm:w-[95vw] sm:max-w-[95vw] h-[95vh] max-h-[95vh] p-0 bg-background/95 backdrop-blur-xl border-border/50 overflow-hidden">
+      <DialogContent aria-describedby={undefined} className="w-[98vw] max-w-[98vw] sm:w-[95vw] sm:max-w-[95vw] h-[95vh] max-h-[95vh] p-0 bg-background/95 backdrop-blur-xl border-border/50 overflow-hidden">
+        <DialogTitle className="sr-only">Trade screenshot{timeframe ? `, ${timeframe}` : ''}</DialogTitle>
         {/* Header */}
         <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-2 py-2 sm:px-4 sm:py-3 bg-gradient-to-b from-background/90 to-transparent">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -117,6 +128,7 @@ export function ImageViewerModal({
                 className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary"
                 onClick={handleZoomOut}
                 disabled={scale <= 0.5}
+                aria-label="Zoom out"
               >
                 <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
@@ -127,6 +139,7 @@ export function ImageViewerModal({
                 className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary"
                 onClick={handleZoomIn}
                 disabled={scale >= 5}
+                aria-label="Zoom in"
               >
                 <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
@@ -135,6 +148,7 @@ export function ImageViewerModal({
                 size="icon"
                 className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary"
                 onClick={handleReset}
+                aria-label="Reset zoom"
               >
                 <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
@@ -146,6 +160,7 @@ export function ImageViewerModal({
               size="icon"
               className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary bg-background/95 border border-border/50 backdrop-blur-sm hidden sm:flex shadow-lg"
               onClick={handleReset}
+              aria-label="Fit to screen"
             >
               <Minimize2 className="w-4 h-4" />
             </Button>
@@ -160,6 +175,8 @@ export function ImageViewerModal({
                   showDescription && "bg-primary/20"
                 )}
                 onClick={() => setShowDescription(!showDescription)}
+                aria-label="Show description"
+                aria-pressed={showDescription}
               >
                 {showDescription ? <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
               </Button>
@@ -171,6 +188,7 @@ export function ImageViewerModal({
               size="icon"
               className="h-8 w-8 sm:h-9 sm:w-9 text-foreground hover:text-primary bg-background/95 border border-border/50 backdrop-blur-sm shadow-lg"
               onClick={onClose}
+              aria-label="Close viewer"
             >
               <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Button>
@@ -188,7 +206,6 @@ export function ImageViewerModal({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          onWheel={handleWheel}
         >
           {isLoading ? (
             <div className="w-full h-full max-w-4xl max-h-[80vh] mx-auto">
@@ -198,6 +215,7 @@ export function ImageViewerModal({
             <div className="flex flex-col items-center justify-center text-muted-foreground">
               <X className="h-8 w-8 mb-2" />
               <span>Failed to load image</span>
+              <span className="mt-1 text-xs">{readApiError(error, '').message}</span>
             </div>
           ) : (
             <img

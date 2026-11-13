@@ -32,7 +32,8 @@ vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 vi.mock('@/hooks/useAccounts', () => ({
   useAccounts: () => ({ accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD', status: 'active' }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR', status: 'active' }], selectedAccountId: null }),
 }));
-vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ usage: [], writableAccountIds: null, periodResetsAt: undefined }) }));
+let writableAccountIds: string[] | null = null;
+vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ usage: [], writableAccountIds, periodResetsAt: undefined }) }));
 vi.mock('@/store/api/importApi', () => ({
   useGetImportBatchesQuery: () => ({ data: undefined, isFetching: false, isError: false, refetch: vi.fn() }),
   useGetImportSourcesQuery: () => ({
@@ -62,6 +63,7 @@ const seed = (patch = {}) =>
   );
 
 beforeEach(() => {
+  writableAccountIds = null;
   Object.values(actions).forEach((f) => f.mockReset());
   act(() => importFlow.reset());
   act(() => importFlow.set({ accountId: null }));
@@ -76,6 +78,37 @@ describe('ImportCenter before a file', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Other CSV' }));
     expect(screen.getByText('Use the template.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Download a CSV template/ })).toHaveAttribute('href', '/import-template.csv');
+  });
+
+  it('the account is one picker that shows the currency and is chosen with the keyboard', async () => {
+    renderCenter();
+    const account = screen.getByRole('combobox', { name: /Account/ });
+    expect(account).toHaveTextContent('FTMO 100KUSD');
+    account.focus();
+    await userEvent.keyboard('{Enter}{ArrowDown}{ArrowDown}{Enter}');
+    expect(importFlow.get().accountId).toBe('a2');
+    expect(account).toHaveTextContent('Zerodha F&OINR');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('lists an account the plan made read-only with the reason and does not pick it', async () => {
+    writableAccountIds = ['a1'];
+    renderCenter();
+    await userEvent.click(screen.getByRole('combobox', { name: /Account/ }));
+    const locked = screen.getByRole('option', { name: /Zerodha F&O/ });
+    expect(locked).toHaveAttribute('aria-disabled', 'true');
+    expect(locked).toHaveTextContent('Read-only on Free');
+    await userEvent.click(locked);
+    expect(importFlow.get().accountId).toBe('a1');
+  });
+
+  it('moves the default off an account that turns out read-only when the plan loads after the accounts', () => {
+    const view = renderCenter();
+    expect(importFlow.get().accountId).toBe('a1');
+    writableAccountIds = ['a2'];
+    view.rerender(<MemoryRouter><ImportCenter /></MemoryRouter>);
+    expect(importFlow.get().accountId).toBe('a2');
+    expect(screen.getByRole('combobox', { name: /Account/ })).toHaveTextContent('Zerodha F&OINR');
   });
 
   it('hands dropped files to the import and defaults the account to the first writable one', () => {

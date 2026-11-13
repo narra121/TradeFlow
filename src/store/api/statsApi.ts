@@ -34,6 +34,7 @@ export interface TaxReportData {
 }
 
 export const statsApi = api.injectEndpoints({
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     getStats: builder.query<AggregatedStats, StatsParams | void>({
       query: (params) => ({

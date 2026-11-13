@@ -1,17 +1,18 @@
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  // The app has one theme (dark) and no ThemeProvider, so the toasts say so instead of reading the OS preference.
+  const isMobile = useIsMobile();
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="dark"
       className="toaster group"
       visibleToasts={1}
-      position={typeof window !== "undefined" && window.innerWidth < 768 ? "top-center" : "bottom-left"}
+      position={isMobile ? "top-center" : "bottom-left"}
       toastOptions={{
         classNames: {
           toast:

@@ -6,7 +6,7 @@ import { BreakdownExplorer } from '@/components/stats/BreakdownExplorer';
 import { TimingGrid } from '../TimingGrid';
 import { StatementPanel } from '../StatementPanel';
 import { explorerCsv } from '../explorerCsv';
-import { rowLink, tradesHref, type AnalyticsContext } from '../drill';
+import { rowLink, type AnalyticsContext } from '../drill';
 import { timingGrid } from '@/lib/analyticsRows';
 import type { AggregatedStats } from '@/types/stats';
 
@@ -139,6 +139,12 @@ describe('StatementPanel', () => {
     expect(screen.queryByText('4.2%')).not.toBeInTheDocument();
     expect(screen.getByText('+$3,204.10')).toBeInTheDocument();
   });
+
+  it('does not show a drawdown percentage when an account has no starting balance (X-016)', () => {
+    render(<StatementPanel ctx={ctx({ noBalance: true })} />);
+    expect(screen.queryByText('4.2%')).not.toBeInTheDocument();
+    expect(screen.getByText('+$3,204.10')).toBeInTheDocument();
+  });
 });
 
 describe('explorerCsv', () => {
@@ -158,6 +164,8 @@ describe('explorerCsv', () => {
 describe('rowLink', () => {
   it('opens Trades with the row value, "no strategy" via the missing filter, and nothing without a filter', () => {
     expect(rowLink('hour', { key: '14', name: '14:00', trades: 1, wins: 0, winRate: 0, net: 0, drill: '14' })).toBe('/app/tradelog?hour=14&src=analytics');
+    expect(rowLink('hour', { key: '14', name: '14:00', trades: 1, wins: 0, winRate: 0, net: 0, drill: '14' }, 'Asia/Kolkata')).toBe('/app/tradelog?hour=14&zone=Asia%2FKolkata&src=analytics');
+    expect(rowLink('session', { key: 'London', name: 'London', trades: 1, wins: 0, winRate: 0, net: 0, drill: 'London' }, 'Asia/Kolkata')).toBe('/app/tradelog?session=London&src=analytics');
     expect(rowLink('strategy', { key: 'Unknown', name: 'No strategy', trades: 1, wins: 0, winRate: 0, net: 0, drill: '' })).toBe('/app/tradelog?missing=strategy&src=analytics');
     expect(rowLink('session', { key: 'Unknown', name: 'No session', trades: 1, wins: 0, winRate: 0, net: 0, drill: null })).toBeNull();
   });

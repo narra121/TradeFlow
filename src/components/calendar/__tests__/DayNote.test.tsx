@@ -61,6 +61,19 @@ describe('DayNote', () => {
     spy.mockRestore();
   });
 
+  it('says the connection failed when no response came back, and keeps our sentence for a body-less error', async () => {
+    save.mockReturnValueOnce({ unwrap: () => Promise.reject({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' }) });
+    const user = userEvent.setup();
+    setup();
+    await user.type(screen.getByLabelText('Review'), 'Held too long.');
+    await user.tab();
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/internet connection/i));
+    save.mockReturnValueOnce({ unwrap: () => Promise.reject({ status: 400 }) });
+    await user.type(screen.getByLabelText('Review'), ' More.');
+    await user.tab();
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent("Couldn't save the review."));
+  });
+
   it('shows the failure under the fields and keeps the text', async () => {
     save.mockReturnValue({ unwrap: () => Promise.reject({ status: 500, data: { message: 'Server error' } }) });
     const user = userEvent.setup();

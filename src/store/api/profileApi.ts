@@ -8,21 +8,18 @@ export interface AccountExport {
 }
 
 export const profileApi = api.injectEndpoints({
+  // Endpoint names are shared by every slice on `api`; without 'throw' RTK silently keeps the first definition of a duplicate.
+  overrideExisting: 'throw',
   endpoints: (builder) => ({
     exportMyData: builder.mutation<AccountExport, void>({
       query: () => ({ url: '/auth/export', method: 'GET' }),
     }),
 
-    /** Removes the Cognito user last (B-083); the caller clears local state afterwards. */
-    deleteAccount: builder.mutation<void, void>({
+    /** Removes the Cognito user last (B-083); the caller clears local state afterwards. `deleteAccount` is the trading-account endpoint. */
+    deleteUserAccount: builder.mutation<void, void>({
       query: () => ({ url: '/auth/account', method: 'DELETE' }),
-    }),
-
-    /** Cognito global sign-out (B-084): every refresh token for the user is revoked, this device included. */
-    logoutAllDevices: builder.mutation<void, void>({
-      query: () => ({ url: '/auth/logout-all', method: 'POST' }),
     }),
   }),
 });
 
-export const { useExportMyDataMutation, useDeleteAccountMutation, useLogoutAllDevicesMutation } = profileApi;
+export const { useExportMyDataMutation, useDeleteUserAccountMutation } = profileApi;

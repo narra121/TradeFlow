@@ -1,7 +1,6 @@
 import { Component, useEffect } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 import { Loader2 } from 'lucide-react';
-import { QueryClient } from '@tanstack/react-query';
 
 // Error boundary that catches chunk load failures after a new deploy
 // and auto-reloads the page once to fetch the updated index.html.
@@ -84,18 +83,6 @@ export function PageLoadingFallback() {
     </div>
   );
 }
-
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
 
 // Strip the cache-buster param from the URL bar without reloading
 if (window.location.search.includes('_cb=')) {

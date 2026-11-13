@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { SUPPORT_EMAIL } from '@/content/product-facts';
 import { collectDiagnostics, KIND_LABEL, MAX_MESSAGE, openMail, supportMailto, type MessageKind } from './diagnostics';
 import { sendFeedback } from './sendFeedback';
+import { formatCount } from '@/lib/format';
 
 interface FeedbackDialogProps {
   open: boolean;
@@ -53,7 +54,7 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
       setMailFallback(true);
       openMail(supportMailto(kind, message, diag()));
     } else {
-      setError('Couldn’t send your feedback. Check your connection and try again.');
+      setError(`Couldn’t send your feedback. ${outcome.failed}`);
     }
   };
 
@@ -66,10 +67,10 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
             <DialogDescription>Tell us what is broken, or what would make TradeQut better.</DialogDescription>
           </DialogHeader>
           <SegmentedControl label="Type of feedback" value={kind} onChange={(v) => setKind(v as MessageKind)} options={KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))} />
-          <Field label="Your message" error={tooLong ? `Keep it under ${MAX_MESSAGE.toLocaleString()} characters.` : undefined} required>
+          <Field label="Your message" error={tooLong ? `Keep it under ${formatCount(MAX_MESSAGE)} characters.` : undefined} required>
             {(a) => <Textarea {...a} rows={5} value={message} onChange={(e) => setMessage(e.target.value)} autoFocus />}
           </Field>
-          <p className="text-right font-mono text-xs tabular-nums text-muted-foreground">{message.length.toLocaleString()} / {MAX_MESSAGE.toLocaleString()}</p>
+          <p className="text-right font-mono text-xs tabular-nums text-muted-foreground">{formatCount(message.length)} / {formatCount(MAX_MESSAGE)}</p>
           <label className="flex items-center gap-2 text-13">
             <Checkbox checked={include} onCheckedChange={(v) => setInclude(v === true)} />
             Include page and browser details

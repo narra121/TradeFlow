@@ -138,6 +138,18 @@ describe('AccountSelect', () => {
     expect(onChange).toHaveBeenCalledWith(['acc-2']);
   });
 
+  it('lists the selected accounts first when it opens', async () => {
+    const user = userEvent.setup();
+    render(<AccountSelect {...defaultProps} selectedAccountIds={['acc-3']} />);
+
+    await user.click(screen.getByText('Demo Account'));
+
+    const rows = screen.getAllByRole('option');
+    expect(rows[0].textContent).toContain('Demo Account');
+    expect(rows[0].getAttribute('aria-selected')).toBe('true');
+    expect(rows.length).toBe(3);
+  });
+
   it('selects all accounts when "Select All" is clicked', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

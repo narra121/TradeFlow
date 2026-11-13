@@ -33,7 +33,7 @@ export function JournalDemo({ paused }: { paused: boolean }) {
       {(landed) => (
         <>
           <div role="img" aria-label={JOURNAL_ALT}>
-            <div aria-hidden="true" className="stage-demo">
+            <div aria-hidden="true" className="stage-demo" data-ss-fill>
               <CalendarStage play={landed && !paused} size={JOURNAL_SIZE} fillIn />
             </div>
           </div>
@@ -50,13 +50,22 @@ export function JournalDemo({ paused }: { paused: boolean }) {
   );
 }
 
+/** Reset: the calendar as a still, behind the card that says a reset leaves it alone. */
+export function StillJournal() {
+  return (
+    <div className="stage-demo" data-ss-fill>
+      <CalendarStage play={false} size={JOURNAL_SIZE} />
+    </div>
+  );
+}
+
 /** Sign up: the landing hero's demo, a trade marked as breaking a rule and the month's cost counting up. */
 export function SignupDemo({ paused }: { paused: boolean }) {
   return (
     <Reveal>
       {(landed) => (
         <div role="img" aria-label={REVIEW_ALT}>
-          <div aria-hidden="true" className="stage-demo">
+          <div aria-hidden="true" className="stage-demo" data-ss-fill>
             <TradeReviewDemo play={landed && !paused} />
           </div>
         </div>

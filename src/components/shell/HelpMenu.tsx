@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { CircleHelp, ExternalLink } from 'lucide-react';
+import { CircleHelp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ContactSupportDialog, FeedbackDialog, WhatsNewPopover, appVersion, useWhatsNew } from '@/components/help';
 import { guideLink } from '@/content/guideAnchors';
 
@@ -52,9 +52,7 @@ export function HelpMenu({ onShowShortcuts, gettingStarted }: HelpMenuProps) {
             >
               {gettingStarted && <DropdownMenuItem onSelect={gettingStarted}>Getting started</DropdownMenuItem>}
               <DropdownMenuItem asChild>
-                <a href={guideLink(page)} target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-between">
-                  Guide <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                </a>
+                <a href={guideLink(page)}>Guide</a>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={onShowShortcuts}>Keyboard shortcuts</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => (openNewsOnClose.current = true)}>
@@ -64,12 +62,10 @@ export function HelpMenu({ onShowShortcuts, gettingStarted }: HelpMenuProps) {
               <DropdownMenuItem onSelect={() => setDialog('support')}>Contact support</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setDialog('feedback')}>Send feedback</DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="/status" target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-between">
-                  System status <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                </a>
+                <a href="/status">System status</a>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs font-normal text-foreground-soft">Version {appVersion()}</DropdownMenuLabel>
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">Version {appVersion()}</div>
             </DropdownMenuContent>
           </DropdownMenu>
         </span>
