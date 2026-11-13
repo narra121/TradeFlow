@@ -90,6 +90,14 @@ describe('AppPage', () => {
     expect(screen.getByTestId('topbar')).toBeInTheDocument();
   });
 
+  it('is one dynamic viewport tall and clips its overflow, so the document never scrolls', () => {
+    renderAt('/app/dashboard');
+    const shell = screen.getByText('Skip to content').parentElement;
+    expect(shell).toHaveClass('h-dvh', 'overflow-clip');
+    expect(shell).not.toHaveClass('min-h-screen');
+    expect(screen.getByTestId('pane-host').parentElement).toHaveClass('h-full');
+  });
+
   it('has a skip link, the sidebar on desktop and the tab bar only on phones', async () => {
     const { unmount } = renderAt('/app/dashboard');
     expect(screen.getByText('Skip to content')).toHaveAttribute('href', '#main');

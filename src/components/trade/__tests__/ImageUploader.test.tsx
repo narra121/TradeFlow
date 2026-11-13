@@ -1,3 +1,4 @@
+import type { ButtonHTMLAttributes, ChangeEvent, ReactNode, TextareaHTMLAttributes } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -10,18 +11,18 @@ vi.mock('../imageUpload', async (orig) => ({ ...(await orig<object>()), uploadSc
 
 // Mock CachedImage
 vi.mock('../CachedImage', () => ({
-  CachedImage: ({ src, alt, className, onClick }: any) => (
+  CachedImage: ({ src, alt, className, onClick }: { src?: string; alt?: string; className?: string; onClick?: () => void }) => (
     <img data-testid="cached-image" src={src} alt={alt} className={className} onClick={onClick} />
   ),
 }));
 
 // Mock DynamicSelect
 vi.mock('../DynamicSelect', () => ({
-  DynamicSelect: ({ value, onChange, placeholder }: any) => (
+  DynamicSelect: ({ value, onChange, placeholder }: { value?: string; onChange: (value: string) => void; placeholder?: string }) => (
     <select
       data-testid="dynamic-select"
       value={value}
-      onChange={(e: any) => onChange(e.target.value)}
+      onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
     >
       <option value="">{placeholder}</option>
       <option value="1H">1H</option>
@@ -32,7 +33,7 @@ vi.mock('../DynamicSelect', () => ({
 
 // Mock UI components
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, type, className, ...props }: any) => (
+  Button: ({ children, onClick, type, className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button type={type} onClick={onClick} className={className} {...props}>
       {children}
     </button>
@@ -40,7 +41,7 @@ vi.mock('@/components/ui/button', () => ({
 }));
 
 vi.mock('@/components/ui/textarea', () => ({
-  Textarea: ({ value, onChange, placeholder, ...props }: any) => (
+  Textarea: ({ value, onChange, placeholder, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) => (
     <textarea
       data-testid="textarea"
       value={value}
@@ -52,7 +53,7 @@ vi.mock('@/components/ui/textarea', () => ({
 }));
 
 vi.mock('@/components/ui/label', () => ({
-  Label: ({ children, className }: any) => <label className={className}>{children}</label>,
+  Label: ({ children, className }: { children?: ReactNode; className?: string }) => <label className={className}>{children}</label>,
 }));
 
 vi.mock('@/components/ui/text-enhancer-button', () => ({
@@ -282,7 +283,7 @@ describe('ImageUploader – additional coverage', () => {
 
   it('renders CachedImage for non-data-URL images (image IDs)', () => {
     const images: TradeImage[] = [
-      { id: 'img-s3-key', url: undefined as any, timeframe: '1H', description: 'S3 image' },
+      { id: 'img-s3-key', url: undefined, timeframe: '1H', description: 'S3 image' },
     ];
 
     render(<ImageUploader {...defaultProps} images={images} />);

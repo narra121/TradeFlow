@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { lastTradeText, netSinceStart, sortAccounts, statusSummary, tallyByAccount, totalsByCurrency } from '../accountStats';
-import type { Trade, TradingAccount } from '@/types/trade';
+import { lastTradeText, netSinceStart, sortAccounts, statusSummary, totalsByCurrency } from '../accountStats';
+import type { TradingAccount } from '@/types/trade';
 
 const acc = (id: string, over: Partial<TradingAccount> = {}): TradingAccount =>
   ({ id, name: id, broker: 'B', type: 'personal', status: 'active', balance: 1000, initialBalance: 1000, currency: 'USD', createdAt: '', ...over }) as TradingAccount;
-const trade = (id: string, accountId: string | undefined, exit: string): Trade => ({ id, accountId, exitDate: exit, entryDate: exit }) as Trade;
 
 describe('account figures', () => {
   it('computes net since start and a percentage that is absent for a zero start', () => {
@@ -20,28 +19,23 @@ describe('account figures', () => {
     ]);
   });
 
-  it('tallies trades and the latest exit per account and skips trades without an account', () => {
-    const t = tallyByAccount([trade('1', 'a', '2026-11-02T10:00:00Z'), trade('2', 'a', '2026-11-05T10:00:00Z'), trade('3', 'b', '2026-10-01T10:00:00Z'), trade('4', undefined, '2026-11-09T10:00:00Z')]);
-    expect(t.get('a')).toEqual({ trades: 2, lastTradeAt: '2026-11-05T10:00:00Z' });
-    expect(t.get('b')?.trades).toBe(1);
-    expect(t.size).toBe(2);
-  });
-
   it('words the last trade as recency up to a week, then as a date', () => {
     const now = new Date(2026, 10, 11, 15);
-    expect(lastTradeText(new Date(2026, 10, 11, 9).toISOString(), now)).toBe('today');
-    expect(lastTradeText(new Date(2026, 10, 10, 9).toISOString(), now)).toBe('yesterday');
-    expect(lastTradeText(new Date(2026, 10, 9, 9).toISOString(), now)).toBe('2 days ago');
-    expect(lastTradeText(new Date(2026, 9, 23, 9).toISOString(), now)).toBe('23 Oct 2026');
+    expect(lastTradeText('2026-11-11', now)).toBe('today');
+    expect(lastTradeText('2026-11-10', now)).toBe('yesterday');
+    expect(lastTradeText('2026-11-09', now)).toBe('2 days ago');
+    expect(lastTradeText('2026-10-23', now)).toBe('23 Oct 2026');
     expect(lastTradeText(undefined, now)).toBe('—');
+    expect(lastTradeText(null, now)).toBe('—');
   });
 
   it('sorts inside a group by any column and breaks ties by name', () => {
-    const list = [acc('b', { balance: 5 }), acc('a', { balance: 5 }), acc('c', { balance: 9 })];
-    const tally = tallyByAccount([trade('1', 'c', '2026-11-02T10:00:00Z')]);
-    expect(sortAccounts(list, 'balance', 'desc', tally).map((a) => a.id)).toEqual(['c', 'a', 'b']);
-    expect(sortAccounts(list, 'name', 'asc', tally).map((a) => a.id)).toEqual(['a', 'b', 'c']);
-    expect(sortAccounts(list, 'trades', 'desc', tally)[0].id).toBe('c');
+    const list = [acc('b', { balance: 5 }), acc('a', { balance: 5, tradeCount: 3, lastTradeDate: '2026-10-01' }), acc('c', { balance: 9, tradeCount: 7, lastTradeDate: '2026-11-02' })];
+    expect(sortAccounts(list, 'balance', 'desc').map((a) => a.id)).toEqual(['c', 'a', 'b']);
+    expect(sortAccounts(list, 'name', 'asc').map((a) => a.id)).toEqual(['a', 'b', 'c']);
+    expect(sortAccounts(list, 'trades', 'desc').map((a) => a.id)).toEqual(['c', 'a', 'b']);
+    expect(sortAccounts(list, 'last', 'desc').map((a) => a.id)).toEqual(['c', 'a', 'b']);
+    expect(sortAccounts(list, 'last', 'asc').map((a) => a.id)).toEqual(['b', 'a', 'c']);
   });
 
   it('summarises the folded group by status', () => {

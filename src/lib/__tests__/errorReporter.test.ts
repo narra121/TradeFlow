@@ -54,7 +54,7 @@ describe('errorReporter', () => {
 
     // Find the error report fetch call (not the patched one)
     const reportCall = mockFetch.mock.calls.find(
-      (call: any[]) => typeof call[0] === 'string' && call[0].includes('/errors/report')
+      (call) => typeof call[0] === 'string' && call[0].includes('/errors/report')
     );
     expect(reportCall).toBeDefined();
 
@@ -77,7 +77,7 @@ describe('errorReporter', () => {
     await new Promise(r => setTimeout(r, 10));
 
     const reportCalls = mockFetch.mock.calls.filter(
-      (call: any[]) => typeof call[0] === 'string' && call[0].includes('/errors/report')
+      (call) => typeof call[0] === 'string' && call[0].includes('/errors/report')
     );
     expect(reportCalls.length).toBe(1);
   });
@@ -93,7 +93,7 @@ describe('errorReporter', () => {
     await new Promise(r => setTimeout(r, 10));
 
     const reportCall = mockFetch.mock.calls.find(
-      (call: any[]) => typeof call[0] === 'string' && call[0].includes('/errors/report')
+      (call) => typeof call[0] === 'string' && call[0].includes('/errors/report')
     );
     expect(reportCall![1].headers.Authorization).toBe(`Bearer ${idToken}`);
     expect(JSON.parse(reportCall![1].body)).not.toHaveProperty('userId');
@@ -106,7 +106,7 @@ describe('errorReporter', () => {
     await new Promise(r => setTimeout(r, 10));
 
     const reportCall = mockFetch.mock.calls.find(
-      (call: any[]) => typeof call[0] === 'string' && call[0].includes('/errors/report')
+      (call) => typeof call[0] === 'string' && call[0].includes('/errors/report')
     );
     expect(reportCall![1].keepalive).toBe(true);
   });

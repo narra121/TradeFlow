@@ -15,6 +15,9 @@ export interface TradingAccount {
   currency: string;
   createdAt: string; // ISO string for Redux serialization
   notes?: string;
+  /** Only the account list carries these: live trades, and the newest trade day (`YYYY-MM-DD`, null when there is none). */
+  tradeCount?: number;
+  lastTradeDate?: string | null;
 }
 
 export interface TradeImage {

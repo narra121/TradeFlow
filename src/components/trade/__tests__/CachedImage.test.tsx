@@ -1,3 +1,4 @@
+import type { HTMLAttributes } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CachedImage } from '../CachedImage';
@@ -10,7 +11,7 @@ vi.mock('@/hooks/useCachedImage', () => ({
 
 // Mock Skeleton to be easily testable
 vi.mock('@/components/ui/skeleton', () => ({
-  Skeleton: ({ className, ...props }: any) => (
+  Skeleton: ({ className, ...props }: HTMLAttributes<HTMLDivElement>) => (
     <div data-testid="skeleton" className={className} {...props} />
   ),
 }));

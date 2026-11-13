@@ -8,7 +8,7 @@ const mockSelectedAccountId = vi.fn<() => string | null>(() => null);
 
 vi.mock('@/store/hooks', () => ({
   useAppDispatch: () => mockDispatch,
-  useAppSelector: (selector: any) =>
+  useAppSelector: (selector: (state: { accounts: { selectedAccountId: string | null } }) => unknown) =>
     selector({ accounts: { selectedAccountId: mockSelectedAccountId() } }),
 }));
 

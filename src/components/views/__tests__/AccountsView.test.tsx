@@ -6,7 +6,8 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { setSelectedAccount } from '@/store/slices/accountsSlice';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import type { Trade, TradingAccount } from '@/types/trade';
+import { appTodayKey } from '@/lib/appTimeZone';
+import type { TradingAccount } from '@/types/trade';
 
 const acc = (id: string, over: Partial<TradingAccount> = {}): TradingAccount =>
   ({ id, name: id, broker: 'B', type: 'personal', status: 'active', balance: 1000, initialBalance: 1000, currency: 'USD', createdAt: '', ...over }) as TradingAccount;
@@ -27,11 +28,8 @@ vi.mock('@/store/api', async (orig) => ({
   useUpdateAccountStatusMutation: () => [updateStatus, { isLoading: false }],
 }));
 
-let scopeTrades: Trade[] = [];
-let truncated = false;
-vi.mock('@/hooks/useScopeTrades', () => ({
-  useScopeTrades: () => ({ trades: scopeTrades, isLoading: false, isError: false, isFetching: false, refetch: vi.fn(), truncated, params: {} }),
-}));
+const useScopeTrades = vi.fn();
+vi.mock('@/hooks/useScopeTrades', () => ({ useScopeTrades: (...a: unknown[]) => useScopeTrades(...a) }));
 
 let ent: { plan: string | null; can: (f: string) => boolean; writableAccountIds: string[] | null } = { plan: 'pro', can: () => true, writableAccountIds: null };
 vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ent }));
@@ -65,18 +63,15 @@ function setup(path = '/app/accounts') {
   );
 }
 
-const ftmo = acc('FTMO 100K', { id: 'a1', balance: 101240, initialBalance: 100000, broker: 'FTMO', type: 'prop_challenge' });
-const zerodha = acc('Zerodha F&O', { id: 'a2', currency: 'INR', balance: 482300, initialBalance: 500000, broker: 'Zerodha' });
+const ftmo = acc('FTMO 100K', { id: 'a1', balance: 101240, initialBalance: 100000, broker: 'FTMO', type: 'prop_challenge', tradeCount: 2, lastTradeDate: appTodayKey() });
+const zerodha = acc('Zerodha F&O', { id: 'a2', currency: 'INR', balance: 482300, initialBalance: 500000, broker: 'Zerodha', tradeCount: 12345, lastTradeDate: '2026-01-05' });
 const old = acc('Old challenge', { id: 'a3', status: 'breached', balance: 0, initialBalance: 10000 });
-const tradeOf = (id: string, accountId: string): Trade => ({ id, accountId, symbol: 'X', exitDate: new Date().toISOString(), entryDate: new Date().toISOString() }) as Trade;
 
 describe('AccountsView', () => {
   beforeEach(() => {
     query = { data: { accounts: [ftmo, zerodha, old] }, isLoading: false, isError: false };
-    scopeTrades = [tradeOf('1', 'a1'), tradeOf('2', 'a1'), tradeOf('3', 'a2')];
-    truncated = false;
     ent = { plan: 'pro', can: () => true, writableAccountIds: null };
-    for (const f of [refetch, createAccount, updateAccount, deleteAccount, updateStatus, emitPlanSignal]) f.mockReset();
+    for (const f of [refetch, createAccount, updateAccount, deleteAccount, updateStatus, emitPlanSignal, useScopeTrades]) f.mockReset();
     for (const f of [createAccount, updateAccount, deleteAccount, updateStatus]) f.mockReturnValue(unwrap());
     store.dispatch(setSelectedAccount(null));
   });
@@ -126,11 +121,35 @@ describe('AccountsView', () => {
     expect(totals.textContent).not.toMatch(/583,540/);
   });
 
-  it('reads the trade counts as a lower bound when the loader is capped', () => {
-    truncated = true;
+  it('takes trade count and last trade from the account list and loads no trades', () => {
     setup();
-    expect(screen.getByRole('row', { name: /FTMO 100K/ })).toHaveTextContent('2+');
-    expect(screen.getByText('Trade counts cover the newest 5,000 trades.')).toBeInTheDocument();
+    const zerodhaRow = screen.getByRole('row', { name: /Zerodha/ });
+    expect(zerodhaRow).toHaveTextContent('12,345');
+    expect(zerodhaRow).toHaveTextContent('05 Jan 2026');
+    expect(within(zerodhaRow).getByTitle('05 Jan 2026')).toBeInTheDocument();
+    expect(screen.queryByText(/Trade counts cover/)).not.toBeInTheDocument();
+    expect(useScopeTrades).not.toHaveBeenCalled();
+  });
+
+  it('shows a dash for an account whose list entry carries no count, and an empty account as 0 and a dash', () => {
+    query = { data: { accounts: [acc('No count', { id: 'n1' }), acc('Empty', { id: 'n2', tradeCount: 0, lastTradeDate: null })] }, isLoading: false, isError: false };
+    setup();
+    expect(within(screen.getByRole('row', { name: /No count/ })).getAllByText('—')).toHaveLength(2);
+    const empty = screen.getByRole('row', { name: /Empty/ });
+    expect(within(empty).getByText('0')).toBeInTheDocument();
+    expect(within(empty).getAllByText('—')).toHaveLength(1);
+  });
+
+  it('sorts by the trade count and by the last trade day of the account list', async () => {
+    const user = userEvent.setup();
+    setup();
+    const order = () => screen.getAllByRole('row').filter((r) => r.getAttribute('tabindex') === '0').map((r) => r.textContent);
+    await user.click(within(screen.getByRole('columnheader', { name: /Trades/ })).getByRole('button'));
+    expect(order()[0]).toContain('Zerodha');
+    await user.click(within(screen.getByRole('columnheader', { name: /Last trade/ })).getByRole('button'));
+    expect(order()[0]).toContain('FTMO');
+    await user.click(within(screen.getByRole('columnheader', { name: /Last trade/ })).getByRole('button'));
+    expect(order()[0]).toContain('Zerodha');
   });
 
   it('View journal sets the scope, opens the dashboard and offers Undo', async () => {
@@ -261,6 +280,17 @@ describe('AccountsView', () => {
     await user.click(del);
     expect(deleteAccount).toHaveBeenCalledWith('a1');
     await vi.waitFor(() => expect(store.getState().accounts.selectedAccountId).toBeNull());
+  });
+
+  it('treats a missing trade count as unknown in the delete dialog, never as zero trades', async () => {
+    const user = userEvent.setup();
+    query = { data: { accounts: [acc('No count', { id: 'n1' })] }, isLoading: false, isError: false };
+    setup();
+    await user.click(screen.getByRole('button', { name: 'Actions for No count' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete…' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('all of its trades');
+    expect(within(dialog).getByRole('button', { name: 'Delete account' })).toBeDisabled();
   });
 
   it('returns focus to the row actions button after the delete dialog closes with Escape', async () => {

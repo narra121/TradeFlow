@@ -1,22 +1,24 @@
+import type { HTMLAttributes } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RefreshButton } from '../refresh-button';
 
 // Mock Radix UI Tooltip so content renders inline (no portal)
+type MockProps = HTMLAttributes<HTMLDivElement> & { asChild?: boolean; side?: string };
 vi.mock('@radix-ui/react-tooltip', async () => {
   const React = await import('react');
   return {
-    Provider: ({ children }: any) => <>{children}</>,
-    Root: ({ children }: any) => <>{children}</>,
-    Trigger: React.forwardRef(({ children, asChild, ...props }: any, ref: any) => (
+    Provider: ({ children }: MockProps) => <>{children}</>,
+    Root: ({ children }: MockProps) => <>{children}</>,
+    Trigger: React.forwardRef<HTMLDivElement, MockProps>(({ children, asChild, ...props }, ref) => (
       <div ref={ref} {...props}>{children}</div>
     )),
-    Portal: ({ children }: any) => <>{children}</>,
-    Content: React.forwardRef(({ children, side, ...props }: any, ref: any) => (
+    Portal: ({ children }: MockProps) => <>{children}</>,
+    Content: React.forwardRef<HTMLDivElement, MockProps>(({ children, side, ...props }, ref) => (
       <div ref={ref} {...props}>{children}</div>
     )),
-    Arrow: React.forwardRef((props: any, ref: any) => <div ref={ref} {...props} />),
+    Arrow: React.forwardRef<HTMLDivElement, MockProps>((props, ref) => <div ref={ref} {...props} />),
   };
 });
 

@@ -6,7 +6,7 @@ import { useCachedImage } from '../useCachedImage';
 const mockUseGetImageQuery = vi.fn();
 
 vi.mock('@/store/api/imageCache', () => ({
-  useGetImageQuery: (...args: any[]) => mockUseGetImageQuery(...args),
+  useGetImageQuery: (...args: unknown[]) => mockUseGetImageQuery(...args),
 }));
 
 describe('useCachedImage', () => {

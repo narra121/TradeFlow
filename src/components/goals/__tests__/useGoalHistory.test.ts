@@ -73,6 +73,13 @@ describe('useGoalHistory', () => {
     expect(result.current.strips.profit.every((c) => c.glyph === 'none')).toBe(true);
   });
 
+  it('leaves every cell empty when the answer has no periods (the e2e mock answers {} to unknown paths)', () => {
+    state = { currentData: {} as { periods: Periods }, isError: false };
+    const { result } = renderHook(() => useGoalHistory({ accountId: 'usd', totalCapital: 1000, current, enabled: true }));
+    expect(result.current.loaded).toBe(0);
+    expect(result.current.strips.profit.every((c) => c.glyph === 'none')).toBe(true);
+  });
+
   it('reports a failure with empty cells and stops loading', () => {
     state = { isError: true };
     const { result } = renderHook(() => useGoalHistory({ accountId: 'usd', totalCapital: 1000, current, enabled: true }));

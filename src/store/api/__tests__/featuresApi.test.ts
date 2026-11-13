@@ -34,8 +34,11 @@ const errorEnvelope = (status: number, body: object) => new Response(JSON.string
 interface Call {
   url: URL;
   method: string;
-  body: any;
+  body: { items?: { importBatchId?: string }[] };
 }
+// dispatch() resolves to `{ data } | { error }`; each test reads the side it expects.
+type ApiError = { status: number; data: { errorCode?: string; error?: Record<string, unknown> } };
+const settled = (r: unknown) => r as { data: Record<string, unknown>; error: ApiError };
 let calls: Call[];
 let handler: (c: Call) => Response | Promise<Response>;
 
@@ -84,8 +87,8 @@ describe('importApi', () => {
   it('parseImport surfaces a 402 with the quota details', async () => {
     handler = () => errorEnvelope(402, { errorCode: 'QUOTA_EXCEEDED', message: 'Monthly limit reached', error: { code: 'QUOTA_EXCEEDED', feature: 'broker_import', limit: 3, resetsAt: '2026-12-01T00:00:00.000Z' } });
     const r = await makeStore().dispatch(importApi.endpoints.parseImport.initiate({ source: 'auto', fileName: 'a.csv', contentBase64: 'QQ==' }));
-    expect((r as any).error.status).toBe(402);
-    expect((r as any).error.data.error).toMatchObject({ feature: 'broker_import', limit: 3 });
+    expect(settled(r).error.status).toBe(402);
+    expect(settled(r).error.data.error).toMatchObject({ feature: 'broker_import', limit: 3 });
   });
 
   it('saveImportedTrades sends 50 per request with idempotency keys and sums the results', async () => {
@@ -95,10 +98,10 @@ describe('importApi', () => {
     expect(calls.map((c) => c.body.items.length)).toEqual([50, 50, 20]);
     expect(calls.every((c) => c.url.pathname.endsWith('/trades') && c.method === 'POST')).toBe(true);
     expect(calls[0].body.items[0]).toMatchObject({ accountIds: ['acc1'], idempotencyKey: 'imp|acc1|zerodha|zerodha:0:0' });
-    expect((r as any).data).toMatchObject({ created: 117, skipped: 3, errors: 0, failed: 0 });
-    const batch = (r as any).data.batchId;
+    expect(settled(r).data).toMatchObject({ created: 117, skipped: 3, errors: 0, failed: 0 });
+    const batch = settled(r).data.batchId;
     expect(batch).toMatch(/^[0-9a-f-]{36}$/);
-    expect(calls.every((c) => c.body.items.every((i: any) => i.importBatchId === batch))).toBe(true);
+    expect(calls.every((c) => c.body.items.every((i) => i.importBatchId === batch))).toBe(true);
   });
 
   it('a failed chunk is reported, the other chunks still save; all failing is an error', async () => {
@@ -106,17 +109,17 @@ describe('importApi', () => {
     handler = () => (++n === 2 ? errorEnvelope(500, { message: 'boom' }) : envelope({ created: 50, skipped: [], errors: [] }));
     const trades = Array.from({ length: 120 }, (_, i) => trade(i));
     const partial = await makeStore().dispatch(importApi.endpoints.saveImportedTrades.initiate({ trades, accountId: 'acc1' }));
-    expect((partial as any).data).toMatchObject({ created: 100, failed: 50 });
+    expect(settled(partial).data).toMatchObject({ created: 100, failed: 50 });
 
     handler = () => errorEnvelope(500, { message: 'boom' });
     const all = await makeStore().dispatch(importApi.endpoints.saveImportedTrades.initiate({ trades: trades.slice(0, 5), accountId: 'acc1' }));
-    expect((all as any).error).toBeDefined();
+    expect(settled(all).error).toBeDefined();
   });
 
   it('nothing to save is a no-op success', async () => {
     const r = await makeStore().dispatch(importApi.endpoints.saveImportedTrades.initiate({ trades: [{ ...trade(1), duplicate: true }], accountId: 'a' }));
     expect(calls).toHaveLength(0);
-    expect((r as any).data).toMatchObject({ created: 0, skipped: 0, errors: 0, failed: 0 });
+    expect(settled(r).data).toMatchObject({ created: 0, skipped: 0, errors: 0, failed: 0 });
   });
 });
 
@@ -127,7 +130,7 @@ describe('insightsApi', () => {
     const store = makeStore();
     handler = () => envelope({ insight });
     const g = await store.dispatch(insightsApi.endpoints.generateInsight.initiate({ from: '2026-10-01', to: '2026-10-31' }));
-    expect((g as any).data.id).toBe(insight.id);
+    expect(settled(g).data.id).toBe(insight.id);
     expect(calls[0]).toMatchObject({ method: 'POST', body: { from: '2026-10-01', to: '2026-10-31' } });
 
     handler = () => envelope({ insights: [insight], nextCursor: null });
@@ -140,8 +143,8 @@ describe('insightsApi', () => {
   it('422 NOT_ENOUGH_TRADES keeps its error code', async () => {
     handler = () => errorEnvelope(422, { errorCode: 'NOT_ENOUGH_TRADES', message: 'At least 5 closed trades are needed' });
     const r = await makeStore().dispatch(insightsApi.endpoints.generateInsight.initiate({ from: '2026-10-01', to: '2026-10-31' }));
-    expect((r as any).error.status).toBe(422);
-    expect((r as any).error.data.errorCode).toBe('NOT_ENOUGH_TRADES');
+    expect(settled(r).error.status).toBe(422);
+    expect(settled(r).error.data.errorCode).toBe('NOT_ENOUGH_TRADES');
   });
 });
 
@@ -153,7 +156,7 @@ describe('chatApi', () => {
     const store = makeStore();
     handler = () => envelope({ session });
     const created = await store.dispatch(chatApi.endpoints.createChatSession.initiate({ title: 'x' }));
-    expect((created as any).data.id).toBe(session.id);
+    expect(settled(created).data.id).toBe(session.id);
     handler = () => envelope({ sessions: [session] });
     expect((await store.dispatch(chatApi.endpoints.listChatSessions.initiate())).data).toHaveLength(1);
     handler = () => envelope({ messages: [{ id: 'm', role: 'user', content: 'hi', createdAt: 'x' }] });
@@ -171,13 +174,13 @@ describe('chatApi', () => {
         : envelope({ messages: [] });
     const r = await makeStore().dispatch(chatApi.endpoints.sendChatMessage.initiate({ sessionId: session.id, content: 'q', onToken: (t) => tokens.push(t) }));
     expect(tokens).toEqual(['Hi ', 'there']);
-    expect((r as any).data).toMatchObject({ content: 'Hi there', done: { messageId: 'm2', usage: { remaining: 4 } } });
+    expect(settled(r).data).toMatchObject({ content: 'Hi there', done: { messageId: 'm2', usage: { remaining: 4 } } });
   });
 
   it('sendChatMessage returns a 402 as an RTK error carrying feature and limit', async () => {
     handler = () => errorEnvelope(402, { errorCode: 'QUOTA_EXCEEDED', message: 'limit', error: { code: 'QUOTA_EXCEEDED', feature: 'ai_chat', limit: 10, resetsAt: '2026-12-01T00:00:00.000Z' } });
     const r = await makeStore().dispatch(chatApi.endpoints.sendChatMessage.initiate({ sessionId: session.id, content: 'q' }));
-    expect((r as any).error).toMatchObject({ status: 402, data: { errorCode: 'QUOTA_EXCEEDED', error: { feature: 'ai_chat', limit: 10 } } });
+    expect(settled(r).error).toMatchObject({ status: 402, data: { errorCode: 'QUOTA_EXCEEDED', error: { feature: 'ai_chat', limit: 10 } } });
   });
 });
 
@@ -190,7 +193,7 @@ describe('billingApi', () => {
     expect(calls[0].url.pathname).toMatch(/\/me\/entitlements$/);
     handler = () => envelope({ url: 'https://checkout.stripe.test/c/1' });
     const co = await store.dispatch(billingApi.endpoints.createCheckout.initiate({ interval: 'year' }));
-    expect((co as any).data.url).toMatch(/^https:/);
+    expect(settled(co).data.url).toMatch(/^https:/);
     expect(calls[1]).toMatchObject({ method: 'POST', body: { interval: 'year' } });
     await store.dispatch(billingApi.endpoints.openPortal.initiate());
     expect(calls[2]).toMatchObject({ method: 'POST' });

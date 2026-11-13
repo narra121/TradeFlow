@@ -11,6 +11,8 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     pool: 'threads',
+    // Half the logical CPUs: past the physical cores, extra workers only add contention and push the slowest tests over the 5 s default without finishing the run sooner.
+    maxWorkers: '50%',
     teardownTimeout: 1000,
     deps: {
       optimizer: {

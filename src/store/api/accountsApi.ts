@@ -92,7 +92,8 @@ export const accountsApi = api.injectEndpoints({
             accountsApi.util.updateQueryData('getAccounts', undefined, (draft) => {
               const index = draft.accounts.findIndex((acc) => acc.id === id);
               if (index !== -1) {
-                draft.accounts[index] = updatedAccount;
+                // The response has no tradeCount/lastTradeDate; only the list does, so keep the cached ones.
+                draft.accounts[index] = { ...draft.accounts[index], ...updatedAccount };
               }
             })
           );
@@ -122,7 +123,7 @@ export const accountsApi = api.injectEndpoints({
             accountsApi.util.updateQueryData('getAccounts', undefined, (draft) => {
               const index = draft.accounts.findIndex((acc) => acc.id === id);
               if (index !== -1) {
-                draft.accounts[index] = updatedAccount;
+                draft.accounts[index] = { ...draft.accounts[index], ...updatedAccount };
               }
             })
           );

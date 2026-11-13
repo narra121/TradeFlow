@@ -90,7 +90,6 @@ export function InlineField<T>({ label, value, display, onCommit, children, equa
         saving.current = false;
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [value, onCommit, equals],
   );
 

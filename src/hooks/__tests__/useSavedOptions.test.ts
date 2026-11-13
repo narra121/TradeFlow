@@ -8,8 +8,8 @@ const mockToastError = vi.fn();
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
-    error: (...args: any[]) => mockToastError(...args),
-    warning: (...args: any[]) => mockToastWarning(...args),
+    error: (...args: unknown[]) => mockToastError(...args),
+    warning: (...args: unknown[]) => mockToastWarning(...args),
   },
 }));
 
@@ -18,7 +18,7 @@ const mockUseGetSavedOptionsQuery = vi.fn();
 const mockUpdateOptions = vi.fn();
 
 vi.mock('@/store/api', () => ({
-  useGetSavedOptionsQuery: (...args: any[]) => mockUseGetSavedOptionsQuery(...args),
+  useGetSavedOptionsQuery: (...args: unknown[]) => mockUseGetSavedOptionsQuery(...args),
   useUpdateSavedOptionsMutation: () => [mockUpdateOptions, { isLoading: false }],
 }));
 
@@ -561,9 +561,9 @@ describe('useSavedOptions - Error States', () => {
   });
 
   it.each([
-    ['addSymbol', (r: any) => r.addSymbol('EURUSD')],
-    ['addStrategy', (r: any) => r.addStrategy('New Strategy')],
-    ['resetToDefaults', (r: any) => r.resetToDefaults()],
+    ['addSymbol', (r: ReturnType<typeof useSavedOptions>) => r.addSymbol('EURUSD')],
+    ['addStrategy', (r: ReturnType<typeof useSavedOptions>) => r.addStrategy('New Strategy')],
+    ['resetToDefaults', (r: ReturnType<typeof useSavedOptions>) => r.resetToDefaults()],
   ])('%s never writes defaults over options that failed to load', (_name, act_) => {
     mockUseGetSavedOptionsQuery.mockReturnValue({
       data: undefined,

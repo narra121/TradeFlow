@@ -18,6 +18,7 @@ import { focusNextRegion } from '@/lib/regions';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { MobileTabBar } from '@/components/shell/MobileTabBar';
+import { useContentScroll } from '@/components/shell/useContentScroll';
 import { CommandPalette } from '@/components/shell/CommandPalette';
 import { ShortcutsDialog } from '@/components/shell/ShortcutsDialog';
 import { UpgradeDialog } from '@/components/billing/UpgradeDialog';
@@ -115,6 +116,7 @@ function AppFrame() {
   const gettingStarted = started.isLoading || started.complete ? null : { done: started.done, total: started.total };
   const importInReview = useImportPending();
   useSyncServerPreferences();
+  useContentScroll();
 
   // The icon rail takes over between 768 and 1279 px regardless of the saved preference.
   const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1280);
@@ -168,8 +170,11 @@ function AppFrame() {
     onCollapse: () => setUi({ sidebarCollapsed: !ui.sidebarCollapsed }),
   });
 
+  // One viewport tall and clipped: the document never scrolls and PaneHost's list is the only scroller. A `.sr-only` node in
+  // the list is positioned against this wrapper, not the list, so without the clip it stretches the document. `dvh` tracks
+  // a phone's collapsing URL bar; `clip` (not `hidden`) leaves the wrapper unscrollable by focus and anchors.
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-background">
+    <div className="relative h-dvh overflow-clip bg-background">
       <Helmet>
         <title>{`${title} · TradeQut`}</title>
       </Helmet>
@@ -180,7 +185,7 @@ function AppFrame() {
         <Sidebar importInReview={importInReview} collapsed={collapsed} onCollapsedChange={(c) => setUi({ sidebarCollapsed: c })} onShowShortcuts={() => setShortcutsOpen(true)} planCard={<PlanCard collapsed={collapsed} />} />
       )}
 
-      <div className={cn('flex h-screen min-w-0 flex-col', isMobile ? 'pb-14' : collapsed ? 'ml-14' : 'ml-[232px]')}>
+      <div className={cn('flex h-full min-w-0 flex-col', isMobile ? 'pb-14' : collapsed ? 'ml-14' : 'ml-[232px]')}>
         <IncidentBar />
         <TopBar isMobile={isMobile} onOpenPalette={() => setPaletteOpen(true)} onShowShortcuts={() => setShortcutsOpen(true)} />
         <ScopeBar scoped={isScopedPath(location.pathname)} isMobile={isMobile} />

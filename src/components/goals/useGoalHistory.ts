@@ -36,5 +36,5 @@ export function useGoalHistory({ accountId, totalCapital, current, enabled }: Ar
     return out;
   }, [periods, currentData]);
 
-  return { strips, loading: enabled && !currentData && !isError, failed: isError, loaded: currentData?.periods.length ?? 0 };
+  return { strips, loading: enabled && !currentData && !isError, failed: isError, loaded: currentData?.periods?.length ?? 0 };
 }

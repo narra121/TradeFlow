@@ -1,36 +1,17 @@
 import { differenceInCalendarDays } from 'date-fns';
-import { appToday, dayKeyIn } from '@/lib/appTimeZone';
+import { appToday } from '@/lib/appTimeZone';
 import { formatDateShort, parseLocalDate } from '@/lib/format';
-import type { Trade, TradingAccount } from '@/types/trade';
-
-export interface AccountTally {
-  trades: number;
-  lastTradeAt?: string;
-}
-
-export function tallyByAccount(trades: Trade[]): Map<string, AccountTally> {
-  const map = new Map<string, AccountTally>();
-  for (const t of trades) {
-    if (!t.accountId) continue;
-    const when = t.exitDate || t.entryDate;
-    const row = map.get(t.accountId) ?? { trades: 0 };
-    row.trades += 1;
-    if (!row.lastTradeAt || new Date(when).getTime() > new Date(row.lastTradeAt).getTime()) row.lastTradeAt = when;
-    map.set(t.accountId, row);
-  }
-  return map;
-}
+import type { TradingAccount } from '@/types/trade';
 
 /** `today`, `2 days ago` up to a week, then the date. */
-export function lastTradeText(iso: string | undefined, now: Date = new Date()): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  const days = differenceInCalendarDays(appToday(now), parseLocalDate(dayKeyIn(d)));
+export function lastTradeText(day: string | null | undefined, now: Date = new Date()): string {
+  if (!day) return '—';
+  const days = differenceInCalendarDays(appToday(now), parseLocalDate(day));
+  if (Number.isNaN(days)) return '—';
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';
   if (days <= 7) return `${days} days ago`;
-  return formatDateShort(iso, true);
+  return formatDateShort(day, true);
 }
 
 export function netSinceStart(a: TradingAccount): { amount: number; pct: number | null } {
@@ -61,7 +42,7 @@ export function totalsByCurrency(accounts: TradingAccount[]): CurrencyTotal[] {
 
 export type AccountSortId = 'name' | 'broker' | 'balance' | 'net' | 'trades' | 'last';
 
-export function sortAccounts(list: TradingAccount[], id: AccountSortId, dir: 'asc' | 'desc', tally: Map<string, AccountTally>): TradingAccount[] {
+export function sortAccounts(list: TradingAccount[], id: AccountSortId, dir: 'asc' | 'desc'): TradingAccount[] {
   const value = (a: TradingAccount): number | string => {
     switch (id) {
       case 'name':
@@ -73,9 +54,9 @@ export function sortAccounts(list: TradingAccount[], id: AccountSortId, dir: 'as
       case 'net':
         return netSinceStart(a).amount;
       case 'trades':
-        return tally.get(a.id)?.trades ?? 0;
+        return a.tradeCount ?? 0;
       case 'last':
-        return new Date(tally.get(a.id)?.lastTradeAt ?? 0).getTime();
+        return a.lastTradeDate ?? '';
     }
   };
   const sign = dir === 'asc' ? 1 : -1;

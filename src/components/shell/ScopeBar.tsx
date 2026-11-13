@@ -40,7 +40,7 @@ export function ScopeBar({ scoped, isMobile }: ScopeBarProps) {
     }
     return latest;
   });
-  // Only a query something is showing counts: an unsubscribed one (a goal-history period) failing says nothing about this screen.
+  // Only a query something is showing counts: an unsubscribed one left in the cache by another scope failing says nothing about this screen.
   const rejected = useAppSelector(
     (s) =>
       Object.entries(s.api.queries).find(

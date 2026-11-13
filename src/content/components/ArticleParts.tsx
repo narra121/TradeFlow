@@ -158,7 +158,7 @@ export function SignupCta({ text = 'Start a free journal' }: { text?: string }) 
       <p className="text-foreground">Log your trades, see net P&amp;L after charges and find the rules you break most.</p>
       <Link
         to="/signup"
-        className="inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        className="glow-primary inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
       >
         {text}
       </Link>

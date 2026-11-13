@@ -21,21 +21,19 @@ import { FREE_ACCOUNTS } from '@/components/billing/freeLimits';
 import { ScopeBarSlot, usePageChrome } from '@/components/shell/chrome';
 import { accountStatusLabels, accountTypeLabels } from '@/hooks/useAccounts';
 import { useEntitlements } from '@/hooks/useEntitlements';
-import { useScopeTrades } from '@/hooks/useScopeTrades';
 import { useCreateAccountMutation, useDeleteAccountMutation, useGetAccountsQuery, useUpdateAccountMutation, useUpdateAccountStatusMutation } from '@/store/api';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSelectedAccount } from '@/store/slices/accountsSlice';
-import { lastTradeText, netSinceStart, sortAccounts, statusSummary, tallyByAccount, totalsByCurrency, type AccountSortId } from '@/components/account/accountStats';
+import { lastTradeText, netSinceStart, sortAccounts, statusSummary, totalsByCurrency, type AccountSortId } from '@/components/account/accountStats';
 import { readOnlyAccountIds } from '@/lib/accountWritable';
 import { emitPlanSignal } from '@/lib/planErrors';
 import { readApiError } from '@/lib/apiError';
-import { formatDateTime, formatPercent } from '@/lib/format';
+import { formatCount, formatDateShort, formatPercent } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AccountStatus, AccountType, TradingAccount } from '@/types/trade';
 
 const STATUSES: AccountStatus[] = ['active', 'passed', 'breached', 'withdrawn', 'inactive'];
 const CONFIRM_STATUS: AccountStatus[] = ['breached', 'withdrawn'];
-const OPEN_ENDED = { startDate: '2000-01-01', endDate: '2099-12-31' } as const;
 
 export function AccountsView() {
   const dispatch = useAppDispatch();
@@ -51,9 +49,6 @@ export function AccountsView() {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const accounts = useMemo(() => data?.accounts ?? [], [data]);
-  const everything = useScopeTrades({ accountId: 'ALL', ...OPEN_ENDED }, { skip: accounts.length === 0 });
-  const tally = useMemo(() => tallyByAccount(everything.trades), [everything.trades]);
-  const capped = everything.truncated;
 
   const [sort, setSort] = useState<{ id: AccountSortId; dir: 'asc' | 'desc' }>({ id: 'name', dir: 'asc' });
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set(['other']));
@@ -160,21 +155,16 @@ export function AccountsView() {
   const needle = find.trim().toLowerCase();
   const visible = useMemo(() => accounts.filter((a) => !needle || a.name.toLowerCase().includes(needle) || (a.broker ?? '').toLowerCase().includes(needle)), [accounts, needle]);
   const groups: DataGroup<TradingAccount>[] = useMemo(() => {
-    const active = sortAccounts(visible.filter((a) => a.status === 'active'), sort.id, sort.dir, tally);
-    const other = sortAccounts(visible.filter((a) => a.status !== 'active'), sort.id, sort.dir, tally);
+    const active = sortAccounts(visible.filter((a) => a.status === 'active'), sort.id, sort.dir);
+    const other = sortAccounts(visible.filter((a) => a.status !== 'active'), sort.id, sort.dir);
     const out: DataGroup<TradingAccount>[] = [{ key: 'active', label: `Active · ${active.length}`, rows: active }];
     if (other.length) out.push({ key: 'other', label: `Other · ${other.length}`, rows: other, meta: statusSummary(other, accountStatusLabels) });
     return out;
-  }, [visible, sort, tally]);
+  }, [visible, sort]);
   const totals = useMemo(() => totalsByCurrency(visible.filter((a) => a.status === 'active')), [visible]);
   const rows = useMemo(() => groups.flatMap((g) => g.rows), [groups]);
 
   const onSort = (id: string) => setSort((s) => (s.id === id ? { id: s.id, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { id: id as AccountSortId, dir: id === 'name' || id === 'broker' ? 'asc' : 'desc' }));
-
-  const tradesText = (a: TradingAccount): string => {
-    const n = tally.get(a.id)?.trades ?? 0;
-    return capped ? `${n.toLocaleString('en-US')}+` : n.toLocaleString('en-US');
-  };
 
   const columns: DataColumn<TradingAccount>[] = [
     {
@@ -212,15 +202,15 @@ export function AccountsView() {
         );
       },
     },
-    { id: 'trades', header: 'Trades', align: 'right', sortable: true, hideBelow: 'md', cell: (a) => <span className="font-mono tabular-nums">{tradesText(a)}</span> },
+    { id: 'trades', header: 'Trades', align: 'right', sortable: true, hideBelow: 'md', cell: (a) => <span className="font-mono tabular-nums">{a.tradeCount === undefined ? '—' : formatCount(a.tradeCount)}</span> },
     {
       id: 'last',
       header: 'Last trade',
       sortable: true,
       hideBelow: 'lg',
       cell: (a) => {
-        const at = tally.get(a.id)?.lastTradeAt;
-        return <span className="text-foreground-soft" title={at ? formatDateTime(at) : undefined}>{lastTradeText(at)}</span>;
+        const day = a.lastTradeDate;
+        return <span className="text-foreground-soft" title={day ? formatDateShort(day, true) : undefined}>{lastTradeText(day)}</span>;
       },
     },
     {
@@ -257,7 +247,7 @@ export function AccountsView() {
     },
   ];
 
-  const deleteTrades = deleting ? (capped ? null : tally.get(deleting.id)?.trades ?? 0) : 0;
+  const deleteTrades = deleting ? deleting.tradeCount ?? null : 0;
 
   const body = () => {
     if (isError) return <ErrorState title="Couldn’t load your accounts." description="Try again." error={error} onRetry={() => void refetch()} />;
@@ -298,7 +288,6 @@ export function AccountsView() {
             ))}
           </dl>
         )}
-        {capped && <p className="text-xs text-muted-foreground">Trade counts cover the newest 5,000 trades.</p>}
       </div>
     );
   };

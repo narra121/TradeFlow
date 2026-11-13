@@ -1,3 +1,4 @@
+import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImageViewerModal } from '../ImageViewerModal';
@@ -10,13 +11,13 @@ vi.mock('@/hooks/useCachedImage', () => ({
 
 // Mock Dialog from radix to render inline
 vi.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ children, open }: any) => open ? <div data-testid="dialog">{children}</div> : null,
-  DialogContent: ({ children, className }: any) => <div data-testid="dialog-content" className={className}>{children}</div>,
-  DialogTitle: ({ children }: any) => <h2>{children}</h2>,
+  Dialog: ({ children, open }: { children?: ReactNode; open?: boolean }) => open ? <div data-testid="dialog">{children}</div> : null,
+  DialogContent: ({ children, className }: { children?: ReactNode; className?: string }) => <div data-testid="dialog-content" className={className}>{children}</div>,
+  DialogTitle: ({ children }: { children?: ReactNode }) => <h2>{children}</h2>,
 }));
 
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, disabled, className, ...props }: any) => (
+  Button: ({ children, onClick, disabled, className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button onClick={onClick} disabled={disabled} className={className} {...props}>
       {children}
     </button>
@@ -24,18 +25,18 @@ vi.mock('@/components/ui/button', () => ({
 }));
 
 vi.mock('@/components/ui/badge', () => ({
-  Badge: ({ children, ...props }: any) => <span data-testid="badge" {...props}>{children}</span>,
+  Badge: ({ children, ...props }: HTMLAttributes<HTMLSpanElement>) => <span data-testid="badge" {...props}>{children}</span>,
 }));
 
 vi.mock('@/components/ui/skeleton', () => ({
-  Skeleton: ({ className }: any) => <div data-testid="skeleton" className={className} />,
+  Skeleton: ({ className }: { className?: string }) => <div data-testid="skeleton" className={className} />,
 }));
 
 vi.mock('lucide-react', () => ({
   ZoomIn: () => <span data-testid="icon-zoom-in" />,
   ZoomOut: () => <span data-testid="icon-zoom-out" />,
   Minimize2: () => <span data-testid="icon-minimize" />,
-  X: ({ className }: any) => <span data-testid="icon-x" className={className} />,
+  X: ({ className }: { className?: string }) => <span data-testid="icon-x" className={className} />,
   Eye: () => <span data-testid="icon-eye" />,
   EyeOff: () => <span data-testid="icon-eye-off" />,
   RotateCcw: () => <span data-testid="icon-rotate" />,

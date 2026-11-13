@@ -263,6 +263,7 @@ describe('login', () => {
   });
 
   it('counts down the wait from errors[0].retryAfter, blocks the button, then says you can try again', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     login.mockRejectedValue({ status: 429, data: { errorCode: 'RATE_LIMITED', message: 'Too many', errors: [{ retryAfter: 3 }] } });
     setup();
     await submitLogin();
@@ -270,7 +271,8 @@ describe('login', () => {
     expect(alertText()).toContain('Log in is paused for this email. Try again in 0:0');
     const button = screen.getByRole('button', { name: 'Log in' });
     expect(button).toHaveAttribute('aria-disabled', 'true');
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('You can try again now.'), { timeout: 5000 });
+    for (let i = 0; i < 3; i++) act(() => void vi.advanceTimersByTime(1000));
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('You can try again now.'));
     expect(screen.getByRole('button', { name: 'Log in' })).not.toHaveAttribute('aria-disabled');
   });
 

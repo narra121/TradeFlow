@@ -40,6 +40,12 @@ const setNetPnl = (text: string) => {
   fireEvent.change(screen.getByLabelText(/^Net P&L/), { target: { value: text } });
 };
 
+// One input event per field: typing char by char re-renders the whole form on every key.
+const fill = async (label: RegExp, text: string) => {
+  await userEvent.click(screen.getByLabelText(label));
+  await userEvent.paste(text);
+};
+
 describe('TradeForm.submit reports whether the trade was saved (FE-003)', () => {
   beforeEach(() => {
     sessionStorage.clear();
@@ -174,13 +180,13 @@ describe('TradeForm create sends one Idempotency-Key per request body (FE-005)',
         <TradeForm ref={ref} mode="new" defaultAccountIds={['a1']} onSaved={vi.fn()} onCancel={vi.fn()} />
       </MemoryRouter>,
     );
-    await userEvent.type(screen.getByLabelText(/^Symbol/), 'EURUSD');
+    await fill(/^Symbol/, 'EURUSD');
     await userEvent.type(screen.getByLabelText(/^Entry price/), '1.1');
     await userEvent.type(screen.getByLabelText(/^Exit price/), '1.2');
-    await userEvent.type(screen.getByLabelText(/^Lots/), '1');
-    await userEvent.type(screen.getByLabelText(/^Opened/), '4 Nov 2026, 10:00');
+    await fill(/^Lots/, '1');
+    await fill(/^Opened/, '4 Nov 2026, 10:00');
     await userEvent.tab();
-    await userEvent.type(screen.getByLabelText(/^Closed/), '4 Nov 2026, 11:00');
+    await fill(/^Closed/, '4 Nov 2026, 11:00');
     await userEvent.tab();
     return ref;
   }
@@ -202,11 +208,11 @@ describe('TradeForm create sends one Idempotency-Key per request body (FE-005)',
     await act(async () => {
       await ref.current!.submit({ addAnother: true });
     });
-    await userEvent.type(screen.getByLabelText(/^Symbol/), 'GBPUSD');
+    await fill(/^Symbol/, 'GBPUSD');
     await userEvent.type(screen.getByLabelText(/^Entry price/), '1.3');
     await userEvent.type(screen.getByLabelText(/^Exit price/), '1.4');
-    await userEvent.type(screen.getByLabelText(/^Lots/), '1');
-    await userEvent.type(screen.getByLabelText(/^Closed/), '4 Nov 2026, 12:00');
+    await fill(/^Lots/, '1');
+    await fill(/^Closed/, '4 Nov 2026, 12:00');
     await userEvent.tab();
     await act(async () => {
       await ref.current!.submit({ addAnother: true });

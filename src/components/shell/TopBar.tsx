@@ -26,7 +26,7 @@ export function TopBar({ onOpenPalette, onShowShortcuts, isMobile }: TopBarProps
 
   const tabsNav =
     tabs && tabs.length > 0 ? (
-      <nav aria-label="Views" className={cn('flex items-center gap-1 overflow-x-auto', isMobile ? 'h-10 border-t border-border px-3' : 'min-w-0')}>
+      <nav aria-label="Views" className={cn('flex items-center gap-1 overflow-x-auto', isMobile ? 'h-10 border-t border-border px-3' : 'min-w-0 self-stretch')}>
         {tabs.map((t) => {
           const cls = cn(
             'relative flex shrink-0 items-center gap-1 px-2 text-13 font-medium',

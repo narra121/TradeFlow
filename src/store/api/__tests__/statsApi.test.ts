@@ -12,7 +12,7 @@ import { statsApi, useGetStatsQuery } from '../statsApi';
 //    type string embeds the endpoint name).
 // ---------------------------------------------------------------------------
 
-const getStatsEndpoint = (statsApi as any).endpoints.getStats;
+const getStatsEndpoint = statsApi.endpoints.getStats;
 
 describe('statsApi', () => {
   describe('getStats endpoint', () => {
@@ -95,7 +95,7 @@ describe('statsApi', () => {
     });
 
     it('uses the shared api reducer path', () => {
-      expect((statsApi as any).reducerPath).toBe('api');
+      expect(statsApi.reducerPath).toBe('api');
     });
 
     it('exports useGetStatsQuery hook', () => {

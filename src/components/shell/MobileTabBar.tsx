@@ -36,7 +36,7 @@ export function MobileTabBar({ onAddTrade }: MobileTabBarProps) {
           </NavLink>
         ))}
         <button type="button" onClick={onAddTrade} className={cn(tabClass, 'text-foreground')} aria-label="Add trade">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <span className="glow-primary flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Plus className="h-5 w-5" aria-hidden="true" />
           </span>
         </button>

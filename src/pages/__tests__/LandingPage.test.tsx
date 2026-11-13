@@ -22,12 +22,13 @@ beforeAll(() => {
 });
 
 describe('LandingPage', () => {
+  // The first render in a fresh worker pays the module and JIT warm-up: about 1 s alone, 5 s with two suites running at once.
   it('has one h1 that states the value proposition', () => {
     renderWithProviders(<LandingPage />);
     const h1s = screen.getAllByRole('heading', { level: 1 });
     expect(h1s).toHaveLength(1);
     expect(h1s[0]).toHaveTextContent('The trading journal that shows what your rules cost you.');
-  });
+  }, 15_000);
 
   it('invents no social proof: no counts, ratings, testimonials or rankings', () => {
     const { container } = renderWithProviders(<LandingPage />);
