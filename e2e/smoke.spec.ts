@@ -18,7 +18,8 @@ test.describe('Landing page', () => {
     await page.goto('/');
 
     await expect(page.getByRole('heading', { level: 1, name: 'The trading journal that shows what your rules cost you.' })).toBeVisible();
-    await expect(page.getByText('14-day Pro trial. No card.').first()).toBeVisible();
+    // CONTRACT revision 4 (owner, 2026-11-13): a 14-day free trial with every Pro feature, no Free plan.
+    await expect(page.getByText('14-day free trial. No card.').first()).toBeVisible();
     expect(errors).toEqual([]);
   });
 
@@ -47,12 +48,20 @@ test.describe('Landing page', () => {
     await expect(pricing.getByText('₹499')).toBeVisible();
   });
 
-  test('the product tour tabs are keyboard operable and labelled as sample data', async ({ page }) => {
+  // The tabbed product tour was replaced by the hero cursor demo and scroll chapters (DESIGN-SHARED S7.2): the demo is
+  // labelled as sample data, and its motion control works from the keyboard (WCAG 2.2.2).
+  test('the product demo is labelled as sample data and its motion control is keyboard operable', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('Sample data')).toBeVisible();
-    await page.getByRole('tab', { name: 'Calendar' }).focus();
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('tab', { name: 'Trade review' })).toHaveAttribute('aria-selected', 'true');
+    const hero = page.locator('section', { has: page.getByRole('heading', { level: 1 }) });
+    await expect(hero.getByRole('img', { name: /^Sample data: / })).toBeVisible();
+    await expect(hero.getByText('Sample data', { exact: true }).first()).toBeVisible();
+    const pause = page.getByRole('button', { name: 'Pause animations' });
+    await pause.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Play animations' })).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Pause animations' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByRole('group', { name: 'Chapters' }).getByRole('button')).toHaveCount(3);
   });
 
   test('works at a phone width: menu opens and nothing overflows horizontally', async ({ page }) => {

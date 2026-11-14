@@ -89,7 +89,8 @@ test.describe('Authentication - Signup Page', () => {
     await expect(page.getByLabel('Confirm password')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Create account' })).toBeVisible();
     await expect(page.getByRole('complementary').getByText('Sample data')).toBeVisible();
-    await expect(page.getByText('14-day Pro trial. No card.')).toBeVisible();
+    // CONTRACT revision 4 (owner, 2026-11-13): a 14-day free trial with every Pro feature, no Free plan.
+    await expect(page.getByText('14-day free trial. No card.')).toBeVisible();
   });
 
   test('Log in in the header opens login', async ({ page }) => {
