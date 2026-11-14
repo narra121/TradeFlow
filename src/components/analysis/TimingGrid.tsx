@@ -47,7 +47,7 @@ export function TimingGrid({ grid, currency, zone }: { grid: Grid; currency?: st
                 const cell = row.cells[h];
                 if (!cell) return <td key={h} className="h-8 rounded-sm bg-muted/20" aria-label={`${row.day} ${h}:00, no trades`} />;
                 const grey = cell.trades < MIN_VERDICT_TRADES;
-                const shown = formatCompactMoney(cell.net, { currency, symbol: false });
+                const shown = formatCompactMoney(cell.net, { currency, sign: true });
                 const name = `${row.day} ${String(h).padStart(2, '0')}:00, net ${formatMoney(cell.net, currency, { sign: true })}, ${cell.trades} ${cell.trades === 1 ? 'trade' : 'trades'}, win rate ${formatPercent(cell.winRate, 0)}${grey ? ', too few trades to tell' : ''}`;
                 return (
                   <td key={h} className="p-0">

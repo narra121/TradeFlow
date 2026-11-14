@@ -14,6 +14,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTradeParam } from '@/hooks/useTradeParam';
 import { useAppSelector } from '@/store/hooks';
 import { useGenerateInsightMutation, useGetInsightSettingsQuery, useLazyListInsightsQuery, useListInsightsQuery } from '@/store/api/insightsApi';
+import { useGetStatsQuery } from '@/store/api/statsApi';
+import { plural } from '@/lib/evidence';
 import { clampedLabel, isMixedCurrency, periodLabel, reportAsText, reportRange, tradesInMessage } from '@/lib/ai/insightFormat';
 import { formatDateShort } from '@/lib/format';
 import { readApiError } from '@/lib/apiError';
@@ -26,6 +28,8 @@ import { NotesSwitch } from './NotesSwitch';
 import { ReportBody } from './ReportBody';
 
 const REPORT_PAGE = 50;
+/** Closed trades a report needs (the server's NOT_ENOUGH_TRADES rule, JournalAWSSetup insights/metrics.ts MIN_TRADES). */
+const MIN_REPORT_TRADES = 5;
 
 type Problem = { kind: 'min'; message: string } | { kind: 'failed'; message: string } | { kind: 'api'; message: string } | { kind: 'mixed'; message: string };
 
@@ -76,6 +80,11 @@ export function InsightsView() {
   const scopeLabel = range.clamped ? clampedLabel(range.to) : periodLabel(range.from, range.to);
   // A report adds its figures up, so it is made for one currency: choose an account first.
   const mixed = isMixedCurrency(accounts, selectedAccountId);
+  // Trades in the report's range (all trades, open ones too): under the minimum the request cannot succeed.
+  const { data: scopeStats } = useGetStatsQuery({ accountId: selectedAccountId ?? 'ALL', startDate: range.from, endDate: range.to });
+  const scopeTrades = scopeStats?.totalTrades;
+  const tooFew = typeof scopeTrades === 'number' && scopeTrades < MIN_REPORT_TRADES;
+  const tooFewText = tooFew ? `A report needs at least ${MIN_REPORT_TRADES} closed trades; this scope has ${plural(scopeTrades!, 'trade')}.` : null;
 
   const loadMore = async () => {
     if (!nextCursor) return;
@@ -126,7 +135,7 @@ export function InsightsView() {
   const controls = (
     <>
       {meter && <span className="whitespace-nowrap font-mono text-xs tabular-nums text-muted-foreground">{meter}</span>}
-      <Button type="button" size="sm" variant="outline" onClick={run} disabled={generating || mixed} className="whitespace-nowrap">
+      <Button type="button" size="sm" variant="outline" onClick={run} disabled={generating || mixed || tooFew} title={tooFewText ?? undefined} className="whitespace-nowrap">
         {generating ? 'Generating…' : generateLabel}
       </Button>
     </>
@@ -234,7 +243,8 @@ export function InsightsView() {
       <p className="text-13 text-muted-foreground">
         A report reads the closed trades in the account and period shown above and lists what made money, what lost it and the pattern behind each, with the trades to check. It needs at least 5 closed trades in the period.
       </p>
-      <Button type="button" onClick={run} disabled={generating || mixed}>{generateLabel}</Button>
+      <Button type="button" variant="outline" onClick={run} disabled={generating || mixed || tooFew}>{generateLabel}</Button>
+      {tooFewText && <p className="text-13 text-muted-foreground">{tooFewText}</p>}
     </div>
   );
 
@@ -255,7 +265,8 @@ export function InsightsView() {
           ) : (
             <>
               {accountChoice}
-              <Button type="button" onClick={run} disabled={generating || mixed} className="w-full">{generateLabel}</Button>
+              <Button type="button" variant="outline" onClick={run} disabled={generating || mixed || tooFew} className="w-full">{generateLabel}</Button>
+              {tooFewText && <p className="text-13 text-muted-foreground">{tooFewText}</p>}
               {meter && <p className="font-mono text-xs tabular-nums text-muted-foreground">{meter}</p>}
               {list}
               <NotesSwitch className="border-t border-border px-3 pt-3" />

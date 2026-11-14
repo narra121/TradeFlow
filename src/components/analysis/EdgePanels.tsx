@@ -112,7 +112,7 @@ export function TwoWayPanel({ scope, by, then, currency, zone }: { scope: Analys
                     <td className="hidden px-3 md:table-cell"><EvidenceText verdict={c.verdict} trades={c.trades} inline className="text-xs" /></td>
                     <td className="px-1">
                       {href && (
-                        <Link to={href} aria-label={`Open ${plural(c.trades, 'trade')} for ${c.a} and ${c.b} in Trades`} className="flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <Link to={href} aria-label={`Open ${plural(c.trades, 'trade')} for ${c.a} and ${c.b} in Trades`} className="flex h-6 w-6 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                           <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                         </Link>
                       )}

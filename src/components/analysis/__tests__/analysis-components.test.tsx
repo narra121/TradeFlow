@@ -77,6 +77,8 @@ describe('BreakdownExplorer', () => {
     await user.keyboard('{Enter}');
     expect(screen.getByTestId('where')).toHaveTextContent('/app/tradelog?strategy=Reversal&src=analytics');
     expect(screen.getByRole('link', { name: 'Open 14 trades for Breakout in Trades' })).toHaveAttribute('href', '/app/tradelog?strategy=Breakout&src=analytics');
+    // 44 px on touch screens (24 px with a mouse).
+    expect(screen.getByRole('link', { name: 'Open 14 trades for Breakout in Trades' }).className).toMatch(/\[@media\(pointer:coarse\)\]:h-11 \[@media\(pointer:coarse\)\]:w-11/);
   });
 
   it('draws the avg R column only when the server sent it', () => {
@@ -99,8 +101,8 @@ describe('TimingGrid', () => {
   it('names every cell with value, count and win rate and states the zone', () => {
     wrap(<TimingGrid grid={grid} currency="USD" zone="UTC" />);
     // The name starts with the figure printed in the cell (WCAG 2.5.3).
-    expect(screen.getByRole('link', { name: '50, Monday 09:00, net +$50.00, 4 trades, win rate 75%, too few trades to tell' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^−20, Monday 10:00/ })).toHaveTextContent(/^−20/);
+    expect(screen.getByRole('link', { name: '+$50, Monday 09:00, net +$50.00, 4 trades, win rate 75%, too few trades to tell' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^−\$20, Monday 10:00/ })).toHaveTextContent(/^−\$20/);
     expect(screen.getByText(/^Times in UTC\./)).toBeInTheDocument();
   });
 
@@ -142,10 +144,13 @@ describe('StatementPanel', () => {
     render(<StatementPanel ctx={ctx({ prev, prevRange: { startDate: '', endDate: '', name: 'Oct', spokenName: 'October' } })} />);
     expect(screen.getByRole('region', { name: 'Performance' })).toBeInTheDocument();
     expect(screen.getByText('+$3,204.10')).toBeInTheDocument();
+    expect(screen.getByText('58.8% · 68 trades')).toBeInTheDocument();
     expect(screen.getByText('up $410.00 versus October')).toBeInTheDocument();
     expect(screen.getByText('down 0.6 pts versus October, better')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Planned R:R' })).toBeInTheDocument();
     expect(screen.getByText('−$121.40')).toBeInTheDocument();
+    // Statement labels are 44 px tall on touch screens.
+    expect(screen.getByRole('button', { name: 'Planned R:R' }).className).toContain('[@media(pointer:coarse)]:min-h-11');
   });
 
   it('says there is nothing to compare with when the previous period has no trades, and prints no change', () => {

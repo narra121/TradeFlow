@@ -41,6 +41,8 @@ vi.mock('@/store/api/insightsApi', () => ({
 }));
 vi.mock('@/store/api/analysisApi', () => ({ useGetFocusRuleQuery: () => ({ data: null }) }));
 vi.mock('@/lib/analytics', () => ({ trackAiInsightGenerated: vi.fn() }));
+let scopeTrades: number | undefined;
+vi.mock('@/store/api/statsApi', () => ({ useGetStatsQuery: () => ({ data: scopeTrades === undefined ? undefined : { totalTrades: scopeTrades } }) }));
 
 const insight = (p: Partial<Insight> = {}): Insight => ({
   id: 'i1',
@@ -87,6 +89,7 @@ const renderView = (route = '/app/insights') => {
 };
 
 beforeEach(() => {
+  scopeTrades = undefined;
   readOnly = false;
   generate.mockReset();
   loadPage.mockReset();
@@ -250,6 +253,26 @@ describe('InsightsView generating', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     });
     expect(generate).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('InsightsView with too few trades', () => {
+  it('disables every Generate button and says why when the scope has under 5 trades (the request could only fail)', () => {
+    insights = [];
+    scopeTrades = 0;
+    renderView();
+    const buttons = screen.getAllByRole('button').filter((b) => /^Generate report/.test(b.textContent ?? ''));
+    expect(buttons.length).toBe(2);
+    buttons.forEach((b) => expect(b).toBeDisabled());
+    expect(screen.getByText('A report needs at least 5 closed trades; this scope has 0 trades.')).toBeInTheDocument();
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it('keeps Generate enabled from 5 trades', () => {
+    insights = [];
+    scopeTrades = 5;
+    renderView();
+    screen.getAllByRole('button').filter((b) => /^Generate report/.test(b.textContent ?? '')).forEach((b) => expect(b).toBeEnabled());
   });
 });
 

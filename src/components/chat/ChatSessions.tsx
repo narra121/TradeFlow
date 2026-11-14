@@ -16,10 +16,12 @@ interface ChatSessionsProps {
 /** Left list, grouped Today / Yesterday / Earlier. */
 export function ChatSessions({ sessions, loading, activeId, onSelect, onDelete }: ChatSessionsProps) {
   if (loading) return <div className="space-y-1 p-3"><Skeleton className="h-9" /><Skeleton className="h-9" /></div>;
-  if (sessions.length === 0) return <p className="px-3 py-2 text-13 text-muted-foreground">No chats yet.</p>;
+  // A chat whose first question never got an answer (left, asked for an account, failed) holds nothing to go back to.
+  const shown = sessions.filter((s) => s.messageCount > 0 || s.id === activeId);
+  if (shown.length === 0) return <p className="px-3 py-2 text-13 text-muted-foreground">No chats yet.</p>;
   return (
     <div>
-      {groupSessions(sessions).map((g) => (
+      {groupSessions(shown).map((g) => (
         <section key={g.label} aria-label={g.label}>
           <h3 className="px-3 pb-1 pt-3 text-2xs font-medium uppercase tracking-wide text-muted-foreground">{g.label}</h3>
           <ul>
@@ -28,7 +30,7 @@ export function ChatSessions({ sessions, loading, activeId, onSelect, onDelete }
               const title = s.title || 'New chat';
               return (
                 <li key={s.id} className={cn('flex items-center border-l-2', on ? 'border-primary bg-muted' : 'border-transparent hover:bg-muted')}>
-                  <button type="button" onClick={() => onSelect(s.id)} aria-current={on ? 'true' : undefined} className="min-h-10 min-w-0 flex-1 truncate px-3 text-left text-13">
+                  <button type="button" onClick={() => onSelect(s.id)} aria-current={on ? 'true' : undefined} title={title} className="min-h-10 min-w-0 flex-1 truncate px-3 text-left text-13">
                     {title}
                   </button>
                   <Button type="button" variant="ghost" size="icon-sm" aria-label={`Delete chat ${title}`} onClick={() => onDelete(s.id)} className="mr-1 shrink-0 text-muted-foreground">

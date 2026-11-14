@@ -50,7 +50,8 @@ export function reportAsText(insight: Insight, title: string): string {
     }
   }
   lines.push('Based on your journal data. Not investment advice.');
-  return lines.join('\n');
+  // The word joiners of trueMinus only steer line breaks on screen; pasted text should not carry them.
+  return lines.join('\n').replace(/⁠/g, '');
 }
 
 /** Count from the API's NOT_ENOUGH_TRADES message (`… this period has 3.`), when present. */
@@ -61,7 +62,8 @@ export function tradesInMessage(message: string | undefined): number | null {
 
 /** The model and the API print negatives with a hyphen; a minus sign in front of a figure is the true minus (D.3). */
 export function trueMinus(text: string): string {
-  return text.replace(/(^|[\s(:])-(?=\d)/g, '$1−');
+  // A word joiner keeps a sign on the line of the currency symbol after it (a line may break between the two).
+  return text.replace(/(^|[\s(:])-(?=[\d₹$€£¥])/g, '$1−').replace(/([−+])(?=[₹$€£¥])/g, '$1⁠');
 }
 
 /** Several currencies are in scope: no account chosen and the accounts do not share one currency. */

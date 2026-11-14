@@ -65,7 +65,7 @@ function BehaviourTable({ title, rows, param, ctx, empty, baseline, baselineName
       srHeader: true,
       width: 'w-10',
       cell: (r) => (
-        <Link to={tradesHref(param, r.key)} aria-label={`Open ${r.trades} ${r.trades === 1 ? 'trade' : 'trades'} for ${r.name} in Trades`} className="flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <Link to={tradesHref(param, r.key)} aria-label={`Open ${r.trades} ${r.trades === 1 ? 'trade' : 'trades'} for ${r.name} in Trades`} className="flex h-6 w-6 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       ),

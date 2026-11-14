@@ -104,6 +104,10 @@ describe('trueMinus and isMixedCurrency', () => {
     expect(trueMinus('net -55,679.06 (-1.5%) and Break-even -3')).toBe('net −55,679.06 (−1.5%) and Break-even −3');
     expect(trueMinus('long-term 2026-11-12')).toBe('long-term 2026-11-12');
   });
+  it('keeps a sign joined to the currency symbol after it, so a line never breaks between them', () => {
+    expect(trueMinus('puts the week at -₹9,115.03 and +$12.50')).toBe('puts the week at −⁠₹9,115.03 and +⁠$12.50');
+    expect(trueMinus('cost: −₹13,078.83')).toBe('cost: −⁠₹13,078.83');
+  });
   it('is mixed only for no chosen account and more than one currency', () => {
     const accts = [{ currency: 'USD' }, { currency: 'INR' }];
     expect(isMixedCurrency(accts, null)).toBe(true);

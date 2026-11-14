@@ -6,6 +6,7 @@ import { MetricInfo } from '@/components/stats/MetricInfo';
 import type { MetricKey } from '@/components/stats/metricDefs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { realisedRStat, rNoteLine } from '@/lib/analyticsRows';
+import { plural } from '@/lib/evidence';
 import { formatDateShort, formatPercent, formatProfitFactor } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AnalyticsContext } from './drill';
@@ -25,7 +26,7 @@ interface RowProps {
 function Row({ metric, label, value, delta, wide, note, sample }: RowProps) {
   return (
     <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3">
-      <dt className="truncate text-[13px] text-foreground-soft"><MetricInfo metric={metric} label={label} sample={sample} /></dt>
+      <dt className="truncate text-[13px] text-foreground-soft"><MetricInfo metric={metric} label={label} sample={sample} className="[@media(pointer:coarse)]:min-h-11" /></dt>
       {/* The change column is reserved only while a comparison is shown, so labels keep their room otherwise. */}
       <dd className={cn('grid items-baseline gap-x-3 text-right', !wide && delta !== undefined && 'sm:grid-cols-[7rem_7.5rem]')}>
         <span className={cn('font-mono text-[13px] font-medium tabular-nums', !wide && delta !== undefined && 'sm:col-start-1')}>{value}</span>
@@ -43,7 +44,7 @@ function Column({ title, children, collapsible, defaultOpen }: { title: string; 
     <section aria-label={title} className="min-w-0 bg-card px-4 py-3">
       <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {collapsible ? (
-          <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex w-full items-center justify-between py-1 uppercase tracking-wide">
+          <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex w-full items-center justify-between py-1 uppercase tracking-wide [@media(pointer:coarse)]:min-h-11">
             {title}
             <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} aria-hidden="true" />
           </button>
@@ -81,7 +82,7 @@ export function StatementPanel({ ctx }: { ctx: AnalyticsContext }) {
           <Row metric="netPnl" value={money(s.totalPnl)} delta={moneyDelta(s.totalPnl, prev?.totalPnl)} />
           <Row metric="expectancy" value={money(s.expectancy)} delta={moneyDelta(s.expectancy, prev?.expectancy)} />
           <Row metric="profitFactor" value={formatProfitFactor(s.profitFactor, wins, s.totalTrades)} delta={prev ? <Delta kind="ratio" current={s.profitFactor} previous={prev.profitFactor} {...d} /> : undefined} />
-          <Row metric="winRate" value={`${formatPercent(s.winRate)} · ${s.totalTrades} tr`} delta={prev ? <Delta kind="pts" current={s.winRate} previous={prev.winRate} {...d} /> : undefined} />
+          <Row metric="winRate" value={`${formatPercent(s.winRate)} · ${plural(s.totalTrades, 'trade')}`} delta={prev ? <Delta kind="pts" current={s.winRate} previous={prev.winRate} {...d} /> : undefined} />
         </Column>
         <Column title="Trades" collapsible={mobile} defaultOpen={false}>
           <Row metric="trades" value={s.totalTrades} delta={prev ? <Delta kind="count" current={s.totalTrades} previous={prev.totalTrades} {...d} /> : undefined} />

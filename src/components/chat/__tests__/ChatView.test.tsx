@@ -75,6 +75,23 @@ beforeEach(() => {
   createSession.mockReturnValue(call({ id: 's-new', title: '', createdAt: '', updatedAt: '', messageCount: 0 }));
 });
 
+describe('ChatView chat list', () => {
+  it('leaves out chats without a message (unless open) and gives every title its full text as a tooltip', () => {
+    const long = 'Which setup has made me the most money over the last three months on FTMO?';
+    sessions = [session('s1', long), { ...session('e1', ''), messageCount: 0 }, { ...session('e2', ''), messageCount: 0 }];
+    renderChat();
+    const list = screen.getByRole('complementary', { name: 'Chats' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(list).getByRole('button', { name: long })).toHaveAttribute('title', long);
+  });
+
+  it('keeps the open chat in the list even before its first answer', () => {
+    sessions = [{ ...session('e1', ''), messageCount: 0 }];
+    renderChat('/app/chat?s=e1');
+    expect(within(screen.getByRole('complementary', { name: 'Chats' })).getAllByRole('listitem')).toHaveLength(1);
+  });
+});
+
 describe('ChatView empty thread', () => {
   it('offers the four calculation starters and names the account and period the answers use', () => {
     renderChat();

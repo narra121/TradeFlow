@@ -48,7 +48,7 @@ function sortValue(r: DistributionRow, id: SortId, index: number, perDay: boolea
 /** Averages of a row the server did not judge are printed without profit/loss colour: a small sample is not a finding. */
 const unjudged = (r: DistributionRow) => r.verdict === 'watch';
 
-const linkClass = 'flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+const linkClass = 'flex h-6 w-6 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 /** The breakdown explorer (E-060): ranked rows with an inline bar, sortable, every row opens the matching trades. */
 export function BreakdownExplorer({ dimension, rows, currency, rowHref, onOpenIds, caption, initialSort, perDay = false, footnote = true, totals: showTotals = true }: BreakdownExplorerProps) {
