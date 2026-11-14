@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main, develop]
 
+# vite.config.ts refuses to start or build without these.
+env:
+  VITE_API_URL: ${{ secrets.VITE_API_URL_DEV }}
+  VITE_COGNITO_USER_POOL_ID: ${{ secrets.VITE_COGNITO_USER_POOL_ID_DEV }}
+  VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID_DEV }}
+
 jobs:
   unit-tests:
     name: Unit & Component Tests

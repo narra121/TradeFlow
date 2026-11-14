@@ -128,7 +128,8 @@ describe('addFiles', () => {
       act(() => importFlow.set({ source: 'generic_csv' }));
       parse.mockReturnValue(call(parsed({ detectedSource: 'generic_csv' })));
       await run((x) => x.addFiles([csv()]));
-      expect(parse.mock.calls[0][0].utcOffsetMinutes).toBe(-new Date().getTimezoneOffset());
+      // `|| 0`: in UTC the negation gives -0, which toBe (Object.is) does not equal to the 0 sent.
+      expect(parse.mock.calls[0][0].utcOffsetMinutes).toBe(-new Date().getTimezoneOffset() || 0);
     });
 
     it('the generic fallback after auto-detect finds no broker sends it too, and so does a column mapping', async () => {
