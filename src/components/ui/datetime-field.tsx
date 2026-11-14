@@ -60,7 +60,7 @@ export function DateTimeField({ id, value, onChange, onBlur, showNow, className,
           value={text}
           inputMode="text"
           autoComplete="off"
-          placeholder="4 Nov 2026, 14:30"
+          placeholder="e.g. 4 Nov 2026, 14:30"
           onChange={(e) => setText(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {

@@ -66,7 +66,7 @@ describe('TradeForm dates (R-fe-app-013)', () => {
   it('shows Opened and Closed as typed 24-hour text and parses what is typed on blur', async () => {
     setup();
     const opened = screen.getByLabelText(/^Opened/);
-    expect(opened).toHaveAttribute('placeholder', '4 Nov 2026, 14:30');
+    expect(opened).toHaveAttribute('placeholder', 'e.g. 4 Nov 2026, 14:30');
     await userEvent.type(opened, '4 Nov 2026, 14:30');
     await userEvent.tab();
     expect(opened).toHaveValue('04 Nov 2026, 14:30'); // typed unpadded, shown in the one date format

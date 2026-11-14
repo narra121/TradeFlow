@@ -89,3 +89,11 @@ describe('flat surfaces (DESIGN-SHARED S1.3, S3.2, S4.1)', () => {
     expect(thumb?.className).not.toMatch(/shadow/);
   });
 });
+
+describe('DateTimeField placeholder (R-020)', () => {
+  it('reads as an example, not as a value that is already filled in', async () => {
+    const { DateTimeField } = await import('../datetime-field');
+    render(<DateTimeField value="" onChange={() => undefined} aria-label="Opened" />);
+    expect(screen.getByLabelText('Opened')).toHaveAttribute('placeholder', 'e.g. 4 Nov 2026, 14:30');
+  });
+});

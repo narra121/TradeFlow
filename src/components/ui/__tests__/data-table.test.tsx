@@ -103,6 +103,17 @@ describe('DataTable', () => {
     expect(onToggleGroup).toHaveBeenCalledWith('g2');
   });
 
+  it('keeps the group totals as far from the right edge as the cells, also while they stick (R-003)', () => {
+    render(<DataTable caption="Things" rows={rows} columns={columns} getRowId={(r) => r.id} groups={[{ key: 'g1', label: 'First', rows, summary: '+10' }]} />);
+    const total = screen.getByText('+10');
+    // The header cell's px-3 is cancelled (-mr-3) and given back inside the sticky total, so it sits 12 px from the
+    // edge whether the table scrolls sideways (sticky right-0) or not.
+    expect(total.className).toContain('sticky');
+    expect(total.className).toContain('right-0');
+    expect(total.className).toContain('-mr-3');
+    expect(total.className).toContain('pr-3');
+  });
+
   it('marks the open row and sizes rows by density', () => {
     const { rerender } = render(<DataTable caption="Things" rows={rows} columns={columns} getRowId={(r) => r.id} openId="b" />);
     expect(dataRows()[1]).toHaveAttribute('data-state', 'open');

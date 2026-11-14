@@ -402,7 +402,7 @@ export function DataTable<T>({
             {open ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}
             <span className="font-medium text-foreground">{g.label}</span>
             {g.meta && <span className="text-muted-foreground">{g.meta}</span>}
-            {g.summary && <span className="sticky right-0 ml-auto flex items-center gap-3 bg-background pl-3 font-mono tabular-nums">{g.summary}</span>}
+            {g.summary && <span className="sticky right-0 ml-auto flex items-center gap-3 -mr-3 bg-background pl-3 pr-3 font-mono tabular-nums">{g.summary}</span>}
           </button>
         </th>
       </tr>
