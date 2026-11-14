@@ -87,7 +87,7 @@ export default function ImportingTradesFromBroker() {
       <H2>Monthly limits</H2>
       <Table
         caption="Import limits by plan"
-        head={['', 'Free trial', 'Pro']}
+        head={['Feature', 'Free trial', 'Pro']}
         rows={[
           ['Broker file imports', imports?.trial ?? '', imports?.pro ?? ''],
           ['AI extraction from screenshots', extraction?.trial ?? '', extraction?.pro ?? ''],

@@ -1,52 +1,72 @@
 User-agent: *
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 # Search and AI assistants may read the public pages (see /llms.txt)
 User-agent: Googlebot
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 User-agent: Bingbot
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 User-agent: OAI-SearchBot
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 User-agent: ChatGPT-User
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 User-agent: GPTBot
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 User-agent: PerplexityBot
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 User-agent: ClaudeBot
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 User-agent: Google-Extended
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 User-agent: Applebot
 Allow: /
 Disallow: /app/
+Disallow: /app$
 Disallow: /auth/
+Disallow: /_spa.html
 
 Sitemap: https://tradequt.com/sitemap.xml

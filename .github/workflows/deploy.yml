@@ -67,8 +67,11 @@ jobs:
             --exclude "*" --include "*.html" \
             --content-type "text/html"
           aws s3 cp ./dist s3://tradequt.com-dev/ --recursive \
-            --exclude "*" --include "*.txt" --include "*.xml" \
-            --cache-control "public, max-age=3600"
+            --exclude "*" --include "*.txt" \
+            --cache-control "public, max-age=3600" --content-type "text/plain; charset=utf-8"
+          aws s3 cp ./dist s3://tradequt.com-dev/ --recursive \
+            --exclude "*" --include "*.xml" \
+            --cache-control "public, max-age=3600" --content-type "application/xml; charset=utf-8"
           # Fonts and images keep their names across deploys, so a week rather than immutable.
           aws s3 cp ./dist s3://tradequt.com-dev/ --recursive \
             --exclude "*" --include "*.woff2" --include "fonts/fonts.css" --include "*.png" --include "*.svg" --include "*.ico" --include "*.webp" \

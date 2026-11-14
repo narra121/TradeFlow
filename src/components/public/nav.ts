@@ -40,6 +40,7 @@ export const FOOTER_GROUPS: { title: string; links: NavLink[] }[] = [
       { to: '/blog', label: 'Blog' },
       { to: '/glossary', label: 'Glossary' },
       { to: '/resources', label: 'Calculators' },
+      { to: '/case-studies', label: 'Scenarios' },
       { to: '/alternatives', label: 'Alternatives' },
     ],
   },

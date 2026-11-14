@@ -57,7 +57,7 @@ export function AlternativePage({ id }: { id: Competitor['id'] }) {
       <H2>Side by side</H2>
       <Table
         caption={`Checked ${c.checked}`}
-        head={['', c.name, 'TradeQut']}
+        head={['Feature', c.name, 'TradeQut']}
         rows={[
           ['Free plan or trial', c.id === 'tradesviz' ? 'Free plan (stocks only, 1 account)' : c.id === 'tradezella' ? 'None advertised' : 'Not verified', `${TRIAL_DAYS}-day free trial with every Pro feature, then read-only`],
           [
