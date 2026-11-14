@@ -3,7 +3,7 @@ import type { Trade } from '@/types/trade';
 
 export interface TimelineBlock {
   trade: Trade;
-  /** Minutes from midnight, clipped to the day the trade closed on. */
+  /** Minutes from midnight, clipped to the day the trade opened on. */
   start: number;
   end: number;
   lane: number;
@@ -16,14 +16,13 @@ export const AFTER_LOSS_WINDOW = 15;
 
 const minutesOf = (d: Date): number => d.getHours() * 60 + d.getMinutes();
 
-/** Start and end of a trade within its closing day. A trade that opened on an earlier day starts at midnight. */
+/** Start and end of a trade within its opening day. A trade that closes on a later day ends at midnight. */
 export function tradeSpan(t: Trade): { start: number; end: number } | null {
-  const exit = new Date(t.exitDate || t.entryDate);
   const entry = new Date(t.entryDate);
-  if (Number.isNaN(exit.getTime())) return null;
-  const end = minutesOf(exit);
-  const sameDay = !Number.isNaN(entry.getTime()) && formatLocalDateOnly(entry) === formatLocalDateOnly(exit);
-  const start = sameDay ? Math.min(minutesOf(entry), end) : 0;
+  const exit = new Date(t.exitDate || t.entryDate);
+  if (Number.isNaN(entry.getTime()) || Number.isNaN(exit.getTime())) return null;
+  const start = minutesOf(entry);
+  const end = formatLocalDateOnly(entry) === formatLocalDateOnly(exit) ? Math.max(start, minutesOf(exit)) : 24 * 60;
   return { start, end };
 }
 

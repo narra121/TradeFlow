@@ -8,7 +8,7 @@ const PAGE = {
   path: '/security',
   title: 'Security and Privacy - How TradeQut Stores and Protects Your Data',
   description:
-    'Where TradeQut stores your trading data (AWS us-east-1), how it is protected, what leaves the service (Stripe, Google Gemini) and how to report a vulnerability.',
+    'Where TradeQut stores your data (AWS us-east-1), how it is protected, who else gets it (Stripe, OpenRouter, OpenAI, Google) and how to report a vulnerability.',
   label: 'Security and privacy',
 };
 
@@ -23,7 +23,7 @@ export default function SecurityPage() {
       <ShortAnswer>
         TradeQut runs on Amazon Web Services in the us-east-1 region. Connections use HTTPS, stored data is encrypted at
         rest, the data tables have point-in-time recovery, and each user can only read their own trades. Payments are handled
-        by Stripe, and AI features send the data you choose to Google Gemini.
+        by Stripe. AI features send the data you choose through OpenRouter to OpenAI or Google Gemini.
       </ShortAnswer>
 
       <H2>Where your data lives</H2>
@@ -49,7 +49,16 @@ export default function SecurityPage() {
           <strong>Stripe</strong> receives your payment details and subscription data. TradeQut never sees or stores your card number.
         </li>
         <li>
-          <strong>Google Gemini</strong> receives the images, files or trade data you submit when you use an AI feature, to produce the result.
+          <strong>OpenRouter</strong> passes each AI request to OpenAI or Google. It states that it does not store the content
+          unless the account turns on logging, which TradeQut has not.
+        </li>
+        <li>
+          <strong>OpenAI</strong> receives figures computed from your trades for AI reports, the weekly report and chat, to write
+          their text. Reports include your trade notes only if you switch on Use my notes.
+        </li>
+        <li>
+          <strong>Google Gemini</strong> receives the screenshots or text you submit for import, or the text you ask AI Enhance to
+          correct.
         </li>
         <li>
           <strong>Google Analytics</strong> receives page-view data only after your cookie choice where the law requires it.

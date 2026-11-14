@@ -20,7 +20,7 @@ describe('interface copy (D.5, E-029)', () => {
   });
 
   it('keeps the numbers in the sentence and the singular right', () => {
-    expect(copy.notices.trial(1, '20 Nov')).toBe('Pro trial — 1 day left. No card on file; on 20 Nov you move to Free.');
+    expect(copy.notices.trial(1, '20 Nov')).toBe('Free trial: 1 day left. On 20 Nov your journal becomes read-only unless you upgrade.');
     expect(copy.notices.noAccount(1)).toBe('1 trade has no account and is not counted in statistics.');
     expect(copy.notices.noAccount(3)).toBe('3 trades have no account and are not counted in statistics.');
   });

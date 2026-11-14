@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import type { ImportCreateItem, NormalizedTrade } from '@/types/import';
 import { readApiError } from '@/lib/apiError';
+import { TRIAL_EXPIRED_MESSAGE } from '@/lib/planErrors';
 
 export const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
 /** POST /trades accepts at most 50 items per request. */
@@ -73,7 +74,7 @@ export function chunk<T>(items: T[], size = SAVE_CHUNK_SIZE): T[][] {
 export interface ImportErrorInfo {
   message: string;
   /** set for 402: show the upgrade call to action */
-  upgrade?: { code: 'QUOTA_EXCEEDED' | 'PLAN_REQUIRED'; feature?: string; limit?: number; resetsAt?: string };
+  upgrade?: { code: 'QUOTA_EXCEEDED' | 'PLAN_REQUIRED' | 'TRIAL_EXPIRED'; feature?: string; limit?: number; resetsAt?: string };
 }
 
 /** RTK Query error (or thrown error) → text and, for plan errors, upgrade data. */
@@ -85,6 +86,7 @@ export function importErrorMessage(err: unknown): ImportErrorInfo {
   const status = typeof rawStatus === 'number' ? rawStatus : (body.statusCode as number | undefined);
   if (status === 402) {
     const info = (body.error && typeof body.error === 'object' ? body.error : {}) as Record<string, any>;
+    if (body.errorCode === 'TRIAL_EXPIRED') return { message: typeof body.message === 'string' && body.message ? body.message : TRIAL_EXPIRED_MESSAGE, upgrade: { code: 'TRIAL_EXPIRED' } };
     const code = info.code === 'PLAN_REQUIRED' || body.errorCode === 'PLAN_REQUIRED' ? 'PLAN_REQUIRED' : 'QUOTA_EXCEEDED';
     const when = typeof info.resetsAt === 'string' ? ` Your limit resets on ${info.resetsAt.slice(0, 10)}.` : '';
     return {

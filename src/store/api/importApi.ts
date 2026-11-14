@@ -1,6 +1,7 @@
 import { chunk, SAVE_CHUNK_SIZE, toCreateItems } from '@/lib/import';
 import { groupBatches, type ImportBatch, type RawBatchTrade } from '@/lib/import/batches';
 import type { ExtractedItem } from '@/lib/import/screenshot';
+import type { ExtractedImageDates } from '@/lib/import/dates';
 import type { ImportCreateItem, ImportSource, NormalizedTrade, ParseImportRequest, ParseImportResponse, SaveImportedResult } from '@/types/import';
 import { api } from './baseApi';
 
@@ -72,8 +73,14 @@ export const importApi = apiWithTags.injectEndpoints({
       keepUnusedDataFor: 120,
     }),
 
-    /** AI extraction from up to 3 screenshots (data URLs); one `ai_extract` unit per call. */
-    extractScreenshots: builder.mutation<{ items: ExtractedItem[]; error?: { code: string; message: string } }, { images: string[] }>({
+    /**
+     * AI extraction from up to 3 screenshots (data URLs); one `ai_extract` unit per call. `timeZone` (IANA) is the
+     * clock the review shows: the server fills missing years from it and falls back to its region's day/month order.
+     */
+    extractScreenshots: builder.mutation<
+      { items: ExtractedItem[]; images?: ExtractedImageDates[]; error?: { code: string; message: string } },
+      { images: string[]; timeZone?: string }
+    >({
       query: (body) => ({ url: '/trades/extract', method: 'POST', body, timeout: 90_000 }),
       invalidatesTags: ['Entitlements'],
     }),

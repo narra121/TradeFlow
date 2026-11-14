@@ -98,8 +98,20 @@ describe('TimingGrid', () => {
 
   it('names every cell with value, count and win rate and states the zone', () => {
     wrap(<TimingGrid grid={grid} currency="USD" zone="UTC" />);
-    expect(screen.getByRole('link', { name: 'Monday 09:00, net +$50.00, 4 trades, win rate 75%' })).toBeInTheDocument();
-    expect(screen.getByText('Times in UTC')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Monday 09:00, net +$50.00, 4 trades, win rate 75%, too few trades to tell' })).toBeInTheDocument();
+    expect(screen.getByText(/^Times in UTC\./)).toBeInTheDocument();
+  });
+
+  it('greys every cell under 30 trades, never tints it, and says the grid is mostly noise (report §3.3 rule 4)', () => {
+    const g = timingGrid([
+      { day: 1, hour: 9, trades: 40, wins: 30, net: 500 },
+      { day: 1, hour: 10, trades: 2, wins: 0, net: -20 },
+    ])!;
+    wrap(<TimingGrid grid={g} currency="USD" zone="UTC" />);
+    expect(screen.getByRole('link', { name: /Monday 10:00/ }).className).toContain('bg-muted');
+    expect(screen.getByRole('link', { name: /Monday 09:00/ }).className).not.toContain('bg-muted');
+    expect(screen.getByRole('link', { name: /Monday 09:00/ })).not.toHaveAccessibleName(/too few/);
+    expect(screen.getByText(/1 of 2 cells have under 30 trades and are greyed: at that size a cell's result is mostly noise\./)).toBeInTheDocument();
   });
 
   it('moves with the arrow keys using a roving tab stop', async () => {

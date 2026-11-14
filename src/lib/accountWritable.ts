@@ -1,11 +1,11 @@
 import type { TradingAccount } from '@/types/trade';
 
-/** Sentence shown wherever a read-only account blocks an edit (B-111). */
-export const READ_ONLY_REASON = 'This account is read-only on Free. Choose your two writable accounts in Plan & billing.';
+/** Sentence shown wherever a read-only account blocks an edit. */
+export const READ_ONLY_REASON = 'Your free trial has ended, so your journal is read-only. Upgrade to Pro to add, edit or delete.';
 
 /**
- * Accounts a Free user cannot write to after a trial ended with more than two accounts. `writable` is
- * `null` when the plan has no such limit (or entitlements have not loaded): nothing is read-only then.
+ * Accounts the user cannot write to: every account while the plan is read-only (`writable` is `[]`). `writable` is
+ * `null` on trial and Pro (or before entitlements load): nothing is read-only then.
  */
 export function readOnlyAccountIds(accounts: Pick<TradingAccount, 'id'>[], writable: string[] | null | undefined): Set<string> {
   if (!writable) return new Set();

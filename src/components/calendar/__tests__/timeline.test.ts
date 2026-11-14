@@ -5,9 +5,9 @@ import type { Trade } from '@/types/trade';
 const t = (id: string, entry: string, exit: string, pnl: number): Trade => ({ id, symbol: 'X', direction: 'LONG', entryDate: entry, exitDate: exit, pnl }) as Trade;
 
 describe('timeline layout', () => {
-  it('measures a trade within its closing day, from midnight when it opened on an earlier day', () => {
+  it('measures a trade within its opening day, to midnight when it closes on a later day', () => {
     expect(tradeSpan(t('1', '2026-11-04T14:30:00', '2026-11-04T16:15:00', 1))).toEqual({ start: 870, end: 975 });
-    expect(tradeSpan(t('2', '2026-11-03T22:00:00', '2026-11-04T01:00:00', 1))).toEqual({ start: 0, end: 60 });
+    expect(tradeSpan(t('2', '2026-11-03T22:00:00', '2026-11-04T01:00:00', 1))).toEqual({ start: 1320, end: 1440 });
     expect(tradeSpan(t('3', '2026-11-04T09:00:00', '', 1))).toEqual({ start: 540, end: 540 });
   });
 

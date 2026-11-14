@@ -76,6 +76,20 @@ describe('offsets and datetime-local values', () => {
     expect(fromZonedInput('2026-11-03T15:30')?.toISOString()).toBe('2026-11-03T20:30:00.000Z');
   });
 
+  it('keeps the seconds of an edited date when asked (import review), on every zone', () => {
+    const at = new Date('2026-11-03T20:30:42.000Z');
+    for (const zone of ['America/New_York', 'Asia/Kolkata', 'Asia/Kathmandu', 'UTC']) {
+      patchUiState({ timeZone: zone });
+      const value = toZonedInput(at, { seconds: true });
+      expect(value).toMatch(/:42$/);
+      expect(fromZonedInput(value)?.toISOString()).toBe(at.toISOString());
+    }
+    patchUiState({ timeZone: 'America/New_York' });
+    expect(toZonedInput(at)).toBe('2026-11-03T15:30');
+    expect(toZonedInput(AT, { seconds: true })).toBe('2026-11-03T15:30');
+    expect(fromZonedInput('2026-11-03T16:05:42.5')?.toISOString()).toBe('2026-11-03T21:05:42.500Z');
+  });
+
   it('is empty or null for anything that is not a date', () => {
     expect(toZonedInput('')).toBe('');
     expect(toZonedInput('nope')).toBe('');

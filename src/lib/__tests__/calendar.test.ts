@@ -23,7 +23,7 @@ describe('calendar model', () => {
     expect(m.weeks).toHaveLength(6);
   });
 
-  it('buckets trades by local exit day and sums per currency', () => {
+  it('buckets trades by local open day and sums per currency', () => {
     const m = buildMonth([t('1', '2026-11-04T10:00:00', 100), t('2', '2026-11-04T15:00:00', -40), t('3', '2026-11-05T10:00:00', -10)], nov, accounts);
     const day = m.weeks.flatMap((w) => w.days).find((d) => d.key === '2026-11-04')!;
     expect(day.trades).toHaveLength(2);
@@ -55,13 +55,24 @@ describe('calendar model', () => {
     expect(tradeDayKey(t('1', '2026-11-04T23:30:00', 1))).toBe('2026-11-04');
   });
 
+  it('files an overnight trade under the day it opened, as GET /trades and the day statistics do', () => {
+    const overnight = { ...t('1', '2026-11-05T01:00:00', 1), entryDate: '2026-11-04T22:00:00' };
+    expect(tradeDayKey(overnight)).toBe('2026-11-04');
+    const days = buildMonth([overnight], nov, accounts).weeks.flatMap((w) => w.days);
+    expect(days.find((d) => d.trades.length)?.key).toBe('2026-11-04');
+  });
+
+  it('a date-only open date is its own day', () => {
+    expect(tradeDayKey({ ...t('1', '2026-11-05T01:00:00', 1), entryDate: '2026-11-04' })).toBe('2026-11-04');
+  });
+
   describe('with a saved time zone (the zone /stats buckets by)', () => {
     afterEach(() => {
       localStorage.clear();
       resetUiStateCache();
     });
 
-    it('a trade closed at 2026-11-03T20:30Z is on the 3rd in New York and the 4th in Kolkata', () => {
+    it('a trade opened at 2026-11-03T20:30Z is on the 3rd in New York and the 4th in Kolkata', () => {
       const trade = t('1', '2026-11-03T20:30:00.000Z', 1);
       patchUiState({ timeZone: 'America/New_York' });
       expect(tradeDayKey(trade)).toBe('2026-11-03');

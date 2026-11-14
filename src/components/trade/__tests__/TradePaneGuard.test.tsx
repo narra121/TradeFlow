@@ -17,6 +17,8 @@ vi.mock('@/hooks/useReadOnlyAccounts', () => ({ useReadOnlyAccounts: () => new S
 vi.mock('@/hooks/useAccounts', () => ({ useAccounts: () => ({ accounts: [{ id: 'a1', name: 'FTMO', currency: 'USD', status: 'active' }], selectedAccountId: null }) }));
 vi.mock('@/hooks/useSavedOptions', () => ({ useSavedOptions: () => ({ options: { strategies: [], sessions: [], marketConditions: [], mistakes: [], tags: [] }, addStrategy: vi.fn(), addSession: vi.fn(), addMarketCondition: vi.fn(), addMistake: vi.fn(), addTag: vi.fn() }) }));
 vi.mock('@/hooks/useTradingRules', () => ({ useTradingRules: () => ({ rules: [], loading: false }) }));
+vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ readOnly: false }) }));
+vi.mock('@/components/billing/useUpgrade', () => ({ useUpgrade: () => ({ upgrade: vi.fn(), manage: vi.fn(), busy: null, error: null, clearError: vi.fn() }) }));
 vi.mock('@/store/api', () => ({
   useDeleteTradeMutation: () => [vi.fn(), { isLoading: false }],
   useBulkDeleteTradesMutation: () => [vi.fn()],
@@ -26,6 +28,7 @@ vi.mock('@/store/api', () => ({
     fetched.args.push(args);
     return fetched.current;
   },
+  useGetTradeDebriefQuery: () => ({ isLoading: true, isFetching: true, isError: false, refetch: vi.fn() }),
 }));
 // The form's own behaviour is tested in TradeForm*.test.tsx; here it is a dirty form whose submit result the test sets.
 vi.mock('../TradeForm', () => ({

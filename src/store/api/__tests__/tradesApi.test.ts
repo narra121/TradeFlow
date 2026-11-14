@@ -6,6 +6,7 @@ vi.mock('@/lib/api/tokenRefresh', () => ({ refreshToken: vi.fn() }));
 
 import { api } from '../baseApi';
 import { tradesApi } from '../tradesApi';
+import { patchUiState } from '@/hooks/useUiState';
 
 /** jsdom's AbortSignal is not accepted by Node's Request, so the request object is a stand-in; `fetch` is what answers. */
 class StandInRequest {
@@ -200,6 +201,66 @@ describe('editing a trade', () => {
   });
 });
 
+describe('a saved trade joins the lists of the day it opened on in the app time zone (H2)', () => {
+  afterEach(() => patchUiState({ timeZone: '' }));
+
+  const create = (store: Store, trade: object) => {
+    answer = () => ({ trade });
+    return store.dispatch(tradesApi.endpoints.createTrade.initiate({ symbol: 'ES', direction: 'LONG', accountId: 'a1' } as never));
+  };
+
+  it('an Indian trade at 01:30 on the 5th is in the list of the 5th, though its UTC day is the 4th', async () => {
+    patchUiState({ timeZone: 'Asia/Kolkata' });
+    const store = makeStore();
+    const fifth = { startDate: '2026-11-05', endDate: '2026-11-05' };
+    const fourth = { startDate: '2026-11-04', endDate: '2026-11-04' };
+    await open(store, fifth);
+    await open(store, fourth);
+    await create(store, wire('n1', 'a1', '2026-11-04', { openDate: '2026-11-04T20:00:00.000Z', closeDate: '2026-11-04T20:30:00.000Z' }));
+    expect(ids(store, fifth)).toEqual(['n1']);
+    expect(ids(store, fourth)).toEqual([]);
+  });
+
+  it('a New York trade opened on the 4th and closed on the 5th UTC stays in the list of the 4th', async () => {
+    patchUiState({ timeZone: 'America/New_York' });
+    const store = makeStore();
+    const fifth = { startDate: '2026-11-05', endDate: '2026-11-05' };
+    const fourth = { startDate: '2026-11-04', endDate: '2026-11-04' };
+    await open(store, fifth);
+    await open(store, fourth);
+    await create(store, wire('n1', 'a1', '2026-11-04', { openDate: '2026-11-04T23:30:00.000Z', closeDate: '2026-11-05T01:30:00.000Z' }));
+    expect(ids(store, fourth)).toEqual(['n1']);
+    expect(ids(store, fifth)).toEqual([]);
+  });
+
+  it('an edit that moves the open time across local midnight moves the trade between the lists', async () => {
+    patchUiState({ timeZone: 'Asia/Kolkata' });
+    listed = [wire('t1', 'a1', '2026-11-04', { openDate: '2026-11-04T17:00:00.000Z', closeDate: '2026-11-04T17:30:00.000Z' })];
+    const store = makeStore();
+    const fifth = { startDate: '2026-11-05', endDate: '2026-11-05' };
+    const fourth = { startDate: '2026-11-04', endDate: '2026-11-04' };
+    await open(store, fourth);
+    await open(store, fifth);
+    answer = () => ({ trade: wire('t1', 'a1', '2026-11-04', { openDate: '2026-11-04T20:00:00.000Z', closeDate: '2026-11-04T20:30:00.000Z' }) });
+    await store.dispatch(tradesApi.endpoints.updateTrade.initiate({ id: 't1', payload: { notes: 'x' } }));
+    expect(ids(store, fourth)).toEqual([]);
+    expect(ids(store, fifth)).toEqual(['t1']);
+  });
+});
+
+describe('clearing a contract field (H5)', () => {
+  it('a PUT carries an explicit null, which the server reads as remove, and leaves absent fields out', async () => {
+    answer = () => ({ trade: wire('t1', 'a1', '2026-11-03') });
+    await makeStore().dispatch(
+      tradesApi.endpoints.updateTrade.initiate({ id: 't1', payload: { fees: null, contractMultiplier: null, optionType: null, strike: null, expiry: null, underlying: null, assetClass: 'stock' } }),
+    );
+    const put = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.map(([r]) => r as StandInRequest).find((r) => r.init.method === 'PUT')!;
+    const body = JSON.parse(put.init.body as string);
+    expect(body).toMatchObject({ fees: null, contractMultiplier: null, optionType: null, strike: null, expiry: null, underlying: null, assetClass: 'stock' });
+    expect(body).not.toHaveProperty('grossPnl');
+  });
+});
+
 describe('bulk edit and bulk delete (X-012, X-013)', () => {
   it('a bulk delete that answers 200 with per-trade errors puts those trades back in the lists', async () => {
     listed = [wire('t1', 'a1', '2026-11-03'), wire('t2', 'a1', '2026-11-04'), wire('t3', 'a1', '2026-11-05')];
@@ -229,5 +290,68 @@ describe('bulk edit and bulk delete (X-012, X-013)', () => {
     const list = tradesApi.endpoints.getScopeTrades.select(NOV)(store.getState() as never).data;
     expect(list?.map((t) => [t.id, t.tags])).toEqual([['t1', ['A']], ['t2', []]]);
     expect(listCalls()).toHaveLength(1);
+  });
+
+  it('a bulk update can set reviewed for many trades', async () => {
+    answer = () => ({ updated: 2, updatedIds: ['t1', 't2'], notFound: [], failed: [] });
+    await makeStore().dispatch(tradesApi.endpoints.bulkUpdateTrades.initiate({ tradeIds: ['t1', 't2'], set: { reviewed: true }, patches: { t1: { reviewed: true }, t2: { reviewed: true } } }));
+    const call = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.map(([r]) => r as StandInRequest).find((r) => r.url.endsWith('/trades/bulk-update'))!;
+    expect(JSON.parse(call.init.body as string)).toEqual({ tradeIds: ['t1', 't2'], set: { reviewed: true } });
+  });
+});
+
+describe('the reviewed flag and the debrief (A-21, A-22)', () => {
+  const sent = (method: string) => (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.map(([r]) => r as StandInRequest).filter((r) => r.init.method === method);
+  const debrief = { tradeId: 't1', checks: [{ id: 'stopSet', label: 'A stop was set', state: 'met', detail: 'Stop at 0.9.' }], metCount: 1, total: 1, currency: 'USD', timeZone: 'UTC' };
+
+  it('reads reviewed as false when the server has none, and true only for true', async () => {
+    listed = [wire('t1', 'a1', '2026-11-03'), wire('t2', 'a1', '2026-11-04', { reviewed: true }), wire('t3', 'a1', '2026-11-05', { reviewed: 'yes' })];
+    const store = makeStore();
+    await open(store, NOV);
+    const list = tradesApi.endpoints.getScopeTrades.select(NOV)(store.getState() as never).data;
+    expect(list?.map((t) => [t.id, t.reviewed])).toEqual([['t1', false], ['t2', true], ['t3', false]]);
+  });
+
+  it('a create sends reviewed only when it is given, and a PUT sends it as is', async () => {
+    answer = () => ({ trade: wire('n1', 'a1', '2026-11-03') });
+    const store = makeStore();
+    const base = { symbol: 'ES', direction: 'LONG' as const, size: 1, entryDate: '2026-11-03T10:00:00Z', accountId: 'a1' };
+    await store.dispatch(tradesApi.endpoints.createTrade.initiate(base));
+    await store.dispatch(tradesApi.endpoints.createTrade.initiate({ ...base, reviewed: true }));
+    expect(sent('POST').map((r) => JSON.parse(r.init.body as string).reviewed)).toEqual([undefined, true]);
+
+    await store.dispatch(tradesApi.endpoints.updateTrade.initiate({ id: 't1', payload: { reviewed: false } }));
+    expect(JSON.parse(sent('PUT')[0].init.body as string)).toEqual({ reviewed: false });
+  });
+
+  it('GET /insights/debrief/:tradeId is read from the envelope and fetched again after the trade is saved', async () => {
+    answer = (method, url) => (method === 'GET' && url.includes('/insights/debrief/') ? { debrief } : { trade: wire('t1', 'a1', '2026-11-03', { reviewed: true }) });
+    const store = makeStore();
+    const sub = store.dispatch(tradesApi.endpoints.getTradeDebrief.initiate('t1'));
+    const res = await sub;
+    expect(res.data).toEqual(debrief);
+    expect(requests()).toEqual(['GET https://api.test/v1/insights/debrief/t1']);
+
+    await store.dispatch(tradesApi.endpoints.updateTrade.initiate({ id: 't1', payload: { reviewed: true } }));
+    await vi.waitFor(() => expect(requests().filter((r) => r.includes('/insights/debrief/t1'))).toHaveLength(2));
+    expect(listCalls()).toHaveLength(0);
+    sub.unsubscribe();
+  });
+
+  it('a trade shown from its own query (outside every list) shows the saved value at once', async () => {
+    answer = (method) => ({ trade: wire('t9', 'a1', '2026-08-03', method === 'PUT' ? { reviewed: true } : {}) });
+    const store = makeStore();
+    const sub = store.dispatch(tradesApi.endpoints.getTrade.initiate('t9'));
+    expect((await sub).data?.reviewed).toBe(false);
+    await store.dispatch(tradesApi.endpoints.updateTrade.initiate({ id: 't9', payload: { reviewed: true } }));
+    expect(tradesApi.endpoints.getTrade.select('t9')(store.getState() as never).data?.reviewed).toBe(true);
+    sub.unsubscribe();
+  });
+
+  it('a debrief that answers 404 is an error with the server message', async () => {
+    vi.mocked(fetch).mockImplementationOnce(async () => new Response(JSON.stringify({ success: false, message: 'Trade not found.' }), { status: 404, headers: { 'content-type': 'application/json' } }));
+    const res = await makeStore().dispatch(tradesApi.endpoints.getTradeDebrief.initiate('gone'));
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.error)).toContain('Trade not found.');
   });
 });

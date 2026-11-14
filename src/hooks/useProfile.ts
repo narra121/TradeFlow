@@ -1,19 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getIdToken } from '@/lib/auth/authService';
-import { decodeClaims, readStoredIdToken } from '@/lib/auth/storedSession';
+import { isOAuthSession } from '@/lib/auth/storedSession';
 import { useGetProfileQuery, useUpdateProfileMutation } from '@/store/api/userApi';
 
 export type SignInMethod = 'google' | 'password';
 
 export const NAME_MAX_LENGTH = 60;
 
-/** Google users carry an `identities` claim or a `Google_` Cognito username. */
-export function signInMethodFromToken(idToken: string | null | undefined): SignInMethod {
-  const payload = decodeClaims(idToken);
-  const identities = payload?.identities;
-  if (identities?.some((i) => i.providerName?.toLowerCase() === 'google')) return 'google';
-  return String(payload?.['cognito:username'] ?? '').toLowerCase().startsWith('google_') ? 'google' : 'password';
-}
+/** How this session was started. The token's `identities` claim cannot tell: an email-and-password account that Google was linked to carries it on a password sign-in too. */
+export const signInMethod = (): SignInMethod => (isOAuthSession() ? 'google' : 'password');
 
 export function validateName(raw: string): string | null {
   const name = raw.trim();
@@ -39,7 +34,7 @@ export function useProfile() {
   }, [saved, serverName]);
   const name = saved?.name ?? serverName;
   const email = data?.email ?? '';
-  const method = signInMethodFromToken(readStoredIdToken());
+  const method = signInMethod();
 
   const saveName = useCallback(
     async (next: string) => {

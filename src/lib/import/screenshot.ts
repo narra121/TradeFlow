@@ -1,5 +1,6 @@
 import { SCREENSHOT_SOURCE, type NormalizedTrade } from '@/types/import';
 import { shortHash } from './rows';
+import { extractedToUtc, type ExtractedImageDates, type RowDates } from './dates';
 
 /** The extraction endpoint takes at most 3 images per request and rejects images above ~1 MB of base64. */
 export const MAX_SCREENSHOT_BYTES = 1024 * 1024;
@@ -83,21 +84,17 @@ export function batchLabel(batch: number, total: number, perBatch = SCREENSHOTS_
   return from === to ? `Screenshot ${from}` : `Screenshots ${from}–${to}`;
 }
 
-const toIso = (value: unknown): string => {
-  if (typeof value !== 'string' || !value.trim()) return '';
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString();
-};
-
 const num = (value: unknown): number => {
   const n = typeof value === 'number' ? value : parseFloat(String(value ?? ''));
   return Number.isFinite(n) ? n : 0;
 };
 
+/** One row of POST /trades/extract. The fields after `pnl` come from servers with the date reading; older ones omit them. */
 export interface ExtractedItem {
   symbol?: string;
   side?: string;
   quantity?: unknown;
+  /** `YYYY-MM-DDTHH:MM:SS[.fff]` wall clock, or an ISO instant with a zone */
   openDate?: unknown;
   closeDate?: unknown;
   entryPrice?: unknown;
@@ -105,6 +102,32 @@ export interface ExtractedItem {
   stopLoss?: unknown;
   takeProfit?: unknown;
   pnl?: unknown;
+  /** index of the image in the request */
+  image?: number;
+  openDateRaw?: string;
+  closeDateRaw?: string;
+  openDateMissing?: boolean;
+  closeDateMissing?: boolean;
+  yearAssumed?: boolean;
+  dayAssumed?: boolean;
+}
+
+/** The date reading of one extracted row; undefined when the server sent none. `batch` is the request's index in the import. */
+export function rowDatesOf(item: ExtractedItem, images: ExtractedImageDates[] | undefined, batch: number): RowDates | undefined {
+  const image = item.image ?? 0;
+  const info = images?.find((d) => d.image === image);
+  if (!info) return undefined;
+  return {
+    shot: batch * SCREENSHOTS_PER_REQUEST + image + 1,
+    order: info.dateOrder,
+    source: info.dateOrderSource,
+    canSwitch: info.canSwitch,
+    openRaw: item.openDateRaw ?? '',
+    closeRaw: item.closeDateRaw ?? '',
+    openMissing: !!item.openDateMissing,
+    closeMissing: !!item.closeDateMissing,
+    ...(item.dayAssumed ? { filled: 'date' as const } : item.yearAssumed ? { filled: 'year' as const } : {}),
+  };
 }
 
 /**
@@ -115,8 +138,8 @@ export interface ExtractedItem {
 export function fromExtracted(item: ExtractedItem, occurrence = 0): NormalizedTrade {
   const side = String(item.side ?? '').toUpperCase() === 'SELL' ? 'SELL' : 'BUY';
   const symbol = String(item.symbol ?? '').trim().toUpperCase();
-  const openDate = toIso(item.openDate);
-  const closeDate = toIso(item.closeDate) || openDate;
+  const openDate = extractedToUtc(item.openDate);
+  const closeDate = extractedToUtc(item.closeDate) || openDate;
   const quantity = num(item.quantity);
   const entryPrice = num(item.entryPrice);
   const exitPrice = num(item.exitPrice);

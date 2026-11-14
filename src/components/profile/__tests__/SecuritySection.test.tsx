@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SecuritySection } from '../SecuritySection';
-import { LOGGED_OUT_EVERYWHERE_URL, passwordErrorMessage } from '../helpers';
+import { LOGGED_OUT_EVERYWHERE_URL } from '@/components/auth/loggingOut';
+import { passwordErrorMessage } from '../helpers';
 
 const useProfile = vi.fn();
 vi.mock('@/hooks/useProfile', () => ({ useProfile: () => useProfile() }));
@@ -24,6 +25,7 @@ describe('SecuritySection', () => {
   const assign = vi.fn();
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     useProfile.mockReturnValue(base);
     Object.defineProperty(window, 'location', { value: { assign }, writable: true });
   });
@@ -88,6 +90,21 @@ describe('SecuritySection', () => {
     expect(logoutAll).not.toHaveBeenCalled();
     await user.click(within(dialog).getByRole('button', { name: 'Log out everywhere' }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith(LOGGED_OUT_EVERYWHERE_URL));
+  });
+
+  it('leaves the navigation to the Cognito logout page for a Google session, which returns to the same URL', async () => {
+    localStorage.setItem('CognitoIdentityServiceProvider.c1.oauthSignIn', 'true,false');
+    logoutAll.mockImplementation(() => {
+      localStorage.clear();
+      return ok();
+    });
+    const user = userEvent.setup();
+    render(<SecuritySection />);
+    await user.click(screen.getByRole('button', { name: 'Log out of all devices' }));
+    await user.click(await screen.findByRole('button', { name: 'Log out everywhere' }));
+    await waitFor(() => expect(logoutAll).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r));
+    expect(assign).not.toHaveBeenCalled();
   });
 
   it('shows the API message when the sign-out call fails with a response, and the connection message without one', async () => {

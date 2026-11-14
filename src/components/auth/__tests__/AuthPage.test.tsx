@@ -6,10 +6,10 @@ import { Provider } from 'react-redux';
 import { HelmetProvider } from 'react-helmet-async';
 import { store } from '@/store';
 
-const { login, signup, confirm, forgot, reset, mutation, googleOn, startGoogle } = vi.hoisted(() => {
+const { login, signup, resendCode, confirm, forgot, reset, mutation, googleOn, startGoogle, trackSignUp } = vi.hoisted(() => {
   const mk = () => vi.fn();
   return {
-    login: mk(), signup: mk(), confirm: mk(), forgot: mk(), reset: mk(), startGoogle: mk(),
+    login: mk(), signup: mk(), resendCode: mk(), confirm: mk(), forgot: mk(), reset: mk(), startGoogle: mk(), trackSignUp: mk(),
     googleOn: { value: true },
     mutation: (fn: ReturnType<typeof vi.fn>) => () => [(a: unknown) => ({ unwrap: () => fn(a) }), { isLoading: false }],
   };
@@ -18,10 +18,12 @@ vi.mock('@/store/api', async (orig) => ({
   ...(await orig<object>()),
   useLoginMutation: mutation(login),
   useSignupMutation: mutation(signup),
+  useResendCodeMutation: mutation(resendCode),
   useConfirmSignupMutation: mutation(confirm),
   useForgotPasswordMutation: mutation(forgot),
   useResetPasswordMutation: mutation(reset),
 }));
+vi.mock('@/lib/analytics', async (orig) => ({ ...(await orig<object>()), trackSignUp }));
 vi.mock('@/components/auth/useGoogleSignIn', () => ({ useGoogleSignIn: () => ({ busy: false, start: startGoogle }) }));
 vi.mock('@/components/auth/googleConfig', () => ({ isGoogleConfigured: () => googleOn.value, COGNITO_DOMAIN: 'd', COGNITO_CLIENT_ID: 'c' }));
 
@@ -57,7 +59,7 @@ const setOnline = (on: boolean) => {
 };
 
 beforeEach(() => {
-  [login, signup, confirm, forgot, reset, startGoogle].forEach((m) => m.mockReset());
+  [login, signup, resendCode, confirm, forgot, reset, startGoogle, trackSignUp].forEach((m) => m.mockReset());
   googleOn.value = true;
   Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
 });
@@ -89,7 +91,7 @@ describe('frame and accessibility', () => {
     expect(within(stage).getByText('58.6%')).toBeInTheDocument();
     expect(within(stage).queryByRole('heading')).toBeNull();
     // The other way in sits under the form, with the trial sentence.
-    expect(within(screen.getByRole('main')).getByText('14-day Pro trial. No card.')).toBeInTheDocument();
+    expect(within(screen.getByRole('main')).getByText('14-day free trial. No card.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Forgot password?' }));
     const reset = screen.getByRole('complementary', { name: 'About this step' });
     expect(within(reset).getByText('Password reset')).toBeInTheDocument();
@@ -104,12 +106,12 @@ describe('frame and accessibility', () => {
     const line = stage.querySelector('.auth-display') as HTMLElement;
     expect(line).toHaveTextContent('The trading journal that shows what your rules cost you.');
     expect(line.querySelector('.dim')).toHaveTextContent('The trading journal that shows');
-    expect(within(stage).getByText('14-day Pro trial · No card')).toBeInTheDocument();
-    expect(within(stage).getAllByRole('term').map((t) => t.textContent)).toEqual(['Free after the trial', 'Export any time', 'Delete any time']);
+    expect(within(stage).getByText('14-day free trial · No card')).toBeInTheDocument();
+    expect(within(stage).getAllByRole('term').map((t) => t.textContent)).toEqual(['Read-only after the trial', 'Export any time', 'Delete any time']);
     expect(within(stage).queryByRole('heading')).toBeNull();
     const steps = screen.getByRole('list', { name: 'Sign-up steps' });
     expect(within(steps).getByText('Create account').closest('li')).toHaveAttribute('aria-current', 'step');
-    expect(screen.getByText('14-day Pro trial. No card.')).toBeInTheDocument();
+    expect(screen.getByText('14-day free trial. No card.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Create your account' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
   });
@@ -314,13 +316,14 @@ describe('login', () => {
 
   it('an unverified login resends the code, explains why verify opened, and Back returns to login', async () => {
     login.mockRejectedValue({ status: 403, data: { errorCode: 'EMAIL_NOT_VERIFIED', message: 'Email not verified' } });
-    signup.mockResolvedValue({ resent: true });
+    resendCode.mockResolvedValue(undefined);
     setup();
     await type('Email', 'trader@example.com');
     await type('Password', 'Secret#12');
     await userEvent.click(screen.getByRole('button', { name: 'Log in' }));
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
-    expect(signup).toHaveBeenCalledWith({ name: 'trader', email: 'trader@example.com', password: 'Secret#12' });
+    expect(resendCode).toHaveBeenCalledWith({ email: 'trader@example.com' });
+    expect(signup).not.toHaveBeenCalled();
     expect(screen.getAllByRole('status')[0]).toHaveTextContent("This email isn't verified yet");
     expect(screen.getAllByRole('status')[0]).toHaveTextContent('Enter the new code we just sent');
     // Verify opened from log in: the mail stage for this address, no sign-up steps and no account facts.
@@ -364,6 +367,26 @@ describe('signup', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(signup).not.toHaveBeenCalled();
     expect(alertText()).toContain('Password: add a symbol, like ! or #.');
+  });
+
+  it('counts a new sign-up once', async () => {
+    signup.mockResolvedValue({ resent: false });
+    setup('signup');
+    await type('Email', 'ann@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'Abcdef1!');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    await screen.findByRole('heading', { name: 'Check your email' });
+    expect(trackSignUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not count it as a sign-up when the call only resent the code', async () => {
+    signup.mockResolvedValue({ resent: true });
+    setup('signup');
+    await type('Email', 'ann@example.com');
+    await userEvent.type(screen.getByLabelText('Password'), 'Abcdef1!');
+    await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    await screen.findByRole('heading', { name: 'Check your email' });
+    expect(trackSignUp).not.toHaveBeenCalled();
   });
 
   it('creates the account with the email local part as the name and opens verify as step 2 with the facts kept', async () => {
@@ -426,7 +449,7 @@ describe('signup', () => {
 describe('verify', () => {
   const toVerify = async () => {
     login.mockRejectedValue({ status: 403, data: { errorCode: 'EMAIL_NOT_VERIFIED' } });
-    signup.mockResolvedValue({ resent: true });
+    resendCode.mockResolvedValue(undefined);
     setup();
     await type('Email', 'ann@example.com');
     await type('Password', 'Abcdef1!');
@@ -465,6 +488,17 @@ describe('verify', () => {
     await waitFor(() => expect(login).toHaveBeenCalledWith({ email: 'ann@example.com', password: 'Abcdef1!' }));
   });
 
+  it('Resend asks for a new code only: it never signs up again, so a password the policy would refuse cannot block it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    await toVerify();
+    resendCode.mockClear();
+    for (let i = 0; i < 31; i++) act(() => void vi.advanceTimersByTime(1000));
+    await userEvent.click(await screen.findByRole('button', { name: 'Resend code' }));
+    await waitFor(() => expect(resendCode).toHaveBeenCalledWith({ email: 'ann@example.com' }));
+    expect(signup).not.toHaveBeenCalled();
+    expect(await screen.findByText('New code sent to ann@example.com.')).toBeInTheDocument();
+  });
+
   it('plain text Resend with a countdown while locked, then a button; Resend shows a success line', async () => {
     await toVerify();
     expect(screen.queryByRole('button', { name: /Resend code/ })).toBeNull();
@@ -483,7 +517,7 @@ describe('verify', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     await toVerify();
     for (let i = 0; i < 31; i++) act(() => void vi.advanceTimersByTime(1000));
-    signup.mockRejectedValue({ status: 429, data: { errorCode: 'RATE_LIMITED' } });
+    resendCode.mockRejectedValue({ status: 429, data: { errorCode: 'RATE_LIMITED' } });
     await userEvent.click(await screen.findByRole('button', { name: 'Resend code' }));
     expect(await screen.findByText("You've asked for several codes. Use the newest email, or wait a few minutes before asking again.")).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Resend code' })).toBeNull();

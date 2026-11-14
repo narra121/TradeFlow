@@ -50,39 +50,48 @@ export interface SampleTrade {
   day: number;
   symbol: string;
   pnl: number;
+  /** 24-hour close time in the user's zone. */
+  closed: string;
+  /** Minutes the trade was open. */
+  mins: number;
+  /** Realised R: the price move in the trade's favour ÷ the distance from entry to stop. Every sample trade has a stop. */
+  r: number;
 }
 
-/** Every trade of the month, oldest first: each day's rows sum to its SAMPLE_DAYS entry, and the last six are SAMPLE_RECENT. */
+/**
+ * Every trade of the month, oldest first: each day's rows sum to its SAMPLE_DAYS entry, and the last six are SAMPLE_RECENT
+ * (same close time and R). No two trades of a day overlap.
+ */
 export const SAMPLE_TRADES: SampleTrade[] = [
-  { day: 2, symbol: 'EURUSD', pnl: 62 },
-  { day: 2, symbol: 'GBPUSD', pnl: -18 },
-  { day: 2, symbol: 'XAUUSD', pnl: 41.5 },
-  { day: 3, symbol: 'USDJPY', pnl: -17.5 },
-  { day: 3, symbol: 'GBPUSD', pnl: -24.5 },
-  { day: 4, symbol: 'EURUSD', pnl: 54 },
-  { day: 4, symbol: 'XAUUSD', pnl: 72.25 },
-  { day: 4, symbol: 'GBPUSD', pnl: -25 },
-  { day: 4, symbol: 'USDJPY', pnl: 19 },
-  { day: 5, symbol: 'EURUSD', pnl: 38 },
-  { day: 5, symbol: 'AUDUSD', pnl: 26 },
-  { day: 6, symbol: 'XAUUSD', pnl: 22.5 },
-  { day: 6, symbol: 'GBPUSD', pnl: -30 },
-  { day: 6, symbol: 'EURUSD', pnl: -24 },
-  { day: 9, symbol: 'XAUUSD', pnl: 82 },
-  { day: 9, symbol: 'EURUSD', pnl: 36 },
-  { day: 9, symbol: 'USDJPY', pnl: 22 },
-  { day: 10, symbol: 'GBPUSD', pnl: -41 },
-  { day: 10, symbol: 'EURUSD', pnl: -33.75 },
-  { day: 10, symbol: 'USDJPY', pnl: 18 },
-  { day: 10, symbol: 'XAUUSD', pnl: -19.5 },
-  { day: 11, symbol: 'EURUSD', pnl: 31.8 },
-  { day: 11, symbol: 'AUDUSD', pnl: 21 },
-  { day: 12, symbol: 'EURUSD', pnl: 18.5 },
-  { day: 13, symbol: 'USDJPY', pnl: -8 },
-  { day: 13, symbol: 'EURUSD', pnl: -14 },
-  { day: 16, symbol: 'XAUUSD', pnl: 15 },
-  { day: 16, symbol: 'GBPUSD', pnl: -21.8 },
-  { day: 16, symbol: 'EURUSD', pnl: 68 },
+  { day: 2, symbol: 'EURUSD', pnl: 62, closed: '09:45', mins: 95, r: 1.55 },
+  { day: 2, symbol: 'GBPUSD', pnl: -18, closed: '11:00', mins: 40, r: -0.45 },
+  { day: 2, symbol: 'XAUUSD', pnl: 41.5, closed: '14:40', mins: 70, r: 0.95 },
+  { day: 3, symbol: 'USDJPY', pnl: -17.5, closed: '09:30', mins: 25, r: -0.5 },
+  { day: 3, symbol: 'GBPUSD', pnl: -24.5, closed: '10:30', mins: 52, r: -0.7 },
+  { day: 4, symbol: 'EURUSD', pnl: 54, closed: '10:10', mins: 110, r: 1.35 },
+  { day: 4, symbol: 'XAUUSD', pnl: 72.25, closed: '13:10', mins: 150, r: 1.7 },
+  { day: 4, symbol: 'GBPUSD', pnl: -25, closed: '14:20', mins: 35, r: -0.6 },
+  { day: 4, symbol: 'USDJPY', pnl: 19, closed: '16:15', mins: 45, r: 0.5 },
+  { day: 5, symbol: 'EURUSD', pnl: 38, closed: '10:20', mins: 80, r: 0.95 },
+  { day: 5, symbol: 'AUDUSD', pnl: 26, closed: '12:15', mins: 60, r: 0.65 },
+  { day: 6, symbol: 'XAUUSD', pnl: 22.5, closed: '09:35', mins: 50, r: 0.5 },
+  { day: 6, symbol: 'GBPUSD', pnl: -30, closed: '10:35', mins: 30, r: -1.2 },
+  { day: 6, symbol: 'EURUSD', pnl: -24, closed: '11:45', mins: 64, r: -0.6 },
+  { day: 9, symbol: 'XAUUSD', pnl: 82, closed: '10:50', mins: 140, r: 2 },
+  { day: 9, symbol: 'EURUSD', pnl: 36, closed: '12:35', mins: 75, r: 0.9 },
+  { day: 9, symbol: 'USDJPY', pnl: 22, closed: '14:35', mins: 55, r: 0.55 },
+  { day: 10, symbol: 'GBPUSD', pnl: -41, closed: '09:40', mins: 40, r: -1.3 },
+  { day: 10, symbol: 'EURUSD', pnl: -33.75, closed: '10:30', mins: 42, r: -1.25 },
+  { day: 10, symbol: 'USDJPY', pnl: 18, closed: '11:30', mins: 49, r: 0.45 },
+  { day: 10, symbol: 'XAUUSD', pnl: -19.5, closed: '15:00', mins: 40, r: -0.5 },
+  { day: 11, symbol: 'EURUSD', pnl: 31.8, closed: '10:35', mins: 85, r: 0.8 },
+  { day: 11, symbol: 'AUDUSD', pnl: 21, closed: '12:20', mins: 50, r: 0.5 },
+  { day: 12, symbol: 'EURUSD', pnl: 18.5, closed: '11:48', mins: 68, r: 0.5 },
+  { day: 13, symbol: 'USDJPY', pnl: -8, closed: '10:20', mins: 35, r: -0.2 },
+  { day: 13, symbol: 'EURUSD', pnl: -14, closed: '14:05', mins: 45, r: -0.4 },
+  { day: 16, symbol: 'XAUUSD', pnl: 15, closed: '08:30', mins: 40, r: 0.3 },
+  { day: 16, symbol: 'GBPUSD', pnl: -21.8, closed: '09:15', mins: 35, r: -0.5 },
+  { day: 16, symbol: 'EURUSD', pnl: 68, closed: '10:42', mins: 62, r: 1.7 },
 ];
 
 /** Winning trades per day, aligned with SAMPLE_DAYS and counted from SAMPLE_TRADES. Shared with the auth pane (DESIGN-SHARED S8a). */

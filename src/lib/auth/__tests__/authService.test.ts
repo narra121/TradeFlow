@@ -91,14 +91,16 @@ describe('login', () => {
     expect(readApiError(err).kind).toBe('network');
   });
 
-  it('ends a leftover session and signs in again once', async () => {
+  it('drops a leftover session from this browser, without a Google redirect, and signs in again once', async () => {
+    localStorage.setItem('CognitoIdentityServiceProvider.c1.LastAuthUser', 'Google_1');
+    localStorage.setItem('CognitoIdentityServiceProvider.c1.oauthSignIn', 'true,false');
     amplify.signIn
       .mockRejectedValueOnce(cognito('UserAlreadyAuthenticatedException'))
       .mockResolvedValueOnce({ isSignedIn: true, nextStep: { signInStep: 'DONE' } });
-    amplify.signOut.mockResolvedValue(undefined);
     amplify.fetchAuthSession.mockResolvedValue(session({ sub: 'u-2', email: 'q@x.io' }));
     await expect(svc.login('q@x.io', 'Pw!12345')).resolves.toMatchObject({ user: { id: 'u-2' } });
-    expect(amplify.signOut).toHaveBeenCalledTimes(1);
+    expect(amplify.signOut).not.toHaveBeenCalled();
+    expect(localStorage).toHaveLength(0);
     expect(amplify.signIn).toHaveBeenCalledTimes(2);
   });
 
@@ -322,7 +324,7 @@ describe('tokens and sessions', () => {
     amplify.signOut.mockImplementation(async () => void order.push('signOut'));
     await svc.logoutEverywhere();
     expect(order).toEqual(['fetchAuthSession', 'signOut']);
-    expect(amplify.signOut).toHaveBeenCalledWith({ global: true });
+    expect(amplify.signOut).toHaveBeenCalledWith({ global: true, oauth: { redirectUrl: `${window.location.origin}/login?view=logged-out&scope=all` } });
   });
 
   it('calls back when the session ends by another tab or a refused refresh, not for other events', async () => {
@@ -352,16 +354,20 @@ describe('tokens and sessions', () => {
     localStorage.clear();
   });
 
-  it('discardSession signs out through Amplify without reporting it as a session that ended by itself', async () => {
+  it("discardSession clears this browser's keys, Google flags included, and never calls Amplify's signOut (its Google redirect would leave the page)", () => {
     const onEnd = vi.fn();
     const stop = svc.onSessionEnded(onEnd);
-    amplify.signOut.mockImplementation(async () => emit('signedOut'));
-    await svc.discardSession();
-    expect(amplify.signOut).toHaveBeenCalledWith();
+    localStorage.setItem('CognitoIdentityServiceProvider.c1.LastAuthUser', 'Google_1');
+    localStorage.setItem('CognitoIdentityServiceProvider.c1.Google_1.accessToken', 'a.b.c');
+    localStorage.setItem('CognitoIdentityServiceProvider.c1.Google_1.refreshToken', 'r');
+    localStorage.setItem('CognitoIdentityServiceProvider.c1.oauthSignIn', 'true,false');
+    localStorage.setItem('ui.timeZone', 'Asia/Kolkata');
+    svc.discardSession();
+    expect(Object.keys(localStorage)).toEqual(['ui.timeZone']);
+    expect(amplify.signOut).not.toHaveBeenCalled();
     expect(onEnd).not.toHaveBeenCalled();
-    amplify.signOut.mockRejectedValue(cognito('OAuthSignOutException'));
-    await expect(svc.discardSession()).resolves.toBeUndefined();
     stop();
+    localStorage.clear();
   });
 });
 
@@ -400,6 +406,21 @@ describe('Google sign-in', () => {
     await expect(svc.finishGoogleSignIn()).resolves.toEqual({ ok: false, expired: false });
     amplify.fetchAuthSession.mockRejectedValueOnce(cognito('NetworkError'));
     await expect(svc.finishGoogleSignIn()).resolves.toEqual({ ok: false });
+  });
+
+  it('reports a failed sign-in and a remembered destination once, so they do not colour the next callback', async () => {
+    amplify.fetchAuthSession.mockImplementationOnce(async () => {
+      emit('signInWithRedirect_failure', { error: new Error('invalid_grant') });
+      return { tokens: undefined };
+    });
+    await expect(svc.finishGoogleSignIn()).resolves.toEqual({ ok: false, expired: false });
+    amplify.fetchAuthSession.mockResolvedValueOnce({ tokens: undefined });
+    await expect(svc.finishGoogleSignIn()).resolves.toEqual({ ok: false, expired: true });
+
+    emit('customOAuthState', '/app/goals');
+    amplify.fetchAuthSession.mockResolvedValue(session({ sub: 'g-1', identities: [{ dateCreated: '1' }] }));
+    await expect(svc.finishGoogleSignIn()).resolves.toMatchObject({ destination: '/app/goals' });
+    await expect(svc.finishGoogleSignIn()).resolves.toMatchObject({ destination: null });
   });
 
   it('isFirstSignIn is true only for an identity created within the last minute', () => {

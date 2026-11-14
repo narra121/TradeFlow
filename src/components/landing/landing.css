@@ -413,6 +413,12 @@
 .lp-answers {
   padding: 116px 0 96px;
 }
+.lp-rules {
+  padding: 110px 0 100px;
+}
+.lp-rules__more {
+  margin-top: 40px;
+}
 .lp-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -442,6 +448,12 @@
   text-transform: uppercase;
   color: hsl(var(--muted-foreground));
 }
+.lp-card__art figcaption > span {
+  white-space: nowrap;
+}
+.lp-card__hold {
+  aspect-ratio: 380 / 360;
+}
 .lp-card h3 {
   margin-top: 22px;
   font-size: 18px;
@@ -454,25 +466,6 @@
   font-size: 15px;
   line-height: 1.7;
   color: hsl(var(--muted-foreground));
-}
-.lp-card .lp-pro {
-  margin-left: 8px;
-  vertical-align: 2px;
-}
-.lp-pro {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 2px;
-  background: hsl(var(--accent) / 0.16);
-  color: hsl(var(--accent-text));
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 500;
 }
 
 /* Manifesto: the one promise, lit word by word on scroll */
@@ -925,7 +918,8 @@
   .lp-hero {
     padding-top: 40px;
   }
-  .lp-answers {
+  .lp-answers,
+  .lp-rules {
     padding: 75px 0 65px;
   }
   .lp-manifesto {

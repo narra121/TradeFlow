@@ -1,5 +1,5 @@
 import { Amplify, type ResourcesConfig } from 'aws-amplify';
-import { LOGGED_OUT_URL } from '@/components/auth/loggingOut';
+import { LOGGED_OUT_EVERYWHERE_URL, LOGGED_OUT_URL } from '@/components/auth/loggingOut';
 import { isAuthConfigured, isGoogleConfigured, COGNITO_CLIENT_ID, COGNITO_DOMAIN, COGNITO_USER_POOL_ID } from './authEnv';
 
 /** Must be a Callback URL on the app client (JournalAWSSetup template.yaml `UserPoolClient`). */
@@ -17,9 +17,10 @@ export function buildAuthConfig(origin: string): ResourcesConfig {
             oauth: {
               domain: COGNITO_DOMAIN,
               scopes: ['openid', 'email', 'profile'],
-              // Both URLs must be registered on the app client exactly as written, including the query string.
+              // Every URL here must be registered on the app client exactly as written, including the query string.
               redirectSignIn: [`${origin}${OAUTH_CALLBACK_PATH}`],
-              redirectSignOut: [`${origin}${LOGGED_OUT_URL}`],
+              // The first one is where a plain `signOut()` returns to.
+              redirectSignOut: [`${origin}${LOGGED_OUT_URL}`, `${origin}${LOGGED_OUT_EVERYWHERE_URL}`],
               responseType: 'code',
               providers: ['Google'],
             },

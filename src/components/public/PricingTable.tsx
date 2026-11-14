@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import {
   PLAN_LIMITS,
   PRICING_NOTE,
+  TRIAL_DAYS,
   proPrice,
   type Currency,
   type Interval,
@@ -80,15 +81,18 @@ export function PricingTable({ headingLevel = 2 }: { headingLevel?: 2 | 3 }) {
 
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full table-fixed text-xs sm:text-sm">
-          <caption className="sr-only">Free and Pro plan comparison</caption>
+          <caption className="sr-only">Free trial and Pro comparison</caption>
           <thead className="bg-muted">
             <tr>
               <th scope="col" className="w-[34%] px-2 py-3 text-left font-semibold text-foreground sm:w-2/5 sm:px-4 lg:w-1/2">
                 <span className="sr-only">Feature</span>
               </th>
               <th scope="col" className="w-[26%] px-2 py-3 text-left align-bottom sm:w-1/4 sm:px-4">
-                <Heading className="text-base font-semibold text-foreground">Free</Heading>
-                <p className="num mt-1 text-base font-semibold text-foreground sm:text-2xl">{currency === 'INR' ? '₹0' : '$0'}</p>
+                <Heading className="text-base font-semibold text-foreground">Free trial</Heading>
+                <p className="num mt-1 text-base font-semibold text-foreground sm:text-2xl">
+                  {currency === 'INR' ? '₹0' : '$0'}
+                  <span className="text-xs font-normal text-muted-foreground sm:text-sm"> / {TRIAL_DAYS} days</span>
+                </p>
               </th>
               <th scope="col" className="px-2 py-3 text-left align-bottom sm:px-4">
                 <Heading className="text-base font-semibold text-foreground">Pro</Heading>
@@ -105,7 +109,7 @@ export function PricingTable({ headingLevel = 2 }: { headingLevel?: 2 | 3 }) {
                 <th scope="row" className="px-2 py-3 text-left font-normal text-foreground sm:px-4">
                   {row.feature}
                 </th>
-                <td className="px-2 py-3 text-foreground-soft sm:px-4">{row.free}</td>
+                <td className="px-2 py-3 text-foreground-soft sm:px-4">{row.trial}</td>
                 <td className="px-2 py-3 text-foreground-soft sm:px-4">{row.pro}</td>
               </tr>
             ))}

@@ -14,6 +14,8 @@ export interface Track {
   target: number;
   /** No goal of the user's own: the starter target is shown without a verdict. */
   isDefault: boolean;
+  /** The figure is the sum (or average) of the account goals, so it has nothing to edit; choose an account for that. */
+  derived?: boolean;
   tradeCount: number;
   /** Why the figures are not shown (a drawdown limit with no starting balance to measure against). */
   unavailable?: string;
@@ -134,9 +136,10 @@ function TrackRow({ track, period, live, readOnly, currency, history, historyLoa
         </div>
         <p className={cn('text-13', TONE_TEXT[shown.tone])}>{!editing && !track.unavailable && shown.text}</p>
         <div className="justify-self-end">
-          {!readOnly && !editing && <Button ref={editRef} type="button" size="sm" variant="outline" onClick={startEdit} aria-label={`Edit ${label}`}>Edit</Button>}
+          {!readOnly && !editing && !track.derived && <Button ref={editRef} type="button" size="sm" variant="outline" onClick={startEdit} aria-label={`Edit ${label}`}>Edit</Button>}
         </div>
       </div>
+      {track.derived && !track.unavailable && <p className="text-xs text-muted-foreground md:pl-[192px]">Combined from your account goals. Choose an account to change it.</p>}
       {!track.isDefault && !track.unavailable && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground md:pl-[192px]">
           <span>Last 8 {periodNoun(period.period)}s</span>

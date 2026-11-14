@@ -1,6 +1,6 @@
 import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { api } from './baseApi';
-import { logout as signOutDevice, logoutEverywhere as signOutEverywhere, toAuthServiceError, login, signup, confirmSignup, forgotPassword, confirmPasswordReset } from '@/lib/auth/authService';
+import { discardSession, logout as signOutDevice, logoutEverywhere as signOutEverywhere, resendCode, toAuthServiceError, login, signup, confirmSignup, forgotPassword, confirmPasswordReset } from '@/lib/auth/authService';
 import { readStoredClaims } from '@/lib/auth/storedSession';
 import type { LoginPayload, SignupPayload, ConfirmSignupPayload, ForgotPasswordPayload, ResetPasswordPayload, AuthResponse } from '@/lib/api';
 
@@ -36,6 +36,11 @@ export const authApi = api.injectEndpoints({
       queryFn: (payload) => run(() => confirmSignup(payload)),
     }),
 
+    /** A new confirmation code for an unconfirmed address; it does not create or touch the account. */
+    resendCode: builder.mutation<void, { email: string }>({
+      queryFn: ({ email }) => run(() => resendCode(email)),
+    }),
+
     login: builder.mutation<AuthResponse, LoginPayload>({
       queryFn: ({ email, password }) => run(() => login(email, password)),
       invalidatesTags: ['Auth'],
@@ -58,6 +63,15 @@ export const authApi = api.injectEndpoints({
         }),
     }),
 
+    /** After the account was deleted: nothing is left to sign out of at Cognito, so this only clears the browser, without the Google redirect that `logout` makes. */
+    clearDeletedSession: builder.mutation<void, void>({
+      queryFn: () =>
+        run(async () => {
+          await clearUserCaches();
+          discardSession();
+        }),
+    }),
+
     /** Every device: Cognito revokes all refresh tokens of the user. */
     logoutEverywhere: builder.mutation<void, void>({
       queryFn: () =>
@@ -72,9 +86,11 @@ export const authApi = api.injectEndpoints({
 export const {
   useSignupMutation,
   useConfirmSignupMutation,
+  useResendCodeMutation,
   useLoginMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useLogoutMutation,
+  useClearDeletedSessionMutation,
   useLogoutEverywhereMutation,
 } = authApi;

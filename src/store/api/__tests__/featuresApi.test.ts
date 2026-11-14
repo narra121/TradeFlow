@@ -200,3 +200,31 @@ describe('billingApi', () => {
     expect(calls[2].url.pathname).toMatch(/\/billing\/portal$/);
   });
 });
+
+describe('a TRIAL_EXPIRED 402 from any write (the one global handler in baseApi)', () => {
+  const body = { errorCode: 'TRIAL_EXPIRED', message: 'Your free trial has ended. Upgrade to Pro to add, edit or delete.' };
+
+  it('emits the TRIAL_EXPIRED plan signal that opens the upgrade dialog, and keeps the API message on the error', async () => {
+    const { PLAN_SIGNAL_EVENT } = await import('@/lib/planErrors');
+    const seen = vi.fn();
+    window.addEventListener(PLAN_SIGNAL_EVENT, (e) => seen((e as CustomEvent).detail), { once: true });
+    handler = () => errorEnvelope(402, body);
+    const r = await makeStore().dispatch(importApi.endpoints.parseImport.initiate({ source: 'auto', fileName: 'a.csv', contentBase64: 'QQ==' }));
+    expect(settled(r).error).toMatchObject({ status: 402, data: { errorCode: 'TRIAL_EXPIRED', message: body.message } });
+    expect(seen).toHaveBeenCalledWith({ code: 'TRIAL_EXPIRED', message: body.message, kind: 'mutation' });
+  });
+
+  it('a checkout error keeps the API message for the screen (PRICE_NOT_CONFIGURED)', async () => {
+    handler = () => errorEnvelope(503, { errorCode: 'PRICE_NOT_CONFIGURED', message: 'Pro checkout is not available right now. Please try again later.' });
+    const r = await makeStore().dispatch(billingApi.endpoints.createCheckout.initiate({ interval: 'year' }));
+    const { readApiError } = await import('@/lib/apiError');
+    expect(readApiError(settled(r).error).message).toBe('Pro checkout is not available right now. Please try again later.');
+  });
+
+  it('verifyCheckout sends the session id to /subscriptions/verify', async () => {
+    handler = () => envelope({ status: 'active' });
+    await makeStore().dispatch(billingApi.endpoints.verifyCheckout.initiate('cs_test_1'));
+    expect(calls[0].method).toBe('GET');
+    expect(calls[0].url.pathname + calls[0].url.search).toMatch(/\/subscriptions\/verify\?session_id=cs_test_1$/);
+  });
+});

@@ -42,6 +42,26 @@ function readToken(storage: Storage, clientId: string, kind: 'idToken' | 'access
   return null;
 }
 
+/** True when Amplify's own record says this browser signed in through the Google redirect, which makes its `signOut()` end with a navigation to Cognito's /logout. */
+export function isOAuthSession(storage: Storage = localStorage, clientId: string = COGNITO_CLIENT_ID): boolean {
+  try {
+    const key = clientId ? `${PREFIX}.${clientId}.oauthSignIn` : Object.keys(storage).find((k) => /^CognitoIdentityServiceProvider\.[^.]+\.oauthSignIn$/.test(k));
+    return !!key && !!storage.getItem(key)?.startsWith('true');
+  } catch {
+    return false;
+  }
+}
+
+/** Removes every key Amplify keeps for the app client: the tokens, the signed-in user and the Google sign-in flags. Without a `clientId` every pool's keys go. */
+export function clearStoredSession(storage: Storage = localStorage, clientId: string = COGNITO_CLIENT_ID): void {
+  try {
+    const prefix = clientId ? `${PREFIX}.${clientId}.` : `${PREFIX}.`;
+    Object.keys(storage).filter((key) => key.startsWith(prefix)).forEach((key) => storage.removeItem(key));
+  } catch {
+    // storage blocked: nothing was stored
+  }
+}
+
 /** True when Amplify has a session stored; it may be expired, since Amplify renews it on first use. Without a `clientId` any pool's session counts. */
 export function hasStoredSession(storage: Storage = localStorage, clientId: string = COGNITO_CLIENT_ID): boolean {
   return readToken(storage, clientId, 'accessToken') !== null;

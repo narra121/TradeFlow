@@ -7,15 +7,13 @@ export function formatDay(iso: string | undefined | null, withYear = true): stri
   return text === '—' ? '' : text;
 }
 
-/** The days after a trial ends during which the "what changed" block and notice are shown. */
-export const TRIAL_ENDED_WINDOW_DAYS = 14;
-
 export interface PlanFacts {
   plan: 'free' | 'trial' | 'pro' | null;
   status?: string;
   trialDaysLeft?: number | null;
   trialEndsAt?: string;
   trialEndedAt?: string;
+  proEndedAt?: string;
   interval?: 'month' | 'year';
   /** Major units (49.99 = $49.99). */
   amount?: number;
@@ -32,6 +30,7 @@ export function toPlanFacts(e: EntitlementsView): PlanFacts {
     trialDaysLeft: e.trialDaysLeft,
     trialEndsAt: e.trialEndsAt,
     trialEndedAt: e.trialEndedAt,
+    proEndedAt: e.proEndedAt,
     interval: e.interval,
     amount: e.amount,
     currency: e.amountCurrency,
@@ -41,7 +40,7 @@ export function toPlanFacts(e: EntitlementsView): PlanFacts {
   };
 }
 
-export type PlanStateKind = 'trial' | 'trial_ended' | 'free' | 'pro' | 'pro_canceling' | 'past_due';
+export type PlanStateKind = 'trial' | 'read_only' | 'pro' | 'pro_canceling' | 'past_due';
 export type PlanAction = 'upgrade' | 'manage' | 'update_card';
 
 export interface PlanState {
@@ -49,18 +48,14 @@ export interface PlanState {
   /** The one sentence of the Plan & billing status block (A.10). */
   sentence: string;
   action: PlanAction;
-  /** Within 14 days after the trial ended: the "what changed" block is shown. */
+  /** Trial and read-only: the "what changes" block is shown. */
   showWhatChanged: boolean;
 }
 
-function daysSince(iso: string | undefined, now: Date): number | null {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  return Number.isNaN(t) ? null : Math.floor((now.getTime() - t) / 86_400_000);
-}
+const READ_ONLY_TAIL = 'Your journal is read-only: you can view and export, but not add, edit or delete.';
 
 /** Status sentence and its single action for every entitlement state. A clause whose data the API did not return is dropped, never guessed. */
-export function planState(f: PlanFacts, now: Date = new Date()): PlanState {
+export function planState(f: PlanFacts): PlanState {
   if (f.status === 'past_due') {
     return { kind: 'past_due', sentence: 'Your last payment failed. Update your card to keep Pro.', action: 'update_card', showWhatChanged: false };
   }
@@ -70,9 +65,9 @@ export function planState(f: PlanFacts, now: Date = new Date()): PlanState {
     const days = `${n} ${n === 1 ? 'day' : 'days'} left`;
     return {
       kind: 'trial',
-      sentence: `Pro trial — ${days}. No card on file${end ? `; on ${end} you move to Free` : ''}.`,
+      sentence: `Free trial: ${days}, with every Pro feature. No card on file${end ? `; on ${end} your journal becomes read-only unless you upgrade` : ''}.`,
       action: 'upgrade',
-      showWhatChanged: false,
+      showWhatChanged: true,
     };
   }
   if (f.plan === 'pro') {
@@ -81,7 +76,7 @@ export function planState(f: PlanFacts, now: Date = new Date()): PlanState {
       const end = formatDay(f.endsAt);
       return {
         kind: 'pro_canceling',
-        sentence: end ? `Pro${legacy} — ends on ${end}. After that you move to Free; your trades stay.` : `Pro${legacy} — ends at the end of the paid period. After that you move to Free; your trades stay.`,
+        sentence: end ? `Pro${legacy} — ends on ${end}. After that your journal is read-only; your trades stay.` : `Pro${legacy} — ends at the end of the paid period. After that your journal is read-only; your trades stay.`,
         action: 'manage',
         showWhatChanged: false,
       };
@@ -91,11 +86,12 @@ export function planState(f: PlanFacts, now: Date = new Date()): PlanState {
     const tail = renews ? (price ? `. Renews on ${renews}.` : ` — renews on ${renews}.`) : price ? '.' : ' — active.';
     return { kind: 'pro', sentence: `Pro${legacy}${price}${tail}`, action: 'manage', showWhatChanged: false };
   }
-  const since = daysSince(f.trialEndedAt, now);
-  if (f.trialEndedAt && since !== null && since <= TRIAL_ENDED_WINDOW_DAYS) {
-    return { kind: 'trial_ended', sentence: `Your Pro trial ended on ${formatDay(f.trialEndedAt)}. You are on Free.`, action: 'upgrade', showWhatChanged: true };
-  }
-  return { kind: 'free', sentence: 'Free plan.', action: 'upgrade', showWhatChanged: false };
+  const proEnd = formatDay(f.proEndedAt);
+  const trialEnd = formatDay(f.trialEndedAt);
+  const ended = f.proEndedAt
+    ? `Pro ended${proEnd ? ` on ${proEnd}` : ''}.`
+    : `Your free trial ended${trialEnd ? ` on ${trialEnd}` : ''}.`;
+  return { kind: 'read_only', sentence: `${ended} ${READ_ONLY_TAIL}`, action: 'upgrade', showWhatChanged: true };
 }
 
 export interface PlanRowText {
@@ -104,18 +100,18 @@ export interface PlanRowText {
   tone: 'neutral' | 'warning' | 'error' | 'upgrade';
 }
 
-/** Sidebar footer row (E-010): trial days, `Free plan` + Upgrade, `Pro ends 3 Jan`, red `Payment failed`; nothing for active Pro. */
+/** Sidebar footer row (E-010): trial days, `Read-only` + Upgrade, `Pro ends 3 Jan`, red `Payment failed`; nothing for active Pro. */
 export function planRowText(f: PlanFacts & { isLoading?: boolean }): PlanRowText | null {
   if (!f.plan) return null;
   if (f.status === 'past_due') return { text: 'Payment failed', action: 'Update card', tone: 'error' };
   if (f.plan === 'trial') {
     const d = f.trialDaysLeft ?? 0;
-    return { text: `Pro trial · ${d} ${d === 1 ? 'day' : 'days'} left`, action: d <= 3 ? 'Upgrade' : undefined, tone: d <= 3 ? 'warning' : 'neutral' };
+    return { text: `Free trial · ${d} ${d === 1 ? 'day' : 'days'} left`, action: d <= 3 ? 'Upgrade' : undefined, tone: d <= 3 ? 'warning' : 'neutral' };
   }
   if (f.plan === 'pro') {
     if (f.status !== 'canceling') return null;
     const end = formatDay(f.endsAt, false);
     return { text: end ? `Pro ends ${end}` : 'Pro ends soon', tone: 'warning' };
   }
-  return { text: 'Free plan', action: 'Upgrade', tone: 'upgrade' };
+  return { text: 'Read-only', action: 'Upgrade', tone: 'upgrade' };
 }

@@ -12,6 +12,7 @@ export type BulkOp =
   | { kind: 'mistakes'; add: string[]; remove: string[] }
   | { kind: 'tags'; add: string[]; remove: string[] }
   | { kind: 'brokenRules'; add: string[]; remove: string[] }
+  | { kind: 'reviewed'; value: boolean }
   | { kind: 'account'; accountId: string };
 
 function mergeList(current: string[] | undefined, add: string[], remove: string[]): string[] {
@@ -41,6 +42,8 @@ export function patchFor(t: Trade, op: BulkOp): Partial<CreateTradePayload> | nu
       const next = mergeList(t.brokenRuleIds, op.add, op.remove);
       return JSON.stringify(next) === JSON.stringify(t.brokenRuleIds ?? []) ? null : { brokenRuleIds: next };
     }
+    case 'reviewed':
+      return (t.reviewed === true) === op.value ? null : { reviewed: op.value };
     case 'account':
       return t.accountId === op.accountId ? null : { accountIds: [op.accountId] };
   }
@@ -55,6 +58,7 @@ export function inverseOf(t: Trade, patch: Partial<CreateTradePayload>): Partial
   if ('mistakes' in patch) back.mistakes = t.mistakes ?? [];
   if ('tags' in patch) back.tags = t.tags ?? [];
   if ('brokenRuleIds' in patch) back.brokenRuleIds = t.brokenRuleIds ?? [];
+  if ('reviewed' in patch) back.reviewed = t.reviewed === true;
   if ('accountIds' in patch && t.accountId) back.accountIds = [t.accountId];
   return back;
 }

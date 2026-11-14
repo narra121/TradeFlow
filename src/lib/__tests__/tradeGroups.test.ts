@@ -22,7 +22,7 @@ describe('groupTrades', () => {
   });
 
   it('groups by day keeping the incoming order and counts W / L', () => {
-    const g = groupTrades([t('1'), t('2', { pnl: -4 }), t('3', { exitDate: '2026-11-03T11:00:00' })], 'day', accounts);
+    const g = groupTrades([t('1'), t('2', { pnl: -4 }), t('3', { entryDate: '2026-11-03T10:00:00', exitDate: '2026-11-03T11:00:00' })], 'day', accounts);
     expect(g.map((x) => x.label)).toEqual(['Wed 04 Nov 2026', 'Tue 03 Nov 2026']);
     expect(g[0]).toMatchObject({ wins: 1, losses: 1 });
     expect(g[0].net).toEqual([{ currency: 'USD', value: 6 }]);
@@ -68,8 +68,8 @@ describe('groupTrades', () => {
 
     it('a trade near a month end changes month with the zone', () => {
       patchUiState({ timeZone: 'America/New_York' });
-      const g = (exit: string) => groupTrades([t('1', { exitDate: exit })], 'month', accounts)[0];
-      // 30 Nov 23:30 UTC is 30 Nov 18:30 in New York but 1 Dec 05:00 in Kolkata
+      const g = (opened: string) => groupTrades([t('1', { entryDate: opened, exitDate: '2026-12-01T01:00:00.000Z' })], 'month', accounts)[0];
+      // Opened 30 Nov 23:30 UTC: 30 Nov 18:30 in New York but 1 Dec 05:00 in Kolkata
       expect(g('2026-11-30T23:30:00.000Z')).toMatchObject({ key: '2026-11', label: 'November 2026' });
       patchUiState({ timeZone: 'Asia/Kolkata' });
       expect(g('2026-11-30T23:30:00.000Z')).toMatchObject({ key: '2026-12', label: 'December 2026' });

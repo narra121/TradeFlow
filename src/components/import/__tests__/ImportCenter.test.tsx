@@ -97,7 +97,7 @@ describe('ImportCenter before a file', () => {
     await userEvent.click(screen.getByRole('combobox', { name: /Account/ }));
     const locked = screen.getByRole('option', { name: /Zerodha F&O/ });
     expect(locked).toHaveAttribute('aria-disabled', 'true');
-    expect(locked).toHaveTextContent('Read-only on Free');
+    expect(locked).toHaveTextContent('Read-only');
     await userEvent.click(locked);
     expect(importFlow.get().accountId).toBe('a1');
   });

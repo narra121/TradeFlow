@@ -1,19 +1,6 @@
 import { PLAN_LIMITS, PRO_PRICES, proPrice, type Currency, type Interval } from '@/content/product-facts';
 import { formatMoney } from '@/lib/format';
 
-/** Free-plan numbers read from the one plan table (`product-facts.ts`), so no limit is typed twice. */
-function freeNumber(featurePrefix: string): number {
-  const row = PLAN_LIMITS.find((r) => r.feature.startsWith(featurePrefix));
-  const n = Number.parseInt(row?.free ?? '', 10);
-  return Number.isFinite(n) ? n : 0;
-}
-
-export const FREE_ACCOUNTS = freeNumber('Trading accounts');
-export const FREE_BROKER_IMPORTS = freeNumber('Broker file imports');
-export const FREE_AI_EXTRACTIONS = freeNumber('AI extraction');
-export const FREE_AI_REPORTS = freeNumber('AI Insights');
-export const FREE_CHAT_MESSAGES = freeNumber('AI Chat');
-
 /** Plan rows shown in the app; the "Ads" row is a marketing line, not a limit. */
 export const APP_PLAN_ROWS = PLAN_LIMITS.filter((r) => r.feature !== 'Ads');
 

@@ -4,7 +4,7 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescript
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { useLogoutMutation } from '@/store/api/authApi';
+import { useClearDeletedSessionMutation } from '@/store/api/authApi';
 import { useDeleteUserAccountMutation } from '@/store/api/profileApi';
 import { readApiError } from '@/lib/apiError';
 import { emailMatches } from './helpers';
@@ -20,7 +20,7 @@ interface Props {
 
 export function DeleteAccountDialog({ open, email, onOpenChange, exportState, onExport }: Props) {
   const [deleteUserAccount, { isLoading }] = useDeleteUserAccountMutation();
-  const [clearLocal] = useLogoutMutation();
+  const [clearLocal] = useClearDeletedSessionMutation();
   const [typed, setTyped] = useState('');
   const [error, setError] = useState<string | null>(null);
 

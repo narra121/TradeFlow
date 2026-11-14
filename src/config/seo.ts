@@ -39,7 +39,7 @@ export const ORGANIZATION_SCHEMA = {
   },
 };
 
-/** Free plan plus the four Pro prices from product-facts, so structured data never drifts from the pricing table. */
+/** The free trial plus the four Pro prices from product-facts, so structured data never drifts from the pricing table. */
 export const SOFTWARE_APP_SCHEMA = {
   '@type': 'SoftwareApplication',
   name: 'TradeQut',
@@ -48,7 +48,7 @@ export const SOFTWARE_APP_SCHEMA = {
   url: SITE_URL,
   description: PRODUCT_DEFINITION,
   offers: [
-    { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD' },
+    { '@type': 'Offer', name: `${TRIAL_DAYS}-day free trial`, price: '0', priceCurrency: 'USD', description: 'Every Pro feature, no card required' },
     ...PRO_PRICES.map((p) => ({
       '@type': 'Offer',
       name: `Pro (${p.interval === 'month' ? 'monthly' : 'yearly'}, ${p.currency})`,

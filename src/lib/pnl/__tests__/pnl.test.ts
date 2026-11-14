@@ -4,7 +4,7 @@ import vectorsRaw from '../vectors.json?raw';
 import { computePnl, outcomeFromPnl, pipSize, pipValue, rMultiple, round2, type PnlInput } from '../index';
 
 // Must equal the hash pinned in JournalAWSSetup src/features/pnl/__tests__/pnl.test.ts (same vectors file).
-const VECTORS_SHA256 = '83a091169fefcbd552737322cbff48cffd2a4832b9ed69bc0f78df0d261f08e2';
+const VECTORS_SHA256 = 'b712a25dab08805ca8dfa716e73d86f7eb15dcc51a768748abc09f74ec384352';
 
 const raw = vectorsRaw.replace(/\r\n/g, '\n');
 const vectors = JSON.parse(raw) as { cases: { name: string; input: PnlInput; expected: ReturnType<typeof computePnl> }[] };
@@ -43,11 +43,12 @@ describe('helpers', () => {
     expect(pipValue('NIFTY', 1)).toBeNull();
   });
 
-  it('rMultiple needs a usable stop', () => {
-    expect(rMultiple({ entryPrice: 100, stopLoss: 95, quantity: 10 }, 100)).toBe(2);
-    expect(rMultiple({ entryPrice: 100, stopLoss: null, quantity: 10 }, 100)).toBeNull();
-    expect(rMultiple({ entryPrice: 100, stopLoss: 100, quantity: 10 }, 100)).toBeNull();
-    expect(rMultiple({ entryPrice: 1.1, stopLoss: 1.09, quantity: 1, multiplier: 100000 }, 500)).toBe(0.5);
+  it('rMultiple is from prices and needs a usable stop', () => {
+    expect(rMultiple({ side: 'BUY', entryPrice: 100, exitPrice: 110, stopLoss: 95 })).toBe(2);
+    expect(rMultiple({ side: 'SELL', entryPrice: 100, exitPrice: 110, stopLoss: 105 })).toBe(-2);
+    expect(rMultiple({ side: 'BUY', entryPrice: 100, exitPrice: 110, stopLoss: null })).toBeNull();
+    expect(rMultiple({ side: 'BUY', entryPrice: 100, exitPrice: 110, stopLoss: 100 })).toBeNull();
+    expect(rMultiple({ side: 'BUY', entryPrice: 1.1, exitPrice: 1.105, stopLoss: 1.09 })).toBe(0.5);
   });
 
   it('outcome by sign', () => {

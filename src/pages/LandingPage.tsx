@@ -10,12 +10,13 @@ import { HEADLINE_PARTS } from '@/components/showcase/copy';
 import { Eyebrow } from '@/components/showcase/Eyebrow';
 import { SampleDataChip } from '@/components/showcase/SampleDataChip';
 import { TradeReviewDemo } from '@/components/showcase/TradeReviewDemo';
-import { BehaviourCostCard, ImportReviewDemo, InsightsAnswerDemo } from '@/components/showcase/AnswerCards';
 import { AccountsStill, IndiaChargesStill, PhoneDashboard, PropLimitsStill } from '@/components/showcase/SegmentStills';
 import { LandingMotionProvider, MotionToggle, PageProgress, glideTo, useLandingMotion } from '@/components/landing/motion';
 import { ParticleAssembly } from '@/components/landing/ParticleAssembly';
 import { Manifesto } from '@/components/landing/Manifesto';
 import { StorySection } from '@/components/landing/StorySection';
+import { AnswersSection } from '@/components/landing/AnswersSection';
+import { RulesSection } from '@/components/landing/RulesSection';
 import { LandingFaq } from '@/components/landing/LandingFaq';
 import '@/components/landing/landing.css';
 
@@ -24,40 +25,12 @@ const COMPARISON = [
   { topic: 'P&L and R', sheet: 'Your own formulas', app: 'Computed per asset class, fees included' },
   { topic: 'Review', sheet: 'Screenshots in a folder', app: 'Notes, tags and screenshots on the trade' },
   { topic: 'Discipline', sheet: 'Not tracked', app: 'Rules, and a record of when you broke them' },
-] as const;
-
-const ANSWERS = [
-  {
-    question: 'What did each trade really make?',
-    answer:
-      'Import the Zerodha, Dhan, Upstox, Angel One, Groww or MetaTrader file and review it before saving. Trades from Indian brokers get estimated charges (brokerage, STT, exchange fees, SEBI fee, stamp duty, GST) at the rates in force on the trade date, so P&L is net.',
-    figure: 'Import review',
-    pro: false,
-    Visual: ImportReviewDemo,
-    alt: 'Sample data: a Zerodha tradebook in the import review, two NIFTY and BANKNIFTY option trades with their estimated charges and net P&L, one duplicate skipped.',
-  },
-  {
-    question: 'Which habits cost money?',
-    answer:
-      'Tag mistakes and mark broken rules on each trade. Analytics totals what each mistake and each broken rule cost, and Goals & rules shows every rule week by week.',
-    figure: 'Analytics · Behaviour',
-    pro: true,
-    Visual: BehaviourCostCard,
-    alt: 'Sample data: Analytics, Behaviour tab, listing two broken rules and what each cost this month.',
-  },
-  {
-    question: 'Where is my edge, and where is the leak?',
-    answer:
-      'Results by strategy, session, weekday and hour, with the number of trades beside each. AI reports and chat explain your own trades in plain words. They never suggest a trade.',
-    figure: 'Insights · Chat',
-    pro: false,
-    Visual: InsightsAnswerDemo,
-    alt: 'Sample data: Insights chat answering which session lost money in November with the net P&L of each session.',
-  },
+  { topic: 'How sure the numbers are', sheet: 'Your own statistics, if you add them', app: 'A range and a sample size on each finding' },
+  { topic: 'Testing a rule', sheet: 'Filter and re-total by hand', app: 'Replay the period without the trades the rule blocks' },
 ] as const;
 
 const SEGMENTS = [
-  { who: 'Indian F&O and intraday traders', what: 'Tradebook import, charges per trade, INR pricing.', Visual: IndiaChargesStill, alt: 'Sample data: one NIFTY option trade with gross P&L, each estimated charge and net P&L in rupees.' },
+  { who: 'Indian F&O and intraday traders', what: 'Tradebook import, charges per trade, options on expiry day set against other days, INR pricing.', Visual: IndiaChargesStill, alt: 'Sample data: one NIFTY option trade with gross P&L, each estimated charge and net P&L in rupees.' },
   { who: 'Prop-firm challengers', what: 'MT4 and MT5 reports, trade-count and drawdown limits as weekly or monthly goals.', Visual: PropLimitsStill, alt: 'Sample data: a weekly trade-count goal and a monthly drawdown goal with their progress.' },
   { who: 'Forex traders with several accounts', what: 'One row per account, totals kept per currency.', Visual: AccountsStill, alt: 'Sample data: three accounts in USD, INR and EUR, each with its own total.' },
 ] as const;
@@ -65,7 +38,7 @@ const SEGMENTS = [
 const SERVICES = [
   'Stripe processes subscription payments; TradeQut never sees your card number.',
   'Amazon Web Services hosts the app and stores your trades, encrypted.',
-  'AI reports and chat send trade figures, never notes, screenshots, names or email, to Google Gemini, and only when you use them. Screenshot import sends the images you upload.',
+  'AI requests go through OpenRouter, only for the features you use and the weekly report. Reports and chat send trade figures to OpenAI, never screenshots, names or email. Reports include your notes only if you switch on Use my notes. Screenshot import sends the images you upload to Google Gemini.',
   'Google Analytics runs only after your cookie choice where the law requires it.',
 ];
 
@@ -77,6 +50,16 @@ const LANDING_FAQ: FaqItem[] = [
     answer: 'No. You download the trade file from your broker or MetaTrader and upload it. TradeQut never asks for your broker login. Automatic sync is planned, not available.',
   },
   TRIAL_END_FAQ,
+  {
+    question: 'Does the AI make up numbers?',
+    answer:
+      'Code calculates every figure. In a report the model writes the sentences, and a sentence that contains a number the code did not produce is replaced by a plain one. In chat the model answers by running the same calculations as Analytics: the app draws the tables from the results, and the model is told to use only those figures.',
+  },
+  {
+    question: 'Will TradeQut make me profitable?',
+    answer:
+      'No tool can promise that, and TradeQut does not. It shows what happened in your own trades, what each habit cost, and how far the numbers can be trusted. We have found no peer-reviewed study showing that a journal or an AI coach improves trading results, so we do not claim it.',
+  },
 ];
 
 const JSON_LD = {
@@ -84,7 +67,7 @@ const JSON_LD = {
   '@graph': LANDING_PAGE_SCHEMA['@graph'].map((node) => ('@type' in node && node['@type'] === 'FAQPage' ? faqSchema(LANDING_FAQ) : node)),
 };
 
-const TRIAL = `${TRIAL_DAYS}-day Pro trial. No card.`;
+const TRIAL = `${TRIAL_DAYS}-day free trial. No card.`;
 
 function LandingBody() {
   const { still } = useLandingMotion();
@@ -105,8 +88,8 @@ function LandingBody() {
         </div>
         <div className="lp-hero__copy">
           <p className="lp-lead">
-            Import your broker or MetaTrader file, journal each trade, and see which strategies, hours, mistakes and broken rules
-            make or lose money, net of fees.
+            Import your broker or MetaTrader file, journal each trade, and see what your habits and broken rules cost, net of
+            fees. Each finding says how far it can be trusted.
           </p>
           <div className="lp-cta-row">
             <Button size="lg" asChild className="lp-cta">
@@ -158,44 +141,13 @@ function LandingBody() {
 
       <ParticleAssembly />
 
-      <section id="answers" aria-labelledby="answers-heading" className="lp-answers lp-wrap">
-        <div className="lp-head">
-          <div>
-            <Eyebrow>Three questions, your own numbers</Eyebrow>
-            <h2 id="answers-heading" className="lp-h2">
-              What TradeQut answers
-            </h2>
-          </div>
-          <p>Every figure comes from your trades. The pictures use one sample account.</p>
-        </div>
-        <ul className="lp-cards">
-          {ANSWERS.map(({ question, answer, figure, pro, Visual, alt }, i) => (
-            <li key={question} className="lp-card">
-              <figure className="lp-card__art">
-                <figcaption>
-                  <span>
-                    Fig. 0{i + 1} · {figure}
-                  </span>
-                  <span>
-                    {pro && <span className="lp-pro">Pro</span>} <SampleDataChip />
-                  </span>
-                </figcaption>
-                <div role="img" aria-label={alt}>
-                  <div aria-hidden="true">
-                    <Visual {...(Visual === BehaviourCostCard ? {} : { play: !still })} />
-                  </div>
-                </div>
-              </figure>
-              <h3>{question}</h3>
-              <p>{answer}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <AnswersSection />
 
       <Manifesto />
 
       <StorySection />
+
+      <RulesSection />
 
       <section aria-labelledby="built-heading" className="lp-built lp-rule">
         <div className="lp-wrap">
@@ -265,7 +217,7 @@ function LandingBody() {
         <div className="lp-wrap">
           <div className="lp-head">
             <div>
-              <Eyebrow>Free and Pro</Eyebrow>
+              <Eyebrow>Free trial and Pro</Eyebrow>
               <h2 id="pricing-heading" className="lp-h2">
                 Pricing
               </h2>
@@ -343,7 +295,7 @@ export function LandingPage() {
     <>
       <SEO
         title="TradeQut - Trading Journal with Broker Import and Rule Tracking"
-        description={`Trading journal with Zerodha, Dhan, Upstox and MT5 import, net P&L after charges, and the cost of every broken rule. Free plan; ${TRIAL_DAYS}-day Pro trial, no card.`}
+        description={`Trading journal with Zerodha, Dhan, Upstox and MT5 import, net P&L after charges, and the cost of every broken rule. ${TRIAL_DAYS}-day free trial with every Pro feature, no card.`}
         path="/"
         jsonLd={JSON_LD}
       />

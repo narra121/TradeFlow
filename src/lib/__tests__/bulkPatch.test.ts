@@ -21,6 +21,13 @@ describe('patchFor', () => {
     expect(patchFor(t(), { kind: 'session', value: 'London' })).toEqual({ session: 'London' });
     expect(patchFor(t(), { kind: 'account', accountId: 'a2' })).toEqual({ accountIds: ['a2'] });
   });
+
+  it('sets reviewed and skips trades that already have the value (absent = not reviewed)', () => {
+    expect(patchFor(t(), { kind: 'reviewed', value: true })).toEqual({ reviewed: true });
+    expect(patchFor(t(), { kind: 'reviewed', value: false })).toBeNull();
+    expect(patchFor(t({ reviewed: true }), { kind: 'reviewed', value: true })).toBeNull();
+    expect(patchFor(t({ reviewed: true }), { kind: 'reviewed', value: false })).toEqual({ reviewed: false });
+  });
 });
 
 describe('inverseOf', () => {
@@ -29,6 +36,7 @@ describe('inverseOf', () => {
     expect(inverseOf(trade, { strategy: 'B', session: 'London' })).toEqual({ strategy: 'A', session: '' });
     expect(inverseOf(trade, { mistakes: [] })).toEqual({ mistakes: ['FOMO'] });
     expect(inverseOf(trade, { accountIds: ['a2'] })).toEqual({ accountIds: ['a1'] });
+    expect(inverseOf(trade, { reviewed: true })).toEqual({ reviewed: false });
   });
 });
 

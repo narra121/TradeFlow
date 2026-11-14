@@ -140,15 +140,8 @@ export const SAMPLE_INDIA_TRADES: SampleIndiaTrade[] = [
 
 export const inr = (value: number, sign = true) => formatMoney(value, 'INR', { sign });
 
-/** Net P&L by session for the sample month (sums to the month: 29 trades, +$370.50). */
-export const SAMPLE_SESSIONS = [
-  { session: 'Asia', trades: 8, pnl: 120.6 },
-  { session: 'London', trades: 9, pnl: -61.3 },
-  { session: 'New York', trades: 12, pnl: 311.2 },
-];
-
-/** The two rules broken in the sample month, by rule (sums to the broken-rules cost: 6 trades, −$118.25). */
+/** The two rules broken in the sample month, each on every trade of its day (sums to the broken-rules cost: 6 trades, −$118.25). */
 export const SAMPLE_BROKEN_RULES = [
-  { rule: 'Trade with the 1-hour trend', trades: 4, pnl: -76.25 },
-  { rule: 'Max 2 trades per session', trades: 2, pnl: -42 },
+  { rule: 'Trade with the 1-hour trend', day: 10, trades: 4, pnl: -76.25 },
+  { rule: 'Max 2 trades per session', day: 3, trades: 2, pnl: -42 },
 ];

@@ -29,7 +29,7 @@ describe('buildAuthConfig', () => {
               domain: 'auth.example.com',
               scopes: ['openid', 'email', 'profile'],
               redirectSignIn: ['https://dev.tradequt.com/auth/callback'],
-              redirectSignOut: ['https://dev.tradequt.com/login?view=logged-out'],
+              redirectSignOut: ['https://dev.tradequt.com/login?view=logged-out', 'https://dev.tradequt.com/login?view=logged-out&scope=all'],
               responseType: 'code',
               providers: ['Google'],
             },

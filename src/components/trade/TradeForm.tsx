@@ -236,6 +236,8 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
     const gross = preview.gross ?? undefined;
     const existingNews = mode === 'edit' ? initialTrade?.newsEvents ?? [] : [];
     const news = form.newsEvent.trim();
+    // PUT removes a stored optional field only on an explicit null; a new trade has nothing to remove.
+    const cleared = mode === 'edit' ? null : undefined;
     return {
       symbol: form.symbol.trim().toUpperCase(),
       direction: form.direction,
@@ -261,14 +263,12 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
       accountIds: form.accountIds.length > 0 ? form.accountIds : undefined,
       brokenRuleIds: form.brokenRuleIds,
       assetClass: form.assetClass,
-      ...(needsLotSize(form.assetClass) && parseNum(form.lotSize) ? { contractMultiplier: parseNum(form.lotSize) as number } : {}),
-      ...(parseNum(form.fees) !== null ? { fees: parseNum(form.fees) as number } : {}),
+      contractMultiplier: needsLotSize(form.assetClass) && parseNum(form.lotSize) ? (parseNum(form.lotSize) as number) : cleared,
+      fees: parseNum(form.fees) ?? cleared,
       ...(gross !== undefined ? { grossPnl: gross } : {}),
       ...(form.assetClass === 'options'
         ? { optionType: form.optionType === '' ? undefined : form.optionType, strike: parseNum(form.strike) ?? undefined, expiry: form.expiry || undefined, underlying: form.symbol.trim().toUpperCase() }
-        : form.assetClass === 'futures' && form.expiry
-          ? { expiry: form.expiry }
-          : {}),
+        : { optionType: cleared, strike: cleared, expiry: form.assetClass === 'futures' && form.expiry ? form.expiry : cleared, underlying: cleared }),
     };
   };
 

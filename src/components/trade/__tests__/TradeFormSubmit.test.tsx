@@ -127,6 +127,76 @@ describe('TradeForm Net P&L is parsed strictly (FE-004)', () => {
   });
 });
 
+describe('clearing an optional field removes it on the server (H5)', () => {
+  const forex = { ...trade, assetClass: 'forex', fees: 2.5, contractMultiplier: 100000 } as Trade;
+  const option = { ...trade, symbol: 'AAPL', assetClass: 'options', optionType: 'call', strike: 150, expiry: '2026-11-27', underlying: 'AAPL', contractMultiplier: 100 } as Trade;
+
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+    api.updateTrade.mockReset();
+    api.updateTrade.mockReturnValue(ok({ updatedTrade: trade }));
+    // Radix Select calls these on a pointer press; jsdom does not implement them.
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+    Element.prototype.scrollIntoView ??= () => undefined;
+  });
+
+  const save = async (ref: ReturnType<typeof mountEdit>['ref']) => {
+    await act(async () => {
+      expect(await ref.current!.submit()).toBe(true);
+    });
+    return api.updateTrade.mock.calls[0][0].payload;
+  };
+
+  it('sends null for cleared fees and lot size', async () => {
+    const { ref } = mountEdit(forex);
+    await userEvent.clear(screen.getByLabelText(/^Fees/));
+    await userEvent.clear(screen.getByLabelText(/^Lot size/));
+    expect(await save(ref)).toMatchObject({ fees: null, contractMultiplier: null });
+  });
+
+  it('keeps a value that is still filled in', async () => {
+    const { ref } = mountEdit(forex);
+    expect(await save(ref)).toMatchObject({ fees: 2.5, contractMultiplier: 100000 });
+  });
+
+  it('keeps the stored expiry of a futures trade, which the form has no field to clear', async () => {
+    const { ref } = mountEdit({ ...trade, symbol: 'ESZ6', assetClass: 'futures', contractMultiplier: 50, expiry: '2026-12-18' } as Trade);
+    expect(await save(ref)).toMatchObject({ expiry: '2026-12-18', optionType: null, strike: null, underlying: null });
+  });
+
+  it('sends null for every option field when the trade is no longer an option', async () => {
+    const { ref } = mountEdit(option);
+    await userEvent.click(screen.getByRole('combobox', { name: /Asset class/ }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Stocks' }));
+    expect(await save(ref)).toMatchObject({ assetClass: 'stock', optionType: null, strike: null, expiry: null, underlying: null, contractMultiplier: null });
+  });
+
+  it('a new trade never sends null', async () => {
+    const ref = createRef<TradeFormHandle>();
+    render(
+      <MemoryRouter>
+        <TradeForm ref={ref} mode="new" defaultAccountIds={['a1']} onSaved={vi.fn()} onCancel={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await fill(/^Symbol/, 'EURUSD');
+    await userEvent.type(screen.getByLabelText(/^Entry price/), '1.1');
+    await userEvent.type(screen.getByLabelText(/^Exit price/), '1.2');
+    await fill(/^Lots/, '1');
+    await fill(/^Opened/, '4 Nov 2026, 10:00');
+    await userEvent.tab();
+    await fill(/^Closed/, '4 Nov 2026, 11:00');
+    await userEvent.tab();
+    api.createTrade.mockReturnValueOnce(ok([trade]));
+    await act(async () => {
+      expect(await ref.current!.submit()).toBe(true);
+    });
+    const body = JSON.parse(JSON.stringify(api.createTrade.mock.calls[0][0]));
+    expect(Object.values(body)).not.toContain(null);
+  });
+});
+
 describe('TradeForm.submit does not double-send (FE-005)', () => {
   beforeEach(() => {
     sessionStorage.clear();

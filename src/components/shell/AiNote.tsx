@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 export function AiNote() {
   return (
     <p className="text-xs text-muted-foreground">
-      Based on your journal data. Not investment advice. Trade figures (not your notes, screenshots, name or email) are sent to Google Gemini to
-      write the analysis; see the <Link to="/privacy" className="underline underline-offset-2">privacy policy</Link>.
+      Based on your journal data. Not investment advice. Trade figures are sent through OpenRouter to OpenAI to write the
+      analysis, never your screenshots, name or email. Reports include your notes only if you switch on Use my notes; chat
+      never sends them. See the <Link to="/privacy" className="underline underline-offset-2">privacy policy</Link>.
     </p>
   );
 }

@@ -42,10 +42,11 @@ function AppRoutes() {
       }
       
       isHandlingUnauthorized.current = true;
-      // Clear what is stored too, or a reload would start the full app on the same unusable session.
-      void discardSession();
       dispatch(clearAuth());
       navigate('/login', { replace: true, state: { from: location, reason: 'session-ended' } });
+      // Clear what is stored too, or a reload would start the full app on the same unusable session. Not before the render
+      // that clearAuth causes: RequireAuth would find no session and redirect over the state set above.
+      window.setTimeout(discardSession, 0);
       
       // Reset flag after navigation
       setTimeout(() => {
@@ -73,7 +74,7 @@ function AppRoutes() {
   useEffect(() => {
     if (!hasStoredSession() || authReady) return;
     const endSession = () => {
-      void discardSession();
+      discardSession();
       dispatch(clearAuth());
       navigate('/login', { replace: true });
     };

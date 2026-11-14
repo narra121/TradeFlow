@@ -7,8 +7,9 @@ const SECTIONS: LegalSection[] = [
     title: 'Plans and trial',
     body: (
       <p>
-        TradeQut has a Free plan and a paid Pro subscription, billed monthly or yearly through Stripe. Every new account starts
-        with a {TRIAL_DAYS}-day Pro trial without a card, so you can try Pro before paying.
+        TradeQut has one paid plan, Pro, billed monthly or yearly through Stripe. Every new account starts with a {TRIAL_DAYS}-day
+        free trial of Pro without a card, so you can try Pro before paying. Without Pro, after the trial or when a subscription
+        ends, your account is read-only: you can view and export your data but not add, edit or delete.
       </p>
     ),
   },
@@ -21,7 +22,7 @@ const SECTIONS: LegalSection[] = [
         <ul>
           <li>You keep Pro until the end of the period you already paid for.</li>
           <li>You are not charged again.</li>
-          <li>Your account then returns to the Free plan, with its limits. Your trades stay in your account and you can export them.</li>
+          <li>Your account then becomes read-only. Your trades stay in your account and you can view and export them.</li>
           <li>The remaining days of a paid period are not refunded.</li>
         </ul>
       </>
@@ -85,7 +86,7 @@ export function RefundPolicyPage() {
       title="Refund & Cancellation Policy"
       description="How to cancel a TradeQut Pro subscription, what happens after cancellation, and when refunds are available."
       path="/refund"
-      updated="2026-11-11"
+      updated="2026-11-13"
       sections={SECTIONS}
     />
   );

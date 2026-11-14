@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { decodeClaims, hasStoredSession, readStoredClaims, readStoredIdToken } from '../storedSession';
+import { clearStoredSession, decodeClaims, hasStoredSession, isOAuthSession, readStoredClaims, readStoredIdToken } from '../storedSession';
 
 const CLIENT = 'client123';
 const P = 'CognitoIdentityServiceProvider';
@@ -59,6 +59,37 @@ describe('stored Amplify session', () => {
   it('returns null claims for a malformed ID token', () => {
     store(CLIENT, 'u', { accessToken: 'a.b.c', idToken: 'not-a-jwt' });
     expect(readStoredClaims(localStorage, CLIENT)).toBeNull();
+  });
+});
+
+describe('clearStoredSession', () => {
+  it("removes every key of the app client (tokens, user, Google flags) and nothing else", () => {
+    store(CLIENT, 'u', { accessToken: 'a.b.c', idToken: jwt({ sub: 's' }), refreshToken: 'r', oauthMetadata: '{}' });
+    ['oauthSignIn', 'inflightOAuth', 'oauthPKCE', 'oauthState'].forEach((k) => localStorage.setItem(`${P}.${CLIENT}.${k}`, 'x'));
+    store('other-client', 'v', { accessToken: 'z.z.z' });
+    localStorage.setItem('ui.timeZone', 'Asia/Kolkata');
+    clearStoredSession(localStorage, CLIENT);
+    expect(Object.keys(localStorage).sort()).toEqual([`${P}.other-client.LastAuthUser`, `${P}.other-client.v.accessToken`, 'ui.timeZone'].sort());
+    expect(hasStoredSession(localStorage, CLIENT)).toBe(false);
+  });
+
+  it('removes every pool when no client id is given', () => {
+    store('a', 'u', { accessToken: 'a.b.c' });
+    store('b', 'v', { accessToken: 'a.b.c' });
+    clearStoredSession(localStorage, '');
+    expect(localStorage).toHaveLength(0);
+  });
+});
+
+describe('isOAuthSession', () => {
+  it("reads Amplify's Google sign-in flag", () => {
+    expect(isOAuthSession(localStorage, CLIENT)).toBe(false);
+    localStorage.setItem(`${P}.${CLIENT}.oauthSignIn`, 'true,false');
+    expect(isOAuthSession(localStorage, CLIENT)).toBe(true);
+    expect(isOAuthSession(localStorage, 'other-client')).toBe(false);
+    expect(isOAuthSession(localStorage, '')).toBe(true);
+    localStorage.setItem(`${P}.${CLIENT}.oauthSignIn`, 'false,false');
+    expect(isOAuthSession(localStorage, CLIENT)).toBe(false);
   });
 });
 

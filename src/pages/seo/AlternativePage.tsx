@@ -3,7 +3,7 @@ import { A, Disclaimer, Faq, H2, P, ShortAnswer, SignupCta, Sources, Table, UL }
 import { getCompetitor, type Competitor } from '@/content/alternatives';
 import { getSeoPage } from '@/content/seo-pages';
 import { seoPageSchema } from '@/config/seo';
-import { proPrice } from '@/content/product-facts';
+import { proPrice, TRIAL_DAYS } from '@/content/product-facts';
 
 export function AlternativePage({ id }: { id: Competitor['id'] }) {
   const c = getCompetitor(id);
@@ -23,8 +23,8 @@ export function AlternativePage({ id }: { id: Competitor['id'] }) {
     >
       <h1 className="mb-4 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">{c.name} alternative: TradeQut compared</h1>
       <ShortAnswer>
-        {c.name} is {c.summary.charAt(0).toLowerCase() + c.summary.slice(1)} TradeQut is a smaller journal with a Free
-        plan, Pro at {usd}/month ({inr}/month in India), file import for Indian brokers and rule tracking. Where {c.name} is
+        {c.name} is {c.summary.charAt(0).toLowerCase() + c.summary.slice(1)} TradeQut is a smaller journal with a
+        14-day free trial, Pro at {usd}/month ({inr}/month in India), file import for Indian brokers and rule tracking. Where {c.name} is
         stronger is listed below. Prices were checked on {c.checked}.
       </ShortAnswer>
 
@@ -59,7 +59,7 @@ export function AlternativePage({ id }: { id: Competitor['id'] }) {
         caption={`Checked ${c.checked}`}
         head={['', c.name, 'TradeQut']}
         rows={[
-          ['Free plan', c.id === 'tradesviz' ? 'Yes (stocks only, 1 account)' : c.id === 'tradezella' ? 'None advertised' : 'Not verified', 'Yes'],
+          ['Free plan or trial', c.id === 'tradesviz' ? 'Free plan (stocks only, 1 account)' : c.id === 'tradezella' ? 'None advertised' : 'Not verified', `${TRIAL_DAYS}-day free trial with every Pro feature, then read-only`],
           [
             'Pro / paid price',
             c.id === 'tradezella'

@@ -12,6 +12,7 @@ import { RiskTab } from '@/components/analysis/RiskTab';
 import { TaxReport } from '@/components/analysis/TaxReport';
 import { TimingTab } from '@/components/analysis/TimingTab';
 import type { AnalyticsContext } from '@/components/analysis/drill';
+import { useAnalysis } from '@/components/analysis/useAnalysis';
 import { CompareSwitch } from '@/components/stats/CompareSwitch';
 import { CurrencySwitch } from '@/components/stats/CurrencySwitch';
 import { usePeriodStats } from '@/components/stats/usePeriodStats';
@@ -35,8 +36,8 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 const LOCKED: Partial<Record<TabId, { title: string; question: string }>> = {
-  timing: { title: 'Timing', question: 'Which hours, weekdays and sessions are your best and worst?' },
-  risk: { title: 'Risk', question: 'How deep are your drawdowns, and how are your results spread in R?' },
+  timing: { title: 'Timing', question: 'When should I trade, and when should I stop? Hours, weekdays, trade number in the day and holding time.' },
+  risk: { title: 'Risk', question: 'Is my risk under control? Losses past the stop, risk per trade, drawdowns and a next-100-trades scenario.' },
 };
 
 /** Minimum trades before the statistics mean anything. */
@@ -69,6 +70,7 @@ export function AnalyticsView() {
 
   const skip = tab === 'tax' || locked || (tabNeedsPro && ent.isLoading);
   const ps = usePeriodStats({ skip });
+  const analysis = useAnalysis({ skip });
   const view = useCurrencyView(ps.stats, ps.prev);
   const currency = view.currency ?? selectedCurrency;
 
@@ -119,7 +121,7 @@ export function AnalyticsView() {
     );
   }
 
-  const ctx: AnalyticsContext = { stats: view.stats ?? ps.stats, prev: view.prev, prevRange: ps.prevRange, currency, multi: view.currencies.length > 1, noBalance: drawdownBasis === 'balance', zone: (ps.stats.timeZone as string | undefined) ?? 'UTC', pro };
+  const ctx: AnalyticsContext = { stats: view.stats ?? ps.stats, prev: view.prev, prevRange: ps.prevRange, currency, multi: view.currencies.length > 1, noBalance: drawdownBasis === 'balance', zone: (ps.stats.timeZone as string | undefined) ?? 'UTC', pro, analysis };
 
   return (
     <div className="space-y-4">

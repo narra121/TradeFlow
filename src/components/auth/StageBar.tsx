@@ -22,7 +22,7 @@ const STATS: { label: string; value: string; hint: string; tone?: 'pos' | 'neg' 
 
 /** What an account commits you to: facts the code proves (CONTRACT §4; CLAIMS-EVIDENCE S14). No counts, ratings or security claims. */
 const FACTS: [string, string][] = [
-  ['Free after the trial', 'Unless you upgrade.'],
+  ['Read-only after the trial', 'Unless you upgrade to Pro.'],
   ['Export any time', 'Your trades, from Settings.'],
   ['Delete any time', 'Your account and journal.'],
 ];

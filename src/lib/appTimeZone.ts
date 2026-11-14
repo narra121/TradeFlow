@@ -53,6 +53,14 @@ export function dayKeyIn(d: Date, zone?: string): string {
   return `${w.year}-${pad(w.month)}-${pad(w.day)}`;
 }
 
+/** `YYYY-MM-DD` of the day an `openDate` falls on in the app zone, the day `GET /trades` and the day statistics file a trade under; a date-only value is its own day. Empty when it is not a date. */
+export function openDayKey(openDate: string | null | undefined): string {
+  if (!openDate) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(openDate)) return openDate;
+  const d = new Date(openDate);
+  return Number.isNaN(d.getTime()) ? '' : dayKeyIn(d);
+}
+
 /** Today's `YYYY-MM-DD` in the app zone. */
 export const appTodayKey = (now: Date = new Date()): string => dayKeyIn(now);
 
@@ -78,23 +86,30 @@ export function wallToInstant(w: WallClock, zone: string = appTimeZone()): Date 
   return new Date(guess - second * 60_000);
 }
 
-/** `YYYY-MM-DDTHH:mm` (a datetime-local value) for an instant, on the app zone's clock; empty when it is not a date. */
-export function toZonedInput(value: string | Date | null | undefined): string {
+// Every IANA offset is a whole number of minutes, so the seconds of an instant read the same on every zone's clock.
+
+/**
+ * `YYYY-MM-DDTHH:mm` (a datetime-local value) for an instant, on the app zone's clock; with `seconds`, `:ss` is added
+ * when they are not 0, and the input then needs `step={1}`. Empty when it is not a date.
+ */
+export function toZonedInput(value: string | Date | null | undefined, opts: { seconds?: boolean } = {}): string {
   if (!value) return '';
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return '';
   const w = wallClock(d);
-  return `${w.year}-${pad(w.month)}-${pad(w.day)}T${pad(w.hour)}:${pad(w.minute)}`;
+  const s = d.getUTCSeconds();
+  return `${w.year}-${pad(w.month)}-${pad(w.day)}T${pad(w.hour)}:${pad(w.minute)}${opts.seconds && s ? `:${pad(s)}` : ''}`;
 }
 
 /** The instant a datetime-local value means on the app zone's clock (a value that carries its own offset is that instant); null when it is not a date. */
 export function fromZonedInput(value: string): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/i.exec(value);
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/i.exec(value);
   if (!m) return null;
-  if (m[6]) {
+  if (m[8]) {
     const exact = new Date(value);
     return Number.isNaN(exact.getTime()) ? null : exact;
   }
   const d = wallToInstant({ year: Number(m[1]), month: Number(m[2]), day: Number(m[3]), hour: Number(m[4]), minute: Number(m[5]) });
-  return Number.isNaN(d.getTime()) ? null : d;
+  const ms = d.getTime() + Number(m[6] ?? 0) * 1000 + Math.round(Number(m[7] ?? 0) * 1000);
+  return Number.isNaN(ms) ? null : new Date(ms);
 }

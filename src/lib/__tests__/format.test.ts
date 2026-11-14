@@ -49,7 +49,10 @@ describe('ratios', () => {
     expect(formatPercent(-3.2, 1, { sign: true })).toBe('−3.2%');
     expect(formatR(2)).toBe('+2.00R');
     expect(formatR(-0.5)).toBe('−0.50R');
-    expect(formatR(0)).toBe('—');
+    expect(formatR(0)).toBe('0.00R');
+    expect(formatR(-0.001)).toBe('0.00R');
+    expect(formatR(null)).toBe('—');
+    expect(formatR(Number.NaN)).toBe('—');
     expect(formatR(undefined)).toBe('—');
   });
 

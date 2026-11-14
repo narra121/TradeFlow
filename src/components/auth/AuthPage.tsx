@@ -23,7 +23,7 @@ import { normalizeEmail } from '@/lib/auth/email';
 import { trackLogin, trackSignUp } from '@/lib/analytics';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { clearSignupSuccess } from '@/store/slices/authSlice';
-import { useConfirmSignupMutation, useForgotPasswordMutation, useLoginMutation, useResetPasswordMutation, useSignupMutation } from '@/store/api';
+import { useConfirmSignupMutation, useForgotPasswordMutation, useLoginMutation, useResendCodeMutation, useResetPasswordMutation, useSignupMutation } from '@/store/api';
 
 type AuthView = 'login' | 'signup' | 'forgot' | 'otp' | 'reset';
 
@@ -96,6 +96,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
   const [login, { isLoading: loginLoading }] = useLoginMutation();
   const [signup, { isLoading: signupLoading }] = useSignupMutation();
   const [confirmSignup, { isLoading: confirmLoading }] = useConfirmSignupMutation();
+  const [resendSignupCode, { isLoading: resendLoading }] = useResendCodeMutation();
   const [forgotPassword, { isLoading: forgotLoading }] = useForgotPasswordMutation();
   const [resetPassword, { isLoading: resetLoading }] = useResetPasswordMutation();
 
@@ -130,7 +131,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
   const resend = useCountdown(30);
   const cooldown = useCountdown(0);
   const googleOn = isGoogleConfigured();
-  const loading = loginLoading || signupLoading || confirmLoading || forgotLoading || resetLoading;
+  const loading = loginLoading || signupLoading || confirmLoading || resendLoading || forgotLoading || resetLoading;
 
   const failGoogle = useCallback(() => {
     setFormError({ kind: 'other', title: "Couldn't open Google sign-in", message: 'Try again, or use your email and password.' });
@@ -258,9 +259,8 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
     } catch (err) {
       const info = describeAuthError(err, 'login');
       if (info.kind === 'unverified') {
-        // Signing up again with the same address resends the code.
         try {
-          await signup({ name: fallbackName(email), email: email.trim(), password }).unwrap();
+          await resendSignupCode({ email: email.trim() }).unwrap();
         } catch {
           // the code may already have been sent; the verify screen has its own resend
         }
@@ -280,8 +280,8 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
     if (next.email || next.password) return failFields(next);
     clearFeedback();
     try {
-      await signup({ name: fallbackName(email), email: email.trim(), password }).unwrap();
-      trackSignUp('email');
+      const created = await signup({ name: fallbackName(email), email: email.trim(), password }).unwrap();
+      if (!created.resent) trackSignUp('email');
       setOrigin('signup');
       go('otp');
       resend.restart();
@@ -320,7 +320,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
     if (resend.left > 0 || busy) return;
     try {
       if (view === 'reset') await forgotPassword({ email: email.trim() }).unwrap();
-      else await signup({ name: fallbackName(email), email: email.trim(), password }).unwrap();
+      else await resendSignupCode({ email: email.trim() }).unwrap();
       resend.restart();
       setErrors({});
       setCode('');
@@ -540,7 +540,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
 
   const alternate =
     view === 'login'
-      ? { prompt: 'New here?', note: `${TRIAL_DAYS}-day Pro trial. No card.`, label: 'Create account', to: '/signup', state: { ...(location.state as object | null), email: email.trim() || undefined } }
+      ? { prompt: 'New here?', note: `${TRIAL_DAYS}-day free trial. No card.`, label: 'Create account', to: '/signup', state: { ...(location.state as object | null), email: email.trim() || undefined } }
       : view === 'signup'
         ? { prompt: 'Have an account?', label: 'Log in', to: '/login', state: { ...(location.state as object | null), email: email.trim() || undefined } }
         : undefined;
@@ -580,13 +580,13 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
     <AuthFrame scene={scene} stage={stage} step={step} alternate={alternate}>
       <SEO
         title={PAGE_TITLES[view]}
-        description={view === 'signup' ? 'Create your TradeQut account. 14-day Pro trial, no card.' : 'Log in to your TradeQut trading journal.'}
+        description={view === 'signup' ? 'Create your TradeQut account. 14-day free trial, no card.' : 'Log in to your TradeQut trading journal.'}
         path={location.pathname}
         noindex={!indexable}
       />
       <FadeIn key={view}>
         <h1 className="auth-h1">{TITLES[view]}</h1>
-        {view === 'signup' && <p className="auth-lead">{TRIAL_DAYS}-day Pro trial. No card.</p>}
+        {view === 'signup' && <p className="auth-lead">{TRIAL_DAYS}-day free trial. No card.</p>}
         {view === 'forgot' && <p className="auth-lead">Enter your account email and we&apos;ll send a 6-digit code.</p>}
         {view === 'otp' && (
           <p className="auth-lead">

@@ -14,6 +14,11 @@ describe('bulkUpdateBody (X-013)', () => {
     expect(bulkUpdateBody({ kind: 'brokenRules', add: ['r1'], remove: [] })).toEqual({ add: { brokenRuleIds: ['r1'] } });
   });
 
+  it('sends reviewed as a boolean in `set`', () => {
+    expect(bulkUpdateBody({ kind: 'reviewed', value: true })).toEqual({ set: { reviewed: true } });
+    expect(bulkUpdateBody({ kind: 'reviewed', value: false })).toEqual({ set: { reviewed: false } });
+  });
+
   it('leaves an account move to the per-trade update', () => {
     expect(bulkUpdateBody({ kind: 'account', accountId: 'a1' })).toBeNull();
   });

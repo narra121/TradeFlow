@@ -13,19 +13,21 @@ import { useEntitlements } from '@/hooks/useEntitlements';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTradeParam } from '@/hooks/useTradeParam';
 import { useAppSelector } from '@/store/hooks';
-import { useGenerateInsightMutation, useLazyListInsightsQuery, useListInsightsQuery } from '@/store/api/insightsApi';
+import { useGenerateInsightMutation, useGetInsightSettingsQuery, useLazyListInsightsQuery, useListInsightsQuery } from '@/store/api/insightsApi';
 import { clampedLabel, isMixedCurrency, periodLabel, reportAsText, reportRange, tradesInMessage } from '@/lib/ai/insightFormat';
 import { formatDateShort } from '@/lib/format';
 import { readApiError } from '@/lib/apiError';
 import { emitPlanSignal } from '@/lib/planErrors';
+import { openTrialExpired } from '@/components/billing/readOnly';
 import { trackAiInsightGenerated } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import type { Insight } from '@/types/insights';
+import { NotesSwitch } from './NotesSwitch';
 import { ReportBody } from './ReportBody';
 
 const REPORT_PAGE = 50;
 
-type Problem = { kind: 'min'; message: string } | { kind: 'failed'; message: string } | { kind: 'api'; message: string };
+type Problem = { kind: 'min'; message: string } | { kind: 'failed'; message: string } | { kind: 'api'; message: string } | { kind: 'mixed'; message: string };
 
 export function InsightsView() {
   usePageChrome({
@@ -47,6 +49,7 @@ export function InsightsView() {
   // undefined: no older page loaded yet, so the cursor is the first page's.
   const [olderCursor, setOlderCursor] = useState<string | null | undefined>(undefined);
   const [generate, { isLoading: generating }] = useGenerateInsightMutation();
+  const { data: settings } = useGetInsightSettingsQuery();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [announce, setAnnounce] = useState('');
   const pending = useRef<{ abort: () => void } | null>(null);
@@ -61,7 +64,10 @@ export function InsightsView() {
   const current = insights.find((i) => i.id === selectedId) ?? (isMobile ? null : insights[0] ?? null);
   const row = ent.usage.find((u) => u.feature === 'ai_insight');
   const remaining = row && row.limit !== null ? Math.max(0, row.limit - row.used) : null;
-  const accountName = (id: string | null) => (id ? accounts.find((a) => a.id === id)?.name ?? 'Account' : 'All accounts');
+  const accountName = (id: string | null, currency?: string | null) =>
+    id ? accounts.find((a) => a.id === id)?.name ?? 'Account' : currency && isMixedCurrency(accounts, null) ? `All ${currency} accounts` : 'All accounts';
+  // Reports made before the weekly review carry no currency: an all-accounts one may add currencies together.
+  const insightCurrency = (i: Insight) => i.currency ?? i.review?.currency ?? accounts.find((a) => a.id === i.accountId)?.currency;
   // "All time" has no real start and the API takes at most 366 days: longer scopes send their last 366 days, and the button says so.
   const range = useMemo(
     () => reportRange(filters.datePreset, filters.startDate, filters.endDate),
@@ -84,6 +90,7 @@ export function InsightsView() {
 
   const run = async () => {
     setProblem(null);
+    if (ent.readOnly) return openTrialExpired();
     if (mixed) return;
     if (row && row.limit !== null && row.used >= row.limit) {
       emitPlanSignal({ code: 'QUOTA_EXCEEDED', feature: 'ai_insight', limit: row.limit, resetsAt: ent.periodResetsAt, message: 'You have reached your plan limit.', kind: 'mutation' });
@@ -101,7 +108,8 @@ export function InsightsView() {
       // A rejected request (400/422) says why and has nothing to retry; every other failure keeps Retry.
       const info = readApiError(e, 'Couldn’t generate the report.');
       if (info.status === 402) return;
-      if (info.code === 'NOT_ENOUGH_TRADES' || (info.status === 422 && tradesInMessage(info.message) !== null)) {
+      if (info.code === 'MIXED_CURRENCY') setProblem({ kind: 'mixed', message: `${info.message.replace(/[.!?]*$/, '.')} Nothing was charged.` });
+      else if (info.code === 'NOT_ENOUGH_TRADES' || (info.status === 422 && tradesInMessage(info.message) !== null)) {
         const n = tradesInMessage(info.message);
         setProblem({ kind: 'min', message: `A report needs at least 5 closed trades in the period${n !== null ? ` — this scope has ${n}` : ''}.` });
       } else if (info.status === 400 || info.status === 422) setProblem({ kind: 'api', message: info.message });
@@ -128,19 +136,30 @@ export function InsightsView() {
   const makeRule = (text: string) => navigate(`/app/goals?addRule=${encodeURIComponent(text)}`);
   const copy = async (insight: Insight) => {
     try {
-      await navigator.clipboard.writeText(reportAsText(insight, `${periodLabel(insight.period.from, insight.period.to)} · ${accountName(insight.accountId)}`));
+      await navigator.clipboard.writeText(reportAsText(insight, `${periodLabel(insight.period.from, insight.period.to)} · ${accountName(insight.accountId, insight.currency)}`));
       toast('Summary copied');
     } catch {
       toast('Couldn’t copy. Select the text and copy it instead.');
     }
   };
 
-  const accountChoice = mixed ? (
+  const pickAccount = (text: string) => (
     <div role="note" className="mb-4 space-y-2 border-l-2 border-warning pl-3">
-      <p id="report-account" className="text-13 text-foreground-soft">Reports are per currency — choose an account</p>
-      <AccountPicker label="Account" labelledBy="report-account" accounts={accounts.filter((a) => a.status !== 'inactive')} value={null} onChange={setSelectedAccountId} className="max-w-xs" />
+      <p id="report-account" className="text-13 text-foreground-soft">{text}</p>
+      <AccountPicker
+        label="Account"
+        labelledBy="report-account"
+        accounts={accounts.filter((a) => a.status !== 'inactive')}
+        value={null}
+        onChange={(id) => {
+          setProblem(null);
+          setSelectedAccountId(id);
+        }}
+        className="max-w-xs"
+      />
     </div>
-  ) : null;
+  );
+  const accountChoice = mixed && problem?.kind !== 'mixed' ? pickAccount('Reports are per currency — choose an account') : null;
 
   const list = (
     <nav aria-label="Reports" className="min-w-0">
@@ -165,7 +184,7 @@ export function InsightsView() {
                     <span className="truncate">{periodLabel(i.period.from, i.period.to)}</span>
                     <span className="shrink-0 text-xs font-normal text-muted-foreground">{formatDateShort(i.createdAt)}</span>
                   </span>
-                  <span className="truncate text-xs text-muted-foreground">{accountName(i.accountId)} · {i.tradeCount} trades</span>
+                  <span className="truncate text-xs text-muted-foreground">{accountName(i.accountId, i.currency)} · {i.tradeCount} trades</span>
                 </button>
               </li>
             );
@@ -190,6 +209,8 @@ export function InsightsView() {
       </div>
       <Skeleton className="h-6 w-2/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-20" /><Skeleton className="h-20" /><Skeleton className="h-20" />
     </div>
+  ) : problem?.kind === 'mixed' ? (
+    <div role="alert">{pickAccount(problem.message)}</div>
   ) : problem ? (
     <div role="alert" className="space-y-2">
       <p className="text-sm text-loss">{problem.message}</p>
@@ -198,9 +219,10 @@ export function InsightsView() {
   ) : current ? (
     <ReportBody
       insight={current}
-      title={`${periodLabel(current.period.from, current.period.to)} · ${accountName(current.accountId)}`}
-      currency={accounts.find((a) => a.id === current.accountId)?.currency}
-      mixedCurrency={isMixedCurrency(accounts, current.accountId)}
+      title={`${periodLabel(current.period.from, current.period.to)} · ${accountName(current.accountId, current.currency)}`}
+      currency={insightCurrency(current) ?? undefined}
+      mixedCurrency={!current.currency && !current.review && isMixedCurrency(accounts, current.accountId)}
+      useNotes={settings?.useNotes ?? false}
       onOpenTrades={openTrades}
       onMakeRule={makeRule}
       onCopy={() => void copy(current)}
@@ -218,7 +240,8 @@ export function InsightsView() {
 
   return (
     <div>
-      <ScopeBarSlot side="right">{controls}</ScopeBarSlot>
+      {/* A phone has no room for these in the bar; its report list carries the same button and meter. */}
+      {!isMobile && <ScopeBarSlot side="right">{controls}</ScopeBarSlot>}
       <span className="sr-only" role="status" aria-live="polite">{announce}</span>
       {isMobile ? (
         <div className="space-y-3">
@@ -235,12 +258,16 @@ export function InsightsView() {
               <Button type="button" onClick={run} disabled={generating || mixed} className="w-full">{generateLabel}</Button>
               {meter && <p className="font-mono text-xs tabular-nums text-muted-foreground">{meter}</p>}
               {list}
+              <NotesSwitch className="border-t border-border px-3 pt-3" />
             </>
           )}
         </div>
       ) : (
         <div className="grid gap-0 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
-          <div className="border-r border-border lg:pr-0">{list}</div>
+          <div className="border-r border-border lg:pr-0">
+            {list}
+            <NotesSwitch className="mt-2 border-t border-border px-3 py-3" />
+          </div>
           <div className="min-w-0 px-0 pt-3 lg:px-6 lg:pt-0">{accountChoice}{detail}</div>
         </div>
       )}

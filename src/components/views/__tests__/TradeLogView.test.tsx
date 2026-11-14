@@ -228,6 +228,20 @@ describe('TradeLogView', () => {
       expect(bulkUpdate.mock.calls[1][0]).toMatchObject({ tradeIds: ['t3'], add: { tags: ['A'] } });
       await vi.waitFor(() => expect(screen.queryByText(/could not be updated/)).toBeNull());
     });
+
+    it('marks the selected trades reviewed in one bulk-update, skipping those already reviewed', async () => {
+      scope = { trades: [mk(1, { reviewed: true }), mk(2), mk(3)], isLoading: false, isError: false };
+      bulkUpdate.mockReturnValue({ unwrap: () => Promise.resolve({ updated: 2, updatedIds: ['t2', 't3'], notFound: [], failed: [] }) });
+      setup();
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Select all rows shown' }));
+      const bar = screen.getByRole('toolbar', { name: 'Selected trades' });
+      await userEvent.click(within(bar).getByRole('button', { name: 'Reviewed · followed plan' }));
+      await userEvent.click(await screen.findByRole('option', { name: 'Yes' }));
+      expect(bulkUpdate).toHaveBeenCalledTimes(1);
+      const arg = bulkUpdate.mock.calls[0][0];
+      expect(arg).toMatchObject({ tradeIds: ['t3', 't2'], set: { reviewed: true } });
+      expect(arg.patches.t2).toEqual({ reviewed: true });
+    });
   });
 
   it('shows fees per currency, never one sum in the first currency (FE-055)', () => {

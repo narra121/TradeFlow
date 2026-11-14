@@ -12,6 +12,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Link } from 'react-router-dom';
 import { READ_ONLY_REASON } from '@/lib/accountWritable';
 import { useReadOnlyAccounts } from '@/hooks/useReadOnlyAccounts';
+import { useEntitlements } from '@/hooks/useEntitlements';
+import { openTrialExpired } from '@/components/billing/readOnly';
+import { useUpgrade } from '@/components/billing/useUpgrade';
 import { copy } from '@/copy';
 import { useUndoableDelete } from '@/hooks/useUndoableDelete';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -22,6 +25,8 @@ import { ImageViewerModal } from '@/components/trade/ImageViewerModal';
 import { DynamicSelect } from '@/components/trade/DynamicSelect';
 import { MistakeTagsInput } from '@/components/trade/MistakeTagsInput';
 import { BrokenRulesSelect } from '@/components/trade/BrokenRulesSelect';
+import { ReviewedSwitch } from '@/components/trade/ReviewedSwitch';
+import { TradeDebrief } from '@/components/trade/TradeDebrief';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useSavedOptions } from '@/hooks/useSavedOptions';
 import { useTradingRules } from '@/hooks/useTradingRules';
@@ -81,6 +86,9 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const readOnlyIds = useReadOnlyAccounts();
+  // Trial over or Pro lapsed: every action that writes offers the upgrade instead of being a dead control.
+  const planReadOnly = useEntitlements().readOnly;
+  const upgrade = useUpgrade();
   const showsTrade = param.mode === 'view' || param.mode === 'edit';
   const listed = showsTrade ? trades.find((t) => t.id === param.trade) ?? null : null;
   // A trade outside the scope list (an older Calendar month, a shared link) is fetched by id.
@@ -89,7 +97,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
   const trade = listed ?? fetched.currentData ?? null;
   // Prev / Next walk the cited list (`&ids=`), then the order the list screen shows, otherwise the scope list.
   const walk = useMemo(() => param.ids ?? walkIds ?? trades.map((t) => t.id), [param.ids, walkIds, trades]);
-  const readOnly = !!trade?.accountId && readOnlyIds.has(trade.accountId);
+  const readOnly = planReadOnly || (!!trade?.accountId && readOnlyIds.has(trade.accountId));
   const index = trade ? walk.indexOf(trade.id) : -1;
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const account = trade?.accountId ? accountById.get(trade.accountId) : undefined;
@@ -185,6 +193,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
   const undoableDelete = useUndoableDelete();
   const onDelete = async () => {
     if (!trade) return;
+    if (planReadOnly) return openTrialExpired();
     const next = walk[index + 1] ?? walk[index - 1];
     if (!(await undoableDelete([trade]))) return;
     if (next) param.stepTo(next);
@@ -218,7 +227,14 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
       </h2>
       {param.mode === 'view' && trade && (
         <>
-          <Button type="button" variant="outline" size="sm" onClick={() => param.setEdit(true)} disabled={readOnly} title={readOnly ? READ_ONLY_REASON : undefined}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => (planReadOnly ? openTrialExpired() : param.setEdit(true))}
+            disabled={readOnly && !planReadOnly}
+            title={readOnly ? READ_ONLY_REASON : undefined}
+          >
             <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Edit
           </Button>
           <DropdownMenu>
@@ -228,7 +244,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => param.openNew({ from: trade.id })} className="items-start">
+              <DropdownMenuItem onSelect={() => (planReadOnly ? openTrialExpired() : param.openNew({ from: trade.id }))} className="items-start">
                 <Copy className="mr-2 mt-0.5 h-4 w-4" aria-hidden="true" />
                 <span>
                   {copy.trades.duplicate.label}
@@ -255,7 +271,25 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
   );
 
   let body: React.ReactNode;
-  if (param.mode === 'new') {
+  if (param.mode === 'new' && planReadOnly) {
+    body = (
+      <div className="space-y-3 p-4">
+        <p className="flex items-start gap-2 text-sm">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <span>{READ_ONLY_REASON}</span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="accent" size="sm" disabled={upgrade.busy === 'checkout'} onClick={upgrade.upgrade}>
+            {upgrade.busy === 'checkout' ? 'Opening checkout…' : 'Upgrade to Pro'}
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => close()}>
+            Close
+          </Button>
+        </div>
+        {upgrade.error && <p role="alert" className="text-xs text-error">{upgrade.error}</p>}
+      </div>
+    );
+  } else if (param.mode === 'new') {
     body = (
       <TradeForm
         key={`new-${param.date ?? ''}-${param.from ?? ''}`}
@@ -314,7 +348,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
             <p role="status" className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-2 text-xs text-foreground-soft">
               <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span>
-                {READ_ONLY_REASON} <Link to="/app/settings/billing" className="text-primary underline underline-offset-2">Plan &amp; billing</Link>
+                {READ_ONLY_REASON} <Link to="/app/settings/billing" className="text-primary underline underline-offset-2">Upgrade to Pro</Link>
               </span>
             </p>
           )}
@@ -344,6 +378,13 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
             {trade.strike !== undefined && <Row label="Strike">{formatPrice(trade.strike)}</Row>}
             {trade.expiry && <Row label="Expiry">{formatDateShort(trade.expiry, true)}</Row>}
           </dl>
+
+          <ReviewedSwitch
+            checked={trade.reviewed === true}
+            disabled={readOnly}
+            onChange={(reviewed) => updateTrade({ id: trade.id, payload: { ...patchTradePayload(trade, {}), reviewed } }).unwrap()}
+          />
+          <TradeDebrief tradeId={trade.id} />
         </div>
 
         <div className={cn('space-y-4 p-4 pt-0', param.expanded && 'lg:order-1 lg:pt-4')}>

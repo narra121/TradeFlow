@@ -45,7 +45,7 @@ export const COMPETITORS: Competitor[] = [
       'A broader product with higher tiers for heavy users.',
     ],
     tradequtFits: [
-      `A permanent Free plan, and Pro at ${usdMonth}/month or ${inrMonth}/month rather than $35 and up.`,
+      `A 14-day free trial with every Pro feature and no card, then Pro at ${usdMonth}/month or ${inrMonth}/month rather than $35 and up.`,
       'Pricing in INR, and import of Zerodha, Dhan, Upstox, Angel One and Groww files with estimated Indian charges per trade.',
       'Rule tracking that records when you broke each rule and what the breaks cost.',
     ],
@@ -53,7 +53,7 @@ export const COMPETITORS: Competitor[] = [
       {
         question: 'Is TradeQut cheaper than TradeZella?',
         answer:
-          `On list prices checked on 12 November 2026, yes: TradeQut Pro is ${usdMonth}/month or ${usdYear}/year, and there is a Free plan. TradeZella lists Essential at $35/month ($26/month billed yearly) and no free plan. TradeZella offers automatic broker sync that TradeQut does not have yet.`,
+          `On list prices checked on 12 November 2026, yes: TradeQut Pro is ${usdMonth}/month or ${usdYear}/year, after a 14-day free trial. TradeZella lists Essential at $35/month ($26/month billed yearly) and no free plan. TradeZella offers automatic broker sync that TradeQut does not have yet.`,
       },
       {
         question: 'Does TradeQut sync automatically with my broker like TradeZella?',
@@ -74,7 +74,7 @@ export const COMPETITORS: Competitor[] = [
       'A larger user base and a longer track record than TradeQut.',
     ],
     tradequtFits: [
-      'A permanent Free plan and INR pricing.',
+      'A 14-day free trial with every Pro feature, and INR pricing.',
       'File import designed around Indian broker reports, with estimated charges per trade.',
       'Rule tracking that records when you broke each rule and what the breaks cost.',
     ],
@@ -93,7 +93,7 @@ export const COMPETITORS: Competitor[] = [
       {
         question: 'What does TraderSync cost?',
         answer:
-          `TraderSync's own pricing page could not be read automatically on 12 November 2026. A third-party guide updated in September 2026 lists $29.95, $49.95 and $79.95 a month for its three plans; check tradersync.com/pricing for the current figures. TradeQut Pro is ${usdMonth}/month or ${usdYear}/year, with a Free plan.`,
+          `TraderSync's own pricing page could not be read automatically on 12 November 2026. A third-party guide updated in September 2026 lists $29.95, $49.95 and $79.95 a month for its three plans; check tradersync.com/pricing for the current figures. TradeQut Pro is ${usdMonth}/month or ${usdYear}/year, after a 14-day free trial.`,
       },
     ],
   },
@@ -116,7 +116,7 @@ export const COMPETITORS: Competitor[] = [
     ],
     tradequtFits: [
       'A smaller, simpler journal built around rules and review habits.',
-      'Free plan with 2 trading accounts, unlimited manual trades and every asset class.',
+      'A 14-day free trial with every Pro feature: unlimited accounts and manual trades, every asset class.',
       'Estimated Indian charges on imported trades, and the cost of each broken rule.',
       `Pro at ${inrMonth}/month or ${inrYear}/year.`,
     ],
@@ -124,7 +124,7 @@ export const COMPETITORS: Competitor[] = [
       {
         question: 'How does TradesViz compare with TradeQut for Indian traders?',
         answer:
-          `TradesViz is the more established product: it supports Zerodha tradebook import today and has a free plan with 3,000 executions a month. TradeQut is smaller and simpler, with rule tracking and lower Pro pricing (${inrMonth}/month or ${inrYear}/year). Try both free plans with your own tradebook.`,
+          `TradesViz is the more established product: it supports Zerodha tradebook import today and has a free plan with 3,000 executions a month. TradeQut is smaller and simpler, with rule tracking and lower Pro pricing (${inrMonth}/month or ${inrYear}/year). Try the TradesViz free plan and the TradeQut free trial with your own tradebook.`,
       },
     ],
   },

@@ -17,6 +17,7 @@ import { PAGE_SIZE, sourceLabel } from '@/lib/import/labels';
 import { canMerge, filterRows, firstProblemKey, parseTruncation, summarise } from '@/lib/import/rows';
 import { SCREENSHOT_SOURCE, type ImportSourceId } from '@/types/import';
 import { ColumnMapping } from './ColumnMapping';
+import { DateNotice } from './DateNotice';
 import { DropZone } from './DropZone';
 import { MobileReview } from './MobileReview';
 import { PastImports } from './PastImports';
@@ -59,7 +60,7 @@ export function ImportCenter() {
   }, [accounts, ent.writableAccountIds]);
   // Active accounts the plan made read-only stay listed, with the reason, so a missing account is explained.
   const accountOptions = useMemo(
-    () => [...writable, ...accounts.filter((a) => a.status === 'active' && !writable.includes(a)).map((a) => ({ ...a, disabledReason: 'Read-only on Free' }))],
+    () => [...writable, ...accounts.filter((a) => a.status === 'active' && !writable.includes(a)).map((a) => ({ ...a, disabledReason: 'Read-only' }))],
     [accounts, writable],
   );
   // The plan can arrive after the accounts: a default taken while every account still looked writable is dropped
@@ -443,7 +444,7 @@ export function ImportCenter() {
               </>
             )}
             {flow.mapping?.remembered && <> · Using your saved column mapping</>}
-            {flow.detected === 'generic_csv' && <> · Times read in {appTimeZone()}</>}
+            {(flow.detected === 'generic_csv' || flow.detected === SCREENSHOT_SOURCE) && <> · Times read in {appTimeZone()}</>}
           </p>
           {showSkipped && (
             <ul className="space-y-0.5 text-xs text-muted-foreground">
@@ -462,6 +463,8 @@ export function ImportCenter() {
           )}
         </div>
       )}
+
+      {!flow.columns && flow.detected === SCREENSHOT_SOURCE && <DateNotice rows={flow.rows} readOnly={readOnly} onSwitch={actions.switchDates} />}
 
       {reviewBody}
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { priceLine } from '@/components/billing/freeLimits';
@@ -7,11 +7,13 @@ import { readInterval, useUpgrade } from '@/components/billing/useUpgrade';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { PLAN_SIGNAL_EVENT, type PlanSignal } from '@/lib/planErrors';
 
-/** Mounted once in the app shell: every mutation that gets a 402 opens this dialog. */
+/** Mounted once in the app shell: every mutation that gets a 402 (quota, plan or TRIAL_EXPIRED) opens this dialog. */
 export function UpgradeDialog() {
   const [signal, setSignal] = useState<PlanSignal | null>(null);
   const ent = useEntitlements();
   const up = useUpgrade();
+  const refetch = useRef(ent.refetch);
+  refetch.current = ent.refetch;
 
   useEffect(() => {
     const onSignal = (e: Event) => {
@@ -19,6 +21,8 @@ export function UpgradeDialog() {
       if (detail.kind === 'mutation') {
         up.clearError();
         setSignal(detail);
+        // The server said read-only: bring the app's plan up to date, so every screen shows it.
+        if (detail.code === 'TRIAL_EXPIRED') refetch.current();
       }
     };
     window.addEventListener(PLAN_SIGNAL_EVENT, onSignal);

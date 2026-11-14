@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PLAN_SIGNAL_EVENT, classifyPlanError, emitPlanSignal } from '../planErrors';
+import { PLAN_SIGNAL_EVENT, TRIAL_EXPIRED_MESSAGE, classifyPlanError, emitPlanSignal } from '../planErrors';
 
 describe('classifyPlanError', () => {
   it('ignores non-402 responses', () => {
@@ -16,6 +16,12 @@ describe('classifyPlanError', () => {
     const s = classifyPlanError(402, { error: { code: 'PLAN_REQUIRED', feature: 'advanced_analytics' } }, 'query');
     expect(s).toMatchObject({ code: 'PLAN_REQUIRED', feature: 'advanced_analytics', kind: 'query' });
     expect(s?.message).toMatch(/Pro/);
+  });
+
+  it('turns TRIAL_EXPIRED into a mutation signal with the API message, never a quota signal', () => {
+    const body = { success: false, errorCode: 'TRIAL_EXPIRED', message: 'Your free trial has ended. Upgrade to Pro to add, edit or delete.' };
+    expect(classifyPlanError(402, body, 'query')).toEqual({ code: 'TRIAL_EXPIRED', message: body.message, kind: 'mutation' });
+    expect(classifyPlanError(402, { errorCode: 'TRIAL_EXPIRED' })?.message).toBe(TRIAL_EXPIRED_MESSAGE);
   });
 
   it('falls back to a quota signal for an unknown 402 body', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { AccountPicker } from '@/components/account/AccountPicker';
@@ -18,6 +18,7 @@ import { usePeriodKeys } from '@/components/calendar/usePeriodKeys';
 import { usePageChrome } from '@/components/shell/chrome';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useOnline } from '@/hooks/useOnline';
+import { useEntitlements } from '@/hooks/useEntitlements';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useScopeTrades } from '@/hooks/useScopeTrades';
 import { drawdownBasis } from '@/components/stats/useScopeCapital';
@@ -116,28 +117,46 @@ export function GoalsView() {
   const [deleteRule] = useDeleteRuleMutation();
 
   const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
-  const goals = useMemo(() => [...(rulesGoals.data?.goals ?? []), ...(progress.data?.goals ?? [])], [rulesGoals.data, progress.data]);
   const gp = progress.data?.goalProgress;
+  const records = rulesGoals.data?.goals;
+
+  /**
+   * The record a goal type edits. An account's own goal overrides the default (accountId null) for that account; for all
+   * accounts the default counts only while no account has a goal of the type, otherwise the figure is the sum of those
+   * account goals and has no record of its own. Read from the period's records: the progress response's `goals` carry
+   * summed targets in the all-accounts scope.
+   */
+  const recordFor = useCallback(
+    (type: GoalType) => {
+      const ofType = (records ?? []).filter((g) => g.goalType === type && g.period === periodType);
+      if (selectedAccount) return { own: ofType.find((g) => g.accountId === selectedAccount.id), derived: false };
+      const derived = ofType.some((g) => g.accountId);
+      return { own: derived ? undefined : ofType.find((g) => !g.accountId), derived };
+    },
+    [records, periodType, selectedAccount],
+  );
 
   const tracks: Track[] = useMemo(() => {
     if (!gp) return [];
     return GOAL_ORDER.map((type: GoalType) => {
       const prog = type === 'maxTrades' ? gp.tradeCount : gp[type];
-      const real = goals.find((g) => g.goalType === type && g.period === periodType && (selectedAccount ? g.accountId === selectedAccount.id : true));
+      const { own, derived } = recordFor(type);
       return {
         type,
         current: prog?.current ?? 0,
-        target: real?.target ?? DEFAULT_TARGETS[periodType][type],
-        isDefault: !real,
+        // The server's target already applies the account-over-default rule.
+        target: prog?.target > 0 ? prog.target : own?.target ?? DEFAULT_TARGETS[periodType][type],
+        isDefault: !own && !derived,
+        derived,
         tradeCount: gp.tradeCount?.current ?? 0,
         unavailable: type === 'maxDrawdown' && basis === 'balance' ? 'Set a starting balance on the account to track drawdown.' : undefined,
       };
     });
-  }, [gp, goals, periodType, selectedAccount, basis]);
+  }, [gp, recordFor, periodType, basis]);
 
   const saveGoal = async (type: GoalType, value: number) => {
-    const real = goals.find((g) => g.goalType === type && g.period === periodType && (selectedAccount ? g.accountId === selectedAccount.id : true));
-    if (real?.goalId) await updateGoal({ id: real.goalId, payload: { target: value } }).unwrap();
+    const { own } = recordFor(type);
+    if (own?.goalId) await updateGoal({ id: own.goalId, payload: { target: value } }).unwrap();
     else await createGoal({ accountId: selectedAccount?.id, goalType: type, period: periodType, target: value, periodKey: ref.key }).unwrap();
   };
 
@@ -186,7 +205,8 @@ export function GoalsView() {
   const failed = rulesGoals.isError || progress.isError || allRulesQuery.isError;
   const failure = progress.error ?? rulesGoals.error ?? allRulesQuery.error;
   const online = useOnline();
-  const readOnly = !live || !online;
+  const planReadOnly = useEntitlements().readOnly;
+  const readOnly = !live || !online || planReadOnly;
 
   const retry = () => {
     void rulesGoals.refetch();

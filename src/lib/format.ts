@@ -78,10 +78,11 @@ export function formatPercent(value: number | null | undefined, decimals = 1, op
   return `${prefix}${Math.abs(rounded).toFixed(decimals)}%`;
 }
 
-/** A missing or zero R is shown as a dash: zero means "no stop loss", not breakeven. */
+/** A missing R (no stop loss or exit price) is a dash; zero is a real result (e.g. +2R and −2R) and has no sign. */
 export function formatR(value: number | null | undefined): string {
-  if (!isNum(value) || value === 0) return '—';
+  if (!isNum(value)) return '—';
   const rounded = Number(value.toFixed(2));
+  if (rounded === 0) return '0.00R';
   return `${rounded < 0 ? MINUS : '+'}${Math.abs(rounded).toFixed(2)}R`;
 }
 

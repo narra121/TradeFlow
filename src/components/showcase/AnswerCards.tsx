@@ -1,18 +1,21 @@
-import { ArrowUp, Check, FileSpreadsheet } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Check, FileSpreadsheet } from 'lucide-react';
 import { Stage } from './kit/stage';
 import type { Act } from './kit/act';
 import { Collapse } from './kit/motion/Collapse';
-import { Stream } from './kit/motion/Stream';
 import { Button } from './kit/controls/Button';
 import { Meter } from './kit/parts/Meter';
-import { FIXED_STARTERS } from '@/lib/ai/chatFormat';
-import { SAMPLE_BROKEN_RULES, SAMPLE_INDIA_TRADES, SAMPLE_SESSIONS, inr, money, plural, sampleStats } from './sampleJournal';
+import { formatPercent, formatR } from '@/lib/format';
+import { SAMPLE_INDIA_TRADES, inr, money, plural } from './sampleJournal';
+import { MIN_VERDICT_TRADES, SAMPLE_LABEL_TEXT, sampleBehaviours, sampleEdge } from './sampleAnalysis';
 import './look.css';
 import './answer-cards.css';
 
-/** Card stages share one geometry (stageshow "pinned, bottom bleed"): 380 × 340, frame inset 20, off the bottom. */
-const W = 380;
-const H = 340;
+/** Card stages share one geometry (stageshow "pinned, bottom bleed"): 380 × 360, frame inset 20, off the bottom. */
+export const CARD_W = 380;
+export const CARD_H = 360;
+const W = CARD_W;
+const H = CARD_H;
 
 type ImportS = { progress: number; rows: number; imported: boolean };
 const IMPORT_DONE: ImportS = { progress: 1, rows: 3, imported: true };
@@ -41,7 +44,7 @@ export function ImportReviewDemo({ play = true }: { play?: boolean }) {
       poster={IMPORT_DONE}
       script={play ? importScript : undefined}
       play="once"
-      cursor={{ at: { x: 330, y: 320 } }}
+      cursor={{ at: { x: 330, y: 336 } }}
       theme="dark"
       className="tq-look ac-demo"
     >
@@ -84,144 +87,120 @@ export function ImportReviewDemo({ play = true }: { play?: boolean }) {
               </div>
             </div>
           </div>
-          <span data-target="rest" style={{ position: 'absolute', left: 330, top: 320 }} />
+          <span data-target="rest" style={{ position: 'absolute', left: 330, top: 336 }} />
         </>
       )}
     </Stage>
   );
 }
 
-/** Analytics › Behaviour: what each broken rule cost this month (a still). */
-export function BehaviourCostCard() {
-  const s = sampleStats();
-  const worst = Math.max(...SAMPLE_BROKEN_RULES.map((r) => Math.abs(r.pnl)));
+const ANALYTICS_TABS = ['Overview', 'Edge', 'Timing', 'Risk', 'Behaviour'];
+
+function AnalyticsFrame({ tab, children }: { tab: string; children: ReactNode }) {
+  return (
+    <div className="tq-frame ac-frame">
+      <div className="tq-frame__main">
+        <div className="tq-frame__title">
+          <span>Analytics</span>
+        </div>
+        <div className="ac-tabs">
+          {ANALYTICS_TABS.map((t) => (
+            <span key={t} data-active={t === tab || undefined}>
+              {t}
+            </span>
+          ))}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const pct = (fraction: number) => formatPercent(fraction * 100);
+
+const EDGE = sampleEdge();
+const BEHAVIOURS = sampleBehaviours().slice(0, 3);
+const evidenceWords = (trades: number) => (trades < MIN_VERDICT_TRADES ? 'too early to tell' : 'pattern to watch');
+
+export const EDGE_ALT = `Sample data: Analytics, Overview tab, on ${plural(EDGE.trades, 'trade')}, labelled ${SAMPLE_LABEL_TEXT[EDGE.label].toLowerCase()}. Win rate ${pct(EDGE.winRate)} with a range of ${pct(EDGE.winRateRange.lo)} to ${pct(EDGE.winRateRange.hi)}, break-even win rate ${pct(EDGE.breakEvenWinRate)}, and expectancy ${formatR(EDGE.expectancyR)} per trade with a range of ${formatR(EDGE.expectancyRRange.lo)} to ${formatR(EDGE.expectancyRRange.hi)}${EDGE.tradesNeeded === null ? '' : ', not proven yet'}.`;
+export const BEHAVIOUR_ALT = `Sample data: Analytics, Behaviour tab, listing ${BEHAVIOURS.map((b) => `${b.title.toLowerCase()}, ${plural(b.trades, 'trade')}, ${money(b.net)}`).join('; ')}; each is marked ${evidenceWords(BEHAVIOURS[0].trades)}.`;
+
+/** Analytics › Overview, "Do I have an edge?": win rate against break-even and expectancy in R, each with its range (a still). */
+export function EdgeCard() {
+  const e = EDGE;
   return (
     <Stage width={W} height={H} theme="dark" className="tq-look ac-demo">
       {() => (
-        <div className="tq-frame ac-frame">
-          <div className="tq-frame__main">
-            <div className="tq-frame__title">
-              <span>Analytics</span>
+        <AnalyticsFrame tab="Overview">
+          <div className="ac-panel-title ac-panel-title--stack">
+            <span>Do I have an edge?</span>
+            <small>
+              {SAMPLE_LABEL_TEXT[e.label]} · {plural(e.trades, 'trade')}
+            </small>
+          </div>
+          <div className="ac-facts">
+            <div className="ac-fact">
+              <span className="ac-fact__label">Win rate</span>
+              <span className="ac-fact__value tq-num">{pct(e.winRate)}</span>
+              <span className="ac-fact__note">
+                Range {pct(e.winRateRange.lo)}–{pct(e.winRateRange.hi)}
+              </span>
             </div>
-            <div className="ac-tabs">
-              <span>Overview</span>
-              <span>Edge</span>
-              <span data-active="true">Behaviour</span>
-              <span>Timing</span>
+            <div className="ac-fact">
+              <span className="ac-fact__label">Break-even win rate</span>
+              <span className="ac-fact__value tq-num">{pct(e.breakEvenWinRate)}</span>
+              <span className="ac-fact__note">At a payoff of {e.payoff.toFixed(2)}</span>
             </div>
-            <div className="ac-panel-title">
-              <span>Broken rules</span>
-              <span className="tq-num tq-neg">{money(s.brokenRules)}</span>
-            </div>
-            {SAMPLE_BROKEN_RULES.map((r) => (
-              <div key={r.rule} className="ac-cost">
-                <span className="ac-cost__rule">{r.rule}</span>
-                <span className="ac-cost__n tq-muted">{plural(r.trades, 'trade')}</span>
-                <span className="ac-r tq-num tq-neg">{money(r.pnl)}</span>
-                <i className="ac-cost__bar" style={{ width: `${(Math.abs(r.pnl) / worst) * 100}%` }} />
-              </div>
-            ))}
-            <div className="ac-panel-title ac-panel-title--quiet">
-              <span>Mistakes</span>
-            </div>
-            <div className="ac-filler">
-              <i style={{ width: 120 }} />
-              <i style={{ width: 54 }} />
-            </div>
-            <div className="ac-filler">
-              <i style={{ width: 96 }} />
-              <i style={{ width: 54 }} />
+            <div className="ac-fact ac-fact--lead">
+              <span className="ac-fact__label">Expectancy per trade</span>
+              <span className="ac-fact__line">
+                <span className={`ac-fact__value tq-num ${e.expectancyR < 0 ? 'tq-neg' : 'tq-pos'}`}>{formatR(e.expectancyR)}</span>
+                <span className="ac-fact__note">
+                  Range {formatR(e.expectancyRRange.lo)} to {formatR(e.expectancyRRange.hi)}
+                </span>
+              </span>
+              <span className="ac-fact__say">
+                {e.tradesNeeded === null
+                  ? 'The whole range is on one side of zero.'
+                  : `Not proven yet: about ${e.tradesNeeded} trades with a stop would be needed at this spread; you have ${e.trades}.`}
+              </span>
             </div>
           </div>
-        </div>
+        </AnalyticsFrame>
       )}
     </Stage>
   );
 }
 
-const QUESTION = FIXED_STARTERS[0];
-const STARTERS = [FIXED_STARTERS[0], FIXED_STARTERS[3]];
-const [ASIA, LONDON, NEW_YORK] = SAMPLE_SESSIONS;
-const MONTH = sampleStats();
-const ANSWER = `Broken rules: ${plural(MONTH.brokenTrades, 'trade')} that broke a rule lost ${money(MONTH.brokenRules)}. By session, London lost ${money(LONDON.pnl)} over ${LONDON.trades} trades; Asia (${money(ASIA.pnl)}) and New York (${money(NEW_YORK.pnl)}) made money.`;
-const ANSWER_WORDS = ANSWER.split(' ').length;
-
-type ChatS = { asked: boolean; thinking: boolean; words: number };
-const CHAT_DONE: ChatS = { asked: true, thinking: false, words: ANSWER_WORDS };
-
-async function chatScript(a: Act<ChatS>) {
-  await a.wait(700);
-  await a.move({ at: 'starter-0', x: 0.85, y: 0.5 });
-  await a.wait(200);
-  await a.click();
-  await a.set({ asked: true, thinking: true });
-  await a.wait(900);
-  await a.set({ thinking: false });
-  for (let n = 1; n <= ANSWER_WORDS; n++) {
-    a.put({ words: n });
-    await a.wait(55);
-  }
-  await a.move('rest');
-}
-
-/** Insights › Chat: from the empty state's first starter question (the app's own) to a plain answer with its figures. */
-export function InsightsAnswerDemo({ play = true }: { play?: boolean }) {
+/** Analytics › Behaviour, "What do I do that costs money?": the behaviour checks with count, money and R against normal (a still). */
+export function BehaviourBoardCard() {
   return (
-    <Stage
-      width={W}
-      height={H}
-      initial={{ asked: false, thinking: false, words: 0 } as ChatS}
-      poster={CHAT_DONE}
-      script={play ? chatScript : undefined}
-      play="once"
-      cursor={{ at: { x: 330, y: 110 } }}
-      theme="dark"
-      className="tq-look ac-demo"
-    >
-      {(s) => (
-        <>
-          <div className="tq-frame ac-frame">
-            <div className="tq-frame__main">
-              <div className="tq-frame__title">
-                <span>Insights</span>
-              </div>
-              <div className="ac-tabs">
-                <span>Reports</span>
-                <span data-active="true">Chat</span>
-              </div>
-              <div className="ac-conv">
-              <div className="ac-chat">
-                <Collapse open={!s.asked}>
-                  <div className="ac-empty">
-                    <div className="ac-empty__title">Ask about your own trades</div>
-                    <div className="tq-muted">Answers come from your journal. Pick a question or write your own.</div>
-                    <div className="ac-starters">
-                      {STARTERS.map((q, i) => (
-                        <span key={q} className="ac-starter" data-target={`starter-${i}`} data-cursor="hand">
-                          {q}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </Collapse>
-                <Collapse open={s.asked} reveal="drop" from="below">
-                  <div className="ac-q">{QUESTION}</div>
-                </Collapse>
-                <Collapse open={s.asked}>
-                  <div className="ac-a">{s.thinking ? <span className="tq-muted">Thinking…</span> : <Stream text={ANSWER} count={s.words} />}</div>
-                </Collapse>
-              </div>
-              <div className="ac-composer">
-                <span className="tq-muted">Ask about your trading…</span>
-                <span className="ac-send">
-                  <ArrowUp />
-                </span>
-              </div>
-              </div>
-            </div>
+    <Stage width={W} height={H} theme="dark" className="tq-look ac-demo">
+      {() => (
+        <AnalyticsFrame tab="Behaviour">
+          <div className="ac-panel-title ac-panel-title--stack">
+            <span>What do I do that costs money?</span>
+            <small>Checked on every trade; most need no tagging</small>
           </div>
-          <span data-target="rest" style={{ position: 'absolute', left: 330, top: 110 }} />
-        </>
+          {BEHAVIOURS.map((b) => (
+            <div key={b.id} className="ac-beh">
+              <span className="ac-beh__name">{b.title}</span>
+              <span className="ac-r tq-num">{money(b.net)}</span>
+              <span className="ac-beh__note">
+                {plural(b.trades, 'trade')} · {evidenceWords(b.trades)}
+              </span>
+              <span className="ac-r ac-beh__note tq-num">
+                {formatR(b.avgR)} vs {formatR(b.normalAvgR)}
+              </span>
+            </div>
+          ))}
+          {[104, 132].map((w) => (
+            <div key={w} className="ac-filler">
+              <i style={{ width: w }} />
+              <i style={{ width: 54 }} />
+            </div>
+          ))}
+        </AnalyticsFrame>
       )}
     </Stage>
   );

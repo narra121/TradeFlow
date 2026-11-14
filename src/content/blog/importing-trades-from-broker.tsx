@@ -75,7 +75,7 @@ export default function ImportingTradesFromBroker() {
       <H2>Screenshots, when there is no file</H2>
       <P>
         Some prop-firm and broker dashboards have no export. Upload or paste screenshots of the trade list: PNG, JPG or WebP,
-        up to 1 MB each and up to 15 at a time. AI extraction (Google Gemini) reads the trades, and the review table shows the
+        up to 1 MB each and up to 15 at a time. AI extraction (Google Gemini, through OpenRouter) reads the trades, and the review table shows the
         screenshot behind each row so you can compare the numbers before importing.
       </P>
       <UL>
@@ -87,10 +87,10 @@ export default function ImportingTradesFromBroker() {
       <H2>Monthly limits</H2>
       <Table
         caption="Import limits by plan"
-        head={['', 'Free', 'Pro']}
+        head={['', 'Free trial', 'Pro']}
         rows={[
-          ['Broker file imports', imports?.free ?? '', imports?.pro ?? ''],
-          ['AI extraction from screenshots', extraction?.free ?? '', extraction?.pro ?? ''],
+          ['Broker file imports', imports?.trial ?? '', imports?.pro ?? ''],
+          ['AI extraction from screenshots', extraction?.trial ?? '', extraction?.pro ?? ''],
         ]}
       />
       <P>

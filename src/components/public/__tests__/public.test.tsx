@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { render, screen, within, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PricingTable, defaultCurrency } from '../PricingTable';
+import { ANALYTICS_TABS, AnalyticsContents } from '../AnalyticsContents';
 import { PublicLayout } from '../PublicLayout';
 import { formatSigned, SAMPLE_DAYS, sampleNet } from '../tourFixture';
-import { PLAN_LIMITS } from '@/content/product-facts';
+import { PLAN_LIMITS, PRICING_NOTE } from '@/content/product-facts';
 import { OPEN_CONSENT_EVENT } from '@/lib/analytics';
 
 const wrap = (ui: React.ReactElement, route = '/') => render(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>);
@@ -17,6 +18,19 @@ describe('defaultCurrency', () => {
     expect(defaultCurrency(['en-US'])).toBe('USD');
     expect(defaultCurrency(['en-GB', 'de-DE'])).toBe('USD');
     expect(defaultCurrency([])).toBe('USD');
+  });
+});
+
+describe('AnalyticsContents', () => {
+  it('lists every Analytics tab with the question it answers and what it shows, and names no plan', () => {
+    wrap(<AnalyticsContents />);
+    const table = screen.getByRole('table', { name: 'What each Analytics tab shows' });
+    expect(ANALYTICS_TABS.map((t) => t.tab)).toEqual(['Overview', 'Edge', 'Timing', 'Risk', 'Behaviour', 'Tax']);
+    for (const t of ANALYTICS_TABS) {
+      const row = within(table).getByRole('rowheader', { name: `${t.tab} ${t.question}` }).closest('tr')!;
+      expect(within(row).getByRole('cell')).toHaveTextContent(t.shows);
+    }
+    expect(table.textContent).not.toMatch(/\bFree\b|\bPro\b/);
   });
 });
 
@@ -49,7 +63,8 @@ describe('PricingTable', () => {
 
   it('shows the trial sentence and a Start free link', () => {
     wrap(<PricingTable />);
-    expect(screen.getByText(/14-day Pro trial, no card required/)).toBeInTheDocument();
+    expect(PRICING_NOTE).toMatch(/14-day .*trial.*no card required/);
+    expect(screen.getByText(PRICING_NOTE)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Start free' })).toHaveAttribute('href', '/signup');
   });
 });

@@ -7,6 +7,7 @@ import { appToday } from '@/lib/appTimeZone';
 import { formatDateShort, formatMoney, formatPercent } from '@/lib/format';
 import type { TodaySummary, WeekGoal } from '@/lib/dashboard';
 import type { WeekGoalsState } from './useWeekGoals';
+import { BeforeSession } from './BeforeSession';
 
 interface TodayStripProps {
   today: TodaySummary;
@@ -33,7 +34,8 @@ function GoalSegment({ goal, label }: { goal: WeekGoal; label: string }) {
 
 /**
  * The "may I keep trading?" line: today's result and this week's limits. It always shows today and this week,
- * whatever the period control says (E-021). Each segment links to where its figure comes from.
+ * whatever the period control says (E-021). Each segment links to where its figure comes from. Under it, the
+ * before-the-session facts, which follow the page's scope.
  */
 export function TodayStrip({ today, todayLoading, week, todayKey, now = appToday() }: TodayStripProps) {
   const tradesGoal = week.goals.find((g) => g.type === 'tradeCount');
@@ -77,6 +79,7 @@ export function TodayStrip({ today, todayLoading, week, todayKey, now = appToday
           </Link>
         )}
       </div>
+      <BeforeSession />
     </section>
   );
 }

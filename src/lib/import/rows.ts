@@ -1,4 +1,5 @@
 import type { NormalizedTrade } from '@/types/import';
+import type { RowDates } from './dates';
 
 /** Everything above this many rows is cut off with a warning (the review grid and the save are built for it). */
 export const MAX_REVIEW_ROWS = 5000;
@@ -25,6 +26,8 @@ export interface ReviewRow {
   note?: string;
   /** created on the server by a save that is still open for a retry or an undo */
   saved?: boolean;
+  /** screenshot rows: how the dates were read, for the date order switch and the missing open/close time note */
+  dates?: RowDates;
 }
 
 export function makeRows(trades: NormalizedTrade[], source: string, opts: { batch?: number; startAt?: number } = {}): ReviewRow[] {
@@ -134,7 +137,24 @@ export function moveRows(rows: ReviewRow[], keys: ReadonlySet<string>, accountId
 }
 
 export function editRow(rows: ReviewRow[], key: string, field: EditableField, value: string | number): ReviewRow[] {
-  return rows.map((r) => (r.key === key ? { ...r, trade: applyEdit(r.trade, field, value) } : r));
+  return rows.map((r) => {
+    if (r.key !== key) return r;
+    const dates = r.dates && (field === 'openDate' || field === 'closeDate') ? { ...r.dates, [field === 'openDate' ? 'openMissing' : 'closeMissing']: false } : r.dates;
+    return { ...r, trade: applyEdit(r.trade, field, value), ...(dates ? { dates } : {}) };
+  });
+}
+
+/** The review's note for a screenshot row whose open or close time was not in the screenshot; null otherwise. */
+export function missingTimeNote(row: ReviewRow): string | null {
+  if (row.dates?.openMissing) return 'Open time not in the screenshot — set it or keep the close time.';
+  if (row.dates?.closeMissing) return 'Close time not in the screenshot — set it or keep the open time.';
+  return null;
+}
+
+/** Unsaved, included rows whose open (or close) time was not in the screenshot and still copies the other date. */
+export function missingTimeCounts(rows: ReviewRow[]): { open: number; close: number } {
+  const live = rows.filter((r) => r.included && !r.saved && r.dates);
+  return { open: live.filter((r) => r.dates!.openMissing).length, close: live.filter((r) => r.dates!.closeMissing).length };
 }
 
 export function setIncluded(rows: ReviewRow[], keys: ReadonlySet<string>, included: boolean): ReviewRow[] {

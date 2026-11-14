@@ -126,7 +126,7 @@ function GuideTOC({ variant, active }: { variant: 'vertical' | 'horizontal'; act
   if (variant === 'vertical') {
     return (
       <nav aria-label="Guide navigation" className="rounded-lg border border-border bg-card p-4">
-        <h3 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contents</h3>
+        <h2 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contents</h2>
         <ul className="space-y-0.5">
           {sections.map((s) => (
             <li key={s.id}>
@@ -173,7 +173,7 @@ function Content() {
       <SectionWrapper id="getting-started" title="Getting started" summary="Create an account, add a trading account, then log or import trades.">
         <Steps
           items={[
-            'Sign up with your email or Google. A new account starts with a 14-day Pro trial and no card.',
+            'Sign up with your email or Google. A new account starts with a 14-day free trial of every Pro feature and no card; after it the journal is read-only unless you upgrade.',
             'Open Accounts and choose Add account: give it a name, the broker, the type and its currency. Keep one account per real account.',
             'Add your first trade with Add trade, or bring many in at once with Import.',
             'Use the account and period pickers under the page title to choose what every page shows.',
@@ -283,10 +283,11 @@ function Content() {
         />
         <Bullets
           items={[
-            'Overview shows performance, trade and risk figures for the account and period you picked.',
+            'Overview shows performance, trade and risk figures for the account and period you picked, then Do I have an edge?: win rate with its range beside the break-even win rate, and expectancy in R with its range. A label says how far to trust them: too few or early under 30 trades, provisional up to 99, established from 100.',
             'The equity and drawdown chart has a View as table switch for a text version of the same numbers.',
-            'What is working, what is not lists segments (an hour, a strategy, a session) that have at least five trades. A small sample can mislead, so read the count first.',
-            'Edge groups results by symbol, strategy, session, weekday, hour, direction or asset class. Timing shows weekday and hour, Risk the drawdown, streaks and R distribution, and Behaviour what each mistake and broken rule cost.',
+            'What is working, what is not names an edge or a leak only with at least 30 trades in the group, 30 outside it and a steady difference. Until then it lists patterns to watch with their trade counts.',
+            'Edge groups results by symbol, strategy, session, weekday, hour, tag and more. Timing shows weekday and hour, trade number in the day and holding time. Risk shows losses past the stop, risk per trade, drawdown and R distribution.',
+            'Behaviour checks every trade against a fixed list of habits, such as a new trade within 15 minutes of a loss, and shows what each mistake and broken rule cost. What if I had followed a rule? replays the period without the trades a rule would have blocked; it removes trades that happened and predicts nothing.',
             'Tax (Pro) covers one Indian financial year for accounts in rupees: charges split into STT, exchange charges, SEBI fee and stamp duty, and P&L by tax category to take to your CA. It is not tax advice.',
           ]}
         />
@@ -296,15 +297,16 @@ function Content() {
       <SectionWrapper id="insights" title="Insights and chat" summary="AI reports and questions about your own trades.">
         <Bullets
           items={[
-            'Insights › Reports: choose the account and period in the top bar, then Generate report. The report lists what worked and what cost money, each finding with its figures and the trades behind it.',
-            'Insights › Chat: ask about your own journal, for example which strategy lost the most last month. Answers use your recorded trades only.',
-            'Both have monthly limits by plan, listed on the pricing page; Pro also gets a weekly report. The page shows how many you have left.',
+            'Insights › Reports: choose the account and period in the top bar, then Generate report. The report is a review: a verdict, the one behaviour that cost the most (with an if-then rule you can make your focus, when one applies), how the last focus went, and patterns to watch, each with its figures and the trades behind it.',
+            'Insights › Chat: ask about your own journal, for example how you perform after a losing trade. The answer is calculated from your recorded trades, with the figures in a table.',
+            'Both have monthly limits, listed on the pricing page, and the trial and Pro also get a weekly report. The page shows how many you have left.',
             'Neither one recommends trades, strikes or securities.',
           ]}
         />
         <Note>
-          Reports and chat send figures computed from your trades to Google Gemini, never your notes, screenshots, email or account
-          names, and only when you use them.
+          Reports and chat send figures computed from your trades through OpenRouter to OpenAI, only when you use them or for
+          the weekly report. They never send your screenshots, email or account names. Reports include your notes and key
+          lessons only if you switch on Use my notes; chat never sends them.
         </Note>
       </SectionWrapper>
 
@@ -334,7 +336,7 @@ function Content() {
           items={[
             'Add account creates one. Each row also has a ... menu with more actions.',
             'View journal opens the Trades page filtered to that account.',
-            'The Free plan keeps two accounts; Pro has no account limit.',
+            'The trial and Pro have no account limit.',
           ]}
         />
       </SectionWrapper>
@@ -399,7 +401,7 @@ export function GuidePage() {
 
                 <div className="signed-out-only border-t border-border py-12">
                   <h2 className="mb-3 text-2xl font-semibold text-foreground">Ready to start?</h2>
-                  <p className="mb-6 text-muted-foreground">Start journaling with the Free plan. No card required.</p>
+                  <p className="mb-6 text-muted-foreground">Start with the 14-day free trial. No card required.</p>
                   <Button asChild size="lg">
                     <Link to="/signup">Start free</Link>
                   </Button>

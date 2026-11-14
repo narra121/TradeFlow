@@ -12,6 +12,8 @@ export interface BillingFacts {
   renewsAt?: string;
   endsAt?: string;
   trialEndedAt?: string;
+  /** Read-only after a Pro subscription: when it ended. */
+  proEndedAt?: string;
   legacyPrice?: boolean;
 }
 
@@ -32,6 +34,8 @@ export interface EntitlementsView {
   /** Pro features are on (Pro or trialing). */
   isPro: boolean;
   isTrial: boolean;
+  /** Trial over or Pro lapsed: reads work, every write answers TRIAL_EXPIRED. False while loading. */
+  readOnly: boolean;
   /** Whole days left in the trial, 0 on the last day. */
   trialDaysLeft: number | null;
   trialEndsAt?: string;
@@ -49,6 +53,7 @@ export interface EntitlementsView {
   renewsAt?: string;
   endsAt?: string;
   trialEndedAt?: string;
+  proEndedAt?: string;
   legacyPrice?: boolean;
   entitlements?: Entitlements;
   writableAccountIds: string[] | null;
@@ -76,7 +81,9 @@ export function useEntitlements(): EntitlementsView {
   return useMemo<EntitlementsView>(() => {
     const e = data?.entitlements;
     const facts: BillingFacts = (e as (Entitlements & BillingFacts) | undefined) ?? {};
-    const usage: UsageRow[] = e
+    const readOnly = e?.plan === 'free';
+    // No quota applies while read-only (writes are refused first), so no screen shows "0 of 0" or a limit dialog.
+    const usage: UsageRow[] = e && !readOnly
       ? (Object.keys(QUOTA_LABEL) as QuotaFeature[]).map((feature) => {
           const used = data?.usage?.[feature] ?? 0;
           const limit = e.limits[feature];
@@ -91,6 +98,7 @@ export function useEntitlements(): EntitlementsView {
       plan: e?.plan ?? null,
       isPro: e?.plan === 'pro' || e?.plan === 'trial',
       isTrial: e?.plan === 'trial',
+      readOnly,
       trialDaysLeft: e?.plan === 'trial' ? daysLeft(e.trialEndsAt) : null,
       trialEndsAt: e?.trialEndsAt,
       periodResetsAt: data?.periodResetsAt,
@@ -105,6 +113,7 @@ export function useEntitlements(): EntitlementsView {
       renewsAt: facts.renewsAt,
       endsAt: facts.endsAt,
       trialEndedAt: facts.trialEndedAt,
+      proEndedAt: facts.proEndedAt,
       legacyPrice: facts.legacyPrice,
       entitlements: e,
       writableAccountIds: data?.writableAccountIds ?? null,

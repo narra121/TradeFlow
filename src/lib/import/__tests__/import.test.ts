@@ -70,6 +70,11 @@ describe('importErrorMessage', () => {
     expect(r.message).toMatch(/2026-12-01/);
   });
 
+  it('402 TRIAL_EXPIRED → the API message, never the broker-import quota sentence', () => {
+    const message = 'Your free trial has ended. Upgrade to Pro to add, edit or delete.';
+    expect(importErrorMessage({ status: 402, data: { success: false, errorCode: 'TRIAL_EXPIRED', message } })).toEqual({ message, upgrade: { code: 'TRIAL_EXPIRED' } });
+  });
+
   it('402 plan required, 413, 400, network and unknown', () => {
     expect(importErrorMessage({ status: 402, data: { errorCode: 'PLAN_REQUIRED', error: { code: 'PLAN_REQUIRED' } } }).upgrade?.code).toBe('PLAN_REQUIRED');
     expect(importErrorMessage({ status: 413 }).message).toMatch(/4 MB/);

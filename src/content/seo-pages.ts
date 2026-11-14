@@ -19,12 +19,12 @@ export interface SeoPageMeta {
 export const SEO_PAGES: SeoPageMeta[] = [
   {
     path: '/pricing',
-    title: `TradeQut Pricing: Free Plan, Pro at ${usdMonth} or ${inrMonth} a Month`,
+    title: `TradeQut Pricing: 14-day Free Trial, Pro at ${usdMonth} or ${inrMonth} a Month`,
     description:
-      `Free trading journal plan and Pro at ${usdMonth}/month or ${usdYear}/year (${inrMonth}/month or ${inrYear}/year in India). 14-day Pro trial, no card. Trial, currency and cancel FAQ.`,
+      `A 14-day free trial with every Pro feature and no card, then Pro at ${usdMonth}/month or ${usdYear}/year (${inrMonth}/month or ${inrYear}/year in India). Currency and cancel FAQ.`,
     label: 'Pricing',
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-12',
+    updatedAt: '2026-11-13',
   },
   {
     path: '/trading-journal-india',

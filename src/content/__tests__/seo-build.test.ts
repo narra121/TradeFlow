@@ -48,7 +48,7 @@ describe('llms.txt', () => {
 
   it('llms-full carries the plan limits, FAQ, comparisons and article answers', () => {
     const txt = buildLlmsFullTxt();
-    expect(txt).toContain('## Free vs Pro');
+    expect(txt).toContain('## Free trial vs Pro');
     expect(txt).toContain('Is TradeQut free?');
     expect(txt).toContain('TradeZella vs TradeQut');
     expect(txt).toContain('Not verified:');

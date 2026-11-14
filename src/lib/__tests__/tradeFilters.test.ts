@@ -87,18 +87,24 @@ describe('helpers', () => {
   });
 });
 
-describe('R multiple: one definition (net P&L over initial risk)', () => {
-  // The pinned vector of lib/pnl: short, 4 units, entry 50, exit 53, stop 52, fees 0.4 -> net -12.4, R -1.55.
+describe('R multiple: one definition (CONTRACT I2, from prices, before fees)', () => {
+  // The pinned vector of lib/pnl: short, 4 units, entry 50, exit 53, stop 52, fees 0.4 -> net -12.4, R -1.5.
   const short = { entryPrice: 50, exitPrice: 53, stopLoss: 52, size: 4, direction: 'SHORT' as const, pnl: -12.4 };
 
-  it('the trade list, the pnl module and the form preview give the same R when the lot size is known', () => {
+  it('the trade list, the pnl module and the form preview give the same R', () => {
     const fromList = realisedR(t('s', { ...short, contractMultiplier: 1 }));
     const fromPnl = computePnl({ side: 'SELL', quantity: 4, entryPrice: 50, exitPrice: 53, stopLoss: 52, fees: 0.4 }).rMultiple;
     const fromPreview = computePreview({ direction: 'SHORT', assetClass: 'stock', symbol: 'ABC', entryPrice: 50, exitPrice: 53, stopLoss: 52, takeProfit: null, quantity: 4, lotSize: null, fees: 0.4, accountCurrency: 'USD', entryTime: null, exitTime: null }).realisedR;
-    expect([fromList, fromPnl, fromPreview]).toEqual([-1.55, -1.55, -1.55]);
+    expect([fromList, fromPnl, fromPreview]).toEqual([-1.5, -1.5, -1.5]);
   });
 
-  it('a trade saved without a lot size falls back to the price move, which cannot include fees (-1.5)', () => {
+  it('the lot size and the stored P&L do not change it', () => {
     expect(realisedR(t('s', short))).toBe(-1.5);
+    expect(realisedR(t('s', { ...short, contractMultiplier: 100, pnl: -9999 }))).toBe(-1.5);
+  });
+
+  it('is null without a stop or for an open trade (no exit price)', () => {
+    expect(realisedR(t('s', { ...short, stopLoss: undefined }))).toBeNull();
+    expect(realisedR(t('s', { ...short, exitPrice: 0, exitDate: undefined }))).toBeNull();
   });
 });

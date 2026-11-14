@@ -60,6 +60,31 @@ describe('streamChat', () => {
     expect(JSON.parse(init.body)).toEqual({ content: 'hi' });
   });
 
+  it('sends the account when given (null = all accounts), reports tool frames and keeps the done frame tables', async () => {
+    const table = { columns: ['setup', 'trades'], rows: [['Breakout', 3]], label: 'too-few', tradeIds: ['b1'] };
+    const frames = `event: tool\ndata: {"name":"stats"}\n\nevent: token\ndata: {"t":"Breakout (table 1)."}\n\nevent: done\ndata: ${JSON.stringify({ messageId: 'm2', usage: {}, disclaimer: 'd', tradeIds: [], tables: [table], currency: 'USD' })}\n\n`;
+    const tools: string[] = [];
+    const fetchImpl = vi.fn(async () => sseResponse([frames]));
+    const done = await streamChat({ ...base, accountId: 'a1', fetchImpl: fetchImpl as any, onToken: () => {}, onTool: (n) => tools.push(n) });
+    expect(tools).toEqual(['stats']);
+    expect(done.tables).toEqual([table]);
+    expect(done.currency).toBe('USD');
+    expect(JSON.parse((fetchImpl.mock.calls[0] as any)[1].body)).toEqual({ content: 'hi', accountId: 'a1' });
+    await streamChat({ ...base, accountId: null, fetchImpl: fetchImpl as any, onToken: () => {} });
+    expect(JSON.parse((fetchImpl.mock.calls[1] as any)[1].body)).toEqual({ content: 'hi', accountId: null });
+  });
+
+  it('a done frame from an older server without tables reads as no tables', async () => {
+    const done = await streamChat({ ...base, fetchImpl: vi.fn(async () => sseResponse([FRAMES])) as any, onToken: () => {} });
+    expect(done.tables).toEqual([]);
+  });
+
+  it('422 MIXED_CURRENCY keeps the currencies on the error', async () => {
+    const fetchImpl = vi.fn(async () => json(422, { success: false, errorCode: 'MIXED_CURRENCY', message: 'These trades are in INR and USD.', error: { code: 'MIXED_CURRENCY', currencies: ['INR', 'USD'] } }));
+    const err = await streamChat({ ...base, fetchImpl: fetchImpl as any, onToken: () => {} }).catch((e) => e);
+    expect(err).toMatchObject({ status: 422, code: 'MIXED_CURRENCY', currencies: ['INR', 'USD'] });
+  });
+
   it('refreshes the token once on 401 and retries', async () => {
     const refresh = vi.fn(async () => 'fresh');
     const fetchImpl = vi.fn().mockResolvedValueOnce(json(401, { message: 'Unauthorized' })).mockResolvedValueOnce(sseResponse([FRAMES]));

@@ -16,9 +16,9 @@ export const billingApi = apiWithTags.injectEndpoints({
       query: (body) => ({ url: '/billing/checkout', method: 'POST', body }),
     }),
 
-    /** Free users above the account limit choose which (at most 2) accounts stay writable. */
-    saveWritableAccounts: builder.mutation<{ writableAccountIds: string[] }, string[]>({
-      query: (accountIds) => ({ url: '/me/writable-accounts', method: 'PUT', body: { accountIds } }),
+    /** Back from Checkout: stores the paid subscription from Stripe without waiting for the webhook, then refetches the plan. */
+    verifyCheckout: builder.mutation<{ status: 'active' | 'pending' | 'expired' }, string>({
+      query: (sessionId) => ({ url: `/subscriptions/verify?session_id=${encodeURIComponent(sessionId)}`, method: 'GET' }),
       invalidatesTags: ['Entitlements'],
     }),
 
@@ -29,4 +29,4 @@ export const billingApi = apiWithTags.injectEndpoints({
   }),
 });
 
-export const { useGetEntitlementsQuery, useCreateCheckoutMutation, useOpenPortalMutation, useSaveWritableAccountsMutation } = billingApi;
+export const { useGetEntitlementsQuery, useCreateCheckoutMutation, useOpenPortalMutation, useVerifyCheckoutMutation } = billingApi;

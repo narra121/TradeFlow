@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { formatDateTime, formatQuantity } from '@/lib/format';
 import { STATUS_LABEL } from '@/lib/import/labels';
 import { fromZonedInput, toZonedInput } from '@/lib/appTimeZone';
-import { parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow } from '@/lib/import/rows';
+import { missingTimeNote, parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow } from '@/lib/import/rows';
 import { cn } from '@/lib/utils';
 
 interface MobileReviewProps {
@@ -55,6 +55,7 @@ export function MobileReview({ rows, currency, readOnly, onInclude, onEdit }: Mo
                   {status === 'fix' && <AlertTriangle className="h-3 w-3" aria-hidden="true" />}
                   {status === 'fix' ? `${row.note ? `${row.note} ` : ''}${Object.values(errors).join(' ')}` : STATUS_LABEL[status]}
                 </p>
+                {status === 'ready' && missingTimeNote(row) && <p className="mt-0.5 text-xs text-warning">{missingTimeNote(row)}</p>}
               </div>
               {!readOnly && !row.saved && (
                 <Button type="button" variant="ghost" size="icon" aria-label={`Edit ${t.symbol || 'row'}`} onClick={() => setEditKey(row.key)} className="h-11 w-11">
@@ -88,8 +89,8 @@ const draftOf = (t: ReviewRow['trade']): Record<string, string> => ({
   quantity: String(t.quantity || ''),
   entryPrice: String(t.entryPrice || ''),
   exitPrice: String(t.exitPrice || ''),
-  openDate: toZonedInput(t.openDate),
-  closeDate: toZonedInput(t.closeDate),
+  openDate: toZonedInput(t.openDate, { seconds: true }),
+  closeDate: toZonedInput(t.closeDate, { seconds: true }),
   fees: String(t.fees ?? 0),
   pnl: String(t.pnl ?? 0),
   side: t.side,
@@ -106,7 +107,8 @@ function RowSheet({ row, onClose, onEdit }: { row: ReviewRow | null; onClose: ()
   const apply = () => {
     for (const f of FIELDS) {
       const v = draft[f.field] ?? '';
-      if (f.type === 'number' && v === draftOf(row.trade)[f.field]) continue; // untouched cell
+      // An untouched cell: a datetime-local value has no milliseconds, so re-applying it would cut them off.
+      if (f.type !== 'text' && v === draftOf(row.trade)[f.field]) continue;
       const next = f.type === 'number' ? parseNumberCell(v) : f.type === 'datetime-local' ? toIso(v) : v.trim().toUpperCase();
       const was = f.type === 'datetime-local' ? row.trade[f.field as 'openDate' | 'closeDate'] : row.trade[f.field as keyof typeof row.trade];
       if (!Object.is(next, was)) onEdit(row.key, f.field, next);
@@ -136,7 +138,7 @@ function RowSheet({ row, onClose, onEdit }: { row: ReviewRow | null; onClose: ()
                 <Input
                   {...a}
                   type={f.type}
-                  step={f.type === 'number' ? 'any' : undefined}
+                  step={f.type === 'number' ? 'any' : f.type === 'datetime-local' ? 1 : undefined}
                   inputMode={f.type === 'number' ? 'decimal' : undefined}
                   className="h-11"
                   value={draft[f.field] ?? ''}

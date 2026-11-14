@@ -2,37 +2,63 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, Plus, Square } from 'lucide-react';
 import { toast } from 'sonner';
+import { AccountPicker } from '@/components/account/AccountPicker';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AccountSwitcher, currenciesOf } from '@/components/shell/AccountSwitcher';
 import { AiNote } from '@/components/shell/AiNote';
 import { usePageChrome } from '@/components/shell/chrome';
+import { useAccounts } from '@/hooks/useAccounts';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTradeParam } from '@/hooks/useTradeParam';
 import { useCreateChatSessionMutation, useDeleteChatSessionMutation, useGetChatMessagesQuery, useListChatSessionsQuery, useSendChatMessageMutation } from '@/store/api/chatApi';
-import { useListInsightsQuery } from '@/store/api/insightsApi';
+import { useGetInsightQuery } from '@/store/api/insightsApi';
 import { readApiError } from '@/lib/apiError';
-import { starterQuestions } from '@/lib/ai/chatFormat';
+import { starterQuestions, toolsLine } from '@/lib/ai/chatFormat';
+import { chatTableText, chatTableView } from '@/lib/ai/chatTable';
+import { isMixedCurrency } from '@/lib/ai/insightFormat';
 import { citedTradeIds, renderAnswer } from '@/lib/ai/markdown';
 import { formatDateShort } from '@/lib/format';
 import { emitPlanSignal } from '@/lib/planErrors';
-import type { ChatMessage } from '@/types/chat';
+import { openTrialExpired } from '@/components/billing/readOnly';
+import type { ChatMessage, QueryResult } from '@/types/chat';
 import { ChatSessions } from './ChatSessions';
+import { ChatTables } from './ChatTables';
 
 interface Turn {
   user: string;
   text: string;
-  status: 'streaming' | 'done' | 'stopped' | 'error';
+  /** account: the trades asked about span currencies (422 MIXED_CURRENCY, nothing charged); one account must be chosen */
+  status: 'streaming' | 'done' | 'stopped' | 'error' | 'account';
   /** stored messages when the question was sent, to tell when the refetch has caught up */
   baseCount: number;
   refused?: boolean;
+  /** tools run so far, from `event: tool` frames */
+  tools: string[];
+  tables?: QueryResult[];
+  currency?: string | null;
+  currencies?: string[];
 }
 
-function Message({ role, content, onTrade, actions, note, pending }: { role: 'user' | 'assistant'; content: string; onTrade: (id: string, ids?: string[]) => void; actions?: React.ReactNode; note?: string; pending?: boolean }) {
+interface MessageProps {
+  role: 'user' | 'assistant';
+  content: string;
+  onTrade: (id: string, ids?: string[]) => void;
+  actions?: React.ReactNode;
+  note?: string;
+  pending?: boolean;
+  /** the quiet line of calculations while the answer is being worked out */
+  working?: string;
+  tables?: QueryResult[];
+  currency?: string | null;
+}
+
+function Message({ role, content, onTrade, actions, note, pending, working, tables, currency }: MessageProps) {
   const cited = role === 'assistant' ? citedTradeIds(content) : [];
   return (
     <div className="space-y-1">
@@ -40,7 +66,11 @@ function Message({ role, content, onTrade, actions, note, pending }: { role: 'us
       {role === 'user' ? (
         <p className="whitespace-pre-wrap text-sm leading-relaxed">{content}</p>
       ) : (
-        <div className="space-y-2 text-sm leading-relaxed">{content ? renderAnswer(content, { onTrade }) : pending ? <span className="text-muted-foreground">Thinking…</span> : null}</div>
+        <>
+          {working && <p className="text-xs text-muted-foreground">{working}</p>}
+          <div className="space-y-2 text-sm leading-relaxed">{content ? renderAnswer(content, { onTrade }) : pending && !working ? <span className="text-muted-foreground">Thinking…</span> : null}</div>
+          {tables && tables.length > 0 && <ChatTables tables={tables} currency={currency} onTrade={onTrade} />}
+        </>
       )}
       {cited.length > 1 && (
         <button type="button" onClick={() => onTrade(cited[0], cited)} className="inline-flex h-6 items-center text-xs text-primary underline-offset-2 hover:underline">
@@ -53,6 +83,10 @@ function Message({ role, content, onTrade, actions, note, pending }: { role: 'us
   );
 }
 
+/** The answer with its tables, as plain text for Copy. */
+const answerText = (text: string, tables: QueryResult[] | undefined, currency: string | null | undefined) =>
+  [text, ...(tables ?? []).map((t, i) => chatTableText(chatTableView(t, currency), i + 1))].join('\n\n');
+
 export function ChatView() {
   usePageChrome({
     tabs: [
@@ -63,13 +97,15 @@ export function ChatView() {
   const ent = useEntitlements();
   const isMobile = useIsMobile();
   const trade = useTradeParam();
+  const { accounts, selectedAccountId, setSelectedAccountId } = useAccounts();
   const [params, setParams] = useSearchParams();
   const sessionId = params.get('s');
   const insightId = params.get('insight');
   const ref = params.get('ref');
   const { data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, error: sessionsErrorDetail, refetch: refetchSessions } = useListChatSessionsQuery();
   const { data: messages = [], isFetching: messagesFetching, isError: messagesError, error: messagesErrorDetail, refetch: refetchMessages } = useGetChatMessagesQuery(sessionId ?? '', { skip: !sessionId });
-  const { data: insightList } = useListInsightsQuery({ limit: 1 });
+  const linkedId = insightId ?? sessions.find((s) => s.id === sessionId)?.insightId ?? null;
+  const { data: linkedInsight } = useGetInsightQuery(linkedId ?? '', { skip: !linkedId });
   const [createSession] = useCreateChatSessionMutation();
   const [deleteSession] = useDeleteChatSessionMutation();
   const [send] = useSendChatMessageMutation();
@@ -80,7 +116,11 @@ export function ChatView() {
   const [sheet, setSheet] = useState(false);
   const [announce, setAnnounce] = useState('');
   const [atBottom, setAtBottom] = useState(true);
+  // A report's chat answers from the report's own account; one chosen after MIXED_CURRENCY is kept for this chat.
+  const [sessionAccount, setSessionAccount] = useState<string | undefined>(undefined);
   const abort = useRef<AbortController | null>(null);
+  // Bumped by every new turn and by a change of chat: a late reply of an older turn must not touch the current one.
+  const turnSeq = useRef(0);
   const sending = useRef(false);
   const createdSession = useRef<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -89,8 +129,9 @@ export function ChatView() {
 
   const row = ent.usage.find((u) => u.feature === 'ai_chat');
   const atLimit = !!row && row.limit !== null && row.used >= row.limit;
-  const starters = useMemo(() => starterQuestions(insightList?.insights[0]), [insightList]);
-  const linkedInsight = insightId ? insightList?.insights.find((i) => i.id === insightId) : undefined;
+  const starters = useMemo(() => starterQuestions(linkedInsight), [linkedInsight]);
+  const activeAccounts = accounts.filter((a) => a.status !== 'inactive');
+  const mixed = !linkedId && isMixedCurrency(accounts, selectedAccountId);
 
   // The refetch after an answer replaces the local turn once the stored messages caught up.
   useEffect(() => {
@@ -104,14 +145,19 @@ export function ChatView() {
       createdSession.current = null;
       return;
     }
+    turnSeq.current += 1;
+    abort.current?.abort();
     setTurn(null);
     setProblem(null);
+    setSessionAccount(undefined);
   }, [sessionId]);
+
+  useEffect(() => () => abort.current?.abort(), []);
 
   const scrollToEnd = useCallback(() => endRef.current?.scrollIntoView?.({ block: 'end' }), []);
   useEffect(() => {
     if (atBottomRef.current) scrollToEnd();
-  }, [messages.length, turn?.text, scrollToEnd]);
+  }, [messages.length, turn?.text, turn?.status, scrollToEnd]);
 
   const onScroll = () => {
     const el = scroller.current;
@@ -134,44 +180,68 @@ export function ChatView() {
     }
   }, [sessionId, createSession, insightId, setParams]);
 
-  const submit = async (content: string) => {
+  /** `account`: undefined = the chat's usual scope; a string = that account (chosen after MIXED_CURRENCY). */
+  const submit = async (content: string, account?: string) => {
     const text = content.trim();
     if (!text || sending.current || turn?.status === 'streaming') return;
+    if (ent.readOnly) return openTrialExpired();
     if (atLimit && row?.limit !== null && row) {
       emitPlanSignal({ code: 'QUOTA_EXCEEDED', feature: 'ai_chat', limit: row.limit ?? undefined, resetsAt: ent.periodResetsAt, message: 'You have reached your plan limit.', kind: 'mutation' });
       return;
     }
     sending.current = true;
     try {
-      await sendTurn(text);
+      await sendTurn(text, account);
     } finally {
       sending.current = false;
     }
   };
 
-  const sendTurn = async (text: string) => {
+  const sendTurn = async (text: string, account?: string) => {
     setProblem(null);
     const id = await ensureSession();
     if (!id) return;
+    // A report's chat sends no account (the server uses the report's) unless one was chosen; any other chat sends the page's.
+    const accountId = account ?? (linkedId ? sessionAccount : selectedAccountId ?? null);
+    const seq = ++turnSeq.current;
+    const update = (f: (t: Turn) => Turn | null) => setTurn((c) => (c && turnSeq.current === seq ? f(c) : c));
     setDraft('');
     atBottomRef.current = true;
-    setTurn({ user: text, text: '', status: 'streaming', baseCount: sessionId ? messages.length : 0 });
-    abort.current = new AbortController();
+    setTurn({ user: text, text: '', status: 'streaming', baseCount: sessionId ? messages.length : 0, tools: [] });
+    const controller = new AbortController();
+    abort.current = controller;
     try {
-      const res = await send({ sessionId: id, content: text, signal: abort.current.signal, onToken: (t) => setTurn((c) => (c ? { ...c, text: c.text + t } : c)) }).unwrap();
-      setTurn((c) => (c ? { ...c, status: 'done', refused: res.done.refused } : c));
-      setAnnounce('Answer complete');
+      const res = await send({
+        sessionId: id,
+        content: text,
+        accountId,
+        signal: controller.signal,
+        onToken: (t) => update((c) => ({ ...c, text: c.text + t })),
+        onTool: (name) => update((c) => ({ ...c, tools: [...c.tools, name] })),
+      }).unwrap();
+      update((c) => ({ ...c, status: 'done', refused: res.done.refused, tables: res.done.tables ?? [], currency: res.done.currency }));
+      if (turnSeq.current === seq) setAnnounce('Answer complete');
     } catch (e) {
-      const err = e as { status?: number | string; data?: { aborted?: boolean } };
-      if (err?.data?.aborted) setTurn((c) => (c ? { ...c, status: 'stopped' } : c));
-      else if (err?.status === 402) setTurn(null);
-      else {
-        setTurn((c) => (c ? { ...c, status: 'error' } : c));
-        setProblem(`${readApiError(e, 'The answer couldn’t be completed.').message.replace(/[.!?]*$/, '.')} Your question was not lost.`);
+      const err = e as { status?: number | string; data?: { aborted?: boolean; errorCode?: string; error?: { currencies?: string[] } } };
+      if (err?.data?.aborted) update((c) => ({ ...c, status: 'stopped' }));
+      else if (err?.status === 402) update(() => null);
+      else if (err?.data?.errorCode === 'MIXED_CURRENCY') {
+        update((c) => ({ ...c, status: 'account', currencies: err.data?.error?.currencies ?? [] }));
+        if (turnSeq.current === seq) setAnnounce('Choose an account to answer this question');
+      } else {
+        update((c) => ({ ...c, status: 'error' }));
+        if (turnSeq.current === seq) setProblem(`${readApiError(e, 'The answer couldn’t be completed.').message.replace(/[.!?]*$/, '.')} Your question was not lost.`);
       }
     } finally {
-      abort.current = null;
+      if (abort.current === controller) abort.current = null;
     }
+  };
+
+  const chooseAccount = (id: string) => {
+    if (!turn) return;
+    if (linkedId) setSessionAccount(id);
+    else setSelectedAccountId(id);
+    void submit(turn.user, id);
   };
 
   const stop = () => abort.current?.abort();
@@ -205,6 +275,19 @@ export function ChatView() {
   const empty = messages.length === 0 && !turn && !messagesFetching;
   const stored: ChatMessage[] = messages;
   const userShown = turn && turn.status !== 'done' ? stored.length < turn.baseCount + 1 : false;
+  const copyButton = (text: string) => (
+    <button type="button" className="inline-flex h-6 items-center px-1 text-muted-foreground underline-offset-2 hover:underline" onClick={() => void copy(text)}>Copy</button>
+  );
+
+  const accountChoice = turn?.status === 'account' && (
+    <div role="group" aria-labelledby="chat-account-reason" className="space-y-2 border-l-2 border-warning pl-3">
+      <p id="chat-account-reason" className="text-13 text-foreground-soft">
+        {turn.currencies && turn.currencies.length > 1 ? `These trades are in ${turn.currencies.join(' and ')}` : 'These trades are in more than one currency'}, and amounts are not added across
+        currencies. Choose the account to answer from. This question was not charged.
+      </p>
+      <AccountPicker label="Account to answer from" labelledBy="chat-account-reason" accounts={activeAccounts} value={null} onChange={chooseAccount} className="max-w-xs" />
+    </div>
+  );
 
   return (
     <div className="grid min-h-[60vh] gap-0 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
@@ -221,7 +304,14 @@ export function ChatView() {
 
       <section aria-label="Conversation" className="flex min-h-0 min-w-0 flex-col pb-16 md:pb-0 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-2 py-2">
-          <p className="text-xs text-muted-foreground">Answers use all your accounts and trades.</p>
+          {linkedId ? (
+            <p className="text-xs text-muted-foreground">Answers use the report’s period and account.</p>
+          ) : (
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <span>Answers use the last 90 days of</span>
+              <AccountSwitcher />
+            </div>
+          )}
           <div className="flex items-center gap-2">
             {isMobile && (
               <>
@@ -232,6 +322,11 @@ export function ChatView() {
             {row && row.limit !== null && <span className="whitespace-nowrap font-mono text-xs tabular-nums text-muted-foreground">{row.used} of {row.limit} messages this month</span>}
           </div>
         </div>
+        {mixed && (
+          <p className="mb-2 text-xs text-muted-foreground">
+            Your accounts use {currenciesOf(accounts).join(' and ')}, so an answer needs one account: you will be asked which before anything is charged.
+          </p>
+        )}
         {linkedInsight && (
           <p className="mb-2 text-xs text-muted-foreground">
             Discussing the report for {formatDateShort(linkedInsight.period.from, true)} – {formatDateShort(linkedInsight.period.to, true)}.{' '}
@@ -248,7 +343,7 @@ export function ChatView() {
             ) : empty ? (
               <div className="space-y-3 py-6">
                 <h2 className="text-sm font-semibold">Ask about your own trades</h2>
-                <p className="text-13 text-muted-foreground">Answers come from your journal. Pick a question or write your own.</p>
+                <p className="text-13 text-muted-foreground">Answers are calculated from your journal, with the figures in a table. Pick a question or write your own.</p>
                 <div className="flex flex-wrap gap-2">
                   {starters.map((q) => (
                     <Button key={q} type="button" variant="outline" size="sm" disabled={atLimit} onClick={() => void submit(q)} className="h-auto whitespace-normal py-1.5 text-left">{q}</Button>
@@ -264,27 +359,36 @@ export function ChatView() {
                     role={m.role}
                     content={m.content}
                     onTrade={openCited}
-                    actions={m.role === 'assistant' ? <button type="button" className="inline-flex h-6 items-center px-1 text-muted-foreground underline-offset-2 hover:underline" onClick={() => void copy(m.content)}>Copy</button> : undefined}
+                    tables={m.role === 'assistant' ? m.tables : undefined}
+                    currency={m.currency}
+                    actions={m.role === 'assistant' ? copyButton(answerText(m.content, m.tables, m.currency)) : undefined}
                   />
                 ))}
                 {turn && (
                   <>
                     {userShown && <Message role="user" content={turn.user} onTrade={openCited} />}
-                    {(turn.status !== 'done' || stored.length < turn.baseCount + 2) && (
-                      <Message
-                        role="assistant"
-                        content={turn.text}
-                        pending={turn.status === 'streaming'}
-                        onTrade={openCited}
-                        note={turn.status === 'stopped' ? 'Stopped' : undefined}
-                        actions={
-                          turn.status === 'stopped' || turn.status === 'error' ? (
-                            <button type="button" className="inline-flex h-6 items-center px-1 text-primary underline-offset-2 hover:underline" onClick={() => void submit(turn.user)}>Retry</button>
-                          ) : turn.text ? (
-                            <button type="button" className="inline-flex h-6 items-center px-1 text-muted-foreground underline-offset-2 hover:underline" onClick={() => void copy(turn.text)}>Copy</button>
-                          ) : undefined
-                        }
-                      />
+                    {turn.status === 'account' ? (
+                      accountChoice
+                    ) : (
+                      (turn.status !== 'done' || stored.length < turn.baseCount + 2) && (
+                        <Message
+                          role="assistant"
+                          content={turn.text}
+                          pending={turn.status === 'streaming'}
+                          working={turn.status === 'streaming' && turn.tools.length > 0 ? toolsLine(turn.tools) : undefined}
+                          tables={turn.status === 'done' ? turn.tables : undefined}
+                          currency={turn.currency}
+                          onTrade={openCited}
+                          note={turn.status === 'stopped' ? 'Stopped' : undefined}
+                          actions={
+                            turn.status === 'stopped' || turn.status === 'error' ? (
+                              <button type="button" className="inline-flex h-6 items-center px-1 text-primary underline-offset-2 hover:underline" onClick={() => void submit(turn.user)}>Retry</button>
+                            ) : turn.text && turn.status === 'done' ? (
+                              copyButton(answerText(turn.text, turn.tables, turn.currency))
+                            ) : undefined
+                          }
+                        />
+                      )
                     )}
                   </>
                 )}

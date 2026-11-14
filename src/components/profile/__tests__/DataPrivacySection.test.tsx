@@ -17,7 +17,7 @@ vi.mock('@/store/api/profileApi', () => ({
   useDeleteUserAccountMutation: () => [deleteAccount, { isLoading: false }],
 }));
 const clearLocal = vi.fn();
-vi.mock('@/store/api/authApi', () => ({ useLogoutMutation: () => [clearLocal, { isLoading: false }] }));
+vi.mock('@/store/api/authApi', () => ({ useClearDeletedSessionMutation: () => [clearLocal, { isLoading: false }] }));
 const openConsentSettings = vi.fn();
 vi.mock('@/lib/analytics/consent', () => ({ openConsentSettings: () => openConsentSettings() }));
 

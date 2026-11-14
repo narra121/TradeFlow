@@ -248,6 +248,66 @@ describe('GoalsView', () => {
     expect(createGoal).toHaveBeenCalledWith({ accountId: 'usd', goalType: 'winRate', period: 'weekly', target: 60, periodKey: 'week#2026-11-09' });
   });
 
+  describe('an account goal over the default goal (M2)', () => {
+    const usd2 = { ...usd, id: 'usd2', name: 'Topstep' };
+    const defaultProfit = { goalId: 'week#2026-11-09#default-profit', goalType: 'profit', period: 'weekly', target: 400, accountId: null };
+    const withTarget = (type: 'profit' | 'winRate', target: number) => ({ ...gp, goalProgress: { ...gp.goalProgress, [type]: { current: 380, target, progress: 0, achieved: false } } });
+    const profitBar = () => screen.getByRole('progressbar', { name: 'Profit target' });
+
+    it('one account shows its own goal, not the default, and edits that goal', async () => {
+      progress = { data: withTarget('profit', 600), isLoading: false, isError: false };
+      rulesGoals = { data: { goals: [defaultProfit, realGoal], rules: [] }, isLoading: false, isError: false };
+      const user = userEvent.setup();
+      setup();
+      expect(profitBar()).toHaveAttribute('aria-valuetext', expect.stringContaining('$380.00 of $600.00'));
+      await user.click(screen.getByRole('button', { name: 'Edit Profit target' }));
+      await user.clear(screen.getByRole('textbox', { name: 'Profit target' }));
+      await user.type(screen.getByRole('textbox', { name: 'Profit target' }), '700{Enter}');
+      expect(updateGoal).toHaveBeenCalledWith({ id: 'g1', payload: { target: 700 } });
+    });
+
+    it('one account that only has the default shows the default target as a default and saves an account goal of its own, never touching the default', async () => {
+      progress = { data: withTarget('profit', 400), isLoading: false, isError: false };
+      rulesGoals = { data: { goals: [defaultProfit], rules: [] }, isLoading: false, isError: false };
+      const user = userEvent.setup();
+      setup();
+      expect(profitBar()).toHaveAttribute('aria-valuetext', expect.stringContaining('$380.00 of $400.00'));
+      expect(screen.getAllByText('Default — set your own')).toHaveLength(4);
+      await user.click(screen.getByRole('button', { name: 'Edit Profit target' }));
+      await user.clear(screen.getByRole('textbox', { name: 'Profit target' }));
+      await user.type(screen.getByRole('textbox', { name: 'Profit target' }), '700{Enter}');
+      expect(updateGoal).not.toHaveBeenCalled();
+      expect(createGoal).toHaveBeenCalledWith({ accountId: 'usd', goalType: 'profit', period: 'weekly', target: 700, periodKey: 'week#2026-11-09' });
+    });
+
+    it('all accounts show the sum of the account goals, with no edit, and say where to change it', () => {
+      accountState = { accounts: [usd, usd2], selectedAccount: null, isLoading: false };
+      progress = { data: withTarget('profit', 900), isLoading: false, isError: false };
+      rulesGoals = { data: { goals: [defaultProfit, realGoal, { ...realGoal, goalId: 'g2', accountId: 'usd2', target: 300 }], rules: [] }, isLoading: false, isError: false };
+      setup();
+      expect(profitBar()).toHaveAttribute('aria-valuetext', expect.stringContaining('$380.00 of $900.00'));
+      expect(screen.queryByRole('button', { name: 'Edit Profit target' })).not.toBeInTheDocument();
+      expect(screen.getByText('Combined from your account goals. Choose an account to change it.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Edit Win rate' })).toBeInTheDocument();
+    });
+
+    it('all accounts with only the default edit that record; with nothing at all they create one without an account', async () => {
+      accountState = { accounts: [usd, usd2], selectedAccount: null, isLoading: false };
+      progress = { data: withTarget('profit', 400), isLoading: false, isError: false };
+      rulesGoals = { data: { goals: [defaultProfit], rules: [] }, isLoading: false, isError: false };
+      const user = userEvent.setup();
+      setup();
+      await user.click(screen.getByRole('button', { name: 'Edit Profit target' }));
+      await user.clear(screen.getByRole('textbox', { name: 'Profit target' }));
+      await user.type(screen.getByRole('textbox', { name: 'Profit target' }), '500{Enter}');
+      expect(updateGoal).toHaveBeenCalledWith({ id: 'week#2026-11-09#default-profit', payload: { target: 500 } });
+      await user.click(screen.getByRole('button', { name: 'Edit Win rate' }));
+      await user.clear(screen.getByRole('textbox', { name: 'Win rate' }));
+      await user.type(screen.getByRole('textbox', { name: 'Win rate' }), '60{Enter}');
+      expect(createGoal).toHaveBeenCalledWith({ accountId: undefined, goalType: 'winRate', period: 'weekly', target: 60, periodKey: 'week#2026-11-09' });
+    });
+  });
+
   it('adds a rule from the scope bar into the current period', async () => {
     const user = userEvent.setup();
     setup();

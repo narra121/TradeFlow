@@ -1,10 +1,12 @@
 import { csvCell } from '@/lib/exportCsv';
 import type { DistributionRow } from '@/lib/analyticsRows';
+import { evidenceOf } from '@/lib/evidence';
 
 /** One row per segment, raw values (dot decimals, no symbols), as the visible breakdown shows them. */
 export function explorerCsv(dimension: string, rows: DistributionRow[], currency: string | undefined): string {
   const withR = rows.some((r) => r.avgR !== undefined);
-  const header = [dimension, 'trades', 'wins', 'win_rate_pct', 'net_pnl', 'currency', 'expectancy', ...(withR ? ['avg_r'] : [])];
+  const withEvidence = rows.some((r) => r.verdict !== undefined);
+  const header = [dimension, 'trades', 'wins', 'win_rate_pct', 'net_pnl', 'currency', 'expectancy', ...(withR ? ['avg_r'] : []), ...(withEvidence ? ['profit_factor', 'evidence'] : [])];
   const lines = rows.map((r) => [
     r.name,
     r.trades,
@@ -14,6 +16,7 @@ export function explorerCsv(dimension: string, rows: DistributionRow[], currency
     currency ?? '',
     r.trades ? (r.net / r.trades).toFixed(2) : '',
     ...(withR ? [r.avgR ?? ''] : []),
+    ...(withEvidence ? [r.profitFactor ?? '', r.verdict ? evidenceOf(r.verdict, r.trades).text : ''] : []),
   ]);
   return [header, ...lines].map((l) => l.map(csvCell).join(',')).join('\r\n');
 }

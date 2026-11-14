@@ -47,6 +47,7 @@ describe('sample journal figures (computed from the one fixture)', () => {
     }
     const pick = (t: { day: number; symbol: string; pnl: number }) => [t.day, t.symbol, t.pnl];
     expect(SAMPLE_TRADES.slice(-SAMPLE_RECENT.length).map(pick)).toEqual([...SAMPLE_RECENT].reverse().map(pick));
+    expect(SAMPLE_TRADES.slice(-SAMPLE_RECENT.length).map((t) => [t.closed, t.r])).toEqual([...SAMPLE_RECENT].reverse().map((t) => [t.time, t.r]));
   });
 
   it('ends the equity series at the month net and tints by thirds of the largest day', () => {
@@ -91,12 +92,14 @@ describe('derived sample sets', () => {
     for (const t of SAMPLE_INDIA_TRADES) expect(Math.round(t.charges.reduce((a, c) => a + c.value, 0) * 100) / 100).toBe(t.totalCharges);
   });
 
-  it('splits the month by session and the rule cost by rule without changing the totals', async () => {
-    const { SAMPLE_SESSIONS, SAMPLE_BROKEN_RULES } = await import('../sampleJournal');
+  it('splits the rule cost by rule and day without changing the totals', async () => {
+    const { SAMPLE_BROKEN_RULES } = await import('../sampleJournal');
     const s = sampleStats();
-    expect(SAMPLE_SESSIONS.reduce((a, x) => a + x.trades, 0)).toBe(s.trades);
-    expect(Math.round(SAMPLE_SESSIONS.reduce((a, x) => a + x.pnl, 0) * 100) / 100).toBe(s.net);
     expect(SAMPLE_BROKEN_RULES.reduce((a, x) => a + x.trades, 0)).toBe(s.brokenTrades);
     expect(Math.round(SAMPLE_BROKEN_RULES.reduce((a, x) => a + x.pnl, 0) * 100) / 100).toBe(s.brokenRules);
+    for (const b of SAMPLE_BROKEN_RULES) {
+      const day = SAMPLE_TRADES.filter((t) => t.day === b.day);
+      expect([day.length, Math.round(day.reduce((a, t) => a + t.pnl, 0) * 100) / 100]).toEqual([b.trades, b.pnl]);
+    }
   });
 });

@@ -6,7 +6,8 @@ import { useLogoutEverywhereMutation } from '@/store/api/authApi';
 import { DRAFT_LOGOUT_SENTENCE } from '@/components/auth/useLogout';
 import { hasTradeDrafts } from '@/lib/scope';
 import { readApiError } from '@/lib/apiError';
-import { LOGGED_OUT_EVERYWHERE_URL } from './helpers';
+import { LOGGED_OUT_EVERYWHERE_URL } from '@/components/auth/loggingOut';
+import { isOAuthSession } from '@/lib/auth/storedSession';
 
 interface Props {
   open: boolean;
@@ -19,13 +20,15 @@ export function LogoutAllDialog({ open, onOpenChange }: Props) {
 
   const confirm = async () => {
     setError(null);
+    // Read before signing out, which removes the flag. A Google session is already on its way to Cognito's logout page, which returns to this same URL.
+    const leaving = isOAuthSession();
     try {
       await logoutAll().unwrap();
     } catch (err) {
       setError(readApiError(err, "Couldn't log you out of your other devices.").message);
       return;
     }
-    window.location.assign(LOGGED_OUT_EVERYWHERE_URL);
+    if (!leaving) window.location.assign(LOGGED_OUT_EVERYWHERE_URL);
   };
 
   return (

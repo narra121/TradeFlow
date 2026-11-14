@@ -109,7 +109,7 @@ describe('helpers', () => {
   it('spans the hours between entry and exit and falls back to the entry hour', () => {
     expect(hoursOpen(trades[1])).toEqual([14, 15, 16]);
     expect(hoursOpen(t('x', 'A', '2026-11-04T09:15:00', '', 1, { exitDate: '' }))).toEqual([9]);
-    expect(hoursOpen(t('y', 'A', '2026-11-03T22:00:00', '2026-11-04T01:00:00', 1))).toEqual([0, 1]);
+    expect(hoursOpen(t('y', 'A', '2026-11-03T22:00:00', '2026-11-04T01:00:00', 1))).toEqual([22, 23]);
   });
   it('writes wins and losses without a zero side', () => {
     expect(winLoss(2, 1)).toBe('2W 1L');

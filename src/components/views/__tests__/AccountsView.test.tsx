@@ -31,12 +31,11 @@ vi.mock('@/store/api', async (orig) => ({
 const useScopeTrades = vi.fn();
 vi.mock('@/hooks/useScopeTrades', () => ({ useScopeTrades: (...a: unknown[]) => useScopeTrades(...a) }));
 
-let ent: { plan: string | null; can: (f: string) => boolean; writableAccountIds: string[] | null } = { plan: 'pro', can: () => true, writableAccountIds: null };
+let ent: { plan: string | null; readOnly: boolean; can: (f: string) => boolean; writableAccountIds: string[] | null } = { plan: 'pro', readOnly: false, can: () => true, writableAccountIds: null };
 vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ent }));
 const emitPlanSignal = vi.fn();
 vi.mock('@/lib/planErrors', async (orig) => ({ ...(await orig<object>()), emitPlanSignal: (s: unknown) => emitPlanSignal(s) }));
 vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), { error: vi.fn() }) }));
-vi.mock('@/components/billing/WritableAccounts', () => ({ WritableAccounts: () => <p>Choose the 2 accounts you keep adding trades to</p> }));
 
 import { AccountsView } from '../AccountsView';
 import { ChromeProvider } from '@/components/shell/chrome';
@@ -70,7 +69,7 @@ const old = acc('Old challenge', { id: 'a3', status: 'breached', balance: 0, ini
 describe('AccountsView', () => {
   beforeEach(() => {
     query = { data: { accounts: [ftmo, zerodha, old] }, isLoading: false, isError: false };
-    ent = { plan: 'pro', can: () => true, writableAccountIds: null };
+    ent = { plan: 'pro', readOnly: false, can: () => true, writableAccountIds: null };
     for (const f of [refetch, createAccount, updateAccount, deleteAccount, updateStatus, emitPlanSignal, useScopeTrades]) f.mockReset();
     for (const f of [createAccount, updateAccount, deleteAccount, updateStatus]) f.mockReturnValue(unwrap());
     store.dispatch(setSelectedAccount(null));
@@ -227,24 +226,24 @@ describe('AccountsView', () => {
     await vi.waitFor(() => expect(screen.getByTestId('where')).not.toHaveTextContent('account=new'));
   });
 
-  it('at the Free limit, Add account opens the upgrade dialog instead of the pane and the meter is in the page bar', async () => {
-    ent = { plan: 'free', can: () => false, writableAccountIds: null };
-    query = { data: { accounts: [ftmo, zerodha] }, isLoading: false, isError: false };
-    setup();
-    expect(screen.getByRole('toolbar', { name: 'Data shown' })).toHaveTextContent('2 of 2 on Free');
-    expect(screen.getByRole('button', { name: 'Upgrade for unlimited accounts' })).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Add account' }));
-    expect(emitPlanSignal).toHaveBeenCalledWith(expect.objectContaining({ code: 'PLAN_REQUIRED', feature: 'unlimited_accounts', kind: 'mutation' }));
-    expect(screen.getByTestId('where')).not.toHaveTextContent('account=new');
-  });
-
-  it('marks accounts read-only on Free after a trial with more than 2 accounts, all still visible', () => {
-    ent = { plan: 'free', can: () => false, writableAccountIds: ['a1', 'a2'] };
+  it('after the trial, Add account opens the upgrade dialog instead of the pane; every account is read-only and still visible', async () => {
+    ent = { plan: 'free', readOnly: true, can: (f) => f !== 'auto_sync', writableAccountIds: [] };
     query = { data: { accounts: [ftmo, zerodha, acc('Third', { id: 'a4' })] }, isLoading: false, isError: false };
     setup();
-    expect(screen.getByText('Choose the 2 accounts you keep adding trades to')).toBeInTheDocument();
-    expect(screen.getByRole('row', { name: /Third/ })).toHaveTextContent('Read-only on Free');
-    expect(screen.getByRole('row', { name: /FTMO 100K/ })).not.toHaveTextContent('Read-only on Free');
+    expect(screen.getByRole('toolbar', { name: 'Data shown' })).toHaveTextContent('read-only');
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Add account' }));
+    expect(emitPlanSignal).toHaveBeenCalledWith(expect.objectContaining({ code: 'TRIAL_EXPIRED', kind: 'mutation' }));
+    expect(screen.getByTestId('where')).not.toHaveTextContent('account=new');
+    for (const name of [/Third/, /FTMO 100K/]) expect(screen.getByRole('row', { name })).toHaveTextContent('Read-only');
+    expect(document.body.textContent).not.toMatch(/on Free/);
+  });
+
+  it('trial and Pro have no account limit: Add account opens the pane however many accounts there are', async () => {
+    query = { data: { accounts: [ftmo, zerodha, acc('Third', { id: 'a4' })] }, isLoading: false, isError: false };
+    setup();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Add account' }));
+    expect(screen.getByTestId('where')).toHaveTextContent('account=new');
+    expect(screen.queryByText('Read-only')).toBeNull();
   });
 
   it('changes status directly for Passed, and asks first for Breached', async () => {

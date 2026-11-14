@@ -32,7 +32,7 @@ describe('todaySummary', () => {
   const now = new Date(2026, 10, 11, 18, 0);
 
   it("sums today's trades per currency", () => {
-    const s = todaySummary([t('1', { pnl: 100 }), t('2', { pnl: -20 }), t('3', { pnl: 5000, accountId: 'b' }), t('4', { exitDate: '2026-11-10T10:00:00' })], accounts, now);
+    const s = todaySummary([t('1', { pnl: 100 }), t('2', { pnl: -20 }), t('3', { pnl: 5000, accountId: 'b' }), t('4', { entryDate: '2026-11-10T09:00:00', exitDate: '2026-11-10T10:00:00' })], accounts, now);
     expect(s.count).toBe(3);
     expect(s.byCurrency).toEqual([{ currency: 'USD', net: 80 }, { currency: 'INR', net: 5000 }]);
   });

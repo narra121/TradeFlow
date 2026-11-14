@@ -3,7 +3,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { PLAN_SIGNAL_EVENT } from '@/lib/planErrors';
-import type { ChatMessage, ChatSession } from '@/types/chat';
+import type { ChatMessage, ChatSession, QueryResult } from '@/types/chat';
 import type { Insight } from '@/types/insights';
 import { ChatView } from '../ChatView';
 
@@ -29,8 +29,16 @@ let messagesFailure: unknown;
 vi.mock('sonner', () => ({ toast: vi.fn() }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
 vi.mock('@/hooks/useTradeParam', () => ({ useTradeParam: () => ({ openTrade }) }));
-vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ usage: [{ feature: 'ai_chat', ...usage }], periodResetsAt: '2026-12-01T00:00:00.000Z' }) }));
-vi.mock('@/store/api/insightsApi', () => ({ useListInsightsQuery: () => ({ data: { insights } }) }));
+let readOnly = false;
+vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ usage: readOnly ? [] : [{ feature: 'ai_chat', ...usage }], readOnly, periodResetsAt: '2026-12-01T00:00:00.000Z' }) }));
+vi.mock('@/store/api/insightsApi', () => ({ useGetInsightQuery: (id: string, o?: { skip?: boolean }) => ({ data: o?.skip ? undefined : insights.find((i) => i.id === id) }) }));
+type Acc = { id: string; name: string; currency: string; status: string; balance: number };
+let accounts: Acc[] = [];
+let selectedAccountId: string | null = null;
+const setSelectedAccountId = vi.fn();
+vi.mock('@/hooks/useAccounts', () => ({
+  useAccounts: () => ({ accounts, selectedAccountId, selectedAccount: accounts.find((a) => a.id === selectedAccountId) ?? null, setSelectedAccountId }),
+}));
 vi.mock('@/store/api/chatApi', () => ({
   useListChatSessionsQuery: () => ({ data: sessions, isLoading: false, isError: !!sessionsFailure, error: sessionsFailure, refetch: vi.fn() }),
   useGetChatMessagesQuery: () => ({ data: messages, isFetching: false, isError: !!messagesFailure, error: messagesFailure, refetch: vi.fn() }),
@@ -50,11 +58,14 @@ const msg = (id: string, role: 'user' | 'assistant', content: string): ChatMessa
 const box = () => screen.getByRole('textbox', { name: 'Ask about your trading' });
 
 beforeEach(() => {
-  [createSession, deleteSession, send, openTrade].forEach((f) => f.mockReset());
+  [createSession, deleteSession, send, openTrade, setSelectedAccountId].forEach((f) => f.mockReset());
+  accounts = [{ id: 'a1', name: 'FTMO 100K', currency: 'USD', status: 'active', balance: 100000 }];
+  selectedAccountId = null;
   sessions = [];
   messages = [];
   insights = [];
   usage = { used: 2, limit: 500 };
+  readOnly = false;
   mobile = false;
   sessionsFailure = undefined;
   messagesFailure = undefined;
@@ -62,25 +73,30 @@ beforeEach(() => {
 });
 
 describe('ChatView empty thread', () => {
-  it('offers the four fixed starters without a report, and says the answers use all accounts', () => {
+  it('offers the four calculation starters and names the account and period the answers use', () => {
     renderChat();
-    expect(screen.getByText('Answers use all your accounts and trades.')).toBeInTheDocument();
-    expect(screen.getAllByRole('button').filter((b) => /^(What|Which|How)/.test(b.textContent ?? ''))).toHaveLength(4);
+    expect(screen.getByText('Answers use the last 90 days of')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Account: All accounts' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button').filter((b) => /^(What|Which|How)/.test(b.textContent ?? '')).map((b) => b.textContent)).toEqual([
+      'Which setup has made me the most money?', 'How do I do after a losing trade?', 'Which weekday costs me the most?', 'What if I stopped after 2 losses a day?',
+    ]);
     expect(screen.getByText('2 of 500 messages this month')).toBeInTheDocument();
   });
 
-  it('turns the findings of the latest report into starters', () => {
+  it('a chat about a report opens with a question on its finding and answers from the report’s scope', () => {
     insights = [{ id: 'i1', createdAt: '', period: { from: '2026-10-01', to: '2026-10-31' }, accountId: null, summary: '', model: '', tradeCount: 5, sections: [{ kind: 'leak', title: 'Trades after 20:00 lose', body: '' }] }];
-    renderChat();
+    renderChat('/app/chat?insight=i1');
     expect(screen.getByRole('button', { name: 'What is behind this: Trades after 20:00 lose?' })).toBeInTheDocument();
+    expect(screen.getByText('Answers use the report’s period and account.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Account:/ })).toBeNull();
   });
 
   it('a starter creates a session, sends the question and puts the session in the URL', async () => {
     send.mockReturnValue(call({ content: 'x', done: { messageId: 'm' } }));
     renderChat();
-    await userEvent.click(screen.getByRole('button', { name: 'Which mistakes cost me the most?' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Which weekday costs me the most?' }));
     expect(createSession).toHaveBeenCalled();
-    await waitFor(() => expect(send).toHaveBeenCalledWith(expect.objectContaining({ sessionId: 's-new', content: 'Which mistakes cost me the most?' })));
+    await waitFor(() => expect(send).toHaveBeenCalledWith(expect.objectContaining({ sessionId: 's-new', content: 'Which weekday costs me the most?' })));
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('?s=s-new'));
   });
 
@@ -92,12 +108,12 @@ describe('ChatView empty thread', () => {
       return { unwrap: () => new Promise(() => undefined), abort: vi.fn() };
     });
     renderChat();
-    await userEvent.click(screen.getByRole('button', { name: 'Which mistakes cost me the most?' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Which weekday costs me the most?' }));
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('?s=s-new'));
     act(() => emit('tokens'));
     expect(await screen.findByText('First tokens')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Stop answer/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Which mistakes cost me the most?' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Which weekday costs me the most?' })).toBeNull();
   });
 
   it('a second Enter or a double click while the session is being created sends nothing more', async () => {
@@ -116,7 +132,7 @@ describe('ChatView empty thread', () => {
   it('a double-clicked starter creates one session and sends one question', async () => {
     send.mockReturnValue(call({ content: 'x', done: { messageId: 'm' } }));
     renderChat();
-    await userEvent.dblClick(screen.getByRole('button', { name: 'Which mistakes cost me the most?' }));
+    await userEvent.dblClick(screen.getByRole('button', { name: 'Which weekday costs me the most?' }));
     await waitFor(() => expect(send).toHaveBeenCalledTimes(1));
     expect(createSession).toHaveBeenCalledTimes(1);
   });
@@ -255,12 +271,24 @@ describe('ChatView limits', () => {
     expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled();
   });
 
+  it('after the trial, sending opens the upgrade dialog (TRIAL_EXPIRED) and creates or sends nothing', async () => {
+    readOnly = true;
+    const seen = vi.fn();
+    window.addEventListener(PLAN_SIGNAL_EVENT, seen);
+    renderChat();
+    await userEvent.type(box(), 'Hello{Enter}');
+    window.removeEventListener(PLAN_SIGNAL_EVENT, seen);
+    expect((seen.mock.calls[0][0] as CustomEvent).detail).toMatchObject({ code: 'TRIAL_EXPIRED' });
+    expect(createSession).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+
   it('a starter at the limit opens the upgrade dialog instead of sending', async () => {
     usage = { used: 10, limit: 10 };
     const seen = vi.fn();
     window.addEventListener(PLAN_SIGNAL_EVENT, seen);
     renderChat();
-    expect(screen.getByRole('button', { name: 'Which mistakes cost me the most?' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Which weekday costs me the most?' })).toBeDisabled();
     window.removeEventListener(PLAN_SIGNAL_EVENT, seen);
     expect(send).not.toHaveBeenCalled();
   });
@@ -292,5 +320,89 @@ describe('ChatView sessions', () => {
     expect(screen.queryByRole('complementary', { name: 'Chats' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Chats' }));
     expect(await screen.findByRole('button', { name: 'After-20:00 losses' })).toBeInTheDocument();
+  });
+});
+
+describe('ChatView calculations, tables and accounts', () => {
+  const stats: QueryResult = {
+    columns: ['setup', 'trades', 'wins', 'winRate', 'net', 'avgR', 'avgRLow', 'avgRHigh', 'verdict', 'label'],
+    rows: [['Reversal', 6, 5, 0.8333, 844.79, 1.1, null, null, 'watch', 'too-few'], ['Pullback', 13, 7, 0.5385, 287.57, 0.3, null, null, 'watch', 'too-few']],
+    label: 'too-few',
+    tradeIds: ['r1', 'r2', 'p1'],
+  };
+
+  it('sends the page account, shows the calculation line while it works and draws the done frame tables under the answer', async () => {
+    sessions = [session('s1', 'x')];
+    selectedAccountId = 'a1';
+    let finish: (v: unknown) => void = () => undefined;
+    send.mockImplementation((args: { onTool: (n: string) => void }) => {
+      args.onTool('stats');
+      return { unwrap: () => new Promise((r) => (finish = r)), abort: vi.fn() };
+    });
+    renderChat('/app/chat?s=s1');
+    await userEvent.type(box(), 'Which setup has made me the most money?{Enter}');
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ accountId: 'a1' }));
+    expect(await screen.findByText('Calculated: figures by group')).toBeInTheDocument();
+    await act(async () => finish({ content: 'Reversal made the most (table 1).', done: { messageId: 'm', tables: [stats], currency: 'USD', tradeIds: [] } }));
+    expect(screen.queryByText(/^Calculated:/)).toBeNull();
+    const table = screen.getByRole('table', { name: /Table 1 · Too few trades: numbers will move a lot/ });
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Setup', 'Trades', 'Win rate', 'Net P&L', 'Avg R', 'Evidence']);
+    expect(within(table).getByRole('rowheader', { name: 'Reversal' }).closest('tr')).toHaveTextContent('Reversal683.3%+$844.79+1.10RToo early to tell');
+    expect(screen.getByRole('region', { name: /Table 1/ })).toHaveAttribute('tabindex', '0');
+    await userEvent.click(screen.getByRole('button', { name: 'View 3 trades →' }));
+    expect(openTrade).toHaveBeenCalledWith('r1', { ids: ['r1', 'r2', 'p1'] });
+  });
+
+  it('stored answers keep their tables; a trades table links each row to its trade', async () => {
+    sessions = [session('s1', 'x')];
+    messages = [msg('1', 'user', 'Worst trades?'), { ...msg('2', 'assistant', 'Your two worst trades:'), currency: 'INR', tables: [{ columns: ['date', 'symbol', 'direction', 'setup', 'net', 'r'], rows: [['2026-11-03', 'NIFTY', 'Long', 'Breakout', -994.42, -1.2]], label: 'too-few', tradeIds: ['t7'] }] }];
+    renderChat('/app/chat?s=s1');
+    await userEvent.click(screen.getByRole('button', { name: '03 Nov 2026' }));
+    expect(openTrade).toHaveBeenCalledWith('t7', { ids: ['t7'] });
+    expect(screen.getByRole('table')).toHaveTextContent('−₹994.42');
+  });
+
+  it('all accounts in two currencies: the answer asks for an account (nothing charged) and resends the same question with it', async () => {
+    sessions = [session('s1', 'x')];
+    accounts = [...accounts, { id: 'a2', name: 'Zerodha F&O', currency: 'INR', status: 'active', balance: 500000 }];
+    send.mockReturnValueOnce(call({ status: 422, data: { errorCode: 'MIXED_CURRENCY', message: 'These trades are in INR and USD.', error: { currencies: ['INR', 'USD'] } } }, true));
+    renderChat('/app/chat?s=s1');
+    expect(screen.getByText(/Your accounts use USD and INR, so an answer needs one account/)).toBeInTheDocument();
+    await userEvent.type(box(), 'Which weekday costs me the most?{Enter}');
+    expect(send).toHaveBeenLastCalledWith(expect.objectContaining({ accountId: null }));
+    const group = await screen.findByRole('group', { name: /These trades are in INR and USD.*This question was not charged/ });
+    expect(screen.queryByRole('alert')).toBeNull();
+    send.mockReturnValueOnce(call({ content: 'Monday', done: { messageId: 'm', tables: [] } }));
+    await userEvent.click(within(group).getByRole('combobox'));
+    await userEvent.click(screen.getByRole('option', { name: /Zerodha F&O.*INR/ }));
+    expect(setSelectedAccountId).toHaveBeenCalledWith('a2');
+    await waitFor(() => expect(send).toHaveBeenLastCalledWith(expect.objectContaining({ content: 'Which weekday costs me the most?', accountId: 'a2' })));
+  });
+
+  it('a chat about a report sends no account until one is chosen', async () => {
+    insights = [{ id: 'i1', createdAt: '', period: { from: '2026-10-01', to: '2026-10-31' }, accountId: null, summary: '', model: '', tradeCount: 5, sections: [] }];
+    sessions = [{ ...session('s1', 'x'), insightId: 'i1' }];
+    selectedAccountId = 'a1';
+    send.mockReturnValue(call({ content: 'ok', done: { messageId: 'm', tables: [] } }));
+    renderChat('/app/chat?s=s1');
+    await userEvent.type(box(), 'Summarise it{Enter}');
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ accountId: undefined }));
+  });
+
+  it('opening another chat stops the running answer, and its late end does not touch the new chat', async () => {
+    sessions = [session('s1', 'First'), session('s2', 'Second')];
+    let fail: (e: unknown) => void = () => undefined;
+    send.mockImplementationOnce((args: { onToken: (t: string) => void }) => {
+      args.onToken('Half');
+      return { unwrap: () => new Promise((_r, j) => (fail = j)), abort: vi.fn() };
+    });
+    renderChat('/app/chat?s=s1');
+    await userEvent.type(box(), 'Long one{Enter}');
+    expect(await screen.findByText('Half')).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('complementary', { name: 'Chats' })).getByRole('button', { name: 'Second' }));
+    expect(send.mock.calls[0][0].signal.aborted).toBe(true);
+    await act(async () => fail({ status: 'CUSTOM_ERROR', data: { aborted: true } }));
+    expect(screen.queryByText('Half')).toBeNull();
+    expect(screen.queryByText('Stopped')).toBeNull();
   });
 });

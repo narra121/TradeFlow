@@ -7,7 +7,7 @@ import { configureStore } from '@reduxjs/toolkit';
 vi.mock('@/lib/api/config', () => ({ API_BASE_URL: 'https://api.test/v1' }));
 vi.mock('@/lib/api/tokenRefresh', () => ({ refreshToken: vi.fn() }));
 const clearLocal = vi.fn();
-vi.mock('@/store/api/authApi', () => ({ useLogoutMutation: () => [clearLocal, { isLoading: false }] }));
+vi.mock('@/store/api/authApi', () => ({ useClearDeletedSessionMutation: () => [clearLocal, { isLoading: false }] }));
 
 import { api } from '@/store/api/baseApi';
 // The app imports accountsApi first (AppPage -> '@/store/api'); profileApi is injected later with the Settings chunk.
@@ -55,6 +55,7 @@ describe('deleting the TradeQut account', () => {
 
     await waitFor(() => expect(window.location.assign).toHaveBeenCalledWith('/goodbye'));
     expect(calls()).toEqual(['DELETE https://api.test/v1/auth/account']);
+    expect(clearLocal).toHaveBeenCalledTimes(1);
   });
 
   it('a trading-account delete still goes to /v1/accounts/<id>', async () => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Pencil } from 'lucide-react';
+import { AlertTriangle, Clock, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Money } from '@/components/ui/money';
@@ -7,7 +7,7 @@ import { DirectionChip } from '@/components/ui/chips';
 import { formatCount, formatDateTime, formatPrice, formatQuantity } from '@/lib/format';
 import { PAGE_SIZE, STATUS_LABEL } from '@/lib/import/labels';
 import { fromZonedInput, toZonedInput } from '@/lib/appTimeZone';
-import { parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow, type RowErrors, type RowStatus } from '@/lib/import/rows';
+import { missingTimeNote, parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow, type RowErrors, type RowStatus } from '@/lib/import/rows';
 import { cn } from '@/lib/utils';
 
 const FIELD_LABEL: Record<EditableField, string> = {
@@ -49,7 +49,7 @@ const fromLocalInput = (v: string) => fromZonedInput(v)?.toISOString() ?? '';
 
 function rawValue(row: ReviewRow, field: EditableField): string {
   const t = row.trade;
-  if (field === 'openDate' || field === 'closeDate') return toZonedInput(t[field]);
+  if (field === 'openDate' || field === 'closeDate') return toZonedInput(t[field], { seconds: true });
   return String(t[field] ?? '');
 }
 
@@ -344,6 +344,7 @@ interface GridRowProps {
 
 function GridRow({ row, ri, n, cols, status, errors, errorFields, errId, dim, active, editing, currency, selected, readOnly, colCount, onKey, onActivate, onSelect, onInclude, onBeginEdit, onDraft, onCommit, onCancel }: GridRowProps) {
   const t = row.trade;
+  const timeNote = missingTimeNote(row);
   return (
     <>
       <tr
@@ -410,7 +411,13 @@ function GridRow({ row, ri, n, cols, status, errors, errorFields, errId, dim, ac
             case 'open':
             case 'close': {
               const v = c.field === 'openDate' ? t.openDate : t.closeDate;
-              return <td key={c.id} {...common} className={cn(common.className, 'whitespace-nowrap font-mono tabular-nums')}>{v && !Number.isNaN(new Date(v).getTime()) ? formatDateTime(v) : '—'}</td>;
+              const copied = c.field === 'openDate' ? row.dates?.openMissing : row.dates?.closeMissing;
+              return (
+                <td key={c.id} {...common} data-missing={copied || undefined} className={cn(common.className, 'whitespace-nowrap font-mono tabular-nums', copied && !dim && 'text-warning')}>
+                  {v && !Number.isNaN(new Date(v).getTime()) ? formatDateTime(v) : '—'}
+                  {copied && <span className="sr-only"> (not in the screenshot)</span>}
+                </td>
+              );
             }
             case 'symbol':
               return <td key={c.id} {...common} className={cn(common.className, 'whitespace-nowrap font-medium')}>{t.symbol || '—'}{row.mergedFrom && <span className="ml-1 text-xs font-normal text-muted-foreground">merged {row.mergedFrom.length}</span>}</td>;
@@ -437,6 +444,14 @@ function GridRow({ row, ri, n, cols, status, errors, errorFields, errId, dim, ac
             <Pencil className="mr-1 inline h-3 w-3" aria-hidden="true" />
             {row.note ? `${row.note} ` : ''}
             {errorFields.map((f) => errors[f]).join(' ')}
+          </td>
+        </tr>
+      )}
+      {status === 'ready' && timeNote && (
+        <tr role="row" className="border-0">
+          <td role="gridcell" colSpan={colCount} className="px-2 pb-1.5 pl-14 text-xs text-warning">
+            <Clock className="mr-1 inline h-3 w-3" aria-hidden="true" />
+            {timeNote}
           </td>
         </tr>
       )}
@@ -490,6 +505,7 @@ function CellEditor({ field, draft, label, ri, ci, onDraft, onCommit, onCancel }
       aria-label={label}
       autoFocus
       type={isDate ? 'datetime-local' : 'text'}
+      step={isDate ? 1 : undefined}
       inputMode={field === 'symbol' || isDate ? undefined : 'decimal'}
       className={cls}
       value={draft}

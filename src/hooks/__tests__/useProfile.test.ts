@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { NAME_MAX_LENGTH, signInMethodFromToken, useProfile, validateName } from '../useProfile';
+import { NAME_MAX_LENGTH, signInMethod, useProfile, validateName } from '../useProfile';
 
 const useGetProfileQuery = vi.fn();
 const updateProfile = vi.fn();
@@ -13,10 +13,6 @@ vi.mock('@/store/api/userApi', () => ({
   useUpdateProfileMutation: () => [updateProfile, { isLoading: false }],
 }));
 
-function token(payload: object): string {
-  return `h.${btoa(JSON.stringify(payload))}.s`;
-}
-
 describe('validateName', () => {
   it('rejects blank and over-long names', () => {
     expect(validateName('   ')).toMatch(/Enter the name/);
@@ -28,15 +24,23 @@ describe('validateName', () => {
   });
 });
 
-describe('signInMethodFromToken', () => {
-  it('detects Google through identities or the username prefix', () => {
-    expect(signInMethodFromToken(token({ identities: [{ providerName: 'Google' }] }))).toBe('google');
-    expect(signInMethodFromToken(token({ 'cognito:username': 'Google_123' }))).toBe('google');
+describe('signInMethod', () => {
+  const P = 'CognitoIdentityServiceProvider.c1';
+  beforeEach(() => localStorage.clear());
+
+  it('is Google for a session that came through the Google redirect', () => {
+    localStorage.setItem(`${P}.oauthSignIn`, 'true,false');
+    expect(signInMethod()).toBe('google');
   });
 
-  it('defaults to password', () => {
-    expect(signInMethodFromToken(token({ 'cognito:username': 'abc' }))).toBe('password');
-    expect(signInMethodFromToken(null)).toBe('password');
+  it('is password for an email sign-in, even when the account has a Google identity linked to it', () => {
+    localStorage.setItem(`${P}.LastAuthUser`, 'abc');
+    localStorage.setItem(`${P}.abc.idToken`, `h.${btoa(JSON.stringify({ 'cognito:username': 'abc', identities: [{ providerName: 'Google' }] }))}.s`);
+    expect(signInMethod()).toBe('password');
+  });
+
+  it('is password when signed out', () => {
+    expect(signInMethod()).toBe('password');
   });
 });
 

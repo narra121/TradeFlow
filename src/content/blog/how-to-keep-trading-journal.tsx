@@ -185,9 +185,9 @@ export default function HowToKeepTradingJournal() {
         <Link to="/glossary#profit-factor" className="text-primary hover:text-primary/80">
           profit factor
         </Link>{' '}
-        calculations, covering everything in this guide. The Free plan includes unlimited manual
-        trades, the calendar, goals and rules; advanced analytics are part of Pro, and every account
-        starts with a 14-day Pro trial without a card.
+        calculations, covering everything in this guide. Every account starts with a 14-day free
+        trial with every Pro feature and no card; after it, Pro keeps the journal writable and
+        without Pro it is read-only.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-6">
         The traders who improve are the ones who measure. The ones who measure are the ones who

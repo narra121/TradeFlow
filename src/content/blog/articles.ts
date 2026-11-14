@@ -138,7 +138,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
       {
         question: 'Is there a free trial of Pro?',
         answer:
-          'Yes. Every new account starts with a 14-day Pro trial without a card. When it ends the account moves to the Free plan and nothing is charged.',
+          'Yes. Every new account starts with a 14-day free trial with every Pro feature and no card. When it ends nothing is charged and the journal becomes read-only: you can still view and export your trades.',
       },
       {
         question: 'How many trades do I need before the analytics mean anything?',
@@ -518,15 +518,15 @@ export const BLOG_ARTICLES: BlogArticle[] = [
       'Free trading journal options compared on the limits that matter: monthly imports, accounts, asset classes and review tools. Facts read from vendor pages in November 2026.',
     tags: ['comparison', 'journaling', 'free'],
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-12',
+    updatedAt: '2026-11-13',
     readingTime: 5,
     summary:
-      'A spreadsheet is free but manual. TradesViz Basic is free with 3,000 executions a month and one account. TradeQut Free has unlimited manual trades, two accounts and three broker file imports a month. Test two tools with your own broker file before choosing.',
+      'A spreadsheet is free but manual. TradesViz Basic is free with 3,000 executions a month and one account. TradeQut has no free plan: a 14-day free trial with every Pro feature, then read-only without Pro. Test two tools with your own broker file before choosing.',
     faq: [
       {
         question: 'Is there a completely free trading journal?',
         answer:
-          'A spreadsheet is free without limits but needs manual work. TradesViz and TradeQut both have free plans with limits, listed in the comparison table; limits change, so confirm on each vendor page.',
+          'A spreadsheet is free without limits but needs manual work. TradesViz has a free plan with limits; TradeQut has a 14-day free trial and then needs Pro to add or edit trades. Limits change, so confirm on each vendor page.',
       },
       {
         question: 'What should a free trading journal include?',

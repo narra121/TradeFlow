@@ -8,9 +8,13 @@ const apiWithTags = api.enhanceEndpoints({ addTagTypes: ['ChatSessions', 'ChatMe
 export interface SendChatMessageArgs {
   sessionId: string;
   content: string;
+  /** undefined = the session's own scope; null = all accounts */
+  accountId?: string | null;
   signal?: AbortSignal;
   /** called for every streamed text chunk */
   onToken?: (text: string) => void;
+  /** called with the tool name before each calculation runs */
+  onTool?: (name: string) => void;
 }
 
 export interface SendChatMessageResult {
@@ -50,22 +54,24 @@ export const chatApi = apiWithTags.injectEndpoints({
      * refetched, so the cache holds the server's ids and the quota meter updates.
      */
     sendChatMessage: builder.mutation<SendChatMessageResult, SendChatMessageArgs>({
-      async queryFn({ sessionId, content, signal, onToken }) {
+      async queryFn({ sessionId, content, accountId, signal, onToken, onTool }) {
         let text = '';
         try {
           const done = await streamChat({
             sessionId,
             content,
+            accountId,
             signal,
             onToken: (t) => {
               text += t;
               onToken?.(t);
             },
+            onTool,
           });
           return { data: { content: text, done } };
         } catch (e) {
           if (e instanceof ChatStreamError) {
-            return { error: { status: e.status, data: { errorCode: e.code, message: e.message, error: { code: e.code, feature: e.feature, limit: e.limit, resetsAt: e.resetsAt } }, partial: text } as never };
+            return { error: { status: e.status, data: { errorCode: e.code, message: e.message, error: { code: e.code, feature: e.feature, limit: e.limit, resetsAt: e.resetsAt, currencies: e.currencies } }, partial: text } as never };
           }
           if ((e as Error)?.name === 'AbortError') return { error: { status: 'CUSTOM_ERROR', error: 'aborted', data: { aborted: true, partial: text } } as never };
           return { error: { status: 'FETCH_ERROR', error: String(e), data: connectionMessage('network') } as never };

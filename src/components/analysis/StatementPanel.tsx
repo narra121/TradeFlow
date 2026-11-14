@@ -5,17 +5,32 @@ import { Delta } from '@/components/stats/Delta';
 import { MetricInfo } from '@/components/stats/MetricInfo';
 import type { MetricKey } from '@/components/stats/metricDefs';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { realisedRStat, rNoteLine } from '@/lib/analyticsRows';
 import { formatPercent, formatProfitFactor } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AnalyticsContext } from './drill';
 
-function Row({ metric, label, value, delta, wide }: { metric: MetricKey; label?: string; value: React.ReactNode; delta?: React.ReactNode; wide?: boolean }) {
+interface RowProps {
+  metric: MetricKey;
+  label?: string;
+  value: React.ReactNode;
+  delta?: React.ReactNode;
+  wide?: boolean;
+  /** Line under the value, e.g. the sample behind it. */
+  note?: string;
+  /** Sample text for the popover. */
+  sample?: string;
+}
+
+function Row({ metric, label, value, delta, wide, note, sample }: RowProps) {
   return (
     <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3">
-      <dt className="truncate text-[13px] text-foreground-soft"><MetricInfo metric={metric} label={label} /></dt>
-      <dd className={cn('grid items-baseline gap-x-3 text-right', !wide && 'sm:grid-cols-[7rem_7.5rem]')}>
-        <span className={cn('font-mono text-[13px] font-medium tabular-nums', !wide && 'sm:col-start-1')}>{value}</span>
+      <dt className="truncate text-[13px] text-foreground-soft"><MetricInfo metric={metric} label={label} sample={sample} /></dt>
+      {/* The change column is reserved only while a comparison is shown, so labels keep their room otherwise. */}
+      <dd className={cn('grid items-baseline gap-x-3 text-right', !wide && delta !== undefined && 'sm:grid-cols-[7rem_7.5rem]')}>
+        <span className={cn('font-mono text-[13px] font-medium tabular-nums', !wide && delta !== undefined && 'sm:col-start-1')}>{value}</span>
         {!wide && delta}
+        {note && <span className="col-span-full text-[11px] leading-4 text-muted-foreground">{note}</span>}
       </dd>
     </div>
   );
@@ -49,8 +64,9 @@ export function StatementPanel({ ctx }: { ctx: AnalyticsContext }) {
   const d = { name: prevRange?.name ?? '', spokenName: prevRange?.spokenName };
   const money = (v: number | undefined) => <Money value={v} currency={currency} />;
   const wins = s.wins ?? 0;
-  const hasR = typeof s.avgR === 'number';
-  const prevR = prev && typeof prev.avgR === 'number' ? (prev.avgR as number) : undefined;
+  const r = realisedRStat(s);
+  const hasR = r.avgR !== null;
+  const prevR = realisedRStat(prev).avgR ?? undefined;
   const moneyDelta = (cur: number | undefined, p: number | undefined) => (prev ? <Delta kind="money" current={cur} previous={p} currency={currency} {...d} /> : undefined);
 
   return (
@@ -78,8 +94,10 @@ export function StatementPanel({ ctx }: { ctx: AnalyticsContext }) {
       <Column title="Risk" collapsible={mobile} defaultOpen={false}>
         <Row
           metric={hasR ? 'avgR' : 'plannedRR'}
-          value={hasR ? <RMultiple value={s.avgR as number} /> : s.avgRiskReward ? s.avgRiskReward.toFixed(2) : '—'}
-          delta={prev ? (hasR ? <Delta kind="r" current={s.avgR as number} previous={prevR} {...d} /> : <Delta kind="ratio" current={s.avgRiskReward} previous={prev.avgRiskReward} {...d} />) : undefined}
+          value={hasR ? <RMultiple value={r.avgR} /> : r.planned !== null ? r.planned.toFixed(2) : '—'}
+          delta={prev ? (hasR ? <Delta kind="r" current={r.avgR as number} previous={prevR} {...d} /> : <Delta kind="ratio" current={s.avgRiskReward} previous={prev.avgRiskReward} {...d} />) : undefined}
+          note={rNoteLine(r)}
+          sample={r.sample || undefined}
         />
         <Row metric="maxDrawdown" value={noDrawdown ? '—' : formatPercent(s.maxDrawdown)} delta={!noDrawdown && prev ? <Delta kind="pts" current={s.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...d} /> : undefined} />
         <Row metric="winStreak" value={s.consecutiveWins ?? 0} />

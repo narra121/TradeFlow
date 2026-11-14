@@ -98,7 +98,7 @@ export function computePreview(i: PreviewInput): Preview {
 
   const stopDistance = num(i.entryPrice) && num(i.stopLoss) && i.stopLoss > 0 ? Math.abs(i.entryPrice - i.stopLoss) : null;
   const riskAmount = stopDistance !== null && num(i.quantity) && multiplier !== null ? stopDistance * i.quantity * multiplier : null;
-  // Net P&L over initial risk, from the one definition in lib/pnl; with a P&L the user types, the price-based gross stands in.
+  // Realised R from prices (lib/pnl `rMultiple`); with a P&L the user types, gross over risk gives the same price-based value.
   const realisedR = canAuto ? (pnl?.rMultiple ?? null) : riskAmount && riskAmount > 0 && gross !== null ? gross / riskAmount : null;
   const plannedRR =
     stopDistance && stopDistance > 0 && num(i.entryPrice) && num(i.takeProfit) && i.takeProfit > 0

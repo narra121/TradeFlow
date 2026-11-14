@@ -58,7 +58,10 @@ export function DataPrivacySection() {
 
       <SettingRow label="AI and your data">
         <p className="max-w-prose pt-1.5 text-sm text-foreground-soft">
-          AI features send trade figures — never notes, screenshots, names or email — to Google Gemini, only when you use them.
+          AI requests go through OpenRouter, only for the features you use and the weekly report. Chat sends figures computed
+          from your trades and your question to OpenAI, never notes, screenshots, names or email. Reports send the same figures
+          to OpenAI, and your notes and key lessons only if you switch on Use my notes. Screenshot import and AI Enhance send
+          what you submit to Google Gemini.
         </p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-sm">
           <Link to="/privacy" className="text-primary underline underline-offset-2">Privacy policy</Link>

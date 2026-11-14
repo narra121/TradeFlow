@@ -16,10 +16,11 @@ const bulkDelete = vi.fn();
 const navigate = vi.fn();
 const dispatch = vi.fn();
 let usage: { feature: string; used: number; limit: number | null }[] = [];
+let readOnly = false;
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
 vi.mock('sonner', () => ({ toast: vi.fn() }));
-vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ usage, periodResetsAt: '2026-12-01T00:00:00.000Z' }) }));
+vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ usage, readOnly, periodResetsAt: '2026-12-01T00:00:00.000Z' }) }));
 vi.mock('@/store/hooks', () => ({ useAppDispatch: () => dispatch }));
 vi.mock('@/store/api', () => ({ useBulkDeleteTradesMutation: () => [bulkDelete] }));
 vi.mock('@/store/api/importApi', () => ({
@@ -46,6 +47,7 @@ beforeEach(() => {
   [parse, extract, save, bulkDelete, navigate, dispatch, fit].forEach((f) => f.mockReset());
   fit.mockImplementation(async (f: File) => f);
   usage = [];
+  readOnly = false;
   act(() => importFlow.reset());
   act(() => importFlow.set({ accountId: 'a1', source: 'auto' }));
 });
@@ -84,6 +86,16 @@ describe('addFiles', () => {
     expect(importFlow.get().error).toMatch(/either broker files or screenshots/);
     expect(parse).not.toHaveBeenCalled();
     expect(extract).not.toHaveBeenCalled();
+  });
+
+  it('after the trial, opens the upgrade dialog (TRIAL_EXPIRED) before uploading anything', async () => {
+    readOnly = true;
+    const seen = vi.fn();
+    window.addEventListener(PLAN_SIGNAL_EVENT, seen);
+    await run((x) => x.addFiles([csv()]));
+    window.removeEventListener(PLAN_SIGNAL_EVENT, seen);
+    expect((seen.mock.calls[0][0] as CustomEvent).detail).toMatchObject({ code: 'TRIAL_EXPIRED', kind: 'mutation' });
+    expect(parse).not.toHaveBeenCalled();
   });
 
   it('opens the upgrade dialog before uploading when the quota is used up', async () => {
@@ -236,6 +248,33 @@ describe('addFiles', () => {
     expect(s.rows).toHaveLength(1);
     expect(s.rows[0]).toMatchObject({ source: 'Screenshots 1–3', batch: 0 });
     expect(s.warnings.join(' ')).toMatch(/Screenshot 4: no trades found/);
+  });
+
+  it('screenshot rows carry how their dates were read; the app zone is sent; switching re-reads that screenshot (undoable)', async () => {
+    patchUiState({ timeZone: 'Asia/Kolkata' });
+    extract.mockReturnValue(
+      call({
+        items: [
+          { symbol: 'XAUUSD', side: 'BUY', quantity: 0.92, openDate: '2025-12-03T08:41:09.075', closeDate: '2025-12-03T08:41:09.075', entryPrice: 4220.8, exitPrice: 4221.2, pnl: 32.2, image: 0, openDateRaw: '', closeDateRaw: '03/12/2025 08:41:09.075', openDateMissing: true, closeDateMissing: false },
+        ],
+        images: [{ image: 0, dateOrder: 'DMY', dateOrderSource: 'default', canSwitch: true, timeColumns: { open: null, close: 'Closing time' } }],
+      }),
+    );
+    await run((x) => x.addFiles([png('ctrader.png')]));
+    expect(extract.mock.calls[0][0].timeZone).toBe('Asia/Kolkata');
+    const [r] = importFlow.get().rows;
+    expect(r.trade.closeDate).toBe('2025-12-03T03:11:09.075Z');
+    expect(r.trade.openDate).toBe(r.trade.closeDate);
+    expect(r.dates).toEqual({ shot: 1, order: 'DMY', source: 'default', canSwitch: true, openRaw: '', closeRaw: '03/12/2025 08:41:09.075', openMissing: true, closeMissing: false });
+
+    await run((x) => x.switchDates(1));
+    expect(importFlow.get().rows[0].trade.closeDate).toBe('2025-03-12T03:11:09.075Z');
+    expect(importFlow.get().rows[0].dates?.order).toBe('MDY');
+    expect(save).not.toHaveBeenCalled();
+    await run((x) => x.undoRows());
+    expect(importFlow.get().rows[0].trade.closeDate).toBe('2025-12-03T03:11:09.075Z');
+    localStorage.clear();
+    resetUiStateCache();
   });
 
   it('a second file adds rows and marks rows already in the review as duplicates', async () => {

@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
 import { api } from './baseApi';
 import type { CreateTradePayload } from '@/lib/api';
-import type { Trade } from '@/types/trade';
-import { wallToInstant } from '@/lib/appTimeZone';
+import type { Trade, TradeDebrief } from '@/types/trade';
+import { openDayKey, wallToInstant } from '@/lib/appTimeZone';
+
+/** Every trade's debrief: it depends on the trades around it, so any trade write refetches the shown one. */
+const DEBRIEF_TAG = { type: 'Trades' as const, id: 'DEBRIEF' };
 
 // DynamoDB Streams are async — after a trade mutation the stream handler
 // recalculates account balances and DailyStats (which goals/rules progress
@@ -29,12 +32,12 @@ const mapExtraFieldsFromBackend = (trade: any): Partial<Trade> => {
   return out as Partial<Trade>;
 };
 
-/** Same fields, front to back, used by create, update and bulk so the three mappers cannot drift. */
+/** Same fields, front to back, used by create, update and bulk so the three mappers cannot drift. A null is kept: on PUT it removes the stored value. */
 export const mapExtraFieldsToBackend = (payload: Partial<CreateTradePayload>): Record<string, unknown> => {
   const out: Record<string, unknown> = {};
   for (const key of EXTRA_FIELDS) {
     const v = (payload as Record<string, unknown>)[key];
-    if (v !== undefined && v !== null) out[key] = v;
+    if (v !== undefined) out[key] = v;
   }
   return out;
 };
@@ -44,7 +47,7 @@ const SCOPE_PAGE_SIZE = 100;
 export const TRADE_LIST_ENDPOINTS = ['getScopeTrades'];
 
 type ScopeArgs = { accountId?: string; startDate?: string; endDate?: string; importBatchId?: string };
-const tradeDay = (t: Trade) => (t.exitDate || t.entryDate || '').slice(0, 10);
+const tradeDay = (t: Trade) => openDayKey(t.entryDate);
 
 /** Whether a trade belongs in a scope list. The list of one import batch only changes by refetch. */
 const inScope = ({ accountId, startDate, endDate, importBatchId }: ScopeArgs, t: Trade) => {
@@ -111,6 +114,7 @@ const mapBackendTradeToTrade = (trade: any): Trade => {
     emotions: trade.emotions,
     accountId,
     brokenRuleIds: trade.brokenRuleIds ?? [],
+    reviewed: trade.reviewed === true,
     ...mapExtraFieldsFromBackend(trade),
   };
 };
@@ -205,6 +209,7 @@ export const tradesApi = api.injectEndpoints({
           accountIds: payload.accountIds || (payload.accountId ? [payload.accountId] : undefined),
           brokenRuleIds: payload.brokenRuleIds,
           images: payload.images,
+          reviewed: payload.reviewed,
           ...mapExtraFieldsToBackend(payload),
         };
         
@@ -273,6 +278,7 @@ export const tradesApi = api.injectEndpoints({
         }
         if (payload.brokenRuleIds !== undefined) backendPayload.brokenRuleIds = payload.brokenRuleIds;
         if (payload.images !== undefined) backendPayload.images = payload.images;
+        if (payload.reviewed !== undefined) backendPayload.reviewed = payload.reviewed;
         Object.assign(backendPayload, mapExtraFieldsToBackend(payload));
         
         return {
@@ -291,6 +297,7 @@ export const tradesApi = api.injectEndpoints({
 
         return { updatedTrade: mappedTrade, createdTrades, message: response.message };
       },
+      invalidatesTags: (_result, error) => (error ? [] : [DEBRIEF_TAG]),
       async onQueryStarted({ id }, { dispatch, getState, queryFulfilled }) {
         try {
           // Wait for update to succeed and use the mutation response as the source of truth.
@@ -315,6 +322,9 @@ export const tradesApi = api.injectEndpoints({
               })
             );
           }
+
+          // A trade outside every list is shown from its own getTrade entry (no-op when there is none).
+          dispatch((tradesApi.util.updateQueryData as any)('getTrade', id, () => updatedTrade));
 
           // The copies for other accounts go only into the lists they belong to.
           insertIntoScopeCaches(dispatch, getState, moved ? [updatedTrade, ...createdTrades] : createdTrades);
@@ -389,10 +399,11 @@ export const tradesApi = api.injectEndpoints({
      */
     bulkUpdateTrades: builder.mutation<
       { updated: number; updatedIds: string[]; notFound: string[]; failed: { tradeId: string; message: string }[] },
-      { tradeIds: string[]; set?: Record<string, string | null>; add?: Record<string, string[]>; remove?: Record<string, string[]>; patches: Record<string, Partial<Trade>> }
+      { tradeIds: string[]; set?: Record<string, string | boolean | null>; add?: Record<string, string[]>; remove?: Record<string, string[]>; patches: Record<string, Partial<Trade>> }
     >({
       query: ({ patches: _patches, ...body }) => ({ url: '/trades/bulk-update', method: 'POST', body }),
       transformResponse: (r: any) => ({ updated: r?.updated ?? 0, updatedIds: r?.updatedIds ?? [], notFound: r?.notFound ?? [], failed: r?.failed ?? [] }),
+      invalidatesTags: (_result, error) => (error ? [] : [DEBRIEF_TAG]),
       async onQueryStarted({ patches }, { dispatch, getState, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
@@ -413,6 +424,13 @@ export const tradesApi = api.injectEndpoints({
           // reported by the caller
         }
       },
+    }),
+
+    /** The checks of one trade (CONTRACT I6), all computed by the server's code; 404 when the trade is gone. */
+    getTradeDebrief: builder.query<TradeDebrief, string>({
+      query: (tradeId) => `/insights/debrief/${encodeURIComponent(tradeId)}`,
+      transformResponse: (r: { debrief: TradeDebrief }) => r.debrief,
+      providesTags: [DEBRIEF_TAG, { type: 'Trades', id: 'PAGINATED_LIST' }],
     }),
 
     bulkDeleteTrades: builder.mutation<any, { tradeIds: string[] }>({
@@ -468,4 +486,5 @@ export const {
   useBulkDeleteTradesMutation,
   useBulkUpdateTradesMutation,
   useRestoreTradesMutation,
+  useGetTradeDebriefQuery,
 } = tradesApi;

@@ -63,17 +63,11 @@ export interface SortState {
 }
 export const DEFAULT_SORT: SortState = { key: 'date', dir: 'desc' };
 
-/**
- * Net P&L over initial risk when the lot size is known; otherwise the price-based R, which needs no lot size
- * (the API does not return one for older trades, and assuming 1 would give R in the hundreds of thousands).
- */
+/** Realised R from prices (lib/pnl `rMultiple`), so the trade list, its CSV and Analytics agree. */
 export function realisedR(t: Trade): number | null {
-  if (t.contractMultiplier && t.contractMultiplier > 0) {
-    return rMultiple({ entryPrice: t.entryPrice, stopLoss: t.stopLoss, quantity: t.size, multiplier: t.contractMultiplier }, t.pnl);
-  }
-  if (!t.stopLoss || t.stopLoss <= 0 || t.stopLoss === t.entryPrice) return null;
-  const move = (t.exitPrice - t.entryPrice) * (t.direction === 'LONG' ? 1 : -1);
-  return Math.round((move / Math.abs(t.entryPrice - t.stopLoss)) * 100) / 100;
+  // tradesApi maps a missing exit price to 0; 0 is a real price only for a closed trade (an option that expired).
+  if (t.exitPrice === 0 && !t.exitDate) return null;
+  return rMultiple({ side: t.direction === 'LONG' ? 'BUY' : 'SELL', entryPrice: t.entryPrice, exitPrice: t.exitPrice, stopLoss: t.stopLoss });
 }
 
 function sortValue(t: Trade, key: SortKey, accounts: Map<string, TradingAccount>): number | string {

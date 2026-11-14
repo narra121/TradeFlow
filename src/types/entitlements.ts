@@ -2,6 +2,7 @@
 
 export type QuotaFeature = 'ai_extract' | 'ai_insight' | 'ai_chat' | 'broker_import';
 export type GatedFeature = 'advanced_analytics' | 'tax_report' | 'unlimited_accounts' | 'auto_sync';
+/** `free` = no active plan (trial over or Pro lapsed): every read works, every write needs Pro. There is no Free plan. */
 export type PlanName = 'free' | 'trial' | 'pro';
 
 export interface Entitlements {
@@ -20,7 +21,7 @@ export interface EntitlementsResponse {
   /** ISO; when the monthly counters reset */
   periodResetsAt: string;
   billingCurrency?: string;
-  /** null = every account is writable */
+  /** null = every account is writable; [] while read-only */
   writableAccountIds?: string[] | null;
 }
 

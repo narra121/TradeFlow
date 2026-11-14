@@ -12,6 +12,7 @@ import { InsightsView } from '../InsightsView';
 
 const call = (value: unknown, fail = false) => ({ unwrap: () => (fail ? Promise.reject(value) : Promise.resolve(value)), abort: vi.fn() });
 const generate = vi.fn();
+let readOnly = false;
 const openTrade = vi.fn();
 let insights: Insight[] = [];
 let usage = { used: 4, limit: 30 as number | null };
@@ -27,13 +28,18 @@ vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
 vi.mock('@/hooks/useTradeParam', () => ({ useTradeParam: () => ({ openTrade }) }));
 vi.mock('@/hooks/useAccounts', () => ({ useAccounts: () => ({ ...accountsState, setSelectedAccountId }) }));
 vi.mock('@/hooks/useEntitlements', () => ({
-  useEntitlements: () => ({ usage: [{ feature: 'ai_insight', ...usage }], periodResetsAt: '2026-12-01T00:00:00.000Z' }),
+  useEntitlements: () => ({ usage: readOnly ? [] : [{ feature: 'ai_insight', ...usage }], readOnly, periodResetsAt: '2026-12-01T00:00:00.000Z' }),
 }));
 vi.mock('@/store/api/insightsApi', () => ({
   useListInsightsQuery: () => ({ data: { insights, nextCursor }, isLoading: false, isError: !!listFailure, error: listFailure, refetch: vi.fn() }),
   useLazyListInsightsQuery: () => [loadPage, { isFetching: false }],
   useGenerateInsightMutation: () => [generate, { isLoading: false }],
+  useGetInsightSettingsQuery: () => ({ data: { useNotes: false }, isLoading: false, isError: false, refetch: vi.fn() }),
+  useSetInsightSettingsMutation: () => [vi.fn(), { isLoading: false }],
+  useSendInsightFeedbackMutation: () => [vi.fn()],
+  useSetFocusMutation: () => [vi.fn(), { isLoading: false }],
 }));
+vi.mock('@/store/api/analysisApi', () => ({ useGetFocusRuleQuery: () => ({ data: null }) }));
 vi.mock('@/lib/analytics', () => ({ trackAiInsightGenerated: vi.fn() }));
 
 const insight = (p: Partial<Insight> = {}): Insight => ({
@@ -81,6 +87,7 @@ const renderView = (route = '/app/insights') => {
 };
 
 beforeEach(() => {
+  readOnly = false;
   generate.mockReset();
   loadPage.mockReset();
   nextCursor = null;
@@ -182,6 +189,17 @@ describe('InsightsView generating', () => {
     usage = { used: 29, limit: 30 };
     renderView();
     expect(generateButton()).toHaveTextContent('Generate report — uses your last report this month');
+  });
+
+  it('after the trial Generate opens the upgrade dialog (TRIAL_EXPIRED) and makes no request', async () => {
+    readOnly = true;
+    const seen = vi.fn();
+    window.addEventListener(PLAN_SIGNAL_EVENT, seen);
+    renderView();
+    await userEvent.click(generateButton());
+    window.removeEventListener(PLAN_SIGNAL_EVENT, seen);
+    expect((seen.mock.calls[0][0] as CustomEvent).detail).toMatchObject({ code: 'TRIAL_EXPIRED' });
+    expect(generate).not.toHaveBeenCalled();
   });
 
   it('at the limit Generate opens the upgrade dialog and makes no request', async () => {
@@ -302,6 +320,20 @@ describe('InsightsView period sent to the API', () => {
     await userEvent.click(generateButton());
     const arg = generate.mock.calls[0][0] as { from: string; to: string };
     expect(Math.round((new Date(arg.to).getTime() - new Date(arg.from).getTime()) / 86_400_000) + 1).toBe(366);
+  });
+
+  it('all accounts in two currencies answered with MIXED_CURRENCY: the message, that nothing was charged, and an account picker', async () => {
+    accountsState = { accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD' }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR' }], selectedAccountId: 'a1' };
+    generate.mockReturnValue(call({ status: 422, data: { errorCode: 'MIXED_CURRENCY', message: 'These trades are in INR and USD. Choose one account, or one currency, so amounts are not added across currencies.', error: { currencies: ['INR', 'USD'] } } }, true));
+    renderView();
+    await userEvent.click(generateButton());
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('These trades are in INR and USD.');
+    expect(alert).toHaveTextContent('Nothing was charged.');
+    await userEvent.click(screen.getByRole('combobox', { name: /These trades are in INR and USD/ }));
+    await userEvent.click(screen.getByRole('option', { name: /Zerodha F&O.*INR/ }));
+    expect(setSelectedAccountId).toHaveBeenCalledWith('a2');
+    expect(screen.queryByText(/Nothing was charged/)).toBeNull();
   });
 
   it('a rejected request shows the API message as text, not a guess', async () => {

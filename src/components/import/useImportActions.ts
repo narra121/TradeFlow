@@ -11,7 +11,8 @@ import { readApiError } from '@/lib/apiError';
 import { rememberBatchFile, type ImportBatch } from '@/lib/import/batches';
 import { base64ToText, recoverSkipped } from '@/lib/import/skipped';
 import { loadMapping, saveMapping, type ColumnMap } from '@/lib/import/mappingMemory';
-import { zoneOffsetMinutes } from '@/lib/appTimeZone';
+import { appTimeZone, zoneOffsetMinutes } from '@/lib/appTimeZone';
+import { switchDateOrder } from '@/lib/import/dates';
 import { editRow, makeRows, MAX_REVIEW_ROWS, mergeRows, moveRows, rowStatus, setIncluded, type EditableField, type ReviewRow } from '@/lib/import/rows';
 import {
   batchLabel,
@@ -19,6 +20,7 @@ import {
   classifyFile,
   fromExtracted,
   fitScreenshot,
+  rowDatesOf,
   MAX_SCREENSHOT_BYTES,
   MAX_SCREENSHOTS,
   readAsDataUrl,
@@ -27,6 +29,7 @@ import {
 import { importFlow } from '@/lib/importFlowStore';
 import { trackImportCompleted } from '@/lib/analytics';
 import { emitPlanSignal } from '@/lib/planErrors';
+import { openTrialExpired } from '@/components/billing/readOnly';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { SCREENSHOT_SOURCE, type ImportSourceId, type NormalizedTrade, type ParseImportResponse, type SaveImportedResult } from '@/types/import';
 import { formatCount } from '@/lib/format';
@@ -58,6 +61,10 @@ export function useImportActions() {
 
   const limitReached = useCallback(
     (feature: 'broker_import' | 'ai_extract') => {
+      if (ent.readOnly) {
+        openTrialExpired();
+        return true;
+      }
       const row = ent.usage.find((u) => u.feature === feature);
       if (row && row.limit !== null && row.used >= row.limit) {
         emitPlanSignal({ code: 'QUOTA_EXCEEDED', feature, limit: row.limit, resetsAt: ent.periodResetsAt, message: 'You have reached your plan limit.', kind: 'mutation' });
@@ -65,7 +72,7 @@ export function useImportActions() {
       }
       return false;
     },
-    [ent.usage, ent.periodResetsAt],
+    [ent.readOnly, ent.usage, ent.periodResetsAt],
   );
 
   const fail = (message: string) => importFlow.set({ phase: importFlow.get().rows.length > 0 ? 'review' : 'idle', progress: null, error: message });
@@ -202,7 +209,7 @@ export function useImportActions() {
       for (const [i, group] of groups.entries()) {
         if (cancelled.current) break;
         importFlow.set({ progress: { label: `Reading screenshot ${Math.min(done + 1, shots.length - have)} of ${shots.length - have}`, done, total: shots.length - have } });
-        const req = extract({ images: group.map((g) => g.url) });
+        const req = extract({ images: group.map((g) => g.url), timeZone: appTimeZone() });
         abort.current = req;
         const batchIndex = firstBatch + i;
         const label = batchLabel(batchIndex, shots.length);
@@ -218,7 +225,11 @@ export function useImportActions() {
               return n === 0 ? first : fromExtracted(it, n);
             });
             const current = importFlow.get();
-            const added = dedupeAgainst(current.rows, makeRows(trades, label, { batch: batchIndex, startAt: current.rows.length }));
+            const made = makeRows(trades, label, { batch: batchIndex, startAt: current.rows.length }).map((r, k) => {
+              const dates = rowDatesOf(res.items[k], res.images, batchIndex);
+              return dates ? { ...r, dates } : r;
+            });
+            const added = dedupeAgainst(current.rows, made);
             if (trades.length === 0) problems.push(`${label}: no trades found. Try a clearer screenshot of the trade history table.`);
             importFlow.set({ rows: [...current.rows, ...added] });
           }
@@ -327,6 +338,8 @@ export function useImportActions() {
   const toggle = useCallback((keys: string[], included: boolean) => apply((rows) => setIncluded(rows, new Set(keys), included)), []);
   const merge = useCallback((keys: string[]) => apply((rows) => mergeRows(rows, new Set(keys))), []);
   const move = useCallback((keys: string[], accountId: string | undefined) => apply((rows) => moveRows(rows, new Set(keys), accountId)), []);
+  /** Re-reads screenshot `shot`'s date cells with the other day/month order; Undo restores the previous reading. */
+  const switchDates = useCallback((shot: number) => apply((rows) => switchDateOrder(rows, shot)), []);
   const undoRows = useCallback(() => {
     const prev = importFlow.get().undoRows;
     if (prev) importFlow.set({ rows: prev, undoRows: null });
@@ -338,6 +351,7 @@ export function useImportActions() {
     async (opts: { retry?: boolean } = {}) => {
       const flow = importFlow.get();
       if (!flow.accountId || flow.phase === 'saving') return;
+      if (ent.readOnly) return openTrialExpired();
       const failed = new Set(flow.result?.failedExternalIds ?? []);
       const targets = opts.retry ? flow.rows.filter((r) => failed.has(r.trade.externalId)) : importable(flow.rows);
       if (targets.length === 0) return;
@@ -406,7 +420,7 @@ export function useImportActions() {
       if (sum.batchId && flow.fileLabel) rememberBatchFile(sum.batchId, flow.fileLabel);
       if (sum.failed === 0) trackImportCompleted({ source: flow.detected ?? 'unknown', tradeCount: sum.created });
     },
-    [save],
+    [save, ent.readOnly],
   );
 
   const undoImport = useCallback(async () => {
@@ -454,7 +468,7 @@ export function useImportActions() {
 
   // One object per set of callbacks, so effects that depend on it do not re-subscribe on every render.
   return useMemo(
-    () => ({ addFiles, reparse, cancelParse, edit, toggle, merge, move, undoRows, saveRows, undoImport, viewImported, viewBatch }),
-    [addFiles, reparse, cancelParse, edit, toggle, merge, move, undoRows, saveRows, undoImport, viewImported, viewBatch],
+    () => ({ addFiles, reparse, cancelParse, edit, toggle, merge, move, switchDates, undoRows, saveRows, undoImport, viewImported, viewBatch }),
+    [addFiles, reparse, cancelParse, edit, toggle, merge, move, switchDates, undoRows, saveRows, undoImport, viewImported, viewBatch],
   );
 }

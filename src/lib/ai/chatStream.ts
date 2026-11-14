@@ -13,6 +13,7 @@ export class ChatStreamError extends Error implements ChatStreamErrorInfo {
   feature?: ChatStreamErrorInfo['feature'];
   limit?: number;
   resetsAt?: string;
+  currencies?: string[];
 
   constructor(info: ChatStreamErrorInfo) {
     super(info.message);
@@ -22,14 +23,19 @@ export class ChatStreamError extends Error implements ChatStreamErrorInfo {
     this.feature = info.feature;
     this.limit = info.limit;
     this.resetsAt = info.resetsAt;
+    this.currencies = info.currencies;
   }
 }
 
 export interface StreamChatOptions {
   sessionId: string;
   content: string;
+  /** undefined = not sent (the session's own scope); null = all accounts */
+  accountId?: string | null;
   signal?: AbortSignal;
   onToken: (text: string) => void;
+  /** one call per `event: tool` frame, before that tool runs */
+  onTool?: (name: string) => void;
   /** test hooks */
   fetchImpl?: typeof fetch;
   getToken?: () => string | null | Promise<string | null>;
@@ -55,6 +61,7 @@ async function errorFromResponse(res: Response): Promise<ChatStreamError> {
     feature: info.feature,
     limit: info.limit,
     resetsAt: info.resetsAt,
+    currencies: Array.isArray(info.currencies) ? info.currencies.filter((c: unknown): c is string => typeof c === 'string') : undefined,
   });
 }
 
@@ -73,7 +80,7 @@ export async function streamChat(opts: StreamChatOptions): Promise<ChatDonePaylo
     doFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ content: opts.content }),
+      body: JSON.stringify(opts.accountId === undefined ? { content: opts.content } : { content: opts.content, accountId: opts.accountId }),
       signal: opts.signal,
     });
 
@@ -106,7 +113,8 @@ export async function streamChat(opts: StreamChatOptions): Promise<ChatDonePaylo
         continue;
       }
       if (ev.event === 'token' && typeof data?.t === 'string') opts.onToken(data.t);
-      else if (ev.event === 'done') done = data as ChatDonePayload;
+      else if (ev.event === 'tool' && typeof data?.name === 'string') opts.onTool?.(data.name);
+      else if (ev.event === 'done') done = { ...data, tables: Array.isArray(data?.tables) ? data.tables : [] } as ChatDonePayload;
       else if (ev.event === 'error') throw new ChatStreamError({ status: res.status, code: data?.code ?? 'STREAM_ERROR', message: data?.message ?? 'The answer could not be completed.' });
     }
   };

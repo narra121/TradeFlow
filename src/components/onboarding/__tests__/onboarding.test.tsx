@@ -70,7 +70,7 @@ describe('FirstRunPage', () => {
     expect(screen.getByText(/Step 1 of 3, not done/)).toBeInTheDocument();
     expect(screen.getByText('Available after step 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add a trade manually' })).toBeDisabled();
-    expect(screen.getByText('Pro trial — 14 days left. No card on file.')).toBeInTheDocument();
+    expect(screen.getByText('Free trial: 14 days left. No card on file.')).toBeInTheDocument();
   });
 
   it('validates the account form inline', async () => {

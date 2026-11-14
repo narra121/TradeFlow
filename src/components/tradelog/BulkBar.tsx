@@ -53,7 +53,10 @@ interface BulkBarProps {
 }
 
 type ListKind = 'mistakes' | 'tags' | 'brokenRules';
-type SingleKind = 'strategy' | 'session' | 'market' | 'account';
+type SingleKind = 'strategy' | 'session' | 'market' | 'account' | 'reviewed';
+
+const singleOp = (kind: SingleKind, v: string): BulkOp =>
+  kind === 'account' ? { kind: 'account', accountId: v } : kind === 'reviewed' ? { kind: 'reviewed', value: v === 'yes' } : { kind, value: v };
 
 /** Selection bar (E-044 / F-123): counts and totals, tri-state pickers for tags, single pickers for fields, Export, Delete. */
 export function BulkBar({ inline = false, selectedTrades, summary, matchingCount, options, progress, canUndo, failedCount, failedReason, onSelectAllMatching, onClear, onApply, onCreateOption, onUndo, onRetryFailed, onExport, onDelete }: BulkBarProps) {
@@ -114,7 +117,7 @@ export function BulkBar({ inline = false, selectedTrades, summary, matchingCount
           label={label}
           options={opts}
           value=""
-          onChange={(v) => !progress && onApply(kind === 'account' ? { kind: 'account', accountId: v } : { kind, value: v })}
+          onChange={(v) => !progress && onApply(singleOp(kind, v))}
           autoFocus
         />
       </PopoverContent>
@@ -143,6 +146,7 @@ export function BulkBar({ inline = false, selectedTrades, summary, matchingCount
         {singlePicker('session', 'Session', options.sessions.map((v) => ({ value: v })))}
         {singlePicker('market', 'Market', options.markets.map((v) => ({ value: v })))}
         {singlePicker('account', 'Account', options.accounts.map((a) => ({ value: a.id, label: `${a.name} · ${a.currency}` })))}
+        {singlePicker('reviewed', 'Reviewed · followed plan', [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }])}
         <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />
         <Button type="button" variant="ghost" size="sm" onClick={onExport}><Download className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Export</Button>
         <Button type="button" variant="ghost" size="sm" onClick={() => setConfirm(true)} className="text-error"><Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Delete</Button>

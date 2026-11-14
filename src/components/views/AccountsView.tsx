@@ -16,8 +16,7 @@ import type { AccountPayload } from '@/components/account/accountForm';
 import { DeleteAccountDialog } from '@/components/account/DeleteAccountDialog';
 import { returnFocusByName } from '@/components/account/returnFocus';
 import { SidePaneLayout } from '@/components/calendar/SidePane';
-import { WritableAccounts } from '@/components/billing/WritableAccounts';
-import { FREE_ACCOUNTS } from '@/components/billing/freeLimits';
+import { guardWrite } from '@/components/billing/readOnly';
 import { ScopeBarSlot, usePageChrome } from '@/components/shell/chrome';
 import { accountStatusLabels, accountTypeLabels } from '@/hooks/useAccounts';
 import { useEntitlements } from '@/hooks/useEntitlements';
@@ -26,7 +25,6 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSelectedAccount } from '@/store/slices/accountsSlice';
 import { lastTradeText, netSinceStart, sortAccounts, statusSummary, totalsByCurrency, type AccountSortId } from '@/components/account/accountStats';
 import { readOnlyAccountIds } from '@/lib/accountWritable';
-import { emitPlanSignal } from '@/lib/planErrors';
 import { readApiError } from '@/lib/apiError';
 import { formatCount, formatDateShort, formatPercent } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -61,13 +59,11 @@ export function AccountsView() {
   const [dirty, setDirty] = useState(false);
   const [leaveAsk, setLeaveAsk] = useState(false);
 
-  const limited = !!ent.plan && !ent.can('unlimited_accounts');
-  const atLimit = limited && accounts.length >= FREE_ACCOUNTS;
   const activeCount = accounts.filter((a) => a.status === 'active').length;
   const readOnlyIds = useMemo(() => readOnlyAccountIds(accounts, ent.writableAccountIds), [accounts, ent.writableAccountIds]);
 
   usePageChrome({
-    statement: `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} · ${activeCount} active${limited ? ` · ${Math.min(accounts.length, FREE_ACCOUNTS)} of ${FREE_ACCOUNTS} on Free` : ''}`,
+    statement: `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} · ${activeCount} active${ent.readOnly ? ' · read-only' : ''}`,
   });
 
   // `?account=new` or `?account=<id>`; `?new=1` is the link the activation panel uses.
@@ -98,13 +94,7 @@ export function AccountsView() {
     if (paneOpen) headingRef.current?.focus({ preventScroll: true });
   }, [paneOpen, paneParam]);
 
-  const addAccount = () => {
-    if (atLimit) {
-      emitPlanSignal({ kind: 'mutation', code: 'PLAN_REQUIRED', feature: 'unlimited_accounts', message: `You have ${accounts.length} of ${FREE_ACCOUNTS} accounts on Free. Pro has no account limit.` });
-      return;
-    }
-    setPane('new');
-  };
+  const addAccount = () => guardWrite(ent.readOnly, () => setPane('new'));
 
   const save = async (payload: AccountPayload) => {
     setSaveError(null);
@@ -178,7 +168,7 @@ export function AccountsView() {
             <Money value={netSinceStart(a).amount} currency={a.currency} className="text-xs" />
             {netSinceStart(a).pct !== null && <span className="font-mono">{formatPercent(netSinceStart(a).pct, 1, { sign: true })}</span>}
           </span>
-          {readOnlyIds.has(a.id) && <span className="text-xs text-warning">Read-only on Free</span>}
+          {readOnlyIds.has(a.id) && <span className="text-xs text-warning">Read-only</span>}
         </span>
       ),
     },
@@ -258,9 +248,6 @@ export function AccountsView() {
     if (visible.length === 0) return <EmptyState title="No account matches that." action={<Button size="sm" variant="outline" onClick={() => setFind('')}>Clear search</Button>} />;
     return (
       <div className="space-y-3">
-        {limited && accounts.length > FREE_ACCOUNTS && ent.writableAccountIds && (
-          <WritableAccounts accounts={accounts.map((a) => ({ id: a.id, name: a.name, currency: a.currency }))} chosen={ent.writableAccountIds} />
-        )}
         <div className="overflow-x-auto">
           <DataTable
             caption="Trading accounts"
@@ -294,11 +281,6 @@ export function AccountsView() {
 
   return (
     <div>
-      {atLimit && (
-        <ScopeBarSlot side="left">
-          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-13" onClick={() => navigate('/app/settings/billing')}>Upgrade for unlimited accounts</Button>
-        </ScopeBarSlot>
-      )}
       <ScopeBarSlot side="right">
         {accounts.length > 10 && (
           <>

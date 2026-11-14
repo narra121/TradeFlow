@@ -54,18 +54,40 @@ const SECTIONS: LegalSection[] = [
     title: 'AI features',
     body: (
       <>
-        <p>AI features call Google&apos;s Gemini API only when you use them:</p>
+        <p>
+          AI features run when you use them, and the weekly review runs once a week for Pro and trial users who keep
+          Weekly report switched on in Settings. Their requests go through OpenRouter (openrouter.ai), which passes each request to the
+          company whose model answers it:
+        </p>
         <ul>
           <li>
-            <strong>Screenshot import</strong> sends the screenshots you upload for that import, so the trades in them can be
-            read.
+            <strong>AI reports and the weekly review</strong> (OpenAI models) send figures computed from your trades (for
+            example P&amp;L, win rate, symbols, strategies, tags and rule names). They do not send your notes or key lessons
+            unless you switch on <strong>Use my notes</strong>, which is off until you turn it on. With it on, they also send
+            the notes and key lessons of the trades in the report.
           </li>
           <li>
-            <strong>AI reports and chat</strong> send figures computed from your trades (for example P&amp;L, win rate,
-            symbols, strategies, tags and rule names) and, for chat, your question. They do not send your notes, key lessons,
-            screenshots, email address or account names.
+            <strong>Chat</strong> (OpenAI models) sends the same kind of figures and your question. It never sends your notes or
+            key lessons, even with Use my notes on.
+          </li>
+          <li>
+            <strong>Screenshot and text import</strong> (Google Gemini models) sends the screenshots or text you submit for that
+            import, so the trades in them can be read.
+          </li>
+          <li>
+            <strong>AI Enhance</strong> (Google Gemini models) sends the text you ask it to correct.
           </li>
         </ul>
+        <p>
+          Reports, the weekly review and chat never send your screenshots, email address or account names.
+        </p>
+        <p>
+          OpenRouter states that it does not store the content of requests unless the account owner turns on logging, and we
+          have not; it keeps usage data such as the number of tokens. Our requests tell OpenRouter to exclude providers that
+          train on your data. OpenAI states that it does not use API data to train its models and keeps abuse-monitoring logs
+          for up to 30 days, unless the law requires longer. Google states that it does not use paid API requests to improve
+          its products and logs them for a limited time to detect misuse.
+        </p>
         <p>
           Do not submit data you do not want processed this way. AI results can be wrong and describe your own recorded trades
           only; they are not advice.
@@ -87,7 +109,14 @@ const SECTIONS: LegalSection[] = [
           address by our content delivery network, Amazon CloudFront) selects INR or USD pricing.
         </li>
         <li>
-          <strong>Google</strong> provides Gemini (AI features), Google Analytics (if you allow it) and Sign in with Google.
+          <strong>OpenRouter</strong> passes AI requests to OpenAI and Google and returns their answers.
+        </li>
+        <li>
+          <strong>OpenAI</strong> provides the models for AI reports, the weekly review and chat.
+        </li>
+        <li>
+          <strong>Google</strong> provides Gemini (screenshot and text import, AI Enhance), Google Analytics (if you allow it)
+          and Sign in with Google.
         </li>
       </ul>
     ),
@@ -155,9 +184,9 @@ export function PrivacyPolicyPage() {
   return (
     <LegalLayout
       title="Privacy Policy"
-      description="What TradeQut collects, who processes it (AWS, Stripe, Google), how AI features and cookies work, and your choices."
+      description="What TradeQut collects, who processes it (AWS, Stripe, OpenRouter, OpenAI, Google), how AI features and cookies work, and your choices."
       path="/privacy"
-      updated="2026-11-12"
+      updated="2026-11-13"
       sections={SECTIONS}
     />
   );

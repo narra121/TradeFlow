@@ -11,10 +11,11 @@ import {
 } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
 import { connectionMessage } from '@/lib/apiError';
+import { LOGGED_OUT_EVERYWHERE_URL } from '@/components/auth/loggingOut';
 import { configureAuth } from './amplifyConfig';
 import { safeDestination } from './destination';
 import { normalizeEmail } from './email';
-import { hasStoredSession } from './storedSession';
+import { clearStoredSession, hasStoredSession } from './storedSession';
 
 /**
  * Every Amplify Auth call the app makes goes through this module, and every failure leaves it as an
@@ -147,9 +148,9 @@ export async function login(typedEmail: string, password: string): Promise<{ use
     try {
       result = await attempt();
     } catch (e) {
-      // A leftover session (another tab, an earlier user) blocks sign-in; end it and sign in again.
+      // A leftover session (another tab, an earlier user) blocks sign-in; drop it and sign in again.
       if (nameOf(e) !== 'UserAlreadyAuthenticatedException') throw e;
-      await signOut();
+      discardSession();
       result = await attempt();
     }
     if (!result.isSignedIn) {
@@ -240,11 +241,12 @@ export async function logout(): Promise<void> {
 
 /**
  * Ends every session of the user. The session is renewed first: Amplify's global sign-out silently does nothing
- * server-side when the stored access token has expired.
+ * server-side when the stored access token has expired. A Google session then leaves for Cognito's logout page,
+ * which returns to the "logged out everywhere" view; its URL is one of the config's `redirectSignOut`.
  */
 export async function logoutEverywhere(): Promise<void> {
   await fetchAuthSession();
-  await endSession(() => signOut({ global: true }));
+  await endSession(() => signOut({ global: true, oauth: { redirectUrl: `${window.location.origin}${LOGGED_OUT_EVERYWHERE_URL}` } }));
 }
 
 /** Leaves for Google. `from` is the in-app page to return to; it comes back through `finishGoogleSignIn`. */
@@ -269,6 +271,14 @@ export function isFirstSignIn(payload: IdPayload): boolean {
   return Number.isFinite(created) && Date.now() - created < 60_000;
 }
 
+/** Reads what the redirect left and forgets it, so one sign-in's outcome never colours the next. */
+function takeOAuthOutcome(): { customState: string | null; failed: boolean } {
+  const outcome = { customState: oauthCustomState, failed: oauthFailed };
+  oauthCustomState = null;
+  oauthFailed = false;
+  return outcome;
+}
+
 /** On the callback page: resolves once Amplify has exchanged the code (or failed to). `ok: false` means no session came out of it. */
 export async function finishGoogleSignIn(): Promise<GoogleSignInResult> {
   try {
@@ -276,17 +286,22 @@ export async function finishGoogleSignIn(): Promise<GoogleSignInResult> {
     if (!payload) {
       // Amplify raises its failure event just after it releases waiters; let it land before reading the flag.
       await new Promise((resolve) => setTimeout(resolve));
-      return { ok: false, expired: !oauthFailed };
+      return { ok: false, expired: !takeOAuthOutcome().failed };
     }
-    return { ok: true, destination: safeDestination(oauthCustomState), firstSignIn: isFirstSignIn(payload), user: userFrom(payload) };
+    return { ok: true, destination: safeDestination(takeOAuthOutcome().customState), firstSignIn: isFirstSignIn(payload), user: userFrom(payload) };
   } catch {
+    takeOAuthOutcome();
     return { ok: false };
   }
 }
 
-/** Removes a session that cannot be used (malformed, or refused by the API after a renewal). Going through Amplify clears every key, so the next load does not retry it. */
-export async function discardSession(): Promise<void> {
-  await endSession(() => signOut()).catch(() => undefined);
+/**
+ * Removes a session that cannot be used (malformed, refused by the API after a renewal, or of a deleted account) from this
+ * browser, so the next load does not retry it. It does not call `signOut()`: after a Google sign-in that ends with a
+ * navigation to Cognito's logout page, which loses the router state of the caller.
+ */
+export function discardSession(): void {
+  clearStoredSession();
 }
 
 /**

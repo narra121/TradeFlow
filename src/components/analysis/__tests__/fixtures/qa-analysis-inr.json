@@ -1,0 +1,1352 @@
+{
+"period": {
+"from": "2026-08-01",
+"to": "2026-11-13",
+"timeZone": "Asia/Kolkata"
+},
+"currency": "INR",
+"tradeCount": 23,
+"truncated": false,
+"label": "early",
+"edge": {
+"winRate": 0.2608695652173913,
+"winRateRange": {
+"lo": 0.12548616044986347,
+"hi": 0.4647000483742537
+},
+"payoff": 0.9913,
+"breakEvenWinRate": 0.5022,
+"expectancyMoney": -2469.03,
+"expectancyR": -0.5464,
+"expectancyRRange": {
+"lo": -1.0426,
+"hi": -0.0014
+},
+"tradesWithR": 23,
+"tradesNeeded": null
+},
+"bridge": {
+"grossProfit": 30560.7,
+"lossesWithinPlan": -60965.59,
+"lossesBeyondStop": -26382.89,
+"lossesWithoutStop": 0,
+"fees": 0,
+"net": -56787.78,
+"losingTrades": 17,
+"beyondStopTrades": 11
+},
+"concentration": {
+"top": 3,
+"bestShareOfProfit": 0.8754,
+"netWithoutBest": -83540.52,
+"worstShareOfLosses": 0.3781,
+"netWithoutWorst": -23757.75,
+"bestTradeIds": [
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4"
+],
+"worstTradeIds": [
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"f068ef37-4a37-468b-8933-513e85f2df24"
+]
+},
+"rolling": [
+{
+"date": "2026-10-09",
+"avgR": -0.5456
+},
+{
+"date": "2026-10-19",
+"avgR": -0.461
+},
+{
+"date": "2026-10-22",
+"avgR": -0.5991
+},
+{
+"date": "2026-11-04",
+"avgR": -0.624
+}
+],
+"risk": {
+"avgR": -0.5464,
+"rSpread": 1.3331,
+"beyondStop": {
+"count": 11,
+"losingTrades": 17,
+"amount": 26382.89,
+"tradeIds": [
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+"plannedVsCaptured": {
+"winners": 6,
+"plannedAvgR": 2,
+"capturedAvgR": 1.5247,
+"captureRatio": 0.7624,
+"reachedTarget": 1,
+"tradeIds": [
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9"
+]
+},
+"riskPerTrade": {
+"trades": 23,
+"median": 4200,
+"largest": 9000,
+"medianShareOfBalance": 0.0084,
+"largestShareOfBalance": 0.018,
+"aboveMultiple": {
+"multiple": 1.5,
+"count": 4,
+"net": 211.46,
+"tradeIds": [
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"9ecb407b-80f0-4860-9ba2-58a6def22125"
+]
+}
+},
+"drawdown": {
+"current": 56787.78,
+"deepest": 56787.78,
+"longestDays": 87,
+"since": "2026-08-10"
+}
+},
+"timing": {
+"byTradeNumber": [
+{
+"key": "1",
+"name": "1st trade of the day",
+"trades": 20,
+"wins": 6,
+"winRate": 0.3,
+"winRateRange": {
+"lo": 0.1454772448676043,
+"hi": 0.5189728183535235
+},
+"net": -45366.12,
+"profitFactor": 0.4025,
+"avgR": -0.4511,
+"avgRRange": {
+"lo": -1.0282,
+"hi": 0.193
+},
+"verdict": "watch",
+"label": "early",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9",
+"333d506c-ce73-4d43-9421-4887935faf09",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+{
+"key": "2",
+"name": "2nd trade of the day",
+"trades": 2,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -10427.24,
+"profitFactor": 0,
+"avgR": -1.2203,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"7d0dbd23-ffab-474c-8718-adb410c7195d"
+]
+},
+{
+"key": "3",
+"name": "3rd trade of the day",
+"trades": 1,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -994.42,
+"profitFactor": 0,
+"avgR": -1.1049,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"b9eec96a-962b-496d-8412-b5ddf38ea153"
+]
+}
+],
+"holding": {
+"winnersMedianMin": 143.5,
+"losersMedianMin": 122
+},
+"tradesPerDay": [
+{
+"key": "1",
+"name": "1 trade a day",
+"trades": 18,
+"wins": 6,
+"winRate": 0.3333333333333333,
+"winRateRange": null,
+"net": -35494.38,
+"profitFactor": 0.4627,
+"avgR": -0.3793,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9",
+"333d506c-ce73-4d43-9421-4887935faf09",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+],
+"days": 18
+},
+{
+"key": "2",
+"name": "2 trades a day",
+"trades": 2,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -10358.56,
+"profitFactor": 0,
+"avgR": -1.2127,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"f068ef37-4a37-468b-8933-513e85f2df24"
+],
+"days": 1
+},
+{
+"key": "3",
+"name": "3 trades a day",
+"trades": 3,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -10934.84,
+"profitFactor": 0,
+"avgR": -1.1046,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"b9eec96a-962b-496d-8412-b5ddf38ea153"
+],
+"days": 1
+}
+]
+},
+"segments": {
+"symbol": [
+{
+"key": "reliance",
+"name": "RELIANCE",
+"trades": 9,
+"wins": 4,
+"winRate": 0.4444444444444444,
+"winRateRange": null,
+"net": -2676.77,
+"profitFactor": 0.6777,
+"avgR": -0.0271,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9",
+"333d506c-ce73-4d43-9421-4887935faf09",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+{
+"key": "nifty",
+"name": "NIFTY",
+"trades": 8,
+"wins": 1,
+"winRate": 0.125,
+"winRateRange": null,
+"net": -40843.13,
+"profitFactor": 0.1839,
+"avgR": -1.0246,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"9ecb407b-80f0-4860-9ba2-58a6def22125"
+]
+},
+{
+"key": "banknifty",
+"name": "BANKNIFTY",
+"trades": 6,
+"wins": 1,
+"winRate": 0.16666666666666666,
+"winRateRange": null,
+"net": -13267.88,
+"profitFactor": 0.5424,
+"avgR": -0.6877,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"77be5654-45b2-49b9-846b-92630e28ac5a"
+]
+}
+],
+"setup": [
+{
+"key": "breakout",
+"name": "Breakout",
+"trades": 7,
+"wins": 1,
+"winRate": 0.14285714285714285,
+"winRateRange": null,
+"net": -30045.67,
+"profitFactor": 0.0496,
+"avgR": -0.797,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+{
+"key": "reversal",
+"name": "Reversal",
+"trades": 6,
+"wins": 3,
+"winRate": 0.5,
+"winRateRange": null,
+"net": 2216.73,
+"profitFactor": 1.1365,
+"avgR": 0.0603,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9",
+"333d506c-ce73-4d43-9421-4887935faf09"
+]
+},
+{
+"key": "range fade",
+"name": "Range Fade",
+"trades": 4,
+"wins": 1,
+"winRate": 0.25,
+"winRateRange": null,
+"net": -4821.18,
+"profitFactor": 0.6562,
+"avgR": -0.3529,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5"
+]
+},
+{
+"key": "pullback",
+"name": "Pullback",
+"trades": 3,
+"wins": 1,
+"winRate": 0.3333333333333333,
+"winRateRange": null,
+"net": -7442.65,
+"profitFactor": 0.152,
+"avgR": -0.4918,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"b9eec96a-962b-496d-8412-b5ddf38ea153"
+]
+},
+{
+"key": "trend follow",
+"name": "Trend Follow",
+"trades": 3,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -16695.01,
+"profitFactor": 0,
+"avgR": -1.4877,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6"
+]
+}
+],
+"session": [
+{
+"key": "london",
+"name": "London",
+"trades": 7,
+"wins": 2,
+"winRate": 0.2857142857142857,
+"winRateRange": null,
+"net": -20774.5,
+"profitFactor": 0.1064,
+"avgR": -0.4916,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9"
+]
+},
+{
+"key": "london/ny overlap",
+"name": "London/NY Overlap",
+"trades": 6,
+"wins": 2,
+"winRate": 0.3333333333333333,
+"winRateRange": null,
+"net": -8602.49,
+"profitFactor": 0.5617,
+"avgR": -0.4459,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+{
+"key": "asian",
+"name": "Asian",
+"trades": 5,
+"wins": 1,
+"winRate": 0.2,
+"winRateRange": null,
+"net": -11007.09,
+"profitFactor": 0.1081,
+"avgR": -0.617,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"333d506c-ce73-4d43-9421-4887935faf09"
+]
+},
+{
+"key": "new york",
+"name": "New York",
+"trades": 5,
+"wins": 1,
+"winRate": 0.2,
+"winRateRange": null,
+"net": -16403.7,
+"profitFactor": 0.4895,
+"avgR": -0.6732,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"9ecb407b-80f0-4860-9ba2-58a6def22125"
+]
+}
+],
+"direction": [
+{
+"key": "short",
+"name": "Short",
+"trades": 15,
+"wins": 4,
+"winRate": 0.26666666666666666,
+"winRateRange": null,
+"net": -19035.2,
+"profitFactor": 0.5881,
+"avgR": -0.4565,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9"
+]
+},
+{
+"key": "long",
+"name": "Long",
+"trades": 8,
+"wins": 2,
+"winRate": 0.25,
+"winRateRange": null,
+"net": -37752.58,
+"profitFactor": 0.0823,
+"avgR": -0.7151,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"333d506c-ce73-4d43-9421-4887935faf09",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+}
+],
+"assetClass": [],
+"weekday": [
+{
+"key": "mon",
+"name": "Monday",
+"trades": 4,
+"wins": 1,
+"winRate": 0.25,
+"winRateRange": null,
+"net": -7775.12,
+"profitFactor": 0.1044,
+"avgR": -0.4443,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9"
+]
+},
+{
+"key": "tue",
+"name": "Tuesday",
+"trades": 1,
+"wins": 1,
+"winRate": 1,
+"winRateRange": null,
+"net": 1819.81,
+"profitFactor": null,
+"avgR": 2.022,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"96cf5924-7df7-488b-8dc5-e460fc737dd4"
+]
+},
+{
+"key": "wed",
+"name": "Wednesday",
+"trades": 3,
+"wins": 1,
+"winRate": 0.3333333333333333,
+"winRateRange": null,
+"net": 587.11,
+"profitFactor": 1.0681,
+"avgR": -0.735,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+{
+"key": "thu",
+"name": "Thursday",
+"trades": 8,
+"wins": 3,
+"winRate": 0.375,
+"winRateRange": null,
+"net": -413.4,
+"profitFactor": 0.9783,
+"avgR": -0.1189,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"333d506c-ce73-4d43-9421-4887935faf09"
+]
+},
+{
+"key": "fri",
+"name": "Friday",
+"trades": 7,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -51006.18,
+"profitFactor": 0,
+"avgR": -1.3795,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"9ecb407b-80f0-4860-9ba2-58a6def22125"
+]
+}
+],
+"hour": [
+{
+"key": "15",
+"name": "15:00-16:00",
+"trades": 2,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -15424.85,
+"profitFactor": 0,
+"avgR": -1.7139,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6"
+]
+},
+{
+"key": "16",
+"name": "16:00-17:00",
+"trades": 4,
+"wins": 1,
+"winRate": 0.25,
+"winRateRange": null,
+"net": -11714.24,
+"profitFactor": 0.44,
+"avgR": -0.6467,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"333d506c-ce73-4d43-9421-4887935faf09"
+]
+},
+{
+"key": "17",
+"name": "17:00-18:00",
+"trades": 7,
+"wins": 2,
+"winRate": 0.2857142857142857,
+"winRateRange": null,
+"net": -14225.56,
+"profitFactor": 0.1815,
+"avgR": -0.2467,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+{
+"key": "18",
+"name": "18:00-19:00",
+"trades": 2,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -15385.46,
+"profitFactor": 0,
+"avgR": -1.379,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"77809fc1-9943-4a15-8994-0f321c6b9a67"
+]
+},
+{
+"key": "19",
+"name": "19:00-20:00",
+"trades": 2,
+"wins": 1,
+"winRate": 0.5,
+"winRateRange": null,
+"net": -692.21,
+"profitFactor": 0.6937,
+"avgR": 0.2431,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2"
+]
+},
+{
+"key": "20",
+"name": "20:00-21:00",
+"trades": 5,
+"wins": 1,
+"winRate": 0.2,
+"winRateRange": null,
+"net": -15074.63,
+"profitFactor": 0.0567,
+"avgR": -0.8854,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9"
+]
+},
+{
+"key": "21",
+"name": "21:00-22:00",
+"trades": 1,
+"wins": 1,
+"winRate": 1,
+"winRateRange": null,
+"net": 15729.17,
+"profitFactor": null,
+"avgR": 1.8725,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f6afa69d-6ece-4355-a9dd-97a6b420473c"
+]
+}
+],
+"marketCondition": [
+{
+"key": "high volatility",
+"name": "High Volatility",
+"trades": 12,
+"wins": 3,
+"winRate": 0.25,
+"winRateRange": null,
+"net": -31623.77,
+"profitFactor": 0.3707,
+"avgR": -0.4642,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"77be5654-45b2-49b9-846b-92630e28ac5a"
+]
+},
+{
+"key": "choppy",
+"name": "Choppy",
+"trades": 4,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -16584.79,
+"profitFactor": 0,
+"avgR": -1.3449,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9"
+]
+},
+{
+"key": "trending",
+"name": "Trending",
+"trades": 4,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -20509.17,
+"profitFactor": 0,
+"avgR": -1.4174,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"333d506c-ce73-4d43-9421-4887935faf09",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+{
+"key": "ranging",
+"name": "Ranging",
+"trades": 3,
+"wins": 3,
+"winRate": 1,
+"winRateRange": null,
+"net": 11929.95,
+"profitFactor": null,
+"avgR": 1.3506,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9"
+]
+}
+],
+"newsEvent": [],
+"tag": [],
+"plannedRR": [
+{
+"key": "2-3",
+"name": "Planned 2R to 3R",
+"trades": 23,
+"wins": 6,
+"winRate": 0.2608695652173913,
+"winRateRange": {
+"lo": 0.12548616044986347,
+"hi": 0.4647000483742537
+},
+"net": -56787.78,
+"profitFactor": 0.3499,
+"avgR": -0.5464,
+"avgRRange": {
+"lo": -1.0426,
+"hi": -0.0014
+},
+"verdict": "watch",
+"label": "early",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9",
+"333d506c-ce73-4d43-9421-4887935faf09",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+}
+],
+"holding": [
+{
+"key": "5-30m",
+"name": "Held 5 to 30 min",
+"trades": 2,
+"wins": 1,
+"winRate": 0.5,
+"winRateRange": null,
+"net": 8126.06,
+"profitFactor": 2.0688,
+"avgR": 0.4837,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"77809fc1-9943-4a15-8994-0f321c6b9a67"
+]
+},
+{
+"key": "30m-2h",
+"name": "Held 30 min to 2 h",
+"trades": 7,
+"wins": 1,
+"winRate": 0.14285714285714285,
+"winRateRange": null,
+"net": -27925.94,
+"profitFactor": 0.0531,
+"avgR": -0.8277,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"333d506c-ce73-4d43-9421-4887935faf09",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+{
+"key": "2h-1d",
+"name": "Held 2 h to 1 day",
+"trades": 14,
+"wins": 4,
+"winRate": 0.2857142857142857,
+"winRateRange": null,
+"net": -36987.9,
+"profitFactor": 0.264,
+"avgR": -0.5529,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9"
+]
+}
+],
+"tradeNumber": [
+{
+"key": "1",
+"name": "1st trade of the day",
+"trades": 20,
+"wins": 6,
+"winRate": 0.3,
+"winRateRange": {
+"lo": 0.1454772448676043,
+"hi": 0.5189728183535235
+},
+"net": -45366.12,
+"profitFactor": 0.4025,
+"avgR": -0.4511,
+"avgRRange": {
+"lo": -1.0282,
+"hi": 0.193
+},
+"verdict": "watch",
+"label": "early",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"887e6341-2a81-4b2b-965a-4afd89b00afb",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"96cf5924-7df7-488b-8dc5-e460fc737dd4",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9",
+"333d506c-ce73-4d43-9421-4887935faf09",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+]
+},
+{
+"key": "2",
+"name": "2nd trade of the day",
+"trades": 2,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -10427.24,
+"profitFactor": 0,
+"avgR": -1.2203,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"7d0dbd23-ffab-474c-8718-adb410c7195d"
+]
+},
+{
+"key": "3",
+"name": "3rd trade of the day",
+"trades": 1,
+"wins": 0,
+"winRate": 0,
+"winRateRange": null,
+"net": -994.42,
+"profitFactor": 0,
+"avgR": -1.1049,
+"avgRRange": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"b9eec96a-962b-496d-8412-b5ddf38ea153"
+]
+}
+],
+"optionType": [],
+"expiryDay": []
+},
+"detectors": [
+{
+"id": "reentryAfterLoss",
+"title": "Re-entry after a loss",
+"count": 0,
+"net": 0,
+"avgR": null,
+"normalAvgR": -0.5464,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [],
+"detail": "0 trades opened within 15 minutes of a losing trade closing the same day, net 0.00 INR; compared with all other trades."
+},
+{
+"id": "afterLoss",
+"title": "Next trade after a loss",
+"count": 1,
+"net": -994.42,
+"avgR": -1.1049,
+"normalAvgR": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"b9eec96a-962b-496d-8412-b5ddf38ea153"
+],
+"detail": "After a loss the same day: 1 trade, net \u00e2\u02c6\u2019994.42 INR, \u00e2\u02c6\u20191.10R on average. After a win: 0 trades, net 0.00 INR, no R (no stop) on average."
+},
+{
+"id": "sizeUpAfterLoss",
+"title": "Size up after a loss",
+"count": 4,
+"net": 211.46,
+"avgR": 0.022,
+"normalAvgR": -0.6661,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"77809fc1-9943-4a15-8994-0f321c6b9a67",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"9ecb407b-80f0-4860-9ba2-58a6def22125"
+],
+"detail": "4 of 15 trades that followed a loss risked more than 1.5\u00c3\u2014 your median of 4,200.00 INR, net 211.46 INR."
+},
+{
+"id": "tradeNumber",
+"title": "Later trades of the day",
+"count": 3,
+"net": -11421.66,
+"avgR": -1.1819,
+"normalAvgR": -0.4511,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"b9eec96a-962b-496d-8412-b5ddf38ea153"
+],
+"detail": "Second and later trades of a day against first trades. 1st: 20 trades, \u00e2\u02c6\u20190.45R; 2nd: 2 trades, \u00e2\u02c6\u20191.22R; 3rd: 1 trade, \u00e2\u02c6\u20191.10R."
+},
+{
+"id": "overtradingDay",
+"title": "Overtrading days",
+"count": 0,
+"net": 0,
+"avgR": null,
+"normalAvgR": -0.5464,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [],
+"detail": "0 days had more than 2\u00c3\u2014 your usual 1 trades a day (and at least 4); those days' 0 trades made 0.00 INR."
+},
+{
+"id": "beyondStop",
+"title": "Losses beyond the stop",
+"count": 11,
+"net": -67182.89,
+"avgR": -1.5545,
+"normalAvgR": 0.3777,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"bb6efc54-1130-402c-b387-048a5f73ab92",
+"853ca0e0-ac39-4982-827c-1584cbfb95a2",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"f068ef37-4a37-468b-8933-513e85f2df24",
+"ca7ce75a-0d61-430a-aa0a-539532af8e52",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"b9eec96a-962b-496d-8412-b5ddf38ea153",
+"77be5654-45b2-49b9-846b-92630e28ac5a",
+"9ecb407b-80f0-4860-9ba2-58a6def22125",
+"9acec250-5dd9-4b93-9c06-a784b1a57907"
+],
+"detail": "11 of 17 losing trades ended past the planned risk (below \u00e2\u02c6\u20191.05R); the part beyond the stop cost 26,382.89 INR."
+},
+{
+"id": "noStop",
+"title": "No stop recorded",
+"count": 0,
+"net": 0,
+"avgR": null,
+"normalAvgR": -0.5464,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [],
+"detail": "0 of 23 trades have no stop loss recorded, net 0.00 INR. Without a stop there is no R, so these are compared on P&L."
+},
+{
+"id": "targetNotReached",
+"title": "Winners closed before the target",
+"count": 5,
+"net": 28740.89,
+"avgR": 1.4252,
+"normalAvgR": 2.022,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"3e76c105-6f57-42dd-80b0-3f4e238bb939",
+"49ce8c61-18f9-40f2-bdb2-a075ad70e446",
+"f6afa69d-6ece-4355-a9dd-97a6b420473c",
+"b264d577-0ed1-4cd8-9407-db26c6685fa5",
+"88a1b0f0-cb22-4c5a-9666-dbb42beefed9"
+],
+"detail": "5 of 6 winners with a planned R:R closed before the target: planned 2.00R, captured +1.43R on average; compared with winners that reached it."
+},
+{
+"id": "losersHeldLonger",
+"title": "Losers held longer than winners",
+"count": 7,
+"net": -38821.14,
+"avgR": -1.2633,
+"normalAvgR": -1.2873,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [
+"21c6ade1-d819-4860-a77b-2f1eb088544d",
+"f22dec90-7acc-4d94-81e5-de2bf90f7e5f",
+"0f7aa756-4569-4be8-9562-9f497c1b74ea",
+"39ac795b-e653-4aa2-920a-b0e9dcd688e9",
+"8b9e8c6f-be66-4363-a4c6-e47884970fe6",
+"7d0dbd23-ffab-474c-8718-adb410c7195d",
+"77be5654-45b2-49b9-846b-92630e28ac5a"
+],
+"detail": "Median holding time: winners 144 min, losers 122 min. 7 of 17 losing trades stayed open longer than your typical winner; compared with your other losing trades."
+},
+{
+"id": "fees",
+"title": "Fees and charges",
+"count": 0,
+"net": 0,
+"avgR": null,
+"normalAvgR": -0.5464,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [],
+"detail": "Fees and charges of 0.00 INR (0.00 INR a trade); there was no gross profit. 0 trades made a gross profit no larger than their charges."
+},
+{
+"id": "brokenRule",
+"title": "Broken rules",
+"count": 0,
+"net": 0,
+"avgR": null,
+"normalAvgR": -0.5464,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [],
+"detail": "0 trades broke at least one rule, net 0.00 INR; compared with trades that broke none."
+},
+{
+"id": "afterDailyLimit",
+"title": "Trades after the daily loss limit",
+"count": 0,
+"net": 0,
+"avgR": null,
+"normalAvgR": -0.5464,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [],
+"detail": "No daily loss limit is set, so this cannot be checked."
+},
+{
+"id": "expiryDay",
+"title": "Options on expiry day",
+"count": 0,
+"net": 0,
+"avgR": null,
+"normalAvgR": null,
+"verdict": "watch",
+"label": "too-few",
+"tradeIds": [],
+"detail": "No options trade with an expiry date in this period."
+}
+],
+"scenario": null
+}

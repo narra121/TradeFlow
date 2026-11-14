@@ -53,10 +53,10 @@ describe('page titles and descriptions', () => {
 describe('pricing page', () => {
   it('answers the billing questions: trial end, currency, cancelling, refunds', () => {
     renderWithProviders(<PricingPage />);
-    for (const q of ['What happens when the Pro trial ends?', 'Which currency will I pay in?', 'How do I cancel Pro?', 'Can I get a refund?']) {
+    for (const q of ['What happens when the free trial ends?', 'Which currency will I pay in?', 'How do I cancel Pro?', 'Can I get a refund?']) {
       expect(screen.getByRole('heading', { name: q })).toBeInTheDocument();
     }
-    expect(screen.getByText(/you move to the Free plan and nothing is charged/)).toBeInTheDocument();
+    expect(screen.getByText(/nothing is charged and your journal becomes read-only/)).toBeInTheDocument();
   });
 });
 

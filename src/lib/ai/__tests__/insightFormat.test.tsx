@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Insight, InsightSection } from '@/types/insights';
 import type { ChatSession } from '@/types/chat';
-import { FIXED_STARTERS, groupSessions, starterQuestions } from '../chatFormat';
+import { CHAT_STARTERS, FIXED_STARTERS, groupSessions, starterQuestions, toolsLine } from '../chatFormat';
 import { clampedLabel, isMixedCurrency, KIND_LABEL, orderSections, periodLabel, reportAsText, reportRange, ruleTextFrom, tradesInMessage, trueMinus } from '../insightFormat';
 import { citedTradeIds, parseBlocks, renderAnswer } from '../markdown';
 
@@ -58,10 +58,18 @@ describe('chat helpers', () => {
     expect(groups.map((g) => g.label)).toEqual(['Today', 'Earlier']);
     expect(groups[0].sessions.map((x) => x.id)).toEqual(['t2', 't1']);
   });
-  it('builds starter questions from the latest report, leaks first, else the fixed four', () => {
-    expect(starterQuestions(undefined)).toBe(FIXED_STARTERS);
-    const insight = { sections: [section({ kind: 'strength', title: 'Good one' }), section({ title: 'Late trades lose.' })] } as Insight;
-    expect(starterQuestions(insight)).toEqual(['What is behind this: Late trades lose?', 'How can I do more of this: Good one?']);
+  it('starts a chat with four questions one calculation answers; a chat about a report opens with up to two on its findings', () => {
+    expect(starterQuestions(undefined)).toBe(CHAT_STARTERS);
+    expect(CHAT_STARTERS).toEqual(['Which setup has made me the most money?', 'How do I do after a losing trade?', 'Which weekday costs me the most?', 'What if I stopped after 2 losses a day?']);
+    const old = { sections: [section({ kind: 'strength', title: 'Good one' }), section({ title: 'Late trades lose.' })] } as Insight;
+    expect(starterQuestions(old)).toEqual(['What is behind this: Late trades lose?', ...CHAT_STARTERS.slice(0, 3)]);
+    const weekly = { sections: [], review: { theOne: { title: 'Losses beyond the stop' }, more: [{ title: 'No stop recorded' }] } } as unknown as Insight;
+    expect(starterQuestions(weekly)).toEqual(['Which trades make up "Losses beyond the stop"?', 'Which trades make up "No stop recorded"?', ...CHAT_STARTERS.slice(0, 2)]);
+  });
+  it('the marketing demo keeps its own fixed questions', () => expect(FIXED_STARTERS[0]).toBe('What is my biggest leak this month?'));
+  it('names the calculations of the tool frames once each, in plain words', () => {
+    expect(toolsLine(['stats', 'whatIf', 'stats'])).toBe('Calculated: figures by group, a what-if replay');
+    expect(toolsLine(['newTool'])).toBe('Calculated: newTool');
   });
 });
 

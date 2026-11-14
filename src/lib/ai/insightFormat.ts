@@ -1,5 +1,6 @@
 import { formatDateShort, parseLocalDate } from '@/lib/format';
 import type { Insight, InsightSection } from '@/types/insights';
+import { reviewAsLines } from './reviewFormat';
 
 const MONTH = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
 
@@ -42,8 +43,11 @@ export function ruleTextFrom(section: InsightSection): string {
 /** Plain-text copy of a report for `Copy summary`. */
 export function reportAsText(insight: Insight, title: string): string {
   const lines = [title, `${insight.tradeCount} trades · generated ${formatDateShort(insight.createdAt, true)}`, '', trueMinus(insight.summary), ''];
-  for (const s of orderSections(insight.sections)) {
-    lines.push(`${KIND_LABEL[s.kind]}: ${s.title}${s.metric ? ` (${s.metric.label}: ${trueMinus(s.metric.display)})` : ''}`, trueMinus(s.body), '');
+  if (insight.review) lines.push(...reviewAsLines(insight.review).map(trueMinus));
+  else {
+    for (const s of orderSections(insight.sections)) {
+      lines.push(`${KIND_LABEL[s.kind]}: ${s.title}${s.metric ? ` (${s.metric.label}: ${trueMinus(s.metric.display)})` : ''}`, trueMinus(s.body), '');
+    }
   }
   lines.push('Based on your journal data. Not investment advice.');
   return lines.join('\n');

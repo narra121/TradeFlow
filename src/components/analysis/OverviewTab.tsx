@@ -1,42 +1,21 @@
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { Panel } from '@/components/ui/panel';
-import { Money, RMultiple } from '@/components/ui/money';
 import { EquityChart } from '@/components/dashboard/EquityChart';
-import { availableDimensions, DIMENSIONS, explorerRows, MIN_SEGMENT_TRADES, whatIsWorking, type Standout } from '@/lib/analyticsRows';
 import { equitySeries } from '@/lib/dashboard';
-import { formatPercent } from '@/lib/format';
 import { StatementPanel } from './StatementPanel';
-import { rowLink, type AnalyticsContext } from './drill';
+import { ConcentrationPanel, EdgeSummaryPanel, ResultBridgePanel, RollingExpectancyChart, WorkingPanel } from './OverviewPanels';
+import { MixedCurrencyPanel } from './AnalysisGate';
+import type { AnalyticsContext } from './drill';
 
-function StandoutRow({ s, up, currency, zone }: { s: Standout; up: boolean; currency?: string; zone: string }) {
-  const { row } = s;
-  return (
-    <li>
-      <Link
-        to={rowLink(s.dimId, row, zone) ?? '/app/tradelog'}
-        className="grid min-h-9 grid-cols-[1rem_minmax(0,1fr)_auto_auto] items-center gap-x-3 rounded-sm text-[13px] hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[1rem_minmax(0,1fr)_5rem_4rem_7rem_4rem_1rem]"
-      >
-        <span aria-hidden="true" className="text-muted-foreground">{up ? '▲' : '▼'}</span>
-        <span className="truncate"><span className="font-medium">{row.name}</span> <span className="text-muted-foreground">· {s.dimension.replace(' (UTC)', '').toLowerCase()}</span></span>
-        <span className="hidden text-right font-mono tabular-nums text-muted-foreground sm:block">{row.trades} trades</span>
-        <span className="hidden text-right font-mono tabular-nums sm:block">{formatPercent(row.winRate)}</span>
-        <Money value={row.net} currency={currency} className="text-right" />
-        <span className="hidden text-right sm:block">{row.avgR !== undefined ? <RMultiple value={row.avgR} /> : null}</span>
-        <span aria-hidden="true" className="hidden text-muted-foreground sm:block">→</span>
-      </Link>
-    </li>
-  );
-}
-
-/** Statement of twelve figures, equity with drawdown, and the segments that earn and cost the most. */
+/**
+ * "Do I have an edge, and is it holding?": the statement (from `/stats`), then the evidence from `GET /analysis` — win
+ * rate against break-even, expectancy in R, the rolling expectancy under the equity curve, where the result came from,
+ * dependence on a few trades, and what is working by verdict (never by net P&L).
+ */
 export function OverviewTab({ ctx }: { ctx: AnalyticsContext }) {
-  const { stats, pro, currency, zone } = ctx;
+  const { stats, pro, currency, analysis } = ctx;
   const points = useMemo(() => equitySeries(stats.dailyPnl, (d) => d), [stats.dailyPnl]);
-  const standouts = useMemo(() => {
-    const dims = pro ? availableDimensions(stats) : DIMENSIONS.filter((d) => d.free);
-    return whatIsWorking(dims.map((dim) => ({ dim, rows: explorerRows(stats, dim.id) })));
-  }, [stats, pro]);
+  const money = analysis?.data?.currency ?? currency;
 
   return (
     <div className="space-y-4">
@@ -46,19 +25,22 @@ export function OverviewTab({ ctx }: { ctx: AnalyticsContext }) {
           Figures are for {currency}; switch currency in the bar above. Max drawdown needs one account, because a percentage of two currencies' starting balances means nothing.
         </p>
       )}
+      {!analysis?.mixed && <EdgeSummaryPanel state={analysis} currency={money} />}
       <Panel>
         <EquityChart points={points} currency={currency} title="Equity and drawdown" />
       </Panel>
-      <Panel title="What is working · what is not" description={`Segments with at least ${MIN_SEGMENT_TRADES} trades${pro ? '' : ' (symbols on Free)'}`} padded={false}>
-        {standouts.working.length === 0 && standouts.notWorking.length === 0 ? (
-          <p className="px-4 pb-4 pt-3 text-sm text-muted-foreground">No segment has {MIN_SEGMENT_TRADES} trades with a clear result yet.</p>
-        ) : (
-          <ul className="space-y-0.5 px-4 pb-3 pt-2">
-            {standouts.working.map((s) => <StandoutRow key={`w-${s.dimId}-${s.row.key}`} s={s} up currency={currency} zone={zone} />)}
-            {standouts.notWorking.map((s) => <StandoutRow key={`n-${s.dimId}-${s.row.key}`} s={s} up={false} currency={currency} zone={zone} />)}
-          </ul>
-        )}
-      </Panel>
+      {analysis?.mixed ? (
+        <MixedCurrencyPanel currencies={analysis.mixed} what="the edge, the rolling expectancy, where the result came from and what is working" />
+      ) : (
+        <>
+          <RollingExpectancyChart state={analysis} />
+          <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+            <ResultBridgePanel state={analysis} currency={money} pro={pro} />
+            <ConcentrationPanel state={analysis} currency={money} pro={pro} />
+          </div>
+          <WorkingPanel ctx={{ ...ctx, currency: money }} />
+        </>
+      )}
     </div>
   );
 }

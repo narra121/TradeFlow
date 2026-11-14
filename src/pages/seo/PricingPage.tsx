@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { PricingTable } from '@/components/public/PricingTable';
+import { AnalyticsContents } from '@/components/public/AnalyticsContents';
 import { Faq, H2, P, ShortAnswer } from '@/content/components/ArticleParts';
 import { PRODUCT_FAQ, TRIAL_DAYS, TRIAL_END_FAQ, proPrice, type FaqItem } from '@/content/product-facts';
 import { getSeoPage } from '@/content/seo-pages';
@@ -21,7 +22,7 @@ const BILLING_FAQ: FaqItem[] = [
   {
     question: 'How do I cancel Pro?',
     answer:
-      'Open Settings, then Plan & billing, then Manage billing, and cancel in the Stripe billing portal. You keep Pro until the end of the period you paid for and are not charged again; then the account moves to Free.',
+      'Open Settings, then Plan & billing, then Manage billing, and cancel in the Stripe billing portal. You keep Pro until the end of the period you paid for and are not charged again; then your journal is read-only: you can still view and export it.',
   },
   {
     question: 'Can I get a refund?',
@@ -41,14 +42,28 @@ export default function PricingPage() {
     >
       <h1 className="mb-4 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">TradeQut pricing</h1>
       <ShortAnswer>
-        TradeQut has a Free plan with unlimited manual trades, and Pro at {usdMonth}/month or {usdYear}/year ({inrMonth}/month or{' '}
-        {inrYear}/year in India). Every account starts with a {TRIAL_DAYS}-day Pro trial without a card.
+        Every account starts with a {TRIAL_DAYS}-day free trial with every Pro feature and no card. Then Pro is {usdMonth}/month
+        or {usdYear}/year ({inrMonth}/month or {inrYear}/year in India).
       </ShortAnswer>
-      <H2>Free vs Pro</H2>
+      <H2>Free trial vs Pro</H2>
       <PricingTable />
       <P>
-        Pro is for traders who import often, run several accounts, or want the cost of each mistake and broken rule. Free
-        stays free: manual trades, the calendar, goals and rules, and export have no limit.
+        After the trial, or when Pro ends, your journal is read-only: you can view and export every trade, but adding,
+        editing and deleting need Pro. Nothing is deleted, and upgrading makes everything work again at once.
+      </P>
+      <H2 id="analytics">What is in Analytics</H2>
+      <P>
+        Every tab below is in the {TRIAL_DAYS}-day trial, and Pro keeps it after. Each tab answers one question from your own
+        trades, and says so when there are too few of them to tell.
+      </P>
+      <AnalyticsContents />
+      <H2 id="ai">AI reports and chat</H2>
+      <P>
+        Both are in the trial and in Pro, within the monthly numbers in the first table. A report is a review: a verdict, the
+        one behaviour that cost the most, as an if-then rule where one applies, and patterns to watch. A review of the last
+        seven days is also made for you each week with five or more trades, unless you switch Weekly report off in Settings.
+        The figures in a report and in a chat answer’s table are calculated by code; the model writes the sentences.
+        Neither one recommends a trade.
       </P>
       <Faq items={[...PRODUCT_FAQ, ...BILLING_FAQ]} />
       <p className="mt-6 text-sm text-muted-foreground">

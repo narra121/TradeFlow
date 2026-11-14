@@ -1,6 +1,7 @@
 /**
  * Single source of product facts for public pages, JSON-LD and llms.txt.
- * Prices and limits mirror the monetization contract (Free / Pro, 14-day trial).
+ * Prices and limits mirror the monetization contract: a 14-day free trial with every Pro feature, then Pro; without
+ * Pro the journal is read-only (view and export).
  * Change a fact here and every consumer (pricing page, FAQ, structured data, llms*.txt) follows.
  */
 
@@ -64,37 +65,39 @@ export function proPrice(currency: Currency, interval: Interval): PlanPrice {
 }
 
 export const PRICING_NOTE =
-  'Prices show in INR or USD from your browser language; checkout charges INR in India and USD elsewhere. Every account starts with a 14-day Pro trial, no card required. Cancel any time from the billing portal.';
+  'Prices show in INR or USD from your browser language; checkout charges INR in India and USD elsewhere. Every account starts with a 14-day free trial with every Pro feature, no card required. Cancel any time from the billing portal.';
 
 export interface PlanLimitRow {
   feature: string;
-  free: string;
+  trial: string;
   pro: string;
 }
 
-/** Free vs Pro, in plain words. Mirrors the monetization contract. */
+/** Free trial vs Pro, in plain words: the trial has every Pro feature. Mirrors the monetization contract. */
 export const PLAN_LIMITS: PlanLimitRow[] = [
-  { feature: 'Manual trades, trade log, calendar, dashboard', free: 'Unlimited', pro: 'Unlimited' },
-  { feature: 'Goals and trading rules', free: 'Included', pro: 'Included' },
-  { feature: 'Data export and account deletion', free: 'Included', pro: 'Included' },
-  { feature: 'Trading accounts', free: '2', pro: 'Unlimited' },
-  { feature: 'Broker file imports', free: '3 per month', pro: 'Unlimited (fair use 200/month)' },
-  { feature: 'AI extraction from screenshots/files', free: '5 per month', pro: '200 per month' },
-  { feature: 'AI Insights reports', free: '1 per month', pro: '30 per month + weekly auto report' },
-  { feature: 'AI Chat messages about your own trades', free: '10 per month', pro: '500 per month' },
+  { feature: 'How long', trial: `${TRIAL_DAYS} days from sign-up, no card`, pro: 'Monthly or yearly, cancel any time' },
+  { feature: 'When it ends', trial: 'Read-only: you can view and export, not add, edit or delete', pro: 'Read-only, the same as after the trial' },
+  { feature: 'Manual trades, trade log, calendar, dashboard', trial: 'Unlimited', pro: 'Unlimited' },
+  { feature: 'Goals and trading rules', trial: 'Included', pro: 'Included' },
+  { feature: 'Data export and account deletion', trial: 'Included', pro: 'Included' },
+  { feature: 'Trading accounts', trial: 'Unlimited', pro: 'Unlimited' },
+  { feature: 'Broker file imports', trial: 'Unlimited (fair use 200/month)', pro: 'Unlimited (fair use 200/month)' },
+  { feature: 'AI extraction from screenshots/files', trial: '200 per month', pro: '200 per month' },
+  { feature: 'AI reports (a review with one rule to work on)', trial: '30 per month + weekly auto report', pro: '30 per month + weekly auto report' },
+  { feature: 'AI Chat messages about your own trades', trial: '500 per month', pro: '500 per month' },
   {
-    feature: 'Advanced analytics (setup, session and mistake cost, time of day, R-distribution, drawdown)',
-    free: 'Preview',
+    feature: 'Analytics: every breakdown, Timing, Risk, the cost of each behaviour and broken rule, what-if replay',
+    trial: 'Included',
     pro: 'Included',
   },
-  { feature: 'India charges and tax P&L report', free: 'Not included', pro: 'Included' },
+  { feature: 'India charges and tax P&L report', trial: 'Included', pro: 'Included' },
 ];
 
 export const DATA_FACTS = [
   'Runs on AWS (us-east-1) with encryption in transit and at rest.',
   'Each user can only read their own trades; data is never sold or shared with brokers.',
   'Export all data or delete the account yourself from Settings.',
-  'AI features describe your own past trades; they never give buy/sell recommendations.',
+  'AI features describe your own past trades with figures calculated by code; they never give buy/sell recommendations.',
 ];
 
 export const COMPANY_FACTS = {
@@ -124,15 +127,15 @@ const inrYear = proPrice('INR', 'year').display;
 /** Product FAQ: visible on the home and pricing pages and emitted as FAQPage JSON-LD. */
 /** Asked on the landing page and on /pricing: one wording for both, built from the trial length. */
 export const TRIAL_END_FAQ: FaqItem = {
-  question: 'What happens when the Pro trial ends?',
-  answer: `The ${TRIAL_DAYS}-day Pro trial starts when you sign up and needs no card. When it ends you move to the Free plan and nothing is charged. Your trades stay in your account.`,
+  question: 'What happens when the free trial ends?',
+  answer: `The ${TRIAL_DAYS}-day free trial starts when you sign up, has every Pro feature and needs no card. When it ends nothing is charged and your journal becomes read-only: you can still view and export every trade. Upgrade to Pro to add, edit or delete again.`,
 };
 
 export const PRODUCT_FAQ: FaqItem[] = [
   { question: 'What is TradeQut?', answer: PRODUCT_DEFINITION },
   {
     question: 'Is TradeQut free?',
-    answer: `Yes. The Free plan includes unlimited manual trades, the trade log, calendar, dashboard, goals, rules and data export. Pro costs ${usdMonth}/month or ${usdYear}/year (${inrMonth}/month or ${inrYear}/year in India) and adds unlimited accounts and imports, higher AI limits, advanced analytics and an India charges and tax P&L report. Every account starts with a ${TRIAL_DAYS}-day Pro trial without a card.`,
+    answer: `TradeQut starts with a ${TRIAL_DAYS}-day free trial with every Pro feature and no card. After that Pro costs ${usdMonth}/month or ${usdYear}/year (${inrMonth}/month or ${inrYear}/year in India). Without Pro your journal stays readable and exportable, but you cannot add, edit or delete.`,
   },
   {
     question: 'Which brokers can I import from?',
@@ -148,7 +151,7 @@ export const PRODUCT_FAQ: FaqItem[] = [
   {
     question: 'Does TradeQut give trading tips or signals?',
     answer:
-      'No. TradeQut analyses your own past trades — win rate, profit factor, drawdown, which rules you break and what mistakes cost. It never recommends securities, strikes or trades.',
+      'No. TradeQut analyses your own past trades: win rate with its range, expectancy in R, which habits and broken rules cost money, and what a rule would have changed. It never recommends securities, strikes or trades.',
   },
   {
     question: 'Is my trading data private?',

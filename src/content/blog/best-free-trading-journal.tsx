@@ -28,9 +28,9 @@ export default function BestFreeTradingJournal() {
             'You want charting and a mature importer list',
           ],
           [
-            'TradeQut Free',
-            'Free, unlimited manual trades',
-            '2 trading accounts, 3 broker file imports a month, advanced analytics previewed only',
+            'TradeQut',
+            '14-day free trial with every Pro feature, no card; no free plan',
+            'After the trial the journal is read-only (view and export) unless you pay for Pro',
             'You want rules, review notes and Indian broker files',
           ],
           [
@@ -49,14 +49,14 @@ export default function BestFreeTradingJournal() {
       <H2>How to choose in 30 minutes</H2>
       <UL>
         <li>Take one month of your own broker file.</li>
-        <li>Import it into two free tools and a spreadsheet.</li>
+        <li>Import it into two tools (a free plan or a free trial) and a spreadsheet.</li>
         <li>Check that total P&amp;L matches your broker&apos;s own report in each.</li>
         <li>Try to answer one real question, such as &ldquo;which setup lost the most?&rdquo;. The tool that answers it fastest wins.</li>
       </UL>
       <P>
         A spreadsheet is a good start (see the <A to="/blog/trading-journal-excel-template">Excel template guide</A>). A
         journal pays for itself when importing and review habits become the bottleneck. Compare more in{' '}
-        <A to="/alternatives">TradeQut alternatives</A> or look at <A to="/pricing">TradeQut&apos;s Free plan</A>.
+        <A to="/alternatives">TradeQut alternatives</A> or look at <A to="/pricing">TradeQut&apos;s free trial and Pro</A>.
       </P>
 
       <Sources

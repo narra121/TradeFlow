@@ -25,8 +25,16 @@ vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => entitlements(
 vi.mock('@/store/api/statsApi', () => ({ useGetTaxReportQuery: (...a: unknown[]) => taxReport(...a) }));
 vi.mock('@/hooks/useTradeParam', () => ({ useTradeParam: () => ({ openNew: vi.fn() }) }));
 vi.mock('@/store/api', () => ({ useGetRulesQuery: () => ({ data: [{ ruleId: 'r1', rule: 'No revenge trades' }] }) }));
+const analysis = vi.fn();
+vi.mock('@/components/analysis/useAnalysis', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/components/analysis/useAnalysis')>()),
+  useAnalysis: () => analysis(),
+}));
 
 import { AnalyticsView } from '../AnalyticsView';
+import { QA_USD } from '@/components/analysis/__tests__/qaFixtures';
+
+const analysisScope = { accountId: 'ALL', from: '2026-08-01', to: '2026-11-13' };
 
 const stats = {
   totalTrades: 45, wins: 24, losses: 21, winRate: 53.3, totalPnl: 1108.72, expectancy: 24.64, profitFactor: 1.9, avgWin: 97.64, avgLoss: 58.79, bestTrade: 375, worstTrade: -420,
@@ -51,6 +59,7 @@ beforeEach(() => {
   periodStats.mockReset().mockReturnValue(ready());
   entitlements.mockReset().mockReturnValue({ isLoading: false, isError: false, can: () => true, currency: 'USD' });
   taxReport.mockReset().mockReturnValue({ data: undefined, isLoading: true, isError: false, refetch: vi.fn() });
+  analysis.mockReset().mockReturnValue({ data: QA_USD, scope: analysisScope, isLoading: false, isError: false, mixed: null, refetch: vi.fn() });
 });
 
 describe('AnalyticsView', () => {
@@ -106,6 +115,7 @@ describe('AnalyticsView', () => {
   it('shows one currency at a time when the scope mixes currencies, with a switch, never a combined figure', async () => {
     const mixedStats = { ...stats, totalTrades: 45, currencies: ['INR', 'USD'], byCurrency: { INR: { ...stats, totalPnl: -5000, totalTrades: 20 }, USD: { ...stats, totalPnl: 1108.72, totalTrades: 25 } } } as unknown as AggregatedStats;
     periodStats.mockReturnValue(ready({ stats: mixedStats }));
+    analysis.mockReturnValue({ data: undefined, scope: analysisScope, isLoading: false, isError: false, mixed: ['INR', 'USD'], refetch: vi.fn() });
     renderWithProviders(<AnalyticsView />);
     expect(screen.getByRole('radio', { name: 'USD' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByText('+$1,108.72')).toBeInTheDocument();
@@ -114,7 +124,7 @@ describe('AnalyticsView', () => {
     expect(screen.queryByText(/Totals are per currency/)).not.toBeInTheDocument();
   });
 
-  describe('Free plan', () => {
+  describe('without advanced analytics', () => {
     beforeEach(() => entitlements.mockReturnValue({ isLoading: false, isError: false, can: () => false, currency: 'INR' }));
 
     it('replaces Timing with a locked preview and does not request its data', () => {
@@ -144,7 +154,7 @@ describe('AnalyticsView', () => {
 
     it('limits "what is working" to symbols', () => {
       renderWithProviders(<AnalyticsView />);
-      expect(screen.getByText(/symbols on Free/)).toBeInTheDocument();
+      expect(screen.getByText(/results by symbol only/)).toBeInTheDocument();
       expect(screen.queryByText(/Reversal/)).not.toBeInTheDocument();
     });
   });

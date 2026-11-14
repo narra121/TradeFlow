@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { emitPlanSignal } from '@/lib/planErrors';
 
 const checkout = vi.fn();
+const refetch = vi.fn();
 vi.mock('@/store/api/billingApi', () => ({
   useGetEntitlementsQuery: () => ({
     data: {
@@ -15,7 +16,7 @@ vi.mock('@/store/api/billingApi', () => ({
     },
     isLoading: false,
     isError: false,
-    refetch: vi.fn(),
+    refetch,
   }),
   useCreateCheckoutMutation: () => [(a: unknown) => ({ unwrap: () => checkout(a) }), { isLoading: false }],
   useOpenPortalMutation: () => [() => ({ unwrap: () => Promise.resolve({ url: 'x' }) }), { isLoading: false }],
@@ -33,6 +34,7 @@ const setup = () =>
 
 beforeEach(() => {
   checkout.mockReset();
+  refetch.mockReset();
   localStorage.clear();
 });
 
@@ -47,9 +49,16 @@ describe('describePlanSignal', () => {
   });
 
   it('says a feature is part of Pro and what it answers (PLAN_REQUIRED)', () => {
-    expect(describePlanSignal({ code: 'PLAN_REQUIRED', feature: 'unlimited_accounts', message: 'x', kind: 'mutation' })).toEqual({
-      title: 'More than 2 trading accounts is part of Pro',
-      body: 'Keep every account in one journal.',
+    expect(describePlanSignal({ code: 'PLAN_REQUIRED', feature: 'tax_report', message: 'x', kind: 'mutation' })).toEqual({
+      title: 'The tax report is part of Pro',
+      body: 'See charges and tax P&L in one report.',
+    });
+  });
+
+  it('says the trial ended and what still works (TRIAL_EXPIRED), never a quota sentence', () => {
+    expect(describePlanSignal({ code: 'TRIAL_EXPIRED', message: 'x', kind: 'mutation' })).toEqual({
+      title: 'Your free trial has ended',
+      body: 'Your trades are safe, and you can still view and export them. Upgrade to Pro to add, edit or delete.',
     });
   });
 
@@ -65,6 +74,17 @@ describe('UpgradeDialog', () => {
     expect(await screen.findByText('You have used 5 of 5 AI extractions this month')).toBeInTheDocument();
     expect(screen.getByText('Pro is $49.99 a year.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Not now' })).toBeInTheDocument();
+  });
+
+  it('a TRIAL_EXPIRED 402 from any write opens it with Upgrade to Pro and refreshes the plan (one global handler)', async () => {
+    const { classifyPlanError } = await import('@/lib/planErrors');
+    setup();
+    const signal = classifyPlanError(402, { success: false, errorCode: 'TRIAL_EXPIRED', message: 'Your free trial has ended. Upgrade to Pro to add, edit or delete.' });
+    act(() => emitPlanSignal(signal!));
+    expect(await screen.findByRole('dialog', { name: 'Your free trial has ended' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Upgrade to Pro' })).toBeInTheDocument();
+    expect(refetch).toHaveBeenCalled();
+    expect(screen.queryByText(/monthly limit|of 5/)).toBeNull();
   });
 
   it('ignores query signals (those render a locked preview in place)', () => {

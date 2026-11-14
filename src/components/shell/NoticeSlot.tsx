@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Info, TriangleAlert, X } from 'lucide-react';
-import { planState, toPlanFacts } from '@/components/billing/planState';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { copy } from '@/copy';
 import { useOnline } from '@/hooks/useOnline';
 import { formatDateShort } from '@/lib/format';
-import { useGetAccountsQuery } from '@/store/api/accountsApi';
 import { cn } from '@/lib/utils';
 
 export type NoticeLevel = 'info' | 'warning' | 'error';
@@ -16,7 +14,7 @@ export interface Notice {
   level: NoticeLevel;
   text: string;
   action?: { label: string; to: string };
-  /** Blocking notices (payment failed, over the limit) cannot be dismissed. */
+  /** Blocking notices (payment failed, read-only) cannot be dismissed. */
   dismissible: boolean;
 }
 
@@ -27,28 +25,25 @@ export interface NoticeInput {
   trialDaysLeft: number | null;
   /** ISO end of the Pro trial, for the sentence that names the date. */
   trialEndsAt?: string;
-  /** Accounts beyond the Free limit while on Free. */
-  overAccountLimit?: boolean;
-  /** Free again after a Pro trial that ended within the last 14 days (`planState`). */
-  trialEnded?: boolean;
+  /** Trial over or Pro lapsed. */
+  readOnly?: boolean;
   tradesWithoutAccount?: number;
   /** Account exists but no trade yet. */
   gettingStarted?: { done: number; total: number } | null;
   dismissed?: ReadonlySet<string>;
 }
 
-/** The one notice shown, chosen by priority: offline > payment failed > over limit > trial ended > trial ending > no account > getting started. */
+/** The one notice shown, chosen by priority: offline > payment failed > read-only > trial ending > no account > getting started. */
 export function pickNotice(i: NoticeInput): Notice | null {
   const candidates: Notice[] = [];
   if (!i.online) candidates.push({ id: 'offline', level: 'warning', text: copy.offline.notice, dismissible: false });
   if (i.status === 'past_due') candidates.push({ id: 'payment-failed', level: 'error', text: copy.notices.paymentFailed, action: { label: copy.notices.updateCard, to: '/app/settings/billing' }, dismissible: false });
-  if (i.overAccountLimit) candidates.push({ id: 'over-limit', level: 'warning', text: copy.notices.overLimit, action: { label: copy.notices.chooseAccounts, to: '/app/settings/billing' }, dismissible: false });
-  if (i.trialEnded) candidates.push({ id: 'trial-ended', level: 'info', text: copy.notices.trialEnded, action: { label: copy.notices.seeWhatChanged, to: '/app/settings/billing' }, dismissible: true });
+  if (i.readOnly) candidates.push({ id: 'read-only', level: 'warning', text: copy.notices.readOnly, action: { label: copy.notices.upgrade, to: '/app/settings/billing' }, dismissible: false });
   if (i.plan === 'trial' && i.trialDaysLeft !== null && i.trialDaysLeft <= 3) {
     candidates.push({
       id: `trial-${i.trialDaysLeft <= 1 ? 1 : 3}`,
       level: 'warning',
-      text: copy.notices.trial(i.trialDaysLeft, i.trialEndsAt ? formatDateShort(i.trialEndsAt) : 'the end of the trial'),
+      text: copy.notices.trial(i.trialDaysLeft, i.trialEndsAt ? formatDateShort(i.trialEndsAt) : 'the last day'),
       action: { label: copy.notices.seePlans, to: '/app/settings/billing' },
       dismissible: true,
     });
@@ -83,9 +78,6 @@ export function NoticeSlot({ tradesWithoutAccount, gettingStarted }: NoticeSlotP
   const online = useOnline();
   const [dismissed, setDismissed] = useState<Set<string>>(readDismissed);
 
-  const accountCount = useGetAccountsQuery().data?.accounts.length ?? 0;
-  const canUnlimited = ent.can('unlimited_accounts');
-  const trialEnded = ent.plan !== null && planState(toPlanFacts(ent)).kind === 'trial_ended';
 
   const notice = useMemo(
     () =>
@@ -95,13 +87,12 @@ export function NoticeSlot({ tradesWithoutAccount, gettingStarted }: NoticeSlotP
         plan: ent.plan,
         trialDaysLeft: ent.trialDaysLeft,
         trialEndsAt: ent.trialEndsAt,
-        trialEnded,
-        overAccountLimit: ent.plan !== null && !canUnlimited && accountCount > 2,
+        readOnly: ent.readOnly,
         tradesWithoutAccount,
         gettingStarted,
         dismissed,
       }),
-    [online, ent.status, ent.plan, ent.trialDaysLeft, ent.trialEndsAt, trialEnded, canUnlimited, accountCount, tradesWithoutAccount, gettingStarted, dismissed],
+    [online, ent.status, ent.plan, ent.trialDaysLeft, ent.trialEndsAt, ent.readOnly, tradesWithoutAccount, gettingStarted, dismissed],
   );
   if (!notice) return null;
 

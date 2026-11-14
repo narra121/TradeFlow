@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders, screen, within } from '@/test/test-utils';
 import { LandingPage } from '../LandingPage';
-import { IMPORT_SOURCES, PRODUCT_FAQ } from '@/content/product-facts';
+import { IMPORT_SOURCES, PRODUCT_FAQ, TRIAL_END_FAQ } from '@/content/product-facts';
 import { daysSortedAt } from '@/components/landing/ParticleAssembly';
 import { SAMPLE_DAYS } from '@/components/public/tourFixture';
 
@@ -46,7 +46,7 @@ describe('LandingPage', () => {
 
   it('states the trial and that no card is needed', () => {
     renderWithProviders(<LandingPage />);
-    expect(screen.getAllByText('14-day Pro trial. No card.')).toHaveLength(2); // hero and closing band
+    expect(screen.getAllByText('14-day free trial. No card.')).toHaveLength(2); // hero and closing band
   });
 
   it('lists every import source and says sync is planned', () => {
@@ -64,7 +64,7 @@ describe('LandingPage', () => {
     expect(screen.getAllByText('Getting trades in').length).toBeGreaterThan(0);
   });
 
-  it('shows the Free vs Pro pricing table with a currency toggle', async () => {
+  it('shows the Free trial vs Pro pricing table with a currency toggle', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LandingPage />);
     const pricing = screen.getByRole('region', { name: 'Pricing' });
@@ -85,7 +85,7 @@ describe('LandingPage', () => {
   it('names the services that handle data', () => {
     renderWithProviders(<LandingPage />);
     expect(screen.getByText(/Stripe processes subscription payments/)).toBeInTheDocument();
-    expect(screen.getByText(/Google Gemini/)).toBeInTheDocument();
+    expect(screen.getByText(/through OpenRouter.*Reports and chat send trade figures to OpenAI.*to Google Gemini\./)).toBeInTheDocument();
   });
 
   it('renders the shared footer with cookie settings', () => {
@@ -103,14 +103,55 @@ describe('LandingPage', () => {
     expect(q).toHaveAttribute('aria-expanded', 'true');
     expect(document.getElementById(q.getAttribute('aria-controls')!)).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Do I need to connect my broker account?' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'What happens when the Pro trial ends?' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: TRIAL_END_FAQ.question })).toBeInTheDocument();
   });
 
   it('labels every product picture as sample data', () => {
     renderWithProviders(<LandingPage />);
+    // Hero, calendar, dashboard, three segment stills and the phone; the six card pictures load when their row is near.
     const pictures = screen.getAllByRole('img').filter((el) => el.tagName !== 'svg' && el.tagName !== 'IMG');
-    expect(pictures.length).toBeGreaterThanOrEqual(8);
+    expect(pictures.length).toBeGreaterThanOrEqual(7);
     for (const p of pictures) expect(p.getAttribute('aria-label')).toMatch(/^Sample data/);
+  });
+
+  it('holds the place of each card picture until its row comes near the screen', () => {
+    renderWithProviders(<LandingPage />);
+    const arts = document.querySelectorAll('.lp-card__art');
+    expect(arts).toHaveLength(6);
+    for (const art of arts) expect(art.querySelector('.lp-card__hold')).not.toBeNull();
+  });
+
+  it('answers three questions, each under its picture', () => {
+    renderWithProviders(<LandingPage />);
+    const answers = document.getElementById('answers')!;
+    expect(within(answers).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'What did each trade really make?',
+      'Do I have an edge, or one good month?',
+      'Which habits cost money, even untagged?',
+    ]);
+    expect(within(answers).getByText(/Analytics says “not proven yet” and estimates how many trades it would take/)).toBeInTheDocument();
+    expect(within(answers).getByText(/Under 30 trades it reads “too early to tell”, never “leak”/)).toBeInTheDocument();
+  });
+
+  it('follows a finding to a rule: what-if replay, the weekly review and chat', () => {
+    renderWithProviders(<LandingPage />);
+    const rules = screen.getByRole('region', { name: /One rule a week/ });
+    expect(within(rules).getAllByRole('heading', { level: 3 })).toHaveLength(3);
+    expect(within(rules).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Would that rule have helped?', 'What is the one thing to work on?', 'Can I ask my own question?']);
+    expect(within(rules).getByText(/It only removes trades that happened, so it predicts nothing/)).toBeInTheDocument();
+    expect(within(rules).getByRole('link', { name: 'Every Analytics tab and the question it answers' })).toHaveAttribute('href', '/pricing#analytics');
+    expect(within(rules).getByText(/The figures are calculated by code, never by the model/)).toBeInTheDocument();
+  });
+
+  it('promises no result and uses no AI hype', () => {
+    const { container } = renderWithProviders(<LandingPage />);
+    const text = container.textContent ?? '';
+    for (const banned of [/AI-powered/i, /\bguarantee/i, /will (improve|make you|boost)/i, /\b(supercharge|unlock|effortless|game-changer|revolutionary)\b/i, /beat the market/i, /profitable (trader|trading)/i]) {
+      expect(text).not.toMatch(banned);
+    }
+    expect(screen.getByRole('heading', { name: 'Will TradeQut make me profitable?' })).toBeInTheDocument();
+    expect(text).toMatch(/No tool can promise that, and TradeQut does not\./);
+    expect(text).toMatch(/replaced by a plain one/);
   });
 
   it('sends See pricing and the pricing section links to /pricing', () => {

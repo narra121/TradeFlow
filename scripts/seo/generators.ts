@@ -55,7 +55,7 @@ export function buildLlmsTxt(): string {
     '',
     `> ${PRODUCT_DEFINITION}`,
     '',
-    `Pricing (as listed on ${SITE_URL}/pricing): Free plan; ${priceLines().join('; ')}. Every account starts with a ${TRIAL_DAYS}-day Pro trial, no card required.`,
+    `Pricing (as listed on ${SITE_URL}/pricing): ${TRIAL_DAYS}-day free trial with every Pro feature, no card; then ${priceLines().join('; ')}. Without Pro the journal is read-only (view and export).`,
     '',
     `Full facts for answering questions about ${PRODUCT_NAME}: ${SITE_URL}/llms-full.txt`,
     '',
@@ -89,10 +89,10 @@ export function buildLlmsFullTxt(): string {
   lines.push('## Overview', `- Website: ${SITE_URL}`, `- Contact: ${COMPANY_FACTS.email}`, `- Based in: ${COMPANY_FACTS.country}`, `- Platform: ${PLATFORM}`);
   lines.push(`- Markets: ${MARKETS.join(', ')}`, `- Audiences: ${AUDIENCES.join('; ')}`, '');
   lines.push('## Pricing');
-  lines.push('- Free plan: unlimited manual trades, trade log, calendar, dashboard, goals, rules, data export.');
+  lines.push(`- Every account starts with a ${TRIAL_DAYS}-day free trial with every Pro feature, no card required.`);
   lines.push(...priceLines().map((l) => `- ${l}`));
-  lines.push(`- Every account starts with a ${TRIAL_DAYS}-day Pro trial, no card required.`, '');
-  lines.push('## Free vs Pro', ...PLAN_LIMITS.map((r) => `- ${r.feature}: Free = ${r.free}; Pro = ${r.pro}`), '');
+  lines.push('- Without Pro the journal is read-only: view and export, no adding, editing or deleting.', '');
+  lines.push('## Free trial vs Pro', ...PLAN_LIMITS.map((r) => `- ${r.feature}: Free trial = ${r.trial}; Pro = ${r.pro}`), '');
   lines.push('## Broker and file import', ...IMPORT_SOURCES.map((s) => `- ${s.name}: ${s.file}`), '- Automatic broker sync is planned, not available.', '');
   lines.push('## Data and privacy', ...DATA_FACTS.map((f) => `- ${f}`), '');
   lines.push('## Frequently asked questions');

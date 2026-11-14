@@ -20,6 +20,8 @@ vi.stubGlobal(
   },
 );
 
+vi.mock('../BeforeSession', () => ({ BeforeSession: () => <p>before the session</p> }));
+
 vi.mock('@/store/api/insightsApi', () => ({
   useListInsightsQuery: () => ({ data: { insights: [{ id: 'i1', summary: 'Losses cluster after 20:00' }] }, isLoading: false, isError: false }),
 }));

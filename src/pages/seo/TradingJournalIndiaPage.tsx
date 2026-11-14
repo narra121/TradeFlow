@@ -6,7 +6,7 @@ import { seoPageSchema } from '@/config/seo';
 
 const inrMonth = proPrice('INR', 'month').display;
 const inrYear = proPrice('INR', 'year').display;
-const freeImports = PLAN_LIMITS.find((r) => r.feature === 'Broker file imports')?.free ?? '3 per month';
+const trialImports = PLAN_LIMITS.find((r) => r.feature === 'Broker file imports')?.trial ?? '';
 
 const FAQ = [
   {
@@ -29,8 +29,8 @@ const FAQ = [
       'Yes, on Pro. For each financial year it splits the charges into STT, exchange charges, SEBI fee and stamp duty, with brokerage, GST and other charges as the remainder, and shows P&L by tax category: intraday equity, F&O, commodity, and short- and long-term delivery. It needs accounts in rupees. TradeQut does not file taxes and this is not tax advice.',
   },
   {
-    question: 'Is there a free plan for Indian traders?',
-    answer: `Yes. The Free plan has unlimited manual trades; broker file imports are limited to ${freeImports}. Pro is ${inrMonth} a month or ${inrYear} a year, with a ${TRIAL_DAYS}-day trial and no card.`,
+    question: 'Is there a free trial for Indian traders?',
+    answer: `Yes. Every account starts with a ${TRIAL_DAYS}-day free trial with every Pro feature and no card. After that Pro is ${inrMonth} a month or ${inrYear} a year; without Pro the journal is read-only, so you can still view and export your trades.`,
   },
 ];
 
@@ -95,8 +95,9 @@ export default function TradingJournalIndiaPage() {
 
       <H2>What it costs</H2>
       <P>
-        Free: unlimited manual trades, and broker file imports up to {freeImports}. Pro: {inrMonth} a month or {inrYear} a year with
-        a {TRIAL_DAYS}-day trial and no card. Details on the <A to="/pricing">pricing page</A>. Comparing journals? See{' '}
+        A {TRIAL_DAYS}-day free trial with every Pro feature and no card, including broker file imports ({trialImports.toLowerCase()}).
+        Then Pro: {inrMonth} a month or {inrYear} a year; without it the journal is read-only. Details on the{' '}
+        <A to="/pricing">pricing page</A>. Comparing journals? See{' '}
         <A to="/alternatives">the alternatives</A>.
       </P>
 

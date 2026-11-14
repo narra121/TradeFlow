@@ -3,7 +3,7 @@ import type { CreateTradePayload } from '@/lib/api';
 import type { Trade } from '@/types/trade';
 
 /** The `set` / `add` / `remove` part of `POST /v1/trades/bulk-update` for an operation, or null when the endpoint cannot do it (moving trades to another account stays one PUT per trade). */
-export function bulkUpdateBody(op: BulkOp): { set?: Record<string, string>; add?: Record<string, string[]>; remove?: Record<string, string[]> } | null {
+export function bulkUpdateBody(op: BulkOp): { set?: Record<string, string | boolean>; add?: Record<string, string[]>; remove?: Record<string, string[]> } | null {
   switch (op.kind) {
     case 'strategy':
       return { set: { setupType: op.value } };
@@ -17,6 +17,8 @@ export function bulkUpdateBody(op: BulkOp): { set?: Record<string, string>; add?
       const field = op.kind === 'brokenRules' ? 'brokenRuleIds' : op.kind;
       return { ...(op.add.length ? { add: { [field]: op.add } } : {}), ...(op.remove.length ? { remove: { [field]: op.remove } } : {}) };
     }
+    case 'reviewed':
+      return { set: { reviewed: op.value } };
     case 'account':
       return null;
   }

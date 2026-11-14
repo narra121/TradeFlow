@@ -24,7 +24,9 @@ const SECTIONS: LegalSection[] = [
     body: (
       <p>
         TradeQut is a web-based trading journal for logging and importing trades, tracking goals and rules, and analysing your
-        own trading. A Free plan is available. A Pro subscription adds higher limits and features, described on the{' '}
+        own trading. Every new account starts with a {TRIAL_DAYS}-day free trial of Pro without a card. When the trial ends, or a
+        Pro subscription ends, the account is read-only: you can view, export and delete your data, but you cannot add, edit or
+        delete trades or other records until you subscribe to Pro. Pro is described on the{' '}
         <Link to="/pricing" className="text-primary hover:underline">pricing page</Link>. Features marked &ldquo;Planned&rdquo; are not
         part of the Service until released.
       </p>
@@ -88,7 +90,7 @@ const SECTIONS: LegalSection[] = [
       <>
         <p>
           Pro costs {usdMonth} per month or {usdYear} per year ({inrMonth} per month or {inrYear} per year for customers billed in
-          INR). Every new account starts with a {TRIAL_DAYS}-day Pro trial without a card. Prices can change for future billing
+          INR). Every new account starts with a {TRIAL_DAYS}-day free trial of Pro without a card. Prices can change for future billing
           periods; the pricing page shows the current prices.
         </p>
         <p>
@@ -152,9 +154,9 @@ export function TermsOfServicePage() {
   return (
     <LegalLayout
       title="Terms of Service"
-      description="The terms for using TradeQut: the Free and Pro plans, subscriptions through Stripe, AI output, acceptable use and liability."
+      description="The terms for using TradeQut: the free trial and Pro, subscriptions through Stripe, AI output, acceptable use and liability."
       path="/terms"
-      updated="2026-11-11"
+      updated="2026-11-13"
       sections={SECTIONS}
     />
   );

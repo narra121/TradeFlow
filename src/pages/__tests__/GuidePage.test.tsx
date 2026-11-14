@@ -52,8 +52,8 @@ describe('GuidePage', () => {
 
   it('states the trial and plan limits from product facts, not invented ones', () => {
     renderWithProviders(<GuidePage />);
-    expect(screen.getByText(/14-day Pro trial and no card/)).toBeInTheDocument();
-    expect(screen.getByText(/Free plan keeps two accounts/)).toBeInTheDocument();
+    expect(screen.getByText(/14-day free trial of every Pro feature and no card/)).toBeInTheDocument();
+    expect(screen.getByText(/The trial and Pro have no account limit/)).toBeInTheDocument();
   });
 
   it('opens a screenshot from a real button into a dialog with a close button', async () => {

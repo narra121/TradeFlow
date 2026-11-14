@@ -128,7 +128,7 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
     }
   };
 
-  const trial = ent.plan === 'trial' ? `Pro trial — ${ent.trialDaysLeft ?? 0} ${ent.trialDaysLeft === 1 ? 'day' : 'days'} left. No card on file.` : '';
+  const trial = ent.plan === 'trial' ? `Free trial: ${ent.trialDaysLeft ?? 0} ${ent.trialDaysLeft === 1 ? 'day' : 'days'} left. No card on file.` : '';
 
   return (
     <div className="max-w-[880px] space-y-4">

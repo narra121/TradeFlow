@@ -67,6 +67,31 @@ export interface Trade {
   /** broker trade id; dedupe key together with accountId */
   externalId?: string;
   importSource?: string;
+  /** "Reviewed · followed plan"; absent = false. */
+  reviewed?: boolean;
+}
+
+export type DebriefCheckId = 'stopSet' | 'riskWithinUsual' | 'lossKeptOrTarget' | 'notAfterLoss' | 'withinTradeCap' | 'setupHistory';
+
+export interface DebriefCheck {
+  id: DebriefCheckId;
+  label: string;
+  state: 'met' | 'notMet' | 'notApplicable';
+  /** One sentence with the trade's own figures, written by the server's code. */
+  detail: string;
+}
+
+/** `GET /v1/insights/debrief/:tradeId` (JournalAWSSetup src/features/insights/debrief.ts). */
+export interface TradeDebrief {
+  tradeId: string;
+  checks: DebriefCheck[];
+  metCount: number;
+  /** Checks that applied (met + not met). */
+  total: number;
+  currency: string | null;
+  timeZone: string;
+  /** At most two model sentences tying the trade's note to the checks; absent when there are none. */
+  sentences?: string[];
 }
 
 export type AssetClass = 'stock' | 'forex' | 'futures' | 'options' | 'crypto' | 'cfd' | 'commodity';

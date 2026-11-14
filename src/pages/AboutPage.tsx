@@ -11,15 +11,17 @@ const brokers = IMPORT_SOURCES.filter((s) => s.id !== 'generic_csv')
 const DOES = [
   `Imports trade files from ${brokers}, or any CSV or Excel file, and shows every trade for review before it is saved. Trades already imported are skipped.`,
   'Estimates brokerage, STT, exchange charges, SEBI fee, stamp duty and GST for trades imported from Indian brokers, at the rates in force on the trade date.',
-  'Shows win rate, profit factor, R, drawdown, and results by strategy, session, weekday and hour.',
-  'Totals what each mistake and each broken rule cost, and tracks your rules week by week.',
-  'Writes AI reports and answers chat questions about your own recorded trades, within monthly limits.',
+  'Shows win rate against break-even and expectancy in R, each with a range and a sample label (early, provisional, established), and results by strategy, session, weekday and hour.',
+  'Checks every trade against a fixed list of behaviours, such as a new trade within 15 minutes of a loss or a loss that ran past the stop, and totals what each mistake and each broken rule cost.',
+  'Replays a period without the trades a rule would have blocked, so you can test a rule on your own trades before you adopt it.',
+  'Writes a review around one rule and whether you kept it, and answers chat questions by calculation. Both are about your own recorded trades and have monthly limits.',
 ];
 
 const DOES_NOT = [
   'Give trading tips, signals or recommendations. TradeQut is not a SEBI-registered investment adviser or research analyst.',
   'Place or change orders, or connect to your broker account. You upload the files your broker gives you; automatic sync is planned, not available.',
   'Show ads inside the app, or sell your data.',
+  'Promise results. We have found no peer-reviewed study showing that a journal or an AI coach improves trading results, so we do not claim it.',
 ];
 
 export function AboutPage() {
@@ -75,8 +77,8 @@ export function AboutPage() {
         </h2>
         <p className="leading-relaxed text-foreground-soft">
           TradeQut is built and run independently from India. Changes are listed in the{' '}
-          <Link to="/changelog" className="text-primary hover:underline">changelog</Link>, and every price and limit is on the{' '}
-          <Link to="/pricing" className="text-primary hover:underline">pricing page</Link>.
+          <Link to="/changelog" className="text-primary underline underline-offset-[3px]">changelog</Link>, and every price and limit is on the{' '}
+          <Link to="/pricing" className="text-primary underline underline-offset-[3px]">pricing page</Link>.
         </p>
       </section>
 
@@ -90,7 +92,7 @@ export function AboutPage() {
           ))}
         </ul>
         <p className="mt-3 text-sm text-muted-foreground">
-          Details are in the <Link to="/privacy" className="text-primary hover:underline">privacy policy</Link>.
+          Details are in the <Link to="/privacy" className="text-primary underline underline-offset-[3px]">privacy policy</Link>.
         </p>
       </section>
 

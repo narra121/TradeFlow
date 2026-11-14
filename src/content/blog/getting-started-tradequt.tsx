@@ -13,8 +13,8 @@ export default function GettingStartedTradeQut() {
       <H2>Week 1: set up in about ten minutes</H2>
       <OL>
         <li>
-          Create an account with your email or Google. Every new account starts with a {TRIAL_DAYS}-day Pro trial and no card;
-          when it ends you move to Free and nothing is charged.
+          Create an account with your email or Google. Every new account starts with a {TRIAL_DAYS}-day free trial with every Pro feature and no
+          card; when it ends nothing is charged and your journal becomes read-only until you upgrade.
         </li>
         <li>
           Open <em>Accounts</em> and choose <em>Add account</em> for each real trading account: a name, the broker, the type
@@ -71,7 +71,7 @@ export default function GettingStartedTradeQut() {
         </li>
       </UL>
       <P>
-        On the Free plan the advanced breakdowns are shown as a preview; Pro, and the trial, show them in full. Read the trade
+        The trial and Pro show every breakdown in full, and so does a read-only journal after the trial. Read the trade
         count beside every figure: a segment with six trades says very little. Write down what you notice, but do not change
         how you trade on a small sample.
       </P>

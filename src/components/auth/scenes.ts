@@ -40,7 +40,7 @@ export const SCENES: Record<AuthScene, SceneMeta> = {
     field: { mode: 'assemble', shape: 'calendar' },
   },
   signup: {
-    eyebrow: `${TRIAL_DAYS}-day Pro trial · No card`,
+    eyebrow: `${TRIAL_DAYS}-day free trial · No card`,
     line: HEADLINE_PARTS,
     bar: 'facts',
     note: SAMPLE_NOTE,

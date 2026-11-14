@@ -260,7 +260,7 @@ describe('NotificationsSection', () => {
     expect(updateNotifs).toHaveBeenCalledWith({ weeklyReport: false });
   });
 
-  it('on Free the switch is off and explains why', () => {
+  it('after the trial (read-only) the switch is off and explains why', () => {
     plan = 'free';
     render(<NotificationsSection />);
     expect(screen.getByRole('switch', { name: 'Weekly report' })).toBeDisabled();

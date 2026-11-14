@@ -1,5 +1,5 @@
 import { addDays, endOfMonth, startOfMonth, startOfWeek } from 'date-fns';
-import { dayKeyIn } from '@/lib/appTimeZone';
+import { openDayKey } from '@/lib/appTimeZone';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { accountCurrency } from '@/lib/format';
 import { realisedR } from '@/lib/tradeFilters';
@@ -39,10 +39,9 @@ export interface MonthModel extends DaysSummary {
   weeks: WeekRow[];
 }
 
-/** A trade belongs to the calendar day of its exit time in the app time zone (Settings), the zone `/stats` buckets by. */
+/** A trade belongs to the calendar day it opened on in the app time zone (Settings): the day `GET /trades` lists it under and `/stats` buckets it by. */
 export function tradeDayKey(t: Trade): string {
-  const d = new Date(t.exitDate || t.entryDate);
-  return Number.isNaN(d.getTime()) ? '' : dayKeyIn(d);
+  return openDayKey(t.entryDate);
 }
 
 function addNet(list: CurrencyNet[], currency: string, amount: number) {

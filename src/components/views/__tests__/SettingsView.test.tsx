@@ -62,7 +62,7 @@ describe('SettingsView', () => {
     at('/app/settings/profile');
     const nav = screen.getByRole('navigation', { name: 'Settings' });
     for (const g of ['Account', 'Journal', 'Data', 'Billing']) expect(nav).toHaveTextContent(g);
-    expect(screen.getByRole('link', { name: /Plan & billing/ })).toHaveTextContent('Pro trial');
+    expect(screen.getByRole('link', { name: /Plan & billing/ })).toHaveTextContent('Free trial');
   });
 
   it('an unknown section goes back to Profile', () => {
