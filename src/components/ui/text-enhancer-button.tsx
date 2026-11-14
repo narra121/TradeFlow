@@ -46,6 +46,7 @@ export function TextEnhancerButton({
             size={size === 'sm' ? 'sm' : 'default'}
             onClick={handleEnhance}
             disabled={isDisabled}
+            aria-label="Enhance with AI"
             className={cn(
               "text-primary hover:text-primary/80 hover:bg-primary/10",
               size === 'sm' && "h-8 w-8 p-0",

@@ -33,7 +33,8 @@ vi.mock('@/hooks/useAccounts', () => ({
   useAccounts: () => ({ accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD', status: 'active' }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR', status: 'active' }], selectedAccountId: null }),
 }));
 let writableAccountIds: string[] | null = null;
-vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ usage: [], writableAccountIds, periodResetsAt: undefined }) }));
+let readOnly = false;
+vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ usage: [], readOnly, writableAccountIds, periodResetsAt: undefined }) }));
 vi.mock('@/store/api/importApi', () => ({
   useGetImportBatchesQuery: () => ({ data: undefined, isFetching: false, isError: false, refetch: vi.fn() }),
   useGetImportSourcesQuery: () => ({
@@ -64,6 +65,7 @@ const seed = (patch = {}) =>
 
 beforeEach(() => {
   writableAccountIds = null;
+  readOnly = false;
   Object.values(actions).forEach((f) => f.mockReset());
   act(() => importFlow.reset());
   act(() => importFlow.set({ accountId: null }));
@@ -314,5 +316,52 @@ describe('Drop-to-import', () => {
     render(<MemoryRouter><ImportCenter /></MemoryRouter>);
     await vi.waitFor(() => expect(actions.addFiles).toHaveBeenCalledWith([file], { append: false }));
     expect(importFlow.get().queued).toHaveLength(0);
+  });
+});
+
+describe('Paste', () => {
+  const paste = (target: EventTarget, data: { text?: string; files?: File[] }) => {
+    const e = new Event('paste', { bubbles: true, cancelable: true }) as ClipboardEvent;
+    Object.defineProperty(e, 'clipboardData', { value: { files: data.files ?? [], getData: (t: string) => (t === 'text/plain' ? data.text ?? '' : '') } });
+    act(() => {
+      target.dispatchEvent(e);
+    });
+  };
+
+  it('reads a pasted table of two or more lines as a CSV file', async () => {
+    renderCenter();
+    paste(document.body, { text: 'Symbol,Side,Quantity\nAUDUSD,Buy,10000\n' });
+    await vi.waitFor(() => expect(actions.addFiles).toHaveBeenCalledTimes(1));
+    const [[files, opts]] = actions.addFiles.mock.calls as [[File[], { append: boolean }]];
+    expect(files[0].name).toBe('pasted.csv');
+    expect(await files[0].text()).toBe('Symbol,Side,Quantity\nAUDUSD,Buy,10000');
+    expect(opts).toEqual({ append: false });
+  });
+
+  it('leaves one line of text, and text pasted into a field, alone', () => {
+    renderCenter();
+    paste(document.body, { text: 'AUDUSD' });
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    paste(input, { text: 'a\nb' });
+    expect(actions.addFiles).not.toHaveBeenCalled();
+    input.remove();
+  });
+
+  it('still reads pasted screenshots', async () => {
+    renderCenter();
+    const shot = new File(['x'], 'shot.png', { type: 'image/png' });
+    paste(document.body, { files: [shot] });
+    await vi.waitFor(() => expect(actions.addFiles).toHaveBeenCalledWith([shot], { append: false }));
+  });
+});
+
+describe('Read-only plan', () => {
+  it('says the journal is read-only and keeps the drop zone open, so a file reaches the upgrade dialog', () => {
+    readOnly = true;
+    writableAccountIds = [];
+    renderCenter();
+    expect(screen.getByRole('status')).toHaveTextContent('Your journal is read-only. Upgrade to Pro to import.');
+    expect(screen.getByRole('button', { name: 'Choose files' })).toBeEnabled();
   });
 });

@@ -257,11 +257,13 @@ export function useImportActions() {
     async (input: File[], opts: { append?: boolean } = {}) => {
       const flow = importFlow.get();
       if (flow.phase === 'parsing' || flow.phase === 'saving') return;
+      const kinds = input.map((f) => ({ f, kind: classifyFile(f) }));
+      // A read-only plan has no account to import into: the upgrade dialog explains it before any account check.
+      if (ent.readOnly && limitReached(kinds.some((k) => k.kind === 'screenshot') ? 'ai_extract' : 'broker_import')) return;
       if (!flow.accountId) {
         importFlow.set({ error: 'Choose the account these trades belong to first.' });
         return;
       }
-      const kinds = input.map((f) => ({ f, kind: classifyFile(f) }));
       const bad = kinds.filter((k) => k.kind === 'unsupported');
       if (bad.length > 0) {
         importFlow.set({ error: `${bad.map((b) => b.f.name).join(', ')} can’t be imported. Use a CSV, XLSX or HTML export, or PNG, JPG or WebP screenshots.` });
@@ -290,7 +292,7 @@ export function useImportActions() {
         if (importFlow.get().columns) break;
       }
     },
-    [limitReached, readBrokerFile, readScreenshots],
+    [ent.readOnly, limitReached, readBrokerFile, readScreenshots],
   );
 
   /** Parses the kept file again with a column mapping, another account or another source. */

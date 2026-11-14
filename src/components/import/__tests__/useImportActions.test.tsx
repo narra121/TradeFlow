@@ -98,6 +98,18 @@ describe('addFiles', () => {
     expect(parse).not.toHaveBeenCalled();
   });
 
+  it('after the trial there is no writable account, and a file still opens the upgrade dialog, not "choose the account"', async () => {
+    readOnly = true;
+    act(() => importFlow.set({ accountId: null }));
+    const seen = vi.fn();
+    window.addEventListener(PLAN_SIGNAL_EVENT, seen);
+    await run((x) => x.addFiles([png()]));
+    window.removeEventListener(PLAN_SIGNAL_EVENT, seen);
+    expect((seen.mock.calls[0][0] as CustomEvent).detail).toMatchObject({ code: 'TRIAL_EXPIRED', kind: 'mutation' });
+    expect(importFlow.get().error).toBeNull();
+    expect(extract).not.toHaveBeenCalled();
+  });
+
   it('opens the upgrade dialog before uploading when the quota is used up', async () => {
     usage = [{ feature: 'broker_import', used: 3, limit: 3 }];
     const seen = vi.fn();

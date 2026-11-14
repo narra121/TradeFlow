@@ -93,13 +93,18 @@ export function ImportCenter() {
   const hasRows = flow.rows.length > 0;
   const showReview = (hasRows || flow.columns || flow.phase === 'review' || flow.phase === 'done') && flow.phase !== 'idle';
 
-  // Paste screenshots anywhere on the page (D: paste is a first-class path).
+  // Paste screenshots anywhere on the page (D: paste is a first-class path). Pasted text of two or more lines (a table
+  // copied from a broker page or a spreadsheet) is read like a CSV file; text pasted into a field stays in the field.
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
+      if (busy) return;
       const files = Array.from(e.clipboardData?.files ?? []);
-      if (files.length === 0 || busy) return;
+      const target = e.target as HTMLElement | null;
+      const inField = !!target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable);
+      const text = files.length === 0 && !inField ? (e.clipboardData?.getData('text/plain') ?? '').trim() : '';
+      if (files.length === 0 && !text.includes('\n')) return;
       e.preventDefault();
-      void actions.addFiles(files, { append: hasRows });
+      void actions.addFiles(files.length > 0 ? files : [new File([text], 'pasted.csv', { type: 'text/csv' })], { append: hasRows });
     };
     window.addEventListener('paste', onPaste);
     return () => window.removeEventListener('paste', onPaste);
@@ -212,7 +217,7 @@ export function ImportCenter() {
     return (
       <div className="mx-auto max-w-4xl space-y-4" onKeyDown={onKeyDown}>
         {writable.length === 0 && accounts.length > 0 ? (
-          <p role="status" className="text-sm text-muted-foreground">Every account is read-only on your plan. Choose accounts to keep on the Accounts page, then import.</p>
+          <p role="status" className="text-sm text-muted-foreground">Your journal is read-only. Upgrade to Pro to import.</p>
         ) : null}
         {setup}
         {flow.phase === 'parsing' ? (
@@ -224,7 +229,7 @@ export function ImportCenter() {
             <Button type="button" variant="outline" onClick={actions.cancelParse}>Cancel</Button>
           </div>
         ) : (
-          <DropZone disabled={!accountId} onFiles={(f) => void actions.addFiles(f)} />
+          <DropZone disabled={!accountId && !ent.readOnly} onFiles={(f) => void actions.addFiles(f)} />
         )}
         {flow.error && (
           <p role="alert" className="text-sm text-loss">

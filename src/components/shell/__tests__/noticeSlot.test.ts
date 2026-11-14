@@ -28,7 +28,7 @@ describe('pickNotice', () => {
     expect(n).toMatchObject({
       id: 'read-only',
       dismissible: false,
-      text: 'Your free trial has ended. Your journal is read-only: upgrade to Pro to add, edit or delete.',
+      text: 'Your journal is read-only: upgrade to Pro to add, edit or delete.',
       action: { label: 'Upgrade to Pro', to: '/app/settings/billing' },
     });
   });

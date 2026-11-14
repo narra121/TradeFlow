@@ -100,9 +100,10 @@ export function NoticeSlot({ tradesWithoutAccount, gettingStarted }: NoticeSlotP
   const tone = notice.level === 'error' ? 'text-error' : notice.level === 'warning' ? 'text-warning' : 'text-info';
 
   return (
-    <div role={notice.level === 'error' ? 'alert' : 'status'} className="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-card px-3 text-13 md:px-6">
+    <div role={notice.level === 'error' ? 'alert' : 'status'} className="flex min-h-9 shrink-0 items-center gap-2 border-b border-border bg-card px-3 py-1.5 text-13 md:h-9 md:px-6 md:py-0">
       <Icon className={cn('h-4 w-4 shrink-0', tone)} aria-hidden="true" />
-      <span className="min-w-0 flex-1 truncate">{notice.text}</span>
+      {/* Phones wrap the sentence: cut short it loses the date and what read-only means. */}
+      <span className="min-w-0 flex-1 md:truncate">{notice.text}</span>
       {notice.action && (
         <Link to={notice.action.to} className="inline-flex min-h-6 shrink-0 items-center font-medium text-primary hover:underline">
           {notice.action.label}

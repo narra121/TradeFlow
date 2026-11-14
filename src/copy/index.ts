@@ -15,7 +15,7 @@ export const copy = {
   notices: {
     paymentFailed: 'Your last payment failed. Update your card to keep Pro.',
     updateCard: 'Update card',
-    readOnly: 'Your free trial has ended. Your journal is read-only: upgrade to Pro to add, edit or delete.',
+    readOnly: 'Your journal is read-only: upgrade to Pro to add, edit or delete.',
     upgrade: 'Upgrade to Pro',
     trial: (daysLeft: number, endsOn: string) => `Free trial: ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left. On ${endsOn} your journal becomes read-only unless you upgrade.`,
     seePlans: 'See plans',
