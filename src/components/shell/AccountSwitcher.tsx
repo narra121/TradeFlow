@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAccounts } from '@/hooks/useAccounts';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { formatMoney } from '@/lib/format';
 import { popupOption } from '@/components/ui/popup';
 import { cn } from '@/lib/utils';
@@ -30,7 +31,10 @@ export function AccountSwitcher({ className }: { className?: string }) {
   const match = (a: TradingAccount) => !q || a.name.toLowerCase().includes(q) || a.broker?.toLowerCase().includes(q);
   const currencies = currenciesOf(accounts);
 
+  const isMobile = useIsMobile();
   const label = selectedAccount ? `${selectedAccount.name} · ${selectedAccount.currency || 'USD'}` : 'All accounts';
+  // Phones have about 70 px for the label: the short form keeps it readable; the button's name stays in full.
+  const shown = isMobile ? (selectedAccount ? selectedAccount.name : 'All') : label;
 
   const choose = (id: string | null) => {
     setSelectedAccountId(id);
@@ -61,7 +65,7 @@ export function AccountSwitcher({ className }: { className?: string }) {
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className={cn('max-w-[220px] justify-between gap-2 font-normal', className)} aria-label={`Account: ${label}`}>
           <Wallet className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span className="truncate">{label}</span>
+          <span className="truncate">{shown}</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Button>
       </PopoverTrigger>

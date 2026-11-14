@@ -36,6 +36,13 @@ describe('TradeForm', () => {
     online.value = true;
   });
 
+  it('marks the symbol example as an example and shows no empty R in the footer of an empty form', () => {
+    setup();
+    expect(screen.getByLabelText(/^Symbol/)).toHaveAttribute('placeholder', 'e.g. EURUSD');
+    const footer = screen.getByText(/^Net —$/).parentElement as HTMLElement;
+    expect(footer.textContent).not.toMatch(/–/);
+  });
+
   it('does not stop the tab from closing while nothing was typed', () => {
     setup();
     expect(unload().defaultPrevented).toBe(false);

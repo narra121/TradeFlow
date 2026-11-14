@@ -22,12 +22,18 @@ interface WeekTimelineProps {
   onOpenTrade: (id: string) => void;
 }
 
-function blockName(b: TimelineBlock, day: DayCell, currency?: string): string {
+/**
+ * A block's name starts with the text it shows, in order (WCAG 2.5.3: symbol, then the net when the block is tall enough),
+ * then what it does not show: direction, day and times, a broken rule, an open soon after a loss.
+ */
+function blockName(b: TimelineBlock, day: DayCell, currency: string | undefined, height: number): string {
   const t = b.trade;
+  const visible = [t.symbol, height >= 40 ? formatMoney(t.pnl, currency, { sign: true }) : null].filter(Boolean).join(' ');
   return [
+    visible,
+    t.direction === 'LONG' ? 'long' : 'short',
+    height < 40 ? formatMoney(t.pnl, currency, { sign: true }) : null,
     `${format(day.date, 'EEEE')} ${hhmm(b.start)} to ${hhmm(b.end)}`,
-    `${t.symbol} ${t.direction === 'LONG' ? 'long' : 'short'}`,
-    formatMoney(t.pnl, currency, { sign: true }),
     t.brokenRuleIds?.length ? 'rule broken' : null,
     b.afterLoss !== null ? `opened ${plural(b.afterLoss, 'minute')} after a loss` : null,
   ].filter(Boolean).join(', ');
@@ -66,7 +72,7 @@ export function WeekTimeline({ week, accountMap, openKey, todayKey, isMobile, on
                 type="button"
                 onClick={() => setPicked(d.key)}
                 aria-pressed={d.key === active.key}
-                aria-label={format(d.date, 'EEEE d MMMM')}
+                aria-label={`${format(d.date, 'EEEEE')} ${d.date.getDate()}, ${format(d.date, 'EEEE d MMMM')}`}
                 className={cn('flex h-11 w-full flex-col items-center justify-center rounded-md border border-border text-xs', d.key === active.key ? 'bg-secondary text-foreground' : 'text-muted-foreground')}
               >
                 <span>{format(d.date, 'EEEEE')}</span>
@@ -94,7 +100,7 @@ export function WeekTimeline({ week, accountMap, openKey, todayKey, isMobile, on
 
           <div className="relative border-t border-border" style={{ height }} aria-hidden="true">
             {hours.map((m) => (
-              <span key={m} className="absolute right-1.5 -translate-y-1/2 font-mono text-2xs text-muted-foreground" style={{ top: (m - range.from) * PX_PER_MIN }}>
+              <span key={m} className={cn('absolute right-1.5 font-mono text-2xs text-muted-foreground', m === range.from ? 'translate-y-0.5' : '-translate-y-1/2')} style={{ top: (m - range.from) * PX_PER_MIN }}>
                 {hhmm(m).slice(0, 2)}
               </span>
             ))}
@@ -112,7 +118,7 @@ export function WeekTimeline({ week, accountMap, openKey, todayKey, isMobile, on
                       key={b.trade.id}
                       type="button"
                       onClick={() => onOpenTrade(b.trade.id)}
-                      aria-label={blockName(b, d, currency)}
+                      aria-label={blockName(b, d, currency, h)}
                       className={cn(
                         'absolute overflow-hidden rounded-sm border-l-2 px-1 text-left text-2xs leading-4 text-foreground hover:brightness-125 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         b.trade.pnl > 0 ? 'border-profit bg-tint-profit-2' : b.trade.pnl < 0 ? 'border-loss bg-tint-loss-2' : 'border-border-strong bg-secondary',
@@ -143,9 +149,15 @@ export function WeekTimeline({ week, accountMap, openKey, todayKey, isMobile, on
       </div>
 
       <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-        <span>Week</span>
-        {week.byCurrency.map((c) => <Money key={c.currency} value={c.net} currency={c.currency} />)}
-        <span>· {week.count} · {winLoss(week.wins, week.losses)}</span>
+        {week.count > 0 ? (
+          <>
+            <span>Week</span>
+            {week.byCurrency.map((c) => <Money key={c.currency} value={c.net} currency={c.currency} />)}
+            <span>· {plural(week.count, 'trade')} · {winLoss(week.wins, week.losses)}</span>
+          </>
+        ) : (
+          <span>No trades this week.</span>
+        )}
         <span>· Block height is the time the trade was open. <span className="font-semibold text-warning">!</span> a rule was broken. ↻ opened within 15 minutes of a losing close.</span>
       </p>
     </div>

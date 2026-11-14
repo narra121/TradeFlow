@@ -129,9 +129,11 @@ export function BulkBar({ inline = false, selectedTrades, summary, matchingCount
       <div
         role={inline ? 'toolbar' : 'region'}
         aria-label="Selected trades"
-        className={inline ? 'flex min-w-0 flex-1 items-center gap-2 overflow-hidden' : 'sticky bottom-3 z-bar mx-auto flex w-fit max-w-full flex-wrap items-center gap-2 rounded-lg border border-border bg-popover px-3 py-2 shadow-overlay'}
+        className={inline ? 'flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:thin]' : 'sticky bottom-3 z-bar mx-auto flex w-fit max-w-full flex-wrap items-center gap-2 rounded-lg border border-border bg-popover px-3 py-2 shadow-overlay'}
       >
         <span className="shrink-0 text-13 font-medium">{count} selected</span>
+        {/* Clear sits by the count: at the end of a full bar it is the control that gets cut off. */}
+        <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={onClear}><X className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Clear</Button>
         {totals && !inline && <span className="font-mono text-xs tabular-nums text-muted-foreground">{totals}</span>}
         {count < matchingCount && (
           <Button type="button" variant="link" size="sm" className="shrink-0" onClick={onSelectAllMatching}>Select all {matchingCount}</Button>
@@ -148,9 +150,8 @@ export function BulkBar({ inline = false, selectedTrades, summary, matchingCount
         {singlePicker('account', 'Account', options.accounts.map((a) => ({ value: a.id, label: `${a.name} · ${a.currency}` })))}
         {singlePicker('reviewed', 'Reviewed · followed plan', [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }])}
         <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />
-        <Button type="button" variant="ghost" size="sm" onClick={onExport}><Download className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Export</Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setConfirm(true)} className="text-error"><Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Delete</Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onClear}><X className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Clear</Button>
+        <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={onExport}><Download className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Export</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setConfirm(true)} className="shrink-0 text-error"><Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Delete</Button>
         <div aria-live="polite" className={inline ? 'shrink-0 text-xs text-muted-foreground empty:hidden' : 'w-full text-xs text-muted-foreground empty:hidden'}>
           {progress && `Updating ${progress.done} of ${progress.total}…`}
           {!progress && canUndo && (

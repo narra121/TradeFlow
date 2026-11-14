@@ -77,11 +77,11 @@ export function ScopeBar({ scoped, isMobile }: ScopeBarProps) {
       <div className={cn('flex min-w-0 flex-1 items-center gap-2 overflow-hidden', selecting && 'hidden')}>
         {scoped ? (
           <>
-            <AccountSwitcher className="h-7 max-w-[100px] shrink-0 md:max-w-[220px]" />
+            <AccountSwitcher className="h-7 [@media(pointer:coarse)]:h-11 max-w-[100px] shrink-0 md:max-w-[220px]" />
             {!chrome.ownPeriod && <ScopePeriod />}
           </>
         ) : (
-          <p className="truncate text-13 text-muted-foreground">{chrome.statement}</p>
+          <p className="line-clamp-2 text-13 leading-tight text-muted-foreground md:truncate">{chrome.statement}</p>
         )}
         <div ref={targets.left} className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden" />
       </div>
@@ -91,7 +91,7 @@ export function ScopeBar({ scoped, isMobile }: ScopeBarProps) {
           type="button"
           onClick={refresh}
           disabled={!online}
-          className={cn('flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs hover:bg-muted hover:text-foreground disabled:pointer-events-none', failed && online ? 'text-error' : 'text-muted-foreground')}
+          className={cn('flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-md px-2 text-xs hover:bg-muted [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:min-w-11 hover:text-foreground disabled:pointer-events-none', failed && online ? 'text-error' : 'text-muted-foreground')}
           title={failed && online && failure ? failure : undefined}
           aria-label={isMobile ? (failed ? "Couldn't refresh. Retry" : 'Refresh data') : `Refresh data. ${label}`}
         >

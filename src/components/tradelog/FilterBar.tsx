@@ -139,7 +139,7 @@ export function FilterBar({ filters, options, onChange, onFind, findRef, isMobil
   if (isMobile) {
     return (
       <>
-        <Button type="button" variant="outline" size="sm" className="ml-auto h-7 shrink-0 gap-1.5 font-normal" onClick={() => setSheet(true)}>
+        <Button type="button" variant="outline" size="sm" className="ml-auto h-7 shrink-0 gap-1.5 font-normal [@media(pointer:coarse)]:h-11" onClick={() => setSheet(true)}>
           <ListFilter className="h-3.5 w-3.5" aria-hidden="true" /> Filters{active.length + (filters.q.trim() ? 1 : 0) > 0 && <span className="rounded bg-primary/15 px-1 text-xs text-primary">{active.length + (filters.q.trim() ? 1 : 0)}</span>}
         </Button>
         <Sheet open={sheet} onOpenChange={setSheet}>

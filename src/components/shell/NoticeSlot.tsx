@@ -105,7 +105,7 @@ export function NoticeSlot({ tradesWithoutAccount, gettingStarted }: NoticeSlotP
       {/* Phones wrap the sentence: cut short it loses the date and what read-only means. */}
       <span className="min-w-0 flex-1 md:truncate">{notice.text}</span>
       {notice.action && (
-        <Link to={notice.action.to} className="inline-flex min-h-6 shrink-0 items-center font-medium text-primary hover:underline">
+        <Link to={notice.action.to} className="inline-flex min-h-6 shrink-0 items-center font-medium text-primary hover:underline [@media(pointer:coarse)]:min-h-11">
           {notice.action.label}
         </Link>
       )}
@@ -113,7 +113,7 @@ export function NoticeSlot({ tradesWithoutAccount, gettingStarted }: NoticeSlotP
         <button
           type="button"
           aria-label="Dismiss notice"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 text-muted-foreground hover:bg-muted hover:text-foreground"
           onClick={() => {
             const next = new Set(dismissed).add(notice.id);
             setDismissed(next);

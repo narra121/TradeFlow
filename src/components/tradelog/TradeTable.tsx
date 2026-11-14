@@ -85,6 +85,8 @@ function firstPlus(values: string[] | undefined): string {
   return v.length > 1 ? `${v[0]} +${v.length - 1}` : v[0];
 }
 
+const FREE_TEXT = new Set(['strategy', 'session', 'market']);
+
 function JournalMarks({ t }: { t: Trade }) {
   const shots = t.images?.length ?? 0;
   const notes = !!(t.notes || t.keyLesson);
@@ -254,6 +256,13 @@ export function TradeTable({
     return id ? { id, dir: sort.dir } : undefined;
   }, [defs, sort]);
 
+  // Free-text journal columns keep their default width (the table scrolls sideways instead of cutting the text to a few letters).
+  const widths = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const d of defs) if (FREE_TEXT.has(d.id) && !d.pinned) out[d.id] = d.width;
+    return { ...out, ...(columnWidths ?? {}) };
+  }, [defs, columnWidths]);
+
   const renderHeaderMenu = (c: DataColumn<Trade>) => {
     const def = defs.find((d) => d.id === c.id);
     if (!def) return null;
@@ -314,7 +323,7 @@ export function TradeTable({
       highlightId={highlightId}
       virtualize={virtualize}
       renderHeaderMenu={renderHeaderMenu}
-      columnWidths={columnWidths}
+      columnWidths={widths}
       onResizeColumn={onResizeColumn}
     />
   );

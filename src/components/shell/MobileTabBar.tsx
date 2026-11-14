@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { CalendarDays, CircleHelp, LayoutDashboard, ListOrdered, MoreHorizontal, Plus } from 'lucide-react';
+import { Activity, CalendarDays, CircleHelp, LayoutDashboard, LifeBuoy, ListOrdered, MessageSquare, MoreHorizontal, Plus, User } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ContactSupportDialog, FeedbackDialog } from '@/components/help';
 import { ALL_NAV_ITEMS, TAB_ITEMS } from '@/components/shell/navItems';
@@ -36,7 +36,7 @@ export function MobileTabBar({ onAddTrade }: MobileTabBarProps) {
           </NavLink>
         ))}
         <button type="button" onClick={onAddTrade} className={cn(tabClass, 'text-foreground')} aria-label="Add trade">
-          <span className="glow-primary flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Plus className="h-5 w-5" aria-hidden="true" />
           </span>
         </button>
@@ -83,12 +83,12 @@ export function MobileTabBar({ onAddTrade }: MobileTabBarProps) {
                 }}
                 className="flex min-h-12 w-full items-center gap-3 rounded-md px-2 text-left text-sm hover:bg-muted"
               >
-                Profile
+                <User className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> Profile
               </button>
             </li>
-            <li role="presentation" className="mt-2 border-t border-border px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">
-              Help
-            </li>
+          </ul>
+          <p id="more-help" className="mt-2 border-t border-border px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">Help</p>
+          <ul aria-labelledby="more-help">
             <li>
               <a href={guideLink('')} className="flex min-h-12 w-full items-center gap-3 rounded-md px-2 text-sm hover:bg-muted">
                 <CircleHelp className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> Guide
@@ -96,17 +96,17 @@ export function MobileTabBar({ onAddTrade }: MobileTabBarProps) {
             </li>
             <li>
               <button type="button" onClick={() => { setMoreOpen(false); setDialog('support'); }} className="flex min-h-12 w-full items-center gap-3 rounded-md px-2 text-left text-sm hover:bg-muted">
-                Contact support
+                <LifeBuoy className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> Contact support
               </button>
             </li>
             <li>
               <button type="button" onClick={() => { setMoreOpen(false); setDialog('feedback'); }} className="flex min-h-12 w-full items-center gap-3 rounded-md px-2 text-left text-sm hover:bg-muted">
-                Send feedback
+                <MessageSquare className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> Send feedback
               </button>
             </li>
             <li>
               <a href="/status" className="flex min-h-12 w-full items-center gap-3 rounded-md px-2 text-sm hover:bg-muted">
-                System status
+                <Activity className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> System status
               </a>
             </li>
           </ul>

@@ -79,6 +79,12 @@ describe('TodayStrip', () => {
 });
 
 describe('GoalsSummary', () => {
+  it('shows an unknown win rate as a dash when no trade was taken this week', () => {
+    wrap(<GoalsSummary week={week({ goals: [goal({ type: 'winRate', label: 'Win rate', current: 0, target: 65, limit: false, noTrades: true, statusText: 'No trades yet' })] })} mixed={false} />);
+    expect(screen.getByText('— of 65%')).toBeInTheDocument();
+    expect(screen.queryByText(/0\.0%/)).not.toBeInTheDocument();
+  });
+
   it('draws a track per goal the user set, with money only for one currency', () => {
     const goals = [goal({ type: 'profit', label: 'Profit', current: 380, target: 500, limit: false, statusText: 'On pace' }), goal({})];
     const { unmount } = wrap(<GoalsSummary week={week({ goals })} currency="USD" mixed={false} />);

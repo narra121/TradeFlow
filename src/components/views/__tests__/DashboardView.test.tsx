@@ -87,6 +87,14 @@ describe('DashboardView', () => {
     }
   });
 
+  it('while the statistics load, the stat cells are not links (no unnamed links) and the 4th label stays Avg R', () => {
+    periodStats.mockReturnValue(period({ isLoading: true }));
+    renderWithProviders(<DashboardView />);
+    expect(screen.getByRole('button', { name: 'Avg R' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Planned R:R' })).toBeNull();
+    expect(document.querySelectorAll('dd a[href^="/app/analytics"]')).toHaveLength(0);
+  });
+
   it('shows no delta line when Compare is off or the range is All time', () => {
     renderWithProviders(<DashboardView />);
     expect(screen.queryByText(/versus/)).not.toBeInTheDocument();

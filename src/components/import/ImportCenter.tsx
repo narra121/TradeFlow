@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronDown, Search } from 'lucide-react';
 import { AccountPicker } from '@/components/account/AccountPicker';
 import { Button } from '@/components/ui/button';
@@ -197,7 +197,7 @@ export function ImportCenter() {
           value={accountId}
           onChange={(v) => importFlow.set({ accountId: v })}
           disabled={busy || hasRows}
-          placeholder={writable.length === 0 ? 'No account yet' : 'Choose an account'}
+          placeholder={accounts.length === 0 ? 'No account yet' : writable.length === 0 ? 'Read-only on your plan' : 'Choose an account'}
         />
       </div>
       <div className="space-y-1.5">
@@ -216,6 +216,12 @@ export function ImportCenter() {
   if (!showReview) {
     return (
       <div className="mx-auto max-w-4xl space-y-4" onKeyDown={onKeyDown}>
+        {accounts.length === 0 && (
+          <p role="status" className="text-sm text-muted-foreground">
+            Trades are imported into a trading account, and you have none yet.{' '}
+            <Link to="/app/accounts?account=new" className="text-primary underline underline-offset-2">Add an account</Link> first.
+          </p>
+        )}
         {writable.length === 0 && accounts.length > 0 ? (
           <p role="status" className="text-sm text-muted-foreground">Your journal is read-only. Upgrade to Pro to import.</p>
         ) : null}

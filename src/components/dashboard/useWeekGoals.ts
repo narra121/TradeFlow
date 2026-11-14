@@ -32,12 +32,12 @@ export function useWeekGoals(): WeekGoalsState {
     const goals = weekGoals(data?.goalProgress, setTypes).filter((g) => g.type !== 'maxDrawdown' || drawdownBasis === 'ok');
     const broken = Object.values(data?.ruleCompliance?.brokenRulesCounts ?? {}).reduce((s, n) => s + n, 0);
     return {
-      isLoading: q.isLoading,
+      isLoading: q.isLoading || q.isUninitialized,
       isError: q.isError,
       error: q.error,
       goals,
       brokenRules: broken,
       hasRules: (data?.ruleCompliance?.totalRules ?? 0) > 0,
     };
-  }, [q.data, q.isLoading, q.isError, q.error, drawdownBasis]);
+  }, [q.data, q.isLoading, q.isUninitialized, q.isError, q.error, drawdownBasis]);
 }

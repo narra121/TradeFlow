@@ -90,12 +90,12 @@ function RuleInput({ initial, onSave, onCancel, label }: { initial: string; onSa
   return (
     <form onSubmit={(e) => { e.preventDefault(); void submit(); }} onKeyDown={(e) => e.key === 'Escape' && (e.stopPropagation(), onCancel())} className="flex flex-wrap items-start gap-2">
       <div className="min-w-0 flex-1">
-        <label htmlFor={inputId} className="sr-only">{label}</label>
-        <Input id={inputId} ref={ref} value={text} maxLength={RULE_MAX} onChange={(e) => { setText(e.target.value); setError(undefined); }} aria-invalid={!!error} aria-describedby={error ? errorId : undefined} className="h-8 text-13" />
+        <label htmlFor={inputId} className="mb-1 block text-xs font-medium text-foreground-soft">{label}</label>
+        <Input id={inputId} ref={ref} value={text} maxLength={RULE_MAX} onChange={(e) => { setText(e.target.value); setError(undefined); }} onKeyDown={(e) => { if (e.key === 'Enter' && !text.trim()) { e.preventDefault(); void submit(); } }} aria-invalid={!!error} aria-describedby={error ? errorId : undefined} placeholder="One sentence, e.g. No new trade within 15 minutes of a loss" className="h-8 text-13" />
         {error && <p id={errorId} role="alert" className="mt-1 text-xs text-destructive">{error}</p>}
       </div>
-      <Button type="submit" size="sm" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
-      <Button type="button" size="sm" variant="ghost" onClick={onCancel} disabled={saving}>Cancel</Button>
+      <Button type="submit" size="sm" disabled={saving || !text.trim()} className="mt-5">{saving ? 'Saving…' : 'Save'}</Button>
+      <Button type="button" size="sm" variant="ghost" onClick={onCancel} disabled={saving} className="mt-5">Cancel</Button>
     </form>
   );
 }

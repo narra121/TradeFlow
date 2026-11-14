@@ -36,7 +36,7 @@ vi.mock('@/store/api/journalApi', async (orig) => ({
   useSaveDayNoteMutation: () => [vi.fn(), { isLoading: false }],
 }));
 
-import { CalendarView } from '../CalendarView';
+import { CalendarView, weekTitle } from '../CalendarView';
 import { ChromeProvider } from '@/components/shell/chrome';
 import { ScopeBar } from '@/components/shell/ScopeBar';
 
@@ -257,14 +257,14 @@ describe('CalendarView', () => {
     const user = userEvent.setup();
     setup('/app/calendar?month=2026-11&view=week&week=2026-11-04');
     expect(screen.getByRole('button', { name: 'Wed 4' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /SYM2 long/ }));
+    await user.click(screen.getByRole('button', { name: /^SYM2.*, long,/ }));
     expect(screen.getByTestId('search')).toHaveTextContent('trade=2');
   });
 
   it('cites the weeks trades in time order so Prev / Next walk them (FE-017)', async () => {
     const user = userEvent.setup();
     setup('/app/calendar?month=2026-11&view=week&week=2026-11-04');
-    await user.click(screen.getByRole('button', { name: /SYM2 long/ }));
+    await user.click(screen.getByRole('button', { name: /^SYM2.*, long,/ }));
     const ids = new URLSearchParams(screen.getByTestId('search').textContent ?? '').get('ids') ?? '';
     expect(ids.split(',')).toContain('2');
     expect(ids.split(',').length).toBeGreaterThan(1);
@@ -297,5 +297,20 @@ describe('CalendarView', () => {
     expect(screen.getByText(/Tint shows total R/)).toBeInTheDocument();
     expect(screen.getByText(/mixes currencies, so R is the default/)).toBeInTheDocument();
     expect(screen.queryByText(/Best/)).not.toBeInTheDocument();
+  });
+});
+
+describe('weekTitle', () => {
+  it('names both months, or both years, when a week spans them', () => {
+    expect(weekTitle(new Date(2026, 10, 2), new Date(2026, 10, 8))).toBe('2 – 8 Nov 2026');
+    expect(weekTitle(new Date(2026, 9, 26), new Date(2026, 10, 1))).toBe('26 Oct – 1 Nov 2026');
+    expect(weekTitle(new Date(2026, 11, 28), new Date(2027, 0, 3))).toBe('28 Dec 2026 – 3 Jan 2027');
+  });
+});
+
+describe('week deep link', () => {
+  it('a week link without a month opens that week, not the first week of the current month', () => {
+    setup('/app/calendar?view=week&week=2026-10-23');
+    expect(screen.getAllByText('19 – 25 Oct 2026').length).toBeGreaterThan(0);
   });
 });

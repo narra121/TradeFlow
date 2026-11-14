@@ -33,10 +33,15 @@ const bulkUpdate = vi.hoisted(() => vi.fn());
 vi.mock('@/store/api', async (orig) => ({ ...(await orig<object>()), useBulkDeleteTradesMutation: () => [vi.fn(() => ({ unwrap: () => Promise.resolve({}) })), {}], useBulkUpdateTradesMutation: () => [bulkUpdate, {}] }));
 
 import { TradeLogView } from '../TradeLogView';
-import { ChromeProvider } from '@/components/shell/chrome';
+import { ChromeProvider, useChromeState } from '@/components/shell/chrome';
 import { ScopeBar } from '@/components/shell/ScopeBar';
 
 const dataRows = () => screen.getAllByRole('row').filter((r) => r.hasAttribute('data-row-id'));
+
+function ChromeProbe() {
+  const c = useChromeState();
+  return <p data-testid="chrome">{JSON.stringify({ count: c.count ?? null, badge: c.tabs?.find((t) => t.id === 'needs-journal')?.badge ?? null })}</p>;
+}
 
 function Where() {
   return <p data-testid="search">{useLocation().search}</p>;
@@ -50,6 +55,7 @@ function setup(entry = '/app/tradelog') {
           <ChromeProvider>
             <ScopeBar scoped isMobile={false} />
             <TradeLogView />
+            <ChromeProbe />
           </ChromeProvider>
           <Where />
         </MemoryRouter>
@@ -85,6 +91,12 @@ describe('TradeLogView', () => {
     scope = { trades: [], isLoading: true, isError: false };
     setup();
     expect(screen.getByRole('status', { name: 'Loading trades' })).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('a failed list shows no 0 count and no Needs journal 0 in the header', () => {
+    scope = { trades: [], isLoading: false, isError: true };
+    setup();
+    expect(JSON.parse(screen.getByTestId('chrome').textContent ?? '{}')).toEqual({ count: null, badge: null });
   });
 
   it('shows an activation prompt when the scope is empty', () => {

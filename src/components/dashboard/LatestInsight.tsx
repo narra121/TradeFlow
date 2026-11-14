@@ -9,7 +9,7 @@ export function LatestInsight({ accountId }: { accountId?: string }) {
   return (
     <Link to="/app/insights" className="flex min-h-9 items-center justify-between gap-2 rounded-sm text-[13px] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
       {latest ? (
-        <span className="min-w-0 truncate">
+        <span className="line-clamp-2 min-w-0" title={latest.summary}>
           <span className="text-muted-foreground">Latest insight · </span>
           {latest.summary}
         </span>

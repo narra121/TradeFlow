@@ -444,7 +444,7 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
                 onChange={(v) => set('symbol', v.toUpperCase())}
                 suggestions={symbolOptions}
                 onAddNew={(v) => addSymbol(v.toUpperCase())}
-                placeholder="EURUSD"
+                placeholder="e.g. EURUSD"
               />
             )}
           </Field>
@@ -615,7 +615,7 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
           <span className={cn('font-mono tabular-nums font-medium', signOf(netPnl) === 'positive' && 'text-profit', signOf(netPnl) === 'negative' && 'text-loss')}>
             Net {netPnl === null ? '—' : formatMoney(netPnl, accountCurrency ?? undefined, { sign: true })}
           </span>
-          <span className="font-mono tabular-nums text-muted-foreground">{formatR(preview.realisedR)}</span>
+          {preview.realisedR !== null && <span className="font-mono tabular-nums text-muted-foreground">{formatR(preview.realisedR)}</span>}
           {preview.riskAmount !== null && <span className="text-muted-foreground">Risk {formatMoney(preview.riskAmount, accountCurrency ?? undefined)}</span>}
           {preview.plannedRR !== null && <span className="text-muted-foreground">Planned {preview.plannedRR.toFixed(2)}R</span>}
           {preview.holdingMinutes !== null && <span className="text-muted-foreground">{formatDurationMinutes(preview.holdingMinutes)}</span>}

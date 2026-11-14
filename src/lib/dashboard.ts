@@ -180,6 +180,8 @@ export interface WeekGoal {
   limit: boolean;
   over: boolean;
   statusText: string;
+  /** Win rate only: no trade this week, so the rate is unknown (not 0%). */
+  noTrades?: boolean;
 }
 
 /**
@@ -195,7 +197,8 @@ export function weekGoals(progress: Record<'profit' | 'winRate' | 'maxDrawdown' 
   }
   if (setTypes.includes('winRate')) {
     const p = progress.winRate;
-    out.push({ type: 'winRate', label: 'Win rate', ...p, limit: false, over: false, statusText: p.current >= p.target ? 'Reached' : 'Below' });
+    const noTrades = progress.tradeCount.current === 0;
+    out.push({ type: 'winRate', label: 'Win rate', ...p, limit: false, over: false, noTrades, statusText: noTrades ? 'No trades yet' : p.current >= p.target ? 'Reached' : 'Below' });
   }
   if (setTypes.includes('maxDrawdown')) {
     const p = progress.maxDrawdown;

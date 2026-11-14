@@ -114,13 +114,15 @@ describe('TradePane', () => {
       expect(screen.getByRole('switch', { name: 'Reviewed · followed plan' })).toBeDisabled();
     });
 
-    it('a new trade shows Upgrade to Pro instead of the form', async () => {
+    it('Add trade opens the upgrade dialog and closes the pane, like every other blocked write', () => {
       planReadOnly = true;
       param.mode = 'new';
+      const seen = vi.fn();
+      window.addEventListener(PLAN_SIGNAL_EVENT, (e) => seen((e as CustomEvent).detail.code), { once: true });
       setup();
+      expect(seen).toHaveBeenCalledWith('TRIAL_EXPIRED');
+      expect(param.close).toHaveBeenCalled();
       expect(screen.queryByRole('form')).toBeNull();
-      await userEvent.click(screen.getByRole('button', { name: 'Upgrade to Pro' }));
-      expect(upgrade).toHaveBeenCalled();
     });
   });
 });

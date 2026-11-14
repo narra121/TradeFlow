@@ -26,7 +26,7 @@ export function RecentTrades({ trades, accounts, onOpen, limit = 6 }: RecentTrad
     { id: 'r', header: 'R', align: 'right', hideBelow: 'sm', cell: (t) => <RMultiple value={realisedR(t)} /> },
   ];
   return (
-    <Panel title="Recent trades" actions={<Link to="/app/tradelog" className="text-xs text-primary hover:underline">View all →</Link>} padded={false}>
+    <Panel title="Recent trades" actions={<Link to="/app/tradelog" className="inline-flex items-center text-xs text-primary hover:underline [@media(pointer:coarse)]:min-h-11">View all →</Link>} padded={false}>
       <div className="overflow-x-auto">
         <DataTable caption="Recent trades, newest first" rows={rows} columns={columns} getRowId={(t) => t.id} onRowOpen={(t) => onOpen(t.id)} />
       </div>

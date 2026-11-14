@@ -261,7 +261,8 @@ export function GoalsView() {
           <span className="min-w-36 text-center text-13 font-medium max-md:min-w-0 max-md:px-2" aria-live="polite">{periodLabel(ref)}</span>
           <Button type="button" variant="ghost" size="icon-sm" onClick={() => step(1)} disabled={live} aria-label={`Next ${noun}`}><ChevronRight className="h-4 w-4" aria-hidden="true" /></Button>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={() => setPeriod({ on: null })} disabled={live}>This {noun}</Button>
+        {/* Only a past period needs the way back; a disabled button on the current one costs a whole row on phones. */}
+        {!live && <Button type="button" variant="outline" size="sm" onClick={() => setPeriod({ on: null })}>This {noun}</Button>}
       </ScopeSlot>
       {live && online && (
         <ScopeSlot side="right" inline={isMobile}>

@@ -81,7 +81,7 @@ export function MonthHeat({ accountId, accounts, anchor }: MonthHeatProps) {
               );
             })}
           </ul>
-          <Link to={`/app/calendar?month=${monthKey(month)}`} className="mt-3 inline-block text-xs text-primary hover:underline">Open calendar →</Link>
+          <Link to={`/app/calendar?month=${monthKey(month)}`} className="mt-3 inline-flex items-center text-xs text-primary hover:underline [@media(pointer:coarse)]:min-h-11">Open calendar →</Link>
         </>
       )}
     </Panel>

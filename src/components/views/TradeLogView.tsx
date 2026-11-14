@@ -240,10 +240,11 @@ export function TradeLogView() {
     id: v.id,
     label: v.name,
     active: v.id === activeViewId,
-    badge: v.id === 'needs-journal' ? needsJournalCount : undefined,
+    badge: v.id === 'needs-journal' && !isError && !isLoading ? needsJournalCount : undefined,
     onSelect: () => applyView(v),
   }));
-  usePageChrome({ count: filtered.length !== trades.length ? `${filtered.length} of ${trades.length}` : trades.length, tabs, selecting: selected.size > 0 });
+  // No count while the list is loading or failed: 0 would say the journal is empty.
+  usePageChrome({ count: isError || isLoading ? undefined : filtered.length !== trades.length ? `${filtered.length} of ${trades.length}` : trades.length, tabs, selecting: selected.size > 0 });
 
   const onSort = (key: SortKey) => {
     const text = key === 'symbol' || key === 'account' || key === 'strategy' || key === 'outcome' || key === 'session' || key === 'market' || key === 'side' || key === 'asset';
@@ -769,7 +770,7 @@ export function TradeLogView() {
                     }}
                     onPointerUp={() => pressTimer.current && window.clearTimeout(pressTimer.current)}
                     onPointerCancel={() => pressTimer.current && window.clearTimeout(pressTimer.current)}
-                    className="min-h-11 min-w-0 flex-1 text-left"
+                    className="min-h-11 min-w-0 flex-1 scroll-mb-28 text-left"
                   >
                     <span className="flex items-center justify-between gap-2">
                       <span className="flex items-center gap-1.5 font-medium">{it.t.symbol} <DirectionChip direction={it.t.direction} /></span>
@@ -790,8 +791,8 @@ export function TradeLogView() {
             {phoneWin.spacerBottom > 0 && <li aria-hidden="true" style={{ height: phoneWin.spacerBottom }} />}
           </ul>
 
-          <div className="sticky bottom-0 z-bar -mx-3 flex h-9 items-center gap-2 overflow-hidden border-t border-border bg-background px-3 text-13 md:-mx-6 md:px-6">
-            <div role="status" aria-live="polite" className="flex min-w-0 flex-1 items-center gap-x-3 overflow-hidden whitespace-nowrap">
+          <div className="sticky bottom-0 z-bar -mx-3 flex min-h-9 items-center gap-2 overflow-hidden border-t border-border bg-background px-3 py-1 text-13 md:-mx-6 md:h-9 md:px-6 md:py-0">
+            <div role="status" aria-live="polite" className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 overflow-hidden whitespace-nowrap md:flex-nowrap">
             {selected.size > 0 ? (
               <>
                 <span className="font-medium text-foreground">{selected.size} selected</span>

@@ -26,11 +26,11 @@ export function TopBar({ onOpenPalette, onShowShortcuts, isMobile }: TopBarProps
 
   const tabsNav =
     tabs && tabs.length > 0 ? (
-      <nav aria-label="Views" className={cn('flex items-center gap-1 overflow-x-auto', isMobile ? 'h-10 border-t border-border px-3' : 'min-w-0 self-stretch')}>
+      <nav aria-label="Views" className={cn('flex items-center gap-1 overflow-x-auto', isMobile ? 'h-11 border-t border-border px-3' : 'min-w-0 self-stretch')}>
         {tabs.map((t) => {
           const cls = cn(
             'relative flex shrink-0 items-center gap-1 px-2 text-13 font-medium',
-            isMobile ? 'h-10' : 'h-8',
+            isMobile ? 'h-11' : 'h-8',
             t.active
               ? cn('text-foreground after:absolute after:inset-x-1 after:h-0.5 after:bg-primary', isMobile ? 'after:bottom-0' : 'after:-bottom-[7px]')
               : 'text-muted-foreground hover:text-foreground',

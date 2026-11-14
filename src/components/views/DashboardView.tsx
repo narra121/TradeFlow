@@ -132,7 +132,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
       )}
       <StatCell
         metric="netPnl"
-        to="/app/analytics"
+        to={statsLoading ? undefined : '/app/analytics'}
         className={mixed ? 'col-span-2 sm:col-span-1' : undefined}
         value={
           statsLoading ? <Skeleton className="h-5 w-24" /> : mixed ? (
@@ -149,7 +149,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
       />
       <StatCell
         metric="winRate"
-        to="/app/analytics"
+        to={statsLoading ? undefined : '/app/analytics'}
         value={statsLoading ? <Skeleton className="h-5 w-16" /> : formatPercent(s?.winRate ?? 0)}
         hint={statsLoading ? undefined : `${wins}W · ${s?.losses ?? 0}L · ${total} ${total === 1 ? 'trade' : 'trades'}`}
         sample={`${total} ${total === 1 ? 'trade' : 'trades'}`}
@@ -157,7 +157,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
       />
       <StatCell
         metric="profitFactor"
-        to="/app/analytics"
+        to={statsLoading ? undefined : '/app/analytics'}
         value={
           statsLoading ? <Skeleton className="h-5 w-12" /> : mixed ? (
             <span className="flex flex-col text-sm leading-5">
@@ -169,15 +169,16 @@ export function DashboardView(_props: DashboardViewProps = {}) {
         delta={!mixed && prev ? <Delta kind="ratio" current={s?.profitFactor} previous={prev.profitFactor} {...deltaProps} /> : undefined}
       />
       <StatCell
-        metric={hasRealisedR ? 'avgR' : 'plannedRR'}
-        to="/app/analytics?tab=risk"
+        // While loading, the label the figure usually ends as (Avg R): no flip from Planned R:R when the stats arrive.
+        metric={statsLoading || hasRealisedR ? 'avgR' : 'plannedRR'}
+        to={statsLoading ? undefined : '/app/analytics?tab=risk'}
         value={statsLoading ? <Skeleton className="h-5 w-12" /> : hasRealisedR ? <RMultiple value={avgR} /> : s?.avgRiskReward ? s.avgRiskReward.toFixed(2) : '—'}
-        hint={hasRealisedR ? undefined : 'Planned, not realised'}
+        hint={statsLoading || hasRealisedR ? undefined : 'Planned, not realised'}
         delta={prev ? (hasRealisedR ? <Delta kind="r" current={avgR} previous={prevAvgR} {...deltaProps} /> : <Delta kind="ratio" current={s?.avgRiskReward} previous={prev.avgRiskReward} {...deltaProps} />) : undefined}
       />
       <StatCell
         metric="maxDrawdown"
-        to="/app/analytics?tab=risk"
+        to={statsLoading ? undefined : '/app/analytics?tab=risk'}
         value={statsLoading ? <Skeleton className="h-5 w-12" /> : mixed || drawdownBasis !== 'ok' ? '—' : formatPercent(s?.maxDrawdown ?? 0)}
         hint={mixed || drawdownBasis === 'mixed' ? 'Per account only' : drawdownBasis === 'balance' ? 'Set a starting balance' : undefined}
         delta={!mixed && drawdownBasis === 'ok' && prev ? <Delta kind="pts" current={s?.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...deltaProps} /> : undefined}

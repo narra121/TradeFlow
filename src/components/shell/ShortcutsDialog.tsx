@@ -19,7 +19,7 @@ export function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenC
           </label>
           <Switch id="single-key-switch" checked={ui.singleKeyShortcuts} onCheckedChange={(v) => setUi({ singleKeyShortcuts: v })} />
         </div>
-        <div className="max-h-[50vh] space-y-3 overflow-y-auto">
+        <div className="max-h-[50vh] space-y-3 overflow-y-auto" tabIndex={0} role="region" aria-label="All shortcuts">
           {KEY_SCOPES.map((scope) => (
             <section key={scope} aria-label={scope}>
               <h3 className="mb-1 text-xs font-medium text-muted-foreground">{scope}</h3>

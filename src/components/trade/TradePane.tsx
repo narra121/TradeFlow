@@ -14,7 +14,6 @@ import { READ_ONLY_REASON } from '@/lib/accountWritable';
 import { useReadOnlyAccounts } from '@/hooks/useReadOnlyAccounts';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { openTrialExpired } from '@/components/billing/readOnly';
-import { useUpgrade } from '@/components/billing/useUpgrade';
 import { copy } from '@/copy';
 import { useUndoableDelete } from '@/hooks/useUndoableDelete';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -88,7 +87,6 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
   const readOnlyIds = useReadOnlyAccounts();
   // Trial over or Pro lapsed: every action that writes offers the upgrade instead of being a dead control.
   const planReadOnly = useEntitlements().readOnly;
-  const upgrade = useUpgrade();
   const showsTrade = param.mode === 'view' || param.mode === 'edit';
   const listed = showsTrade ? trades.find((t) => t.id === param.trade) ?? null : null;
   // A trade outside the scope list (an older Calendar month, a shared link) is fetched by id.
@@ -130,6 +128,13 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
       (row ?? document.getElementById('main'))?.focus();
     });
   }, [param, onClosed, openTradeId]);
+
+  // A read-only plan answers Add trade with the upgrade dialog, like every other blocked write; the pane does not stay open.
+  useEffect(() => {
+    if (param.mode !== 'new' || !planReadOnly) return;
+    openTrialExpired();
+    close();
+  }, [param.mode, planReadOnly, close]);
 
   const requestClose = () => guard(close);
   useImperativeHandle(ref, () => ({ requestClose }));
@@ -264,7 +269,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
           {param.expanded ? <Minimize2 className="h-4 w-4" aria-hidden="true" /> : <Maximize2 className="h-4 w-4" aria-hidden="true" />}
         </Button>
       )}
-      <Button type="button" variant="ghost" size="icon-sm" onClick={requestClose} aria-label="Close trade">
+      <Button type="button" variant="ghost" size="icon-sm" onClick={requestClose} aria-label="Close trade" className="focus-visible:ring-inset focus-visible:ring-offset-0">
         <X className="h-4 w-4" aria-hidden="true" />
       </Button>
     </div>
@@ -272,23 +277,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
 
   let body: React.ReactNode;
   if (param.mode === 'new' && planReadOnly) {
-    body = (
-      <div className="space-y-3 p-4">
-        <p className="flex items-start gap-2 text-sm">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span>{READ_ONLY_REASON}</span>
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="accent" size="sm" disabled={upgrade.busy === 'checkout'} onClick={upgrade.upgrade}>
-            {upgrade.busy === 'checkout' ? 'Opening checkout…' : 'Upgrade to Pro'}
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => close()}>
-            Close
-          </Button>
-        </div>
-        {upgrade.error && <p role="alert" className="text-xs text-error">{upgrade.error}</p>}
-      </div>
-    );
+    body = null;
   } else if (param.mode === 'new') {
     body = (
       <TradeForm

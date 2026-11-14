@@ -12,7 +12,7 @@ function figure(g: WeekGoal, currency?: string): string {
     case 'profit':
       return `${formatMoney(g.current, currency, { decimals: 2 })} of ${formatMoney(g.target, currency, { decimals: 2 })}`;
     case 'winRate':
-      return `${formatPercent(g.current)} of ${formatPercent(g.target, 0)}`;
+      return `${g.noTrades ? '—' : formatPercent(g.current)} of ${formatPercent(g.target, 0)}`;
     case 'maxDrawdown':
       return `${formatPercent(g.current)} of ${formatPercent(g.target)}`;
     case 'tradeCount':
@@ -24,7 +24,7 @@ function figure(g: WeekGoal, currency?: string): string {
 export function GoalsSummary({ week, currency, mixed }: { week: WeekGoalsState; currency?: string; mixed: boolean }) {
   const goals = week.goals.filter((g) => !(g.type === 'profit' && mixed));
   return (
-    <Panel title="Goals this week" actions={<Link to="/app/goals" className="text-xs text-primary hover:underline">Goals →</Link>}>
+    <Panel title="Goals this week" actions={<Link to="/app/goals" className="inline-flex items-center text-xs text-primary hover:underline [@media(pointer:coarse)]:min-h-11">Goals →</Link>}>
       {week.isLoading ? (
         <div className="space-y-2" aria-busy="true">
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-5" />)}

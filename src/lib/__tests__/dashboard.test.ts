@@ -125,6 +125,12 @@ describe('weekGoals', () => {
     expect(rows.map((r) => [r.label, r.statusText])).toEqual([['Profit', 'On pace'], ['Trades', '3 left']]);
   });
 
+  it('calls a win rate with no trades this week unknown, not "0.0% · Below"', () => {
+    const [w] = weekGoals({ ...progress, winRate: { current: 0, target: 65 }, tradeCount: { current: 0, target: 8 } }, ['winRate']);
+    expect(w).toMatchObject({ noTrades: true, statusText: 'No trades yet' });
+    expect(weekGoals(progress, ['winRate'])[0]).toMatchObject({ noTrades: false, statusText: 'Below' });
+  });
+
   it('marks a limit that is exceeded', () => {
     expect(weekGoals({ ...progress, maxDrawdown: { current: 4, target: 3 } }, ['maxDrawdown'])[0]).toMatchObject({ over: true, statusText: 'Over' });
   });

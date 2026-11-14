@@ -44,7 +44,7 @@ describe('DayPanel', () => {
     expect(rows[0]).toHaveTextContent('XAUUSD');
     expect(rows[1]).toHaveTextContent('EURUSD');
     expect(rows[1]).toHaveTextContent('! rule broken');
-    expect(rows[1]).toHaveAccessibleName(/Wednesday 16:15, EURUSD long, \+\$120\.00, rule broken/);
+    expect(rows[1]).toHaveAccessibleName('16:15 EURUSD Long ! rule broken +$120.00 +2.00R, Wednesday');
   });
 
   it('draws a 24 hour strip with a text alternative', () => {
@@ -61,7 +61,7 @@ describe('DayPanel', () => {
   it('opens a trade, steps the day, adds a trade and opens the day in Trades', async () => {
     const user = userEvent.setup();
     const h = setup();
-    await user.click(screen.getByRole('button', { name: /EURUSD long/ }));
+    await user.click(screen.getByRole('button', { name: /EURUSD Long/ }));
     expect(h.onOpenTrade).toHaveBeenCalledWith('2');
     await user.click(screen.getByRole('button', { name: 'Next day' }));
     expect(h.onStepDay).toHaveBeenCalledWith(1);
@@ -100,7 +100,7 @@ describe('WeekPanel', () => {
     expect(screen.getByRole('heading', { name: 'Week 45 · 2 Nov – 8 Nov 2026' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Wed 4 Nov' }));
     expect(onOpenDay).toHaveBeenCalledWith('2026-11-04');
-    await user.click(screen.getByRole('button', { name: /XAUUSD long/ }));
+    await user.click(screen.getByRole('button', { name: /XAUUSD Long/ }));
     expect(onOpenTrade).toHaveBeenCalledWith('1');
   });
 });

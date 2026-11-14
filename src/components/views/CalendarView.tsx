@@ -77,7 +77,8 @@ export function CalendarView() {
     })),
   });
 
-  const month = parseMonth(params.get('month'));
+  // A week link without a month opens the month of that week, so the anchor is in the model.
+  const month = parseMonth(params.get('month') ?? (view === 'week' && params.get('week') ? monthKey(parseLocalDate(params.get('week') as string)) : null));
   const range = useMemo(() => gridRange(month), [month]);
   const monthQuery = useScopeTrades({ accountId, ...range }, { skip: view === 'year' });
   // The trades route needs both dates, so "every trade" is an open-ended range; only the newest one is needed.
@@ -134,7 +135,7 @@ export function CalendarView() {
   };
   const step = (dir: -1 | 1) => (view === 'week' ? goWeek(dir) : view === 'year' ? goMonth(addMonths(month, 12 * dir)) : goMonth(addMonths(month, dir)));
   usePeriodKeys(step);
-  const title = view === 'year' ? String(yearNum) : view === 'week' && weekRow ? `${format(weekRow.days[0].date, 'd')} – ${format(weekRow.days[6].date, 'd MMM yyyy')}` : format(month, 'MMMM yyyy');
+  const title = view === 'year' ? String(yearNum) : view === 'week' && weekRow ? weekTitle(weekRow.days[0].date, weekRow.days[6].date) : format(month, 'MMMM yyyy');
   const unit = view;
 
   const stepDay = (delta: -1 | 1) => {
@@ -201,7 +202,7 @@ export function CalendarView() {
         <ScopeSlot side="right" inline={isMobile}>
           <label htmlFor="calendar-metric" className="text-xs text-muted-foreground">Colour by</label>
           <Select value={metric} onValueChange={(v) => setQuery({ metric: v === defaultMetric(view === 'year' ? yearMixed : model.mixed) ? null : v }, true)}>
-            <SelectTrigger id="calendar-metric" className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="calendar-metric" className="h-7 w-28 text-xs [@media(pointer:coarse)]:h-11"><SelectValue /></SelectTrigger>
             <SelectContent>{METRICS.map((m) => <SelectItem key={m} value={m}>{METRIC_LABEL[m]}</SelectItem>)}</SelectContent>
           </Select>
         </ScopeSlot>
@@ -245,7 +246,7 @@ export function CalendarView() {
         {error ? (
           <ErrorState title={view === 'year' ? 'Couldn’t load this year.' : 'Couldn’t load this month.'} description="Try again." error={loadError} onRetry={() => void refetch()} />
         ) : noAccounts ? (
-          <EmptyState title="Add a trading account to start your calendar." description="Each trade belongs to an account. Trades appear here by the day they closed." action={<Button size="sm" onClick={() => navigate('/app/accounts?account=new')}>Add account</Button>} />
+          <EmptyState title="Add a trading account to start your calendar." description="Each trade belongs to an account. Trades appear here by the day they opened." action={<Button size="sm" onClick={() => navigate('/app/accounts?account=new')}>Add account</Button>} />
         ) : view === 'year' ? (
           <div className="space-y-3">
             {yearSummary.tradeCount > 0 && <PeriodSummary summary={yearSummary} days={yearDays} metric={metric} />}
@@ -289,7 +290,7 @@ export function CalendarView() {
               />
             )}
 
-            <Legend metric={metric} mixed={model.mixed} />
+            <Legend metric={metric} mixed={model.mixed} tint={view === 'month'} />
 
             {isMobile && view === 'month' && model.weeks.some((w) => w.count > 0) && (
               <ul className="space-y-1 text-13" aria-label="Weekly totals">
@@ -313,7 +314,14 @@ export function CalendarView() {
   );
 }
 
-function Legend({ metric, mixed }: { metric: CalendarMetric; mixed: boolean }) {
+/** "2 – 8 Nov 2026"; a week across months or years names both ends: "26 Oct – 1 Nov 2026", "28 Dec 2026 – 3 Jan 2027". */
+export function weekTitle(from: Date, to: Date): string {
+  if (from.getFullYear() !== to.getFullYear()) return `${format(from, 'd MMM yyyy')} – ${format(to, 'd MMM yyyy')}`;
+  if (from.getMonth() !== to.getMonth()) return `${format(from, 'd MMM')} – ${format(to, 'd MMM yyyy')}`;
+  return `${format(from, 'd')} – ${format(to, 'd MMM yyyy')}`;
+}
+
+function Legend({ metric, mixed, tint = true }: { metric: CalendarMetric; mixed: boolean; tint?: boolean }) {
   const tz = zoneName();
   const what: Record<CalendarMetric, string> = {
     pnl: 'Tint shows net P&L in three steps against the month’s largest day: green is a gain, red a loss.',
@@ -323,7 +331,7 @@ function Legend({ metric, mixed }: { metric: CalendarMetric; mixed: boolean }) {
   };
   return (
     <div className={cn('space-y-1 text-xs text-muted-foreground')}>
-      <p>{what[metric]}{mixed && metric === 'r' ? ' This scope mixes currencies, so R is the default.' : ''}</p>
+      {tint && <p>{what[metric]}{mixed && metric === 'r' ? ' This scope mixes currencies, so R is the default.' : ''}</p>}
       <p>
         <span className="font-semibold text-warning">!</span> a trade broke a rule. Days are by the time the trade opened. Times in {tz}.
       </p>

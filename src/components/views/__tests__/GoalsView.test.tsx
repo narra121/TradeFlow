@@ -154,6 +154,7 @@ describe('GoalsView', () => {
     const user = userEvent.setup();
     setup();
     expect(screen.getByRole('button', { name: 'Next week' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'This week' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Previous week' }));
     expect(screen.getByTestId('search')).toHaveTextContent('on=2026-11-02');
     expect(screen.getByText('02 – 08 Nov 2026')).toBeInTheDocument();

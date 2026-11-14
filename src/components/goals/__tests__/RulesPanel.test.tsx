@@ -84,6 +84,8 @@ describe('RulesPanel', () => {
   it('refuses an empty rule under the field', async () => {
     const user = userEvent.setup();
     const h = setup({ adding: true });
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(screen.getByLabelText('New rule')).toHaveAttribute('placeholder', expect.stringMatching(/^One sentence/));
     await user.type(screen.getByLabelText('New rule'), '{Enter}');
     expect(screen.getByRole('alert')).toHaveTextContent('Enter the rule in a sentence.');
     expect(h.onAdd).not.toHaveBeenCalled();

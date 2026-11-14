@@ -30,8 +30,10 @@ const actions = {
 };
 vi.mock('../useImportActions', () => ({ useImportActions: () => actions }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
+const twoAccounts = [{ id: 'a1', name: 'FTMO 100K', currency: 'USD', status: 'active' }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR', status: 'active' }];
+let accountsList: typeof twoAccounts = twoAccounts;
 vi.mock('@/hooks/useAccounts', () => ({
-  useAccounts: () => ({ accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD', status: 'active' }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR', status: 'active' }], selectedAccountId: null }),
+  useAccounts: () => ({ accounts: accountsList, selectedAccountId: null }),
 }));
 let writableAccountIds: string[] | null = null;
 let readOnly = false;
@@ -66,6 +68,7 @@ const seed = (patch = {}) =>
 
 beforeEach(() => {
   writableAccountIds = null;
+  accountsList = twoAccounts;
   readOnly = false;
   Object.values(actions).forEach((f) => f.mockReset());
   act(() => importFlow.reset());
@@ -364,6 +367,8 @@ describe('Read-only plan', () => {
     renderCenter();
     expect(screen.getByRole('status')).toHaveTextContent('Your journal is read-only. Upgrade to Pro to import.');
     expect(screen.getByRole('button', { name: 'Choose files' })).toBeEnabled();
+    expect(screen.getByRole('combobox', { name: 'Account' })).toHaveTextContent('Read-only on your plan');
+    expect(screen.queryByText('No account yet')).toBeNull();
   });
 });
 
@@ -379,5 +384,14 @@ describe('Screenshot date order', () => {
     expect(screen.getByText('Screenshot 1: day and month switched')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(actions.undoRows).toHaveBeenCalled();
+  });
+});
+
+describe('No trading account yet', () => {
+  it('says to add an account first and links to it, instead of a silent disabled drop zone', () => {
+    accountsList = [];
+    renderCenter();
+    expect(screen.getByRole('status')).toHaveTextContent('Trades are imported into a trading account, and you have none yet.');
+    expect(screen.getByRole('link', { name: 'Add an account' })).toHaveAttribute('href', '/app/accounts?account=new');
   });
 });

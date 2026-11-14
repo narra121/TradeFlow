@@ -24,7 +24,7 @@ export function MetricInfo({ metric, label, sample, className }: MetricInfoProps
       <PopoverTrigger
         type="button"
         className={cn(
-          'inline-flex max-w-full items-center truncate rounded-sm text-left underline [@media(pointer:coarse)]:min-h-6 decoration-dotted decoration-border-strong underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'inline-flex max-w-full items-center truncate rounded-sm text-left underline [@media(pointer:coarse)]:min-h-11 decoration-dotted decoration-border-strong underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           className,
         )}
         aria-haspopup="dialog"

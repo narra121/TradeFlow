@@ -38,14 +38,14 @@ function MiniMonth({ m, metric, scale, onOpenMonth, onOpenDay }: { m: YearMonth;
   return (
     <section aria-label={name} className="rounded-lg border border-border bg-card p-3">
       <div className="mb-2 flex items-baseline justify-between gap-2">
-        <button type="button" onClick={() => onOpenMonth(m.key)} className="text-13 font-medium hover:underline focus-visible:underline focus-visible:outline-none" aria-label={`${name}, ${plural(m.model.tradeCount, 'trade')}. Open the month`}>
+        <button type="button" onClick={() => onOpenMonth(m.key)} className="text-13 font-medium hover:underline focus-visible:underline focus-visible:outline-none [@media(pointer:coarse)]:min-h-11" aria-label={`${name}, ${plural(m.model.tradeCount, 'trade')}. Open the month`}>
           {format(m.date, 'MMMM')}
         </button>
         <span className="flex gap-1.5 font-mono text-2xs tabular-nums">
           {m.model.byCurrency.map((c) => <span key={c.currency} className={c.net > 0 ? 'text-profit' : c.net < 0 ? 'text-loss' : 'text-foreground-soft'}>{compactMoney(c.net, c.currency)}</span>)}
         </span>
       </div>
-      <div className="grid grid-cols-[repeat(7,18px)] gap-1" role="group" aria-label={`Days of ${name}`}>
+      <div className="grid grid-cols-[repeat(7,24px)] gap-1" role="group" aria-label={`Days of ${name}`}>
         {Array.from({ length: offset }, (_, i) => <span key={`s${i}`} aria-hidden="true" />)}
         {days.map((d) => {
           const tint = metricTint(dayMetric(d, metric), metric, scale);
@@ -57,7 +57,7 @@ function MiniMonth({ m, metric, scale, onOpenMonth, onOpenDay }: { m: YearMonth;
               onClick={() => onOpenDay(d.key)}
               aria-label={cellName(d, false)}
               title={cellName(d, false)}
-              className={cn('h-[18px] w-[18px] rounded-sm border border-border/60 hover:brightness-150', d.trades.length ? TINT[tint.tone][tint.step] || 'bg-secondary' : 'bg-transparent')}
+              className={cn('h-6 w-6 rounded-sm border border-border/60 hover:brightness-150 [@media(pointer:coarse)]:pointer-events-none', d.trades.length ? TINT[tint.tone][tint.step] || 'bg-secondary' : 'bg-transparent')}
             />
           );
         })}

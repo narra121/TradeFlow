@@ -35,14 +35,14 @@ describe('WeekTimeline', () => {
 
   it('names each block with day, time span, symbol, side, result and flags', () => {
     week_();
-    expect(screen.getByRole('button', { name: 'Wednesday 14:30 to 16:15, EURUSD long, +$120.00' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Monday 21:00 to 22:00, US30 short, −$48.00, rule broken' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'EURUSD +$120.00, long, Wednesday 14:30 to 16:15' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'US30 −$48.00, short, Monday 21:00 to 22:00, rule broken' })).toBeInTheDocument();
   });
 
   it('opens a trade from its block and a day from its header', async () => {
     const user = userEvent.setup();
     const h = week_();
-    await user.click(screen.getByRole('button', { name: /EURUSD long/ }));
+    await user.click(screen.getByRole('button', { name: /^EURUSD .*, long,/ }));
     expect(h.onOpenTrade).toHaveBeenCalledWith('3');
     await user.click(screen.getByRole('button', { name: 'Wed 4' }));
     expect(h.onOpenDay).toHaveBeenCalledWith('2026-11-04');
@@ -54,6 +54,14 @@ describe('WeekTimeline', () => {
     expect(group).toBeInTheDocument();
     expect(screen.getByText('+$115.80')).toBeInTheDocument();
     expect(screen.getByText(/Week/)).toBeInTheDocument();
+    expect(screen.getByText(/· \d+ trades? ·/)).toBeInTheDocument();
+  });
+
+  it('says there are no trades instead of zero counts on an empty week', () => {
+    const empty = buildMonth([], new Date(2026, 10, 1), accounts).weeks[1];
+    week_({ week: empty });
+    expect(screen.getByText('No trades this week.')).toBeInTheDocument();
+    expect(screen.queryByText(/· 0 ·/)).toBeNull();
   });
 
   it('shows one day at a time on a phone, with day chips', async () => {
@@ -61,7 +69,8 @@ describe('WeekTimeline', () => {
     week_({ isMobile: true, todayKey: '2026-11-04' });
     expect(screen.getAllByRole('group')).toHaveLength(1);
     expect(screen.getByRole('group')).toHaveAccessibleName(/Wednesday 4 November/);
-    await user.click(screen.getByRole('button', { name: 'Monday 2 November' }));
+    // The name starts with the visible text (M 2) so voice users can say what they see (WCAG 2.5.3).
+    await user.click(screen.getByRole('button', { name: 'M 2, Monday 2 November' }));
     expect(screen.getByRole('group')).toHaveAccessibleName(/Monday 2 November/);
     for (const chip of within(screen.getByRole('list', { name: 'Days of the week' })).getAllByRole('button')) expect(chip.className).toMatch(/h-11/);
   });

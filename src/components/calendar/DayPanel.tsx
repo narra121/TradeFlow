@@ -8,7 +8,7 @@ import { PaneFrame } from '@/components/calendar/SidePane';
 import { DayNote } from '@/components/calendar/DayNote';
 import { hoursOpen, netText, plural, winLoss } from '@/components/calendar/dayText';
 import { realisedR } from '@/lib/tradeFilters';
-import { formatMoney, formatPercent, formatTime } from '@/lib/format';
+import { formatMoney, formatPercent, formatR, formatTime } from '@/lib/format';
 import type { DayCell, WeekRow } from '@/lib/calendar';
 import { cn } from '@/lib/utils';
 import type { DayNote as DayNoteData, DayNotesArgs } from '@/store/api/journalApi';
@@ -45,15 +45,18 @@ function TradeRow({ t, currency, onOpen, showDate }: { t: Trade; currency?: stri
   const r = realisedR(t);
   const when = t.exitDate || t.entryDate;
   const broken = (t.brokenRuleIds?.length ?? 0) > 0;
+  const shown = showDate ? format(new Date(when), 'd MMM') : formatTime(when);
+  // The name starts with the row's visible text, in its order (WCAG 2.5.3), then the weekday.
+  const name = [shown, t.symbol, t.direction === 'LONG' ? 'Long' : 'Short', broken ? '! rule broken' : null, formatMoney(t.pnl, currency, { sign: true }), formatR(r)].filter(Boolean).join(' ') + `, ${format(new Date(when), 'EEEE')}`;
   return (
     <li>
       <button
         type="button"
         onClick={() => onOpen(t.id)}
+        aria-label={name}
         className="flex min-h-11 w-full items-center gap-2 border-b border-border px-3 text-left text-13 hover:bg-muted focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-        aria-label={`${format(new Date(when), 'EEEE HH:mm')}, ${t.symbol} ${t.direction === 'LONG' ? 'long' : 'short'}, ${formatMoney(t.pnl, currency, { sign: true })}${broken ? ', rule broken' : ''}`}
       >
-        <span className="w-12 shrink-0 font-mono text-xs tabular-nums text-muted-foreground">{showDate ? format(new Date(when), 'd MMM') : formatTime(when)}</span>
+        <span className="w-12 shrink-0 font-mono text-xs tabular-nums text-muted-foreground">{shown}</span>
         <span className="min-w-0 truncate font-medium">{t.symbol}</span>
         <span className="shrink-0 text-xs text-foreground-soft">{t.direction === 'LONG' ? '↑ Long' : '↓ Short'}</span>
         {broken && <span className="shrink-0 text-xs text-warning" title="A rule was broken">! rule broken</span>}
