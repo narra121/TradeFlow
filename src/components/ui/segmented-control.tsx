@@ -68,7 +68,7 @@ export function SegmentedControl<T extends string | number>({
           }}
           className={cn(
             'inline-flex items-center justify-center gap-1 whitespace-nowrap rounded px-3 font-medium transition-colors disabled:opacity-50',
-            size === 'sm' ? 'h-7 text-xs' : 'h-8 text-sm [@media(pointer:coarse)]:h-10',
+            size === 'sm' ? 'h-7 text-xs [@media(pointer:coarse)]:h-11' : 'h-8 text-sm [@media(pointer:coarse)]:h-11',
             o.value === value ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground',
           )}
         >

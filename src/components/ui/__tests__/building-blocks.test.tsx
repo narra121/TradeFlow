@@ -84,6 +84,17 @@ describe('Money and chips', () => {
     expect(container).toHaveTextContent('+2.00R');
   });
 
+  it('never wraps a sign away from its amount (R-026)', () => {
+    const { container } = render(
+      <>
+        <Money value={-12.5} currency="USD" data-testid="m" />
+        <RMultiple value={-1.5} />
+      </>,
+    );
+    expect(screen.getByTestId('m').className).toContain('whitespace-nowrap');
+    expect(container.querySelector('span:last-child')?.className).toContain('whitespace-nowrap');
+  });
+
   it('labels direction and outcome in words', () => {
     render(
       <>

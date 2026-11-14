@@ -25,7 +25,7 @@ vi.mock('@/store/api/accountsApi', () => ({ useGetAccountsQuery: () => ({ data: 
 import { BillingView } from '../BillingView';
 import { PlanCard } from '../PlanCard';
 import { UsageMeter } from '../UsageMeter';
-import { planRowText, planState } from '../planState';
+import { formatDay, planRowText, planState } from '../planState';
 import { priceLine, yearlySavingPercent } from '../freeLimits';
 
 type Ent = EntitlementsResponse['entitlements'] & Record<string, unknown>;
@@ -166,7 +166,7 @@ describe('BillingView', () => {
     expect(what).toHaveTextContent('Add, edit or delete trades');
     expect(screen.getByRole('region', { name: /Usage this month/ })).toHaveTextContent('4 of 200');
     const table = screen.getByRole('table', { name: 'Free trial and Pro compared' });
-    expect(within(table).getByRole('columnheader', { name: /Free trial/ })).toHaveTextContent('Your plan');
+    expect(within(table).getByRole('columnheader', { name: /Free trial/ })).toHaveTextContent(/Yours ends \d{2} \w{3}/);
     expect(within(table).getByRole('columnheader', { name: 'Pro' })).toBeInTheDocument();
     expect(within(table).getByText('$49.99 a year')).toBeInTheDocument();
     expect(within(table).getByRole('row', { name: /^When it ends/ })).toHaveTextContent('Read-only');
@@ -201,6 +201,18 @@ describe('BillingView', () => {
     const row = within(screen.getByRole('table')).getByRole('row', { name: /^Price/ });
     expect(row.textContent).toMatch(/^Price\$0 for 14 days\$49\.99/);
     expect(screen.getByText('AI reports')).toBeInTheDocument();
+  });
+
+  it('a trial longer than the 14-day offer (kept by the migration) does not contradict the offer column (R-036)', () => {
+    const end = new Date(Date.now() + 27 * 86_400_000);
+    response = base({ trialEndsAt: end.toISOString() });
+    wrap();
+    expect(screen.getByText(/^Free trial: 27 days left/)).toBeInTheDocument();
+    const table = screen.getByRole('table', { name: 'Free trial and Pro compared' });
+    const head = within(table).getByRole('columnheader', { name: /Free trial/ });
+    expect(head).toHaveTextContent(`Yours ends ${formatDay(end.toISOString(), false)}`);
+    expect(head).not.toHaveTextContent('Your plan');
+    expect(within(table).getByRole('row', { name: /^Price/ })).toHaveTextContent('$0 for 14 days');
   });
 
   it('shows INR prices for an INR billing currency', () => {

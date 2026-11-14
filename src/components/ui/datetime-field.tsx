@@ -66,13 +66,13 @@ export function DateTimeField({ id, value, onChange, onBlur, showNow, className,
           onKeyDown={(e) => {
             if (e.key === 'Enter') commit();
           }}
-          className="pr-9"
+          className="pr-9 [@media(pointer:coarse)]:pr-11"
           {...aria}
           aria-invalid={aria['aria-invalid'] || bad || undefined}
         />
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <button type="button" aria-label="Pick a date" className="absolute right-0 top-0 flex h-full w-9 items-center justify-center text-muted-foreground hover:text-foreground">
+            <button type="button" aria-label="Pick a date" className="absolute right-0 top-0 flex h-full w-9 items-center [@media(pointer:coarse)]:w-11 justify-center text-muted-foreground hover:text-foreground">
               <CalendarIcon className="h-4 w-4" aria-hidden="true" />
             </button>
           </PopoverTrigger>

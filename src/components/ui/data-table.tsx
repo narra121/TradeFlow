@@ -93,6 +93,21 @@ const HEADER_PX = 32;
 const GROUP_PX = 28;
 const OVERSCAN = 8;
 const MIN_COL_PX = 56;
+/** Header, group and row height on touch screens (DESIGN-SHARED S10: 44 px targets); the classes below use `h-11` to match. */
+const TOUCH_PX = 44;
+const COARSE = '(pointer: coarse)';
+
+function useCoarsePointer(): boolean {
+  const [coarse, setCoarse] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(COARSE).matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.(COARSE);
+    if (!mq) return;
+    const onChange = () => setCoarse(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return coarse;
+}
 
 type Item<T> = { kind: 'group'; group: DataGroup<T>; top: number } | { kind: 'row'; row: T; index: number; top: number };
 
@@ -124,7 +139,10 @@ export function DataTable<T>({
   const [headerMenu, setHeaderMenu] = useState<string | null>(null);
   const [measured, setMeasured] = useState<Record<string, number>>({});
   const [scroll, setScroll] = useState({ top: 0, height: 900, offset: 0 });
-  const rowPx = density === 'compact' ? 28 : 36;
+  const coarse = useCoarsePointer();
+  const rowPx = coarse ? TOUCH_PX : density === 'compact' ? 28 : 36;
+  const groupPx = coarse ? TOUCH_PX : GROUP_PX;
+  const headerPx = coarse ? TOUCH_PX : HEADER_PX;
 
   const colSpan = columns.length + (selection ? 1 : 0);
   const pageIds = useMemo(() => rows.map(getRowId), [rows, getRowId]);
@@ -139,7 +157,7 @@ export function DataTable<T>({
     for (const sec of sections) {
       if (sec.group) {
         list.push({ kind: 'group', group: sec.group, top });
-        top += GROUP_PX;
+        top += groupPx;
       }
       if (sec.group && collapsed?.has(sec.group.key)) continue;
       for (const row of sec.rows) {
@@ -148,8 +166,8 @@ export function DataTable<T>({
       }
     }
     return { items: list, total: top };
-  }, [groups, rows, collapsed, rowPx]);
-  const heightOf = useCallback((it: Item<T>) => (it.kind === 'group' ? GROUP_PX : rowPx), [rowPx]);
+  }, [groups, rows, collapsed, rowPx, groupPx]);
+  const heightOf = useCallback((it: Item<T>) => (it.kind === 'group' ? groupPx : rowPx), [rowPx, groupPx]);
   const rowItems = useMemo(() => items.filter((i): i is Extract<Item<T>, { kind: 'row' }> => i.kind === 'row'), [items]);
 
   // Where the scroller is, so only the rows near the viewport are mounted.
@@ -177,7 +195,7 @@ export function DataTable<T>({
     };
   }, [virtualize, items.length]);
 
-  const viewTop = scroll.top - scroll.offset - HEADER_PX;
+  const viewTop = scroll.top - scroll.offset - headerPx;
   let start = 0;
   let end = items.length;
   if (virtualize && items.length > 0) {
@@ -196,7 +214,7 @@ export function DataTable<T>({
     }
   }
   const windowItems = items.slice(start, end);
-  const topSpacer = virtualize && start > 0 ? items[start].top - (stuckGroup ? GROUP_PX : 0) : 0;
+  const topSpacer = virtualize && start > 0 ? items[start].top - (stuckGroup ? groupPx : 0) : 0;
   const lastItem = items[end - 1];
   const bottomSpacer = virtualize && lastItem ? Math.max(0, total - (lastItem.top + heightOf(lastItem))) : 0;
 
@@ -224,7 +242,7 @@ export function DataTable<T>({
     if (!virtualize) return;
     pendingFocus.current = i;
     const parent = scrollParentOf(tableRef.current);
-    const y = scroll.offset + HEADER_PX + rowItems[i].top - scroll.height / 2;
+    const y = scroll.offset + headerPx + rowItems[i].top - scroll.height / 2;
     if (parent) parent.scrollTop = Math.max(0, y);
     else window.scrollTo({ top: Math.max(0, y) });
   };
@@ -234,8 +252,8 @@ export function DataTable<T>({
     if (!virtualize || !openId) return;
     const hit = rowItems.find((r) => getRowId(r.row) === openId);
     if (!hit) return;
-    const y = scroll.offset + HEADER_PX + hit.top;
-    if (y < scroll.top + HEADER_PX + GROUP_PX || y + rowPx > scroll.top + scroll.height) {
+    const y = scroll.offset + headerPx + hit.top;
+    if (y < scroll.top + headerPx + groupPx || y + rowPx > scroll.top + scroll.height) {
       const parent = scrollParentOf(tableRef.current);
       const target = Math.max(0, y - scroll.height / 2);
       if (parent) parent.scrollTop = target;
@@ -342,6 +360,7 @@ export function DataTable<T>({
         onKeyDown={(e) => handleKey(e, i, row)}
         className={cn(
           density === 'compact' ? 'h-7' : 'h-9',
+          '[@media(pointer:coarse)]:h-11',
           'dt-row group border-b border-border/60 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring',
           onRowOpen && 'cursor-pointer',
           highlightId === id && 'animate-fade-in',
@@ -366,7 +385,7 @@ export function DataTable<T>({
     const g = it.group;
     const open = !collapsed?.has(g.key);
     return (
-      <tr key={key ?? `g-${g.key}`} aria-rowindex={virtualize ? abs + 2 : undefined} className="sticky top-8 z-sticky h-7 border-b border-border bg-background text-xs">
+      <tr key={key ?? `g-${g.key}`} aria-rowindex={virtualize ? abs + 2 : undefined} className="sticky top-8 z-sticky h-7 border-b border-border bg-background text-xs [@media(pointer:coarse)]:top-11 [@media(pointer:coarse)]:h-11">
         <th scope="rowgroup" colSpan={colSpan} className="px-3 text-left font-normal">
           <button
             type="button"
@@ -378,7 +397,7 @@ export function DataTable<T>({
               }
             }}
             aria-expanded={open}
-            className="flex w-full items-center gap-2 py-1 text-left"
+            className="flex w-full items-center gap-2 py-1 text-left [@media(pointer:coarse)]:min-h-11"
           >
             {open ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}
             <span className="font-medium text-foreground">{g.label}</span>
@@ -394,7 +413,7 @@ export function DataTable<T>({
     <table ref={tableRef} className={cn('w-full text-13', className)} aria-rowcount={virtualize ? items.length + 1 : undefined}>
       <caption className="sr-only">{caption}</caption>
       <thead className="sticky top-0 z-sticky bg-background">
-        <tr className="h-8 border-b border-border" aria-rowindex={virtualize ? 1 : undefined}>
+        <tr className="h-8 border-b border-border [@media(pointer:coarse)]:h-11" aria-rowindex={virtualize ? 1 : undefined}>
           {selection && (
             <th scope="col" className="sticky left-0 z-sticky w-10 bg-background px-3 text-left">
               <Checkbox checked={allSelected ? true : someSelected ? 'indeterminate' : false} onCheckedChange={(c) => selection.onTogglePage(c === true)} aria-label="Select all rows shown" />
@@ -424,7 +443,7 @@ export function DataTable<T>({
                             setHeaderMenu(c.id);
                           }
                         }}
-                        className={cn('inline-flex min-h-6 items-center gap-1 truncate hover:text-foreground', c.align === 'right' && 'flex-row-reverse', active && 'text-foreground')}
+                        className={cn('inline-flex min-h-6 items-center gap-1 truncate hover:text-foreground [@media(pointer:coarse)]:min-h-11', c.align === 'right' && 'flex-row-reverse', active && 'text-foreground')}
                       >
                         {c.header}
                         <Icon className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" />
@@ -436,7 +455,7 @@ export function DataTable<T>({
                     )}
                     {menu && (
                       <DropdownMenuTrigger asChild>
-                        <button type="button" data-header-menu aria-label={`${c.header} column menu`} className="flex h-6 w-6 items-center justify-center rounded opacity-0 hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/th:opacity-100 data-[state=open]:opacity-100">
+                        <button type="button" data-header-menu aria-label={`${c.header} column menu`} className="flex h-6 w-6 items-center justify-center rounded opacity-0 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/th:opacity-100 data-[state=open]:opacity-100">
                           <ChevronDown className="h-3 w-3" aria-hidden="true" />
                         </button>
                       </DropdownMenuTrigger>

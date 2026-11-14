@@ -77,6 +77,15 @@ function ActionError({ text }: { text: string }) {
   );
 }
 
+/**
+ * The Free trial column states the offer (14 days from sign-up); a trial that runs longer (kept by the plans migration)
+ * would contradict it as "Your plan", so the caption names the user's own end date instead.
+ */
+function trialCaption(trialEndsAt: string | undefined): string {
+  const end = formatDay(trialEndsAt, false);
+  return end ? `Yours ends ${end}` : 'Your plan';
+}
+
 export function BillingView() {
   const ent = useEntitlements();
   const [params] = useSearchParams();
@@ -158,7 +167,7 @@ export function BillingView() {
             currency={ent.currency}
             interval={interval}
             onInterval={changeInterval}
-            trialCaption={state.kind === 'trial' ? 'Your plan' : 'Ended'}
+            trialCaption={state.kind === 'trial' ? trialCaption(ent.trialEndsAt) : 'Ended'}
             canUpgrade
             busy={up.busy === 'checkout'}
             onUpgrade={upgradeFromPlans}

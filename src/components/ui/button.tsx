@@ -9,7 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "glow-primary bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
@@ -24,7 +24,7 @@ const buttonVariants = cva(
         default: "h-8 px-3 text-13 [@media(pointer:coarse)]:h-11",
         sm: "h-7 px-2.5 text-xs [@media(pointer:coarse)]:h-11",
         lg: "h-9 px-4 [@media(pointer:coarse)]:h-11",
-        xl: "h-10 px-5 text-base",
+        xl: "h-10 px-5 text-base [@media(pointer:coarse)]:h-11",
         icon: "h-8 w-8 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11",
         "icon-sm": "h-7 w-7 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11",
       },
