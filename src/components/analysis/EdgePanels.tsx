@@ -66,7 +66,7 @@ function QueryState({ q, scopeWhat }: { q: { isLoading: boolean; isFetching: boo
     if (mixed) return <div className="p-4"><PickAccountNotice currencies={mixed} what={scopeWhat} /></div>;
     return <div className="p-4"><ErrorState title="Couldn't load this table." error={q.error} onRetry={q.refetch} /></div>;
   }
-  return <div className="p-4"><Skeleton className="h-40" aria-label="Loading" /></div>;
+  return <div className="p-4"><Skeleton role="status" className="h-40" aria-label="Loading" /></div>;
 }
 
 /** Group by × then by: for exploring only, cells under 30 trades greyed and never coloured (report §3.3 rule 4). */

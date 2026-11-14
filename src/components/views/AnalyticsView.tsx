@@ -100,7 +100,7 @@ export function AnalyticsView() {
   if (ps.isError) return <ErrorState title="Couldn't load this tab." description="The other tabs keep working." error={ps.error} onRetry={ps.refetch} />;
   if (ps.isLoading || !ps.stats || ent.isLoading) {
     return (
-      <div className="space-y-4" aria-busy="true" aria-label="Loading analytics">
+      <div role="status" className="space-y-4" aria-busy="true" aria-label="Loading analytics">
         <Skeleton className="h-40" />
         <Skeleton className="h-72" />
       </div>

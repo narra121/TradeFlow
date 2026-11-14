@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// E2E_PORT lets a run start its own dev server when 8080 is taken.
+const port = Number(process.env.E2E_PORT ?? 8080);
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -10,7 +13,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: `http://localhost:${port}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -18,8 +21,8 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: 'bun run dev',
-    url: 'http://localhost:8080',
+    command: `bun run dev --port ${port} --strictPort`,
+    url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     // Fake pool: e2e seeds a signed-in session (e2e/fixtures/auth.ts) and mocks the API, so Cognito is never called.

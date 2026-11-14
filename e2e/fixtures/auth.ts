@@ -90,7 +90,7 @@ async function mockApi(page: Page, calls: ApiCall[]) {
     }
     if (path.startsWith('/accounts')) return json(ok({ accounts: ACCOUNTS }));
     if (path.startsWith('/me/entitlements')) {
-      return json(ok({ entitlements: { plan: 'free', status: 'free', limits: {}, features: {} }, usage: {}, periodResetsAt: ago(-20, 0), writableAccountIds: null }));
+      return json(ok({ entitlements: { plan: 'trial', status: 'trialing', trialEndsAt: ago(-10, 0), limits: {}, features: {} }, usage: {}, periodResetsAt: ago(-20, 0), writableAccountIds: null }));
     }
     if (path.startsWith('/options')) return json(ok({ options: { strategies: ['Breakout', 'Reversal'], sessions: ['London Open'], marketConditions: [], newsEvents: [], mistakes: ['FOMO'], symbols: [], lessons: [], timeframes: [], tags: [] } }));
     if (path.startsWith('/stats')) return json(ok(STATS));

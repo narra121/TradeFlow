@@ -1,6 +1,25 @@
 import { test, expect } from './fixtures/auth';
 
 test.describe('Trades', () => {
+  // These tests edit trades, so the user is in an active trial: the shared mock's plan 'free' is a trial that has ended (read-only).
+  test.beforeEach(async ({ authedPage: page }) => {
+    const in10Days = new Date(Date.now() + 10 * 86_400_000).toISOString();
+    await page.route('**/v1/me/entitlements', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            entitlements: { plan: 'trial', status: 'trial', trialEndsAt: in10Days, limits: { ai_extract: 200, ai_insight: 30, ai_chat: 500, broker_import: 200, ai_enhance: 500 }, features: {} },
+            usage: {},
+            periodResetsAt: in10Days,
+            writableAccountIds: null,
+          },
+        }),
+      }),
+    );
+  });
+
   test('lists the trades grouped by day and counts them in the top bar', async ({ authedPage: page }) => {
     await page.goto('/app/tradelog');
     await expect(page.getByRole('row').filter({ has: page.getByText('EURUSD') })).toBeVisible();
@@ -75,14 +94,22 @@ test.describe('Trades', () => {
     await expect(page.getByRole('row').filter({ has: page.getByText('EURUSD') })).toHaveCount(0);
   });
 
-  test('S on a focused row picks a strategy and saves it with accountIds and pnl', async ({ authedPage: page, apiCalls }) => {
+  // The picker saves through POST /trades/bulk-update, where the server sets only the named field; no PUT rewrites the whole trade.
+  test('S on a focused row picks a strategy and saves only that field through bulk-update', async ({ authedPage: page, apiCalls }) => {
+    const sent: unknown[] = [];
+    await page.route('**/v1/trades/bulk-update', async (route) => {
+      sent.push(route.request().postDataJSON());
+      await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, data: { updatedIds: ['t-1'], failed: [], notFound: [] } }) });
+    });
     await page.goto('/app/tradelog');
     const row = page.getByRole('row').filter({ has: page.getByText('EURUSD') });
     await row.focus();
     await page.keyboard.press('s');
     await page.getByRole('combobox', { name: 'Strategy' }).waitFor();
     await page.getByRole('option', { name: 'Reversal' }).click();
-    await expect.poll(() => apiCalls.find((c) => c.method === 'PUT' && c.path === '/trades/t-1')?.body).toMatchObject({ setupType: 'Reversal', accountIds: ['acc-usd'], pnl: 250 });
+    await expect.poll(() => sent[0]).toMatchObject({ tradeIds: ['t-1'], set: { setupType: 'Reversal' } });
+    await expect(row.getByRole('button', { name: /Change strategy/ })).toContainText('Reversal');
+    expect(apiCalls.filter((c) => c.method === 'PUT' && c.path === '/trades/t-1')).toHaveLength(0);
   });
 
   test('clicking a journal cell opens the same picker; a number cell has no edit affordance', async ({ authedPage: page }) => {

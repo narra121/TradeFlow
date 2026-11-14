@@ -46,7 +46,7 @@ const muted = (text: React.ReactNode) => <p className="text-sm text-muted-foregr
 /** Loading, error, mixed-currency, empty and too-few-trades states for a panel fed by `GET /analysis`. */
 export function AnalysisGate({ state, loadingHeight = 'h-24', what, min = 0, count = (a) => a.tradeCount, tooFew, empty, stateClassName, children }: AnalysisGateProps) {
   const frame = (node: React.ReactNode) => (stateClassName ? <div className={stateClassName}>{node}</div> : <>{node}</>);
-  if (!state || state.isLoading) return frame(<Skeleton className={loadingHeight} aria-label="Loading" />);
+  if (!state || state.isLoading) return frame(<Skeleton role="status" className={loadingHeight} aria-label="Loading" />);
   if (state.mixed) return frame(<PickAccountNotice currencies={state.mixed} what={what} />);
   if (state.isError || !state.data) return frame(<ErrorState title="Couldn't load this panel." description="The rest of the page keeps working." error={state.error} onRetry={state.refetch} />);
   const a = state.data;

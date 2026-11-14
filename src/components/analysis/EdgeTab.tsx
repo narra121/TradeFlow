@@ -134,7 +134,7 @@ export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
         state?.isError ? (
           <ErrorState title="Couldn't load this tab." description="The other tabs keep working." error={state.error} onRetry={state.refetch} />
         ) : (
-          <Skeleton className="h-72" aria-label="Loading" />
+          <Skeleton role="status" className="h-72" aria-label="Loading" />
         )
       ) : (
         <Panel padded={false}>
