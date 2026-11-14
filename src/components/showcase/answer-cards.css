@@ -110,7 +110,7 @@
 .ac-demo .ac-filler i {
   display: block;
   height: 6px;
-  border-radius: 3px;
+  border-radius: 2px;
   background: hsl(var(--foreground) / 0.08);
 }
 .ac-demo .ac-chat {
@@ -192,7 +192,7 @@
   color: hsl(var(--muted-foreground));
 }
 .ac-demo .ac-fact__value {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 22px;
 }
@@ -207,7 +207,7 @@
   gap: 10px;
 }
 .ac-demo .ac-fact--lead .ac-fact__value {
-  font-size: 22px;
+  font-size: 16px;
   line-height: 28px;
 }
 .ac-demo .ac-fact__say {
@@ -303,7 +303,7 @@
   margin-top: 6px;
 }
 .ac-demo .ac-replay__v {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 22px;
   white-space: nowrap;

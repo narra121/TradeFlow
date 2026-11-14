@@ -1,5 +1,4 @@
 import { Stage } from './kit/stage';
-import { Phone } from './kit/phone';
 import { Meter } from './kit/parts/Meter';
 import { formatMoney, formatPercent } from '@/lib/format';
 import {
@@ -137,13 +136,13 @@ export function AccountsStill() {
   );
 }
 
-/** The dashboard on a phone: the app's phone layout with its tab bar (a still). */
+/** The dashboard at phone width, in the same window frame as every other still (no device chrome, DESIGN-SHARED S8.5). */
 export function PhoneDashboard() {
   const s = sampleStats();
   return (
     <Stage width={420} height={520} compact={{ below: 410, width: 342, height: 520 }} theme="dark" className="tq-look sg-phone">
       {(_s, _rect, layout) => (
-        <Phone width={layout === 'compact' ? 310 : 380} dark wallpaper="hsl(var(--background))" time="9:41" className="sg-phone__device">
+        <div className="sg-phone__device" style={{ width: layout === 'compact' ? 310 : 380 }}>
           <div className="sg-app">
             <div className="sg-app__bar">
               <span>Dashboard</span>
@@ -186,7 +185,7 @@ export function PhoneDashboard() {
               </div>
             </div>
           </div>
-        </Phone>
+        </div>
       )}
     </Stage>
   );

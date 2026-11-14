@@ -147,7 +147,7 @@ describe('AuthFrame (DESIGN-AUTH-V2 §2)', () => {
     expect(container.querySelector('.stage-box')).toBeEmptyDOMElement();
   });
 
-  it('mounts the field and the live demo once the frame is on screen', async () => {
+  it('mounts the live demo once the frame is on screen, with no canvas behind the form (DESIGN-SHARED S6.2)', async () => {
     class Seen {
       constructor(private cb: IntersectionObserverCallback) {}
       observe(el: Element) {
@@ -160,16 +160,13 @@ describe('AuthFrame (DESIGN-AUTH-V2 §2)', () => {
       }
     }
     vi.stubGlobal('IntersectionObserver', Seen);
-    const getContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext;
     try {
       const { container } = render(shell(<AuthFrame><h1>Log in</h1></AuthFrame>));
       expect(await screen.findByRole('img', { name: /Sample data: the TradeQut calendar for November 2026/ }, { timeout: 15_000 })).toBeInTheDocument();
-      await waitFor(() => expect(container.querySelector('canvas.auth-field')).toBeInTheDocument());
+      expect(container.querySelector('canvas')).toBeNull();
       // The picture is one labelled image; nothing inside it takes focus.
       expect(container.querySelector('.stage-box a, .stage-box button, .stage-box input, .stage-box [tabindex]')).toBeNull();
     } finally {
-      HTMLCanvasElement.prototype.getContext = getContext;
       vi.unstubAllGlobals();
     }
   }, 20_000);

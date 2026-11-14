@@ -23,7 +23,7 @@
   gap: 10px;
   margin: 0;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -137,7 +137,7 @@
 }
 .tq-stat__value {
   margin-top: 4px;
-  font-size: 20px;
+  font-size: 16px;
   line-height: 28px;
   font-weight: 500;
   white-space: nowrap;
@@ -229,7 +229,7 @@
   left: -36px;
   width: 28px;
   text-align: right;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   color: hsl(var(--chart-axis));
   transform: translateY(-50%);
@@ -238,7 +238,7 @@
   display: flex;
   justify-content: space-between;
   margin: 4px 0 0 36px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   color: hsl(var(--chart-axis));
 }
@@ -250,7 +250,7 @@
 .tq-cal--head span {
   padding-bottom: 4px;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   color: hsl(var(--muted-foreground));
 }
@@ -279,7 +279,7 @@
   position: absolute;
   top: 1px;
   right: 3px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 12px;
 }
 /* Doubled class: a tint beats any one-class resting fill wherever the cell is drawn. */
@@ -377,7 +377,7 @@
     padding: 10px 12px;
   }
   .tq-stat__value {
-    font-size: 18px;
+    font-size: 16px;
     line-height: 24px;
   }
   .tq-tbl__closed,

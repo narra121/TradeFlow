@@ -2,8 +2,6 @@
    (the rest); below, the same parts stacked, form first. Every colour is a theme token of index.css. */
 .tq-auth {
   --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* The theme's overlay-shadow colour (index.css --shadow-overlay). */
-  --shade: 220 30% 2%;
   --sheet-w: clamp(448px, 36vw, 560px);
   --sheet-pad: calc((var(--sheet-w) - 384px) / 2);
   --pad: clamp(32px, 4.2vw, 64px);
@@ -69,34 +67,6 @@ html:has(.tq-auth) {
   }
 }
 
-/* The particle field (canvas, lazy). Stacked: a band behind the header. */
-.tq-auth .auth-bg {
-  position: absolute;
-  z-index: -1;
-  inset: 0 0 auto 0;
-  height: 360px;
-  pointer-events: none;
-}
-.tq-auth .auth-bg::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, transparent 46%, hsl(var(--background)) 100%);
-}
-.tq-auth .auth-field {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-.tq-auth[data-scene='none'] .auth-bg {
-  inset: 0;
-  height: auto;
-}
-.tq-auth[data-scene='none'] .auth-bg::after {
-  background: none;
-}
-
 /* ---------- Layout, split (from 1024 px) ---------- */
 @media (min-width: 1024px) {
   .tq-auth:not([data-scene='none']) {
@@ -113,27 +83,6 @@ html:has(.tq-auth) {
     grid-row: 1 / -1;
     background: hsl(var(--card));
     border-right: 1px solid hsl(var(--border));
-    box-shadow: 32px 0 80px -32px hsl(var(--shade) / 0.95);
-  }
-  /* The sheet's lit edge, and the emerald light that comes up while focus is in the form. */
-  .tq-auth .auth-sheet-bg::before,
-  .tq-auth .auth-sheet-bg::after {
-    content: '';
-    position: absolute;
-    inset: 0 -1px 0 auto;
-    width: 1px;
-  }
-  .tq-auth .auth-sheet-bg::before {
-    background: linear-gradient(to bottom, hsl(var(--foreground) / 0.3), hsl(var(--foreground) / 0.06) 38%, hsl(var(--primary) / 0.5));
-  }
-  .tq-auth .auth-sheet-bg::after {
-    opacity: 0;
-    background: hsl(var(--primary) / 0.7);
-    box-shadow: 0 0 32px 2px hsl(var(--primary) / 0.5);
-    transition: opacity var(--dur-3) var(--ease-in);
-  }
-  .tq-auth:has(.auth-main :focus-visible) .auth-sheet-bg::after {
-    opacity: 1;
   }
   .tq-auth:not([data-scene='none']) .auth-top,
   .tq-auth:not([data-scene='none']) .auth-main,
@@ -185,15 +134,6 @@ html:has(.tq-auth) {
     overflow: hidden;
     isolation: isolate;
     container: stage / inline-size;
-  }
-  .tq-auth .auth-stage .auth-bg {
-    inset: 0;
-    height: auto;
-  }
-  /* A lift of the surface behind the picture: the only "light" on the field, from surface tokens. */
-  .tq-auth .auth-stage .auth-bg::after {
-    z-index: -1;
-    background: radial-gradient(ellipse 74% 62% at 50% 56%, hsl(var(--card)), transparent 80%);
   }
   .tq-auth .auth-stage .auth-visual {
     flex: 1;
@@ -257,34 +197,6 @@ html:has(.tq-auth) {
   border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: hsl(var(--card));
-  box-shadow:
-    inset 0 1px 0 hsl(var(--foreground) / 0.05),
-    0 40px 80px -36px hsl(var(--shade) / 0.95),
-    0 14px 28px -14px hsl(var(--shade) / 0.7);
-}
-.tq-auth .auth-card::before,
-.tq-auth .auth-card::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  pointer-events: none;
-}
-/* Lit edge: a 1 px border that is lighter at the top-left and emerald at the bottom-right. */
-.tq-auth .auth-card::before {
-  padding: 1px;
-  background: linear-gradient(160deg, hsl(var(--foreground) / 0.3), transparent 34%, transparent 66%, hsl(var(--primary) / 0.55));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-.tq-auth .auth-card::after {
-  opacity: 0;
-  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.45), 0 0 56px -12px hsl(var(--primary) / 0.5);
-  transition: opacity var(--dur-3) var(--ease-in);
-}
-.tq-auth .auth-card:has(:focus-visible)::after {
-  opacity: 1;
 }
 @media (min-width: 600px) {
   .tq-auth .auth-card {
@@ -297,11 +209,6 @@ html:has(.tq-auth) {
     border: 0;
     border-radius: 0;
     background: none;
-    box-shadow: none;
-  }
-  .tq-auth:not([data-scene='none']) .auth-card::before,
-  .tq-auth:not([data-scene='none']) .auth-card::after {
-    content: none;
   }
 }
 
@@ -493,16 +400,11 @@ html:has(.tq-auth) {
 .tq-auth .input:hover {
   border-color: hsl(var(--muted-foreground));
 }
-/* Focus keeps the theme's 2 px outline and adds a glow. */
 .tq-auth .input:focus-visible {
   border-color: hsl(var(--ring));
-  box-shadow: 0 0 0 6px hsl(var(--ring) / 0.1), 0 0 28px -4px hsl(var(--ring) / 0.45);
 }
 .tq-auth .input[aria-invalid='true'] {
   border-color: hsl(var(--error));
-}
-.tq-auth .input[aria-invalid='true']:focus-visible {
-  box-shadow: 0 0 0 6px hsl(var(--error) / 0.1), 0 0 28px -4px hsl(var(--error) / 0.4);
 }
 .tq-auth .input[readonly] {
   color: hsl(var(--foreground-soft));
@@ -597,7 +499,7 @@ html:has(.tq-auth) {
   min-height: 24px;
 }
 
-/* Buttons: one family (DESIGN-SHARED S4.1); the filled one casts its own light. */
+/* Buttons: one family (DESIGN-SHARED S4.1), flat fills. */
 .tq-auth .btn {
   position: relative;
   display: inline-flex;
@@ -623,11 +525,9 @@ html:has(.tq-auth) {
 .tq-auth .btn-primary {
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.22), 0 10px 28px -12px hsl(var(--primary) / 0.7);
 }
 .tq-auth .btn-primary:hover {
   background: hsl(var(--primary) / 0.9);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.22), 0 12px 32px -10px hsl(var(--primary) / 0.8);
 }
 .tq-auth .btn-outline {
   border: 1px solid hsl(var(--border-strong));
@@ -649,20 +549,6 @@ html:has(.tq-auth) {
 .tq-auth .btn[disabled],
 .tq-auth .btn[aria-disabled='true']:not([data-busy]) {
   opacity: 0.5;
-  box-shadow: none;
-}
-.tq-auth .btn[data-busy]::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, hsl(0 0% 100% / 0.28) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: tq-auth-sheen 1.3s var(--ease-in) infinite;
-}
-@keyframes tq-auth-sheen {
-  to {
-    transform: translateX(100%);
-  }
 }
 .tq-auth .btn .g {
   width: 16px;
@@ -882,7 +768,6 @@ html:has(.tq-auth) {
   border-color: hsl(var(--ring));
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
-  box-shadow: 0 0 24px -4px hsl(var(--ring) / 0.45);
 }
 .tq-auth .code .slot.filled {
   border-color: hsl(var(--foreground-soft));
@@ -959,7 +844,7 @@ html:has(.tq-auth) {
   height: 44px;
   margin-bottom: 20px;
   border: 1px solid hsl(var(--border));
-  border-radius: 9999px;
+  border-radius: 6px;
   background: hsl(var(--popover));
   color: hsl(var(--muted-foreground));
 }
@@ -967,7 +852,6 @@ html:has(.tq-auth) {
   border-color: hsl(var(--profit) / 0.4);
   background: hsl(var(--profit) / 0.1);
   color: hsl(var(--profit));
-  box-shadow: 0 0 32px -6px hsl(var(--profit) / 0.45);
 }
 .tq-auth .status-badge.bad {
   border-color: hsl(var(--error) / 0.45);
@@ -1108,15 +992,6 @@ html:has(.tq-auth) {
     transform: translateY(42px) rotateX(22deg) rotateY(-8deg) scale(0.94);
   }
 }
-/* A soft drop under the demo window. */
-.tq-auth .stage-reveal::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: 10% 4% 6%;
-  background: hsl(var(--shade) / 0.9);
-  filter: blur(42px);
-}
 /* The stages run off their bottom edge by design; here that edge fades into the field. */
 .tq-auth .stage-demo {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 72px), transparent);
@@ -1137,7 +1012,6 @@ html:has(.tq-auth) {
   border: 1px solid hsl(var(--border-strong) / 0.6);
   border-radius: 6px;
   background: hsl(var(--popover));
-  box-shadow: 0 24px 56px -20px hsl(var(--shade) / 0.95);
   font-size: 13px;
   line-height: 20px;
   color: hsl(var(--muted-foreground));
@@ -1193,9 +1067,6 @@ html:has(.tq-auth) {
     }
   }
 }
-.tq-auth .stage-reveal:has(> .stage-card)::before {
-  content: none;
-}
 .tq-auth .stage-card {
   position: relative;
   width: min(100%, 440px);
@@ -1203,7 +1074,6 @@ html:has(.tq-auth) {
   border: 1px solid hsl(var(--border-strong) / 0.6);
   border-radius: 6px;
   background: hsl(var(--popover));
-  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.05), 0 40px 80px -32px hsl(var(--shade) / 0.95);
   font-size: 14px;
   line-height: 20px;
   color: hsl(var(--foreground-soft));
@@ -1477,7 +1347,7 @@ html:has(.tq-auth) {
   width: 44px;
   height: 44px;
   margin: -6px;
-  border-radius: 9999px;
+  border-radius: 4px;
   color: hsl(var(--muted-foreground));
 }
 .tq-auth .stage-pause::before {

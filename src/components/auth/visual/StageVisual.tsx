@@ -109,7 +109,7 @@ function ClosedCard({ everywhere = false }: { everywhere?: boolean }) {
  */
 export function StageVisual({ scene, data, paused, seen }: StageVisualProps) {
   return (
-    <div className="stage-box" data-field-anchor="wide">
+    <div className="stage-box">
       {scene === 'journal' && seen && (
         <Suspense fallback={null}>
           <JournalDemo paused={paused} />

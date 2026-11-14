@@ -15,6 +15,7 @@ import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 
 import { join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { createByteCounter } from './collectBytes.mjs';
+import { prerenderedRoutes } from '../seo/previewRouting.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d) => (args.includes(`--${n}`) ? args[args.indexOf(`--${n}`) + 1] : d);
@@ -68,7 +69,7 @@ async function measure(browser, base, route) {
   };
 }
 
-const server = await preview({ preview: { port: 4180, strictPort: false } });
+const server = await preview({ preview: { port: 4180, strictPort: false }, plugins: [prerenderedRoutes()] });
 const base = (server.resolvedUrls?.local?.[0] ?? 'http://localhost:4180').replace(/\/$/, '');
 const browser = await chromium.launch();
 const rows = [];
@@ -81,10 +82,11 @@ try {
 
 const chunks = chunkSizes();
 const biggestChunk = chunks.reduce((a, b) => (b.gz > a.gz ? b : a), { file: '', gz: 0 });
-const css = chunks.filter((c) => c.file.endsWith('.css')).reduce((s, c) => s + c.gz, 0);
 const current = {
   jsGzKb: Math.max(...rows.map((r) => kb(r.jsGz))),
-  cssGzKb: Math.max(kb(css), ...rows.map((r) => kb(r.cssGz))),
+  // D.10 "CSS (gzip) ≤ 30 kB" is a per-page budget (public pages, p75 phone on 4G): the CSS one route loads, not every
+  // file in dist/ (the auth pages' CSS never loads on the landing page).
+  cssGzKb: Math.max(...rows.map((r) => kb(r.cssGz))),
   biggestChunkGzKb: kb(biggestChunk.gz),
   fontKb: Math.max(...rows.map((r) => kb(r.fontBytes))),
   fontFiles: Math.max(...rows.map((r) => r.fontFiles)),

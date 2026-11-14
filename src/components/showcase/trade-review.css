@@ -50,7 +50,7 @@
 .tr-demo .tr-row--filler i {
   display: block;
   height: 6px;
-  border-radius: 3px;
+  border-radius: 2px;
   background: hsl(var(--foreground) / 0.08);
 }
 .tr-demo .tr-r {
@@ -155,7 +155,7 @@
   white-space: nowrap;
 }
 .tr-demo .tr-pane__pnl {
-  font-size: 20px;
+  font-size: 16px;
   line-height: 28px;
   font-weight: 500;
 }
@@ -269,7 +269,7 @@
 .tr-demo .tr-sat__value {
   display: block;
   margin: 4px 0 2px;
-  font-size: 20px;
+  font-size: 16px;
   line-height: 28px;
   font-weight: 500;
 }

@@ -100,10 +100,16 @@
   color: hsl(var(--muted-foreground));
 }
 
+/* The app at phone width in the stills' window frame; it runs off the stage's bottom edge. */
 .sg-phone .sg-phone__device {
   position: absolute;
   left: 20px;
   top: 20px;
+  height: 560px;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: hsl(var(--background));
 }
 .sg-phone .ss-stage[data-layout='compact'] .sg-phone__device {
   left: 16px;
@@ -114,10 +120,9 @@
   flex-direction: column;
   height: 100%;
   color: hsl(var(--foreground));
-  font-size: 15px;
+  font-size: 14px;
   line-height: 20px;
 }
-/* Inside a Phone, sizes are iOS points (the device scales them): 17 title, 15 body, 13 caption. */
 .sg-phone .sg-app__bar {
   display: flex;
   align-items: center;
@@ -125,7 +130,7 @@
   height: 52px;
   padding: 0 20px;
   border-bottom: 1px solid hsl(var(--border));
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
 }
 .sg-phone .sg-app__chip {
@@ -161,7 +166,7 @@
 .sg-phone .sg-app__stats b {
   display: block;
   margin-top: 2px;
-  font-size: 20px;
+  font-size: 16px;
   line-height: 26px;
   font-weight: 500;
 }
@@ -189,7 +194,7 @@
   place-items: center;
   height: 40px;
   border-radius: 2px;
-  font-size: 15px;
+  font-size: 14px;
   color: hsl(var(--foreground-soft));
 }
 .sg-phone :where(.sg-app__cal > span) {

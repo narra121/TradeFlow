@@ -1,4 +1,4 @@
-/* Button */
+/* Button: the medium size and the primary and secondary variants, the only ones TradeQut's demos use */
 
 @layer stageshow {
   .ss-button {
@@ -38,25 +38,6 @@
       padding 220ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .ss-button[data-size="small"] {
-    --ss-button-height: 24px;
-    --ss-button-pad: 8px;
-    --ss-button-pad-icon: 6px;
-    --ss-button-icon: 12px;
-    --ss-button-gap: 5px;
-    font-size: 12px;
-  }
-
-  .ss-button[data-size="large"] {
-    --ss-button-height: 32px;
-    --ss-button-pad: 14px;
-    --ss-button-pad-icon: 11px;
-    --ss-button-icon: 16px;
-    --ss-button-gap: 7px;
-    border-radius: var(--ss-radius-md);
-    font-size: 14px;
-  }
-
   .ss-button[data-leading] { padding-left: var(--ss-button-pad-icon); }
   .ss-button[data-trailing] { padding-right: var(--ss-button-pad-icon); }
 
@@ -65,15 +46,6 @@
 
   .ss-button[data-variant="primary"] { background: var(--ss-accent); color: #fff; box-shadow: none; }
   .ss-button[data-variant="primary"][data-hover] { background: color-mix(in srgb, var(--ss-accent), #000 10%); }
-
-  .ss-button[data-variant="danger"] { background: var(--ss-danger); color: #fff; box-shadow: none; }
-  .ss-button[data-variant="danger"][data-hover] { background: color-mix(in srgb, var(--ss-danger), #000 10%); }
-
-  .ss-button[data-variant="tertiary"] { background: var(--ss-ink-2); box-shadow: none; }
-  .ss-button[data-variant="tertiary"][data-hover] { background: var(--ss-ink-3); }
-
-  .ss-button[data-variant="ghost"] { background: transparent; box-shadow: none; }
-  .ss-button[data-variant="ghost"][data-hover] { background: var(--ss-ink-2); }
 
   /* The press: a small scale on pointer-down, the label stays put inside it */
   .ss-button[data-pressed] { transform: scale(0.97); }

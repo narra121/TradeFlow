@@ -4,10 +4,6 @@ import { TRIAL_DAYS } from '@/content/product-facts';
 /** What the stage beside the form shows (DESIGN-AUTH-V2 §3). */
 export type AuthScene = 'journal' | 'opening' | 'signup' | 'mail' | 'reset' | 'closed';
 
-/** `drift`: the cloud turns. `calm`: slower and dimmer. `assemble`: the points draw the shape, with a scan line. `rest`: the drawn shape, dim and slow. */
-export type FieldMode = 'drift' | 'calm' | 'assemble' | 'rest';
-export type FieldShape = 'calendar' | 'envelope';
-
 export interface SceneMeta {
   eyebrow: string;
   /** The display line in two tones: [muted, foreground]. */
@@ -17,7 +13,6 @@ export interface SceneMeta {
   /** The bar's sentence. A scene with a product picture carries the `Sample data` chip before it. */
   note?: string;
   sample: boolean;
-  field: { mode: FieldMode; shape: FieldShape };
 }
 
 const SAMPLE_NOTE = 'One sample account, November 2026';
@@ -29,7 +24,6 @@ export const SCENES: Record<AuthScene, SceneMeta> = {
     bar: 'stats',
     note: SAMPLE_NOTE,
     sample: true,
-    field: { mode: 'drift', shape: 'calendar' },
   },
   opening: {
     eyebrow: 'Google sign-in',
@@ -37,7 +31,6 @@ export const SCENES: Record<AuthScene, SceneMeta> = {
     bar: null,
     note: 'Your trades stay in your account while Google confirms who you are.',
     sample: false,
-    field: { mode: 'assemble', shape: 'calendar' },
   },
   signup: {
     eyebrow: `${TRIAL_DAYS}-day free trial · No card`,
@@ -45,7 +38,6 @@ export const SCENES: Record<AuthScene, SceneMeta> = {
     bar: 'facts',
     note: SAMPLE_NOTE,
     sample: true,
-    field: { mode: 'drift', shape: 'calendar' },
   },
   mail: {
     eyebrow: 'Check your email',
@@ -53,7 +45,6 @@ export const SCENES: Record<AuthScene, SceneMeta> = {
     bar: null,
     note: 'The code goes to the address you typed. Look in spam if it is not in your inbox.',
     sample: false,
-    field: { mode: 'assemble', shape: 'envelope' },
   },
   reset: {
     eyebrow: 'Password reset',
@@ -61,7 +52,6 @@ export const SCENES: Record<AuthScene, SceneMeta> = {
     bar: null,
     note: 'Nothing in your journal changes when you reset your password.',
     sample: false,
-    field: { mode: 'calm', shape: 'calendar' },
   },
   closed: {
     eyebrow: 'Logged out',
@@ -69,7 +59,6 @@ export const SCENES: Record<AuthScene, SceneMeta> = {
     bar: null,
     note: 'Your trades stay in your account. Log in from any browser to open them.',
     sample: false,
-    field: { mode: 'rest', shape: 'calendar' },
   },
 };
 

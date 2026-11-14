@@ -11,6 +11,7 @@ import { chromium } from 'playwright';
 import { preview } from 'vite';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { prerenderedRoutes } from './previewRouting.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d) => (args.includes(`--${n}`) ? args[args.indexOf(`--${n}`) + 1] : d);
@@ -122,7 +123,7 @@ async function focusObscured(page) {
   return bad;
 }
 
-const server = await preview({ preview: { port: 4174, strictPort: false } });
+const server = await preview({ preview: { port: 4174, strictPort: false }, plugins: [prerenderedRoutes()] });
 const base = (server.resolvedUrls?.local?.[0] ?? 'http://localhost:4174').replace(/\/$/, '');
 const browser = await chromium.launch();
 let failures = 0;

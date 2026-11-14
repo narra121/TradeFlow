@@ -153,7 +153,7 @@
   border-radius: 2px;
   background: hsl(var(--secondary));
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -193,7 +193,7 @@
   gap: 14px;
   min-height: 32px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -282,7 +282,7 @@
   position: relative;
   margin: 18px 0 0;
   height: 1.1em;
-  font-size: clamp(36px, 3.6vw, 52px);
+  font-size: clamp(39px, 3.9vw, 56px);
   line-height: 1.09;
   font-weight: 500;
   letter-spacing: -0.055em;
@@ -377,7 +377,7 @@
 }
 .lp-steps button span {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 12px;
 }
 .lp-steps button[aria-pressed='true'] {
   color: hsl(var(--foreground));
@@ -388,7 +388,7 @@
   align-items: center;
   gap: 14px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: hsl(var(--muted-foreground));
@@ -443,7 +443,7 @@
   padding: 0 14px;
   border-bottom: 1px solid hsl(var(--border));
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: hsl(var(--muted-foreground));
@@ -456,14 +456,14 @@
 }
 .lp-card h3 {
   margin-top: 22px;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 26px;
   font-weight: 500;
   letter-spacing: -0.01em;
 }
 .lp-card p {
   margin-top: 8px;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.7;
   color: hsl(var(--muted-foreground));
 }
@@ -479,7 +479,7 @@
 }
 .lp-manifesto__text {
   max-width: 950px;
-  font-size: clamp(30px, 3.75vw, 54px);
+  font-size: clamp(39px, 3.9vw, 56px);
   line-height: 1.19;
   letter-spacing: -0.04em;
 }
@@ -550,7 +550,7 @@
 .lp-story__step small {
   display: block;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -562,7 +562,7 @@
 .lp-story__step strong {
   display: block;
   margin-top: 8px;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 24px;
   font-weight: 500;
 }
@@ -613,7 +613,7 @@
   display: flex;
   justify-content: space-between;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -624,7 +624,7 @@
 }
 .lp-fig h3 {
   margin-top: 26px;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 24px;
   font-weight: 500;
   letter-spacing: -0.01em;
@@ -632,7 +632,7 @@
 .lp-fig p {
   margin-top: 8px;
   max-width: 340px;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.7;
   color: hsl(var(--muted-foreground));
 }
@@ -644,7 +644,7 @@
 .lp-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.6;
 }
 .lp-table th,
@@ -658,7 +658,7 @@
   padding-top: 0;
   border-top: 0;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -726,7 +726,7 @@
 }
 .lp-faq__answer {
   padding: 0 36px 24px 0;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.75;
   color: hsl(var(--muted-foreground));
 }
@@ -741,8 +741,8 @@
   border-top: 1px solid hsl(var(--border));
 }
 .lp-services h2 {
-  font-size: 24px;
-  line-height: 32px;
+  font-size: 16px;
+  line-height: 24px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -754,7 +754,7 @@
 .lp-services li {
   padding: 14px 0;
   border-top: 1px solid hsl(var(--border));
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.7;
   color: hsl(var(--foreground-soft));
 }
@@ -777,7 +777,7 @@
 }
 .lp-final h2 {
   margin: 25px 0 0;
-  font-size: clamp(44px, 4.7vw, 68px);
+  font-size: clamp(39px, 3.9vw, 56px);
   line-height: 1.08;
   font-weight: 500;
   letter-spacing: -0.055em;
@@ -1055,4 +1055,10 @@
   font-size: 13px;
   line-height: 20px;
   color: hsl(var(--muted-foreground));
+}
+
+/* Six type sizes on this page (audit-public.mjs): the pricing table's prices use the 16 px step here. */
+.lp-pricing thead .num {
+  font-size: 16px;
+  line-height: 24px;
 }

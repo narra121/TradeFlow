@@ -3,8 +3,6 @@ import { CalendarStage } from '@/components/showcase/CalendarStage';
 import { TradeReviewDemo } from '@/components/showcase/TradeReviewDemo';
 import { SAMPLE_MONTH, SAMPLE_RECENT, money, plural, sampleStats } from '@/components/showcase/sampleJournal';
 
-export { AuthField } from './AuthField';
-
 /** CalendarStage's design size on the auth stage; auth.css reserves the same ratio (`.stage-box`). */
 const JOURNAL_SIZE = { width: 760, height: 470 };
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '@/components/public/BrandMark';
 import { Eyebrow } from '@/components/showcase/Eyebrow';
@@ -9,8 +9,6 @@ import { ReadyContext, useFade } from '@/components/auth/useFade';
 import { StageVisual } from '@/components/auth/visual/StageVisual';
 import { useSeen } from '@/components/auth/visual/useSeen';
 import '@/components/auth/auth.css';
-
-const AuthField = lazy(() => import('@/components/auth/visual/demos').then((m) => ({ default: m.AuthField })));
 
 /** Wrapper for the content of one view: it fades in when the view changes and not on first paint. */
 export function FadeIn({ children }: { children: React.ReactNode }) {
@@ -49,7 +47,7 @@ const NO_DATA: StageData = {};
  */
 function Head({ meta, at }: { meta: SceneMeta; at: 'top' | 'stage' }) {
   return (
-    <div className={`auth-head is-${at}`} data-field-anchor={at === 'top' ? 'narrow' : undefined}>
+    <div className={`auth-head is-${at}`}>
       <Eyebrow>{meta.eyebrow}</Eyebrow>
       <p className="auth-display">
         <span className="dim">{meta.line[0]}</span> <span>{meta.line[1]}</span>
@@ -60,9 +58,9 @@ function Head({ meta, at }: { meta: SceneMeta; at: 'top' | 'stage' }) {
 
 /**
  * One full-bleed screen (DESIGN-AUTH-V2 §2). From 1024 px: a form sheet on the left from top to bottom, and the stage
- * filling the rest (display line, live product demo, a closing bar) over the landing page's particle field. Below
- * 1024 px the same parts stack, form first. The field and the demos are a lazy chunk mounted after the first paint
- * into boxes whose size CSS reserves. The frame stays mounted while the view changes.
+ * filling the rest (display line, live product demo, a closing bar) on a plain background (DESIGN-SHARED S6.2: no canvas
+ * or gradient behind a form). Below 1024 px the same parts stack, form first. The demos are a lazy chunk mounted after
+ * the first paint into boxes whose size CSS reserves. The frame stays mounted while the view changes.
  */
 export function AuthFrame({ pane = 'journal', scene: sceneProp, stage = NO_DATA, alternate, step, children }: AuthFrameProps) {
   const root = useRef<HTMLDivElement>(null);
@@ -76,21 +74,11 @@ export function AuthFrame({ pane = 'journal', scene: sceneProp, stage = NO_DATA,
   const scene = pane === 'none' ? null : (sceneProp ?? pane);
   const meta = scene ? SCENES[scene] : null;
   const product = scene === 'journal' || scene === 'signup';
-  const field = (
-    <div className="auth-bg" aria-hidden="true">
-      {seen && (
-        <Suspense fallback={null}>
-          <AuthField mode={meta?.field.mode ?? 'drift'} shape={meta?.field.shape ?? 'calendar'} paused={paused} anchorKey={scene ?? 'none'} frozen={!meta} />
-        </Suspense>
-      )}
-    </div>
-  );
 
   return (
     <ReadyContext.Provider value={ready}>
       <div ref={root} className="tq-auth" data-scene={scene ?? 'none'}>
         <div className="auth-sheet-bg" aria-hidden="true" />
-        {!meta && field}
         <header className="auth-top">
           <Link to="/" className="brand" aria-label="TradeQut home">
             <BrandMark />
@@ -98,7 +86,7 @@ export function AuthFrame({ pane = 'journal', scene: sceneProp, stage = NO_DATA,
           {meta && <Head meta={meta} at="top" />}
         </header>
         <main className="auth-main" id="main">
-          <div className="auth-card" data-field-anchor={meta ? undefined : 'wide narrow'}>
+          <div className="auth-card">
             {step && <StepRow current={step} />}
             {children}
           </div>
@@ -116,7 +104,6 @@ export function AuthFrame({ pane = 'journal', scene: sceneProp, stage = NO_DATA,
         </main>
         {scene && meta && (
           <aside className="auth-stage" aria-label={product ? 'What TradeQut looks like' : 'About this step'}>
-            {field}
             <Head meta={meta} at="stage" />
             <div className="auth-visual">
               <StageVisual scene={scene} data={stage} paused={paused} seen={seen} />
