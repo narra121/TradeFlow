@@ -76,7 +76,8 @@ describe('TradePane', () => {
     readOnly = new Set(['a1']);
     setup();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('Your free trial has ended, so your journal is read-only');
+    // The debrief's loading state is a status too, so the reason's status is found through its text.
+    expect(screen.getByText(/Your free trial has ended, so your journal is read-only/).closest('[role="status"]')).toHaveTextContent('Your free trial has ended, so your journal is read-only');
     expect(screen.queryByRole('button', { name: /^Edit strategy/ })).toBeNull();
   });
 

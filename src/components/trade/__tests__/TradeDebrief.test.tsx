@@ -34,7 +34,7 @@ describe('TradeDebrief', () => {
     query.mockReturnValue({ isLoading: true, isFetching: true, isError: false, refetch: vi.fn() });
     render(<TradeDebrief tradeId="t1" />);
     expect(query).toHaveBeenCalledWith('t1');
-    expect(screen.getByLabelText('Loading the debrief')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('status', { name: 'Loading the debrief' })).toHaveAttribute('aria-busy', 'true');
   });
 
   it('shows the count, each check as met or not met with its figures, and the ones that do not apply apart', () => {

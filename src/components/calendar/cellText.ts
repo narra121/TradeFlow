@@ -1,18 +1,17 @@
 import { format } from 'date-fns';
 import { dayMetric, type CalendarMetric, type DayCell } from '@/lib/calendar';
 import { formatCompactMoney, formatMoney, formatR } from '@/lib/format';
+import { appTimeZone } from '@/lib/appTimeZone';
+import { canonicalZone } from '@/components/settings/timeZones';
 
 /** Compact only above 4 digits (D.3): under 1,000 a whole unit, so `+$64` and not `+$64.4`. */
 export function compactMoney(value: number, currency?: string): string {
   return Math.abs(value) < 1000 ? formatMoney(value, currency, { sign: true, decimals: 0 }) : formatCompactMoney(value, { sign: true, currency });
 }
 
-const ZONE_ALIAS: Record<string, string> = { 'Asia/Calcutta': 'Asia/Kolkata', 'Asia/Saigon': 'Asia/Ho_Chi_Minh', 'Asia/Katmandu': 'Asia/Kathmandu', 'Europe/Kiev': 'Europe/Kyiv' };
-
-/** The browser's zone under its canonical IANA name. */
+/** The zone the calendar buckets and shows times in (the Settings preference, else this browser's), under its canonical IANA name. */
 export function zoneName(): string {
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return ZONE_ALIAS[zone] ?? zone;
+  return canonicalZone(appTimeZone());
 }
 import { plural } from '@/components/calendar/dayText';
 

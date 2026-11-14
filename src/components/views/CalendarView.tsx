@@ -325,7 +325,7 @@ function Legend({ metric, mixed }: { metric: CalendarMetric; mixed: boolean }) {
     <div className={cn('space-y-1 text-xs text-muted-foreground')}>
       <p>{what[metric]}{mixed && metric === 'r' ? ' This scope mixes currencies, so R is the default.' : ''}</p>
       <p>
-        <span className="font-semibold text-warning">!</span> a trade broke a rule. Days are by the time the trade closed. Times in {tz}.
+        <span className="font-semibold text-warning">!</span> a trade broke a rule. Days are by the time the trade opened. Times in {tz}.
       </p>
     </div>
   );

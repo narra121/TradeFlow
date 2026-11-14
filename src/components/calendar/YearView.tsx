@@ -90,7 +90,7 @@ export function YearView({ months, year, metric, loading, capped, onOpenMonth, o
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label={`Months of ${year}`}>
+      <div role="group" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label={`Months of ${year}`}>
         {months.map((m) => <MiniMonth key={m.key} m={m} metric={metric} scale={scale} onOpenMonth={onOpenMonth} onOpenDay={onOpenDay} />)}
       </div>
       <DataTable caption={`Months of ${year}`} rows={months} columns={columns} getRowId={(m) => m.key} onRowOpen={(m) => onOpenMonth(m.key)} />

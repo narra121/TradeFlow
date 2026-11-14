@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MonthGrid } from '../MonthGrid';
 import { cellName, compactMoney, metricText, zoneName } from '../cellText';
 import { buildMonth } from '@/lib/calendar';
+import { patchUiState } from '@/hooks/useUiState';
 import type { Trade, TradingAccount } from '@/types/trade';
 
 const accounts = new Map([['usd', { id: 'usd', currency: 'USD', name: 'U' } as TradingAccount]]);
@@ -125,10 +126,12 @@ describe('cell helpers', () => {
     expect(compactMoney(-13.2, 'INR')).toBe('−₹13');
     expect(compactMoney(1400, 'USD')).toBe('+$1.4k');
   });
-  it('names the zone under its canonical name', () => {
-    const spy = vi.spyOn(Intl, 'DateTimeFormat').mockReturnValue({ resolvedOptions: () => ({ timeZone: 'Asia/Calcutta' }) } as unknown as Intl.DateTimeFormat);
+  it('names the zone the app shows times in (the Settings preference), under its canonical name', () => {
+    patchUiState({ timeZone: 'Asia/Calcutta' });
     expect(zoneName()).toBe('Asia/Kolkata');
-    spy.mockRestore();
+    patchUiState({ timeZone: 'UTC' });
+    expect(zoneName()).toBe('UTC');
+    patchUiState({ timeZone: '' });
   });
   it('names an empty day with a note', () => {
     expect(cellName(day('2026-11-05'), true)).toBe('Thursday 5 November, no trades, has a note');

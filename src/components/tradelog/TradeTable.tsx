@@ -105,9 +105,9 @@ function JournalMarks({ t }: { t: Trade }) {
         </li>
       )}
       {tags > 0 && (
-        <li title={`${tags} tags`}>
+        <li title={`${tags} ${tags === 1 ? 'tag' : 'tags'}`}>
           <Tag className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
-          <span className="sr-only">{tags} tags</span>
+          <span className="sr-only">{tags} {tags === 1 ? 'tag' : 'tags'}</span>
         </li>
       )}
     </ul>

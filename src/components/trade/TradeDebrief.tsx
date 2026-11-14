@@ -36,7 +36,7 @@ export function TradeDebrief({ tradeId }: { tradeId: string }) {
   let body: React.ReactNode;
   if (isLoading) {
     body = (
-      <div className="space-y-2" aria-busy="true" aria-label="Loading the debrief">
+      <div role="status" className="space-y-2" aria-busy="true" aria-label="Loading the debrief">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />

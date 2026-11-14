@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { Trade } from '@/types/trade';
+import { patchUiState } from '@/hooks/useUiState';
 
 const accounts = [
   { id: 'usd', name: 'FTMO', currency: 'USD', status: 'active', balance: 1000, broker: '', type: 'personal', initialBalance: 1000, createdAt: '' },
@@ -73,7 +74,7 @@ describe('CalendarView', () => {
 
   it('prints the month in one summary line and a grid', () => {
     setup();
-    const line = screen.getByLabelText('Summary');
+    const line = screen.getByRole('group', { name: 'Summary' });
     expect(line).toHaveTextContent('Net+$387.80');
     expect(line).toHaveTextContent('3 trading days · 2 green / 1 red');
     expect(line).toHaveTextContent('Best Fri 6 +$310.00');
@@ -243,6 +244,13 @@ describe('CalendarView', () => {
     setup();
     expect(screen.getByText(/Tint shows net P&L in three steps/)).toBeInTheDocument();
     expect(screen.getByText(/Times in /)).toBeInTheDocument();
+  });
+
+  it('names the app time zone (the Settings preference) and the open day as the day a trade belongs to', () => {
+    patchUiState({ timeZone: 'UTC' });
+    setup();
+    expect(screen.getByText(/Days are by the time the trade opened\. Times in UTC\./)).toBeInTheDocument();
+    patchUiState({ timeZone: '' });
   });
 
   it('shows the week as a day timeline with blocks that open a trade', async () => {

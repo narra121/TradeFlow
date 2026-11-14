@@ -56,7 +56,7 @@ export function HelpMenu({ onShowShortcuts, gettingStarted }: HelpMenuProps) {
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={onShowShortcuts}>Keyboard shortcuts</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => (openNewsOnClose.current = true)}>
-                What&apos;s new {unseen && <span className="ml-auto h-2 w-2 rounded-full bg-primary" aria-label="new" />}
+                What&apos;s new {unseen && <span role="img" className="ml-auto h-2 w-2 rounded-full bg-primary" aria-label="new" />}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setDialog('support')}>Contact support</DropdownMenuItem>

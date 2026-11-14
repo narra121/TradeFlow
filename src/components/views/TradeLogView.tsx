@@ -659,7 +659,7 @@ export function TradeLogView() {
       {isError ? (
         <ErrorState title={copy.trades.loadError.title} description={copy.trades.loadError.description} error={scopeError} onRetry={refetch} />
       ) : isLoading ? (
-        <div className="space-y-1.5" aria-busy="true" aria-label="Loading trades">
+        <div role="status" className="space-y-1.5" aria-busy="true" aria-label="Loading trades">
           {Array.from({ length: 12 }).map((_, i) => (
             <Skeleton key={i} className="h-9 w-full" />
           ))}

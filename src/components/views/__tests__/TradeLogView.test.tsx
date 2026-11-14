@@ -72,6 +72,19 @@ describe('TradeLogView', () => {
     expect(screen.queryByText(/No trades/)).toBeNull();
   });
 
+  it('counts journal tags in the singular for one and the plural for more', () => {
+    scope = { trades: [mk(1, { tags: ['a'] }), mk(2, { tags: ['a', 'b'] })], isLoading: false, isError: false };
+    setup();
+    expect(screen.getByTitle('1 tag')).toBeInTheDocument();
+    expect(screen.getByTitle('2 tags')).toBeInTheDocument();
+  });
+
+  it('announces the loading list as a busy status', () => {
+    scope = { trades: [], isLoading: true, isError: false };
+    setup();
+    expect(screen.getByRole('status', { name: 'Loading trades' })).toHaveAttribute('aria-busy', 'true');
+  });
+
   it('shows an activation prompt when the scope is empty', () => {
     setup();
     expect(screen.getByText('No trades yet.')).toBeInTheDocument();

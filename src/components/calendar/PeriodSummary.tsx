@@ -19,7 +19,7 @@ export function PeriodSummary({ summary, days, metric }: PeriodSummaryProps) {
   const bestDate = best ? dayOf(best.key) : undefined;
   const worstDate = worst ? dayOf(worst.key) : undefined;
   return (
-    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-13" aria-label="Summary">
+    <p role="group" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-13" aria-label="Summary">
       <span className="text-muted-foreground">Net</span>
       {summary.byCurrency.length ? summary.byCurrency.map((c) => <Money key={c.currency} value={c.net} currency={c.currency} />) : <span>—</span>}
       <span className="text-muted-foreground">

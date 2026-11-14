@@ -80,7 +80,7 @@ describe('YearView', () => {
 
   it('draws twelve mini months with a square per day and the exact figures in a table beside them', () => {
     setup();
-    expect(screen.getAllByRole('region').length).toBeGreaterThanOrEqual(12);
+    expect(within(screen.getByRole('group', { name: 'Months of 2026' })).getAllByRole('region').length).toBe(12);
     const nov = screen.getByRole('region', { name: 'November 2026' });
     expect(within(nov).getAllByRole('button')).toHaveLength(31);
     const table = screen.getByRole('table', { name: 'Months of 2026' });
