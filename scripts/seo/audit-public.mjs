@@ -73,21 +73,26 @@ function inspect({ narrow }) {
   let gradient = 0;
   let pills = 0;
   const radii = new Map();
+  // A computed radius can stay a percentage (Chromium 159's UA style gives radios `border-radius: 50%`): resolve it
+  // against the box, so 50% of a square is the full round (a pill) and not 50 px.
+  const radiusPx = (value, rect) => (value.endsWith('%') ? (parseFloat(value) / 100) * Math.min(rect.width, rect.height) : parseFloat(value));
   for (const el of document.body.querySelectorAll('*')) {
     if (!visible(el)) continue;
     const cs = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    const round = (value) => (value.endsWith('%') && parseFloat(value) >= 50) || parseFloat(value) >= 500;
     if ((cs.backdropFilter && cs.backdropFilter !== 'none') || (cs.filter && /blur/.test(cs.filter))) blur++;
     if (/gradient/.test(cs.backgroundImage)) gradient++;
     // AS-3: pill shapes only for avatars, switches and status dots; a wide pill is a chip or button dressed as one.
-    if (parseFloat(cs.borderTopLeftRadius) >= 500 && el.getBoundingClientRect().width > 40) pills++;
+    if (round(cs.borderTopLeftRadius) && rect.width > 40) pills++;
     for (const corner of [cs.borderTopLeftRadius, cs.borderTopRightRadius, cs.borderBottomLeftRadius, cs.borderBottomRightRadius]) {
-      const v = parseFloat(corner);
+      const v = radiusPx(corner, rect);
       if (!v) continue;
-      const key = v >= 999 ? 9999 : Math.round(v * 10) / 10;
+      const key = v >= 999 || round(corner) ? 9999 : Math.round(v * 10) / 10;
       radii.set(key, (radii.get(key) ?? 0) + 1);
     }
   }
-  if (pills) problems.push(`${pills} wide pill-shaped elements (radius >= 500px, width > 40px)`);
+  if (pills) problems.push(`${pills} wide pill-shaped elements (fully round, width > 40px)`);
   if (blur) problems.push(`${blur} elements with blur or backdrop-filter`);
   if (gradient) problems.push(`${gradient} elements with a gradient background`);
 

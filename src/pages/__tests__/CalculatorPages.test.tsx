@@ -60,4 +60,24 @@ describe('calculators', () => {
     expect(screen.getByText('1 : 3.00')).toBeInTheDocument();
     expect(screen.getByText('25.0%')).toBeInTheDocument();
   });
+  it('risk-reward: a forex short shows risk and reward per unit at the price precision, not rounded to 0.01', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<RiskRewardCalculatorPage />);
+    await user.click(screen.getByLabelText('Short'));
+    for (const [label, value] of [['Entry price', '1.2650'], ['Stop loss price', '1.2700'], ['Take profit price', '1.2500']] as const) {
+      const input = screen.getByLabelText(label);
+      await user.clear(input);
+      await user.type(input, value);
+    }
+    expect(screen.getByText('1 : 3.00')).toBeInTheDocument();
+    expect(screen.getByText('0.0050')).toBeInTheDocument();
+    expect(screen.getByText('0.0150')).toBeInTheDocument();
+  });
+
+  it('risk-reward: whole-number prices keep two decimals', () => {
+    renderWithProviders(<RiskRewardCalculatorPage />);
+    expect(screen.getByText('5.00')).toBeInTheDocument();
+    expect(screen.getByText('15.00')).toBeInTheDocument();
+  });
 });
+

@@ -14,6 +14,11 @@ import { calculatorSchema } from '@/config/seo';
 
 type Direction = 'long' | 'short';
 
+/** Decimals typed in a price ("1.2650" → 4), so a per-unit distance shows at the prices' own precision: forex risk 0.0050, not 0.01. At least 2. */
+function priceDecimals(...texts: string[]): number {
+  return Math.max(2, ...texts.map((t) => t.trim().split('.')[1]?.replace(/\D/g, '').length ?? 0));
+}
+
 export function RiskRewardCalculatorPage() {
   const [direction, setDirection] = useState<Direction>('long');
   const [entryText, setEntryText] = useState('100');
@@ -36,6 +41,8 @@ export function RiskRewardCalculatorPage() {
 
     return { ratio, risk, reward, breakevenWinRate, valid: true };
   }, [direction, entryPrice, stopLossPrice, takeProfitPrice]);
+
+  const decimals = priceDecimals(entryText, stopText, targetText);
 
   const summary = results.valid
     ? `Risk-reward 1 to ${results.ratio.toFixed(2)}, breakeven win rate ${results.breakevenWinRate.toFixed(1)} percent.`
@@ -108,11 +115,11 @@ export function RiskRewardCalculatorPage() {
                 <dl className="grid grid-cols-2 gap-4">
                   <div>
                     <dt className="text-sm text-muted-foreground">Risk (per unit)</dt>
-                    <dd className="num text-base font-semibold text-loss">{results.risk.toFixed(2)}</dd>
+                    <dd className="num text-base font-semibold text-loss">{results.risk.toFixed(decimals)}</dd>
                   </div>
                   <div>
                     <dt className="text-sm text-muted-foreground">Reward (per unit)</dt>
-                    <dd className="num text-base font-semibold text-profit">{results.reward.toFixed(2)}</dd>
+                    <dd className="num text-base font-semibold text-profit">{results.reward.toFixed(decimals)}</dd>
                   </div>
                 </dl>
                 <p className="mt-4 text-sm text-muted-foreground">Breakeven win rate</p>

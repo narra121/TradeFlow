@@ -62,6 +62,13 @@ describe('BlogArticlePage', () => {
     ).toBeInTheDocument();
   });
 
+  it('announces the article body as a status while it loads, with the spinner hidden from screen readers', () => {
+    const { container } = renderWithRoute('trading-journal-template');
+    const text = screen.getByText('Loading article');
+    expect(text.closest('[role="status"]')).not.toBeNull();
+    expect(container.querySelector('svg[aria-label]')).toBeNull();
+  });
+
   it('redirects to /blog for unknown slug', () => {
     renderWithRoute('nonexistent-article');
     expect(screen.getByText('Blog Index')).toBeInTheDocument();

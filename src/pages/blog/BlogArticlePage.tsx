@@ -61,8 +61,9 @@ export function BlogArticlePage() {
         <ArticleToc root={bodyRef} />
         <Suspense
           fallback={
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading article" />
+            <div role="status" className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
+              <span className="sr-only">Loading article</span>
             </div>
           }
         >
