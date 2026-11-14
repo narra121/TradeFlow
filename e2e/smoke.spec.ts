@@ -84,7 +84,7 @@ test.describe('Public pages', () => {
     ['/changelog', 'Changelog'],
     ['/blog', 'Blog'],
     ['/resources', 'Trading calculators'],
-    ['/trading-journal-india', 'A trading journal for Indian F&O traders'],
+    ['/trading-journal-india', 'Trading journal for Indian traders: F&O, intraday and delivery'],
     ['/alternatives', 'Trading journal alternatives compared'],
     ['/status', 'Service status'],
   ];
@@ -103,7 +103,7 @@ test.describe('Public pages', () => {
 
   test('a blog article has its short answer, contents, FAQ and sources', async ({ page }) => {
     await page.goto('/blog/fo-trading-charges-india');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('F&O trading charges in India');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('F&O charges in India');
     await expect(page.getByLabel('Short answer')).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'On this page' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Frequently asked questions' })).toBeVisible();
