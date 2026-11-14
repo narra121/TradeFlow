@@ -138,6 +138,19 @@ describe('AnalyticsView', () => {
     expect(screen.queryByText(/Totals are per currency/)).not.toBeInTheDocument();
   });
 
+  it('puts the currency switch in the scope bar on a desktop and in the page on a phone', () => {
+    const mixedStats = { ...stats, currencies: ['INR', 'USD'], byCurrency: { INR: { ...stats, totalTrades: 20 }, USD: { ...stats, totalTrades: 25 } } } as unknown as AggregatedStats;
+    periodStats.mockReturnValue(ready({ stats: mixedStats }));
+    analysis.mockReturnValue({ data: undefined, scope: analysisScope, isLoading: false, isError: false, mixed: ['INR', 'USD'], refetch: vi.fn() });
+    const { unmount } = renderWithProviders(<AnalyticsView />);
+    expect(screen.getByTestId('slot-left')).toContainElement(screen.getByRole('radio', { name: 'USD' }));
+    unmount();
+    mobile = true;
+    renderWithProviders(<AnalyticsView />);
+    expect(screen.getByRole('radio', { name: 'USD' })).toBeInTheDocument();
+    expect(screen.queryByTestId('slot-left')).toBeNull();
+  });
+
   describe('without advanced analytics', () => {
     beforeEach(() => entitlements.mockReturnValue({ isLoading: false, isError: false, can: () => false, currency: 'INR' }));
 

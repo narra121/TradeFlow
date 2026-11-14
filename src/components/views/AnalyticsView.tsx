@@ -134,9 +134,13 @@ export function AnalyticsView() {
     <div className="space-y-4">
       {compare}
       {view.currency && view.currencies.length > 1 && (
-        <ScopeBarSlot side="left">
+        isMobile ? (
           <CurrencySwitch currencies={view.currencies} value={view.currency} onChange={view.select} />
-        </ScopeBarSlot>
+        ) : (
+          <ScopeBarSlot side="left">
+            <CurrencySwitch currencies={view.currencies} value={view.currency} onChange={view.select} />
+          </ScopeBarSlot>
+        )
       )}
       {tab === 'overview' && <OverviewTab ctx={ctx} />}
       {tab === 'edge' && <EdgeTab ctx={ctx} />}

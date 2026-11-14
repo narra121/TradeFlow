@@ -10,7 +10,9 @@ const query = vi.fn();
 
 vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => entitlements() }));
 vi.mock('@/components/stats/useScopeCapital', () => ({ useScopeCapital: () => capital() }));
-vi.mock('@/components/shell/chrome', () => ({ ScopeBarSlot: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
+vi.mock('@/components/shell/chrome', () => ({ ScopeBarSlot: ({ children, side }: { children: React.ReactNode; side: string }) => <div data-testid={`slot-${side}`}>{children}</div> }));
+let mobile = false;
+vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
 vi.mock('@/store/api/statsApi', () => ({ useGetTaxReportQuery: (...a: unknown[]) => query(...a) }));
 
 import { TaxReport } from '../TaxReport';
@@ -47,6 +49,17 @@ describe('TaxReport', () => {
     const total = within(table).getByRole('row', { name: /Total/ });
     expect(within(total).getByText('+₹800.00')).toBeInTheDocument();
     expect(screen.getByText('01 Apr 2026 – 31 Mar 2027')).toBeInTheDocument();
+  });
+
+  it('the financial year picker sits in the scope bar on a desktop and in the page on a phone (no room beside the period)', () => {
+    const { unmount } = renderWithProviders(<TaxReport />);
+    expect(screen.getByTestId('slot-left')).toContainElement(screen.getByRole('combobox', { name: 'Financial year' }));
+    unmount();
+    mobile = true;
+    renderWithProviders(<TaxReport />);
+    expect(screen.getByRole('combobox', { name: 'Financial year' })).toBeInTheDocument();
+    expect(screen.queryByTestId('slot-left')).toBeNull();
+    mobile = false;
   });
 
   it('the table scrolls inside a named, focusable region, so a phone keyboard can scroll it (it has no links)', () => {

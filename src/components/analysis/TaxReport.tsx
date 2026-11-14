@@ -10,6 +10,7 @@ import { LockedPreview } from '@/components/billing/ProGate';
 import { ScopeBarSlot } from '@/components/shell/chrome';
 import { useScopeCapital } from '@/components/stats/useScopeCapital';
 import { useEntitlements } from '@/hooks/useEntitlements';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useGetTaxReportQuery, type TaxBucket } from '@/store/api/statsApi';
 import { financialYear, financialYears, formatFyRange } from './taxYear';
 import { formatMoney } from '@/lib/format';
@@ -45,6 +46,7 @@ function Charges({ rows }: { rows: [string, number][] }) {
 /** India charges and tax P&L for one financial year (Pro). Figures are in rupees; it needs rupee accounts in scope. */
 export function TaxReport() {
   const ent = useEntitlements();
+  const isMobile = useIsMobile();
   const { accounts, selectedAccountId } = useScopeCapital();
   const [params, setParams] = useSearchParams();
   const years = useMemo(() => financialYears(), []);
@@ -66,21 +68,21 @@ export function TaxReport() {
   if (ent.isLoading) return <Skeleton className="h-48" aria-busy="true" />;
   if (!allowed) return <LockedPreview title="Tax report" question="What did trading cost you in charges, and what is your profit for the financial year, by category?" currency={ent.currency} />;
 
-  const picker = (
-    <ScopeBarSlot side="left">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span id="fy-label">Financial year</span>
-        <Select value={fy} onValueChange={setFy}>
-          <SelectTrigger aria-labelledby="fy-label" className="h-7 w-32 text-[13px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {years.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-    </ScopeBarSlot>
+  const fyControl = (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span id="fy-label">Financial year</span>
+      <Select value={fy} onValueChange={setFy}>
+        <SelectTrigger aria-labelledby="fy-label" className="h-7 w-32 text-[13px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {years.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
   );
+  // A phone's scope bar has no room beside the account and period.
+  const picker = isMobile ? fyControl : <ScopeBarSlot side="left">{fyControl}</ScopeBarSlot>;
 
   if (!inr) {
     return (

@@ -6,6 +6,8 @@ import { configureStore } from '@reduxjs/toolkit';
 vi.mock('@/lib/api/config', () => ({ API_BASE_URL: 'https://api.test/v1' }));
 vi.mock('@/lib/auth/authService', () => ({ getIdToken: async () => null }));
 vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ currency: 'USD', isLoading: false, isError: false, can: () => true }) }));
+let mobile = false;
+vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
 vi.mock('@/components/billing/ProGate', () => ({ LockedPreview: ({ title }: { title: string }) => <p>{title} (locked)</p> }));
 
 import { renderWithProviders } from '@/test/test-utils';
@@ -55,6 +57,16 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Edge: the explorer from GET /analysis', () => {
+  it('Export CSV goes in the scope bar on a desktop (not in the page) and in the page on a phone', () => {
+    const { unmount } = renderWithProviders(<EdgeTab ctx={ctx(st())} />, { route: '/app/analytics?tab=edge' });
+    expect(screen.queryByRole('button', { name: 'Export CSV' })).toBeNull();
+    unmount();
+    mobile = true;
+    renderWithProviders(<EdgeTab ctx={ctx(st())} />, { route: '/app/analytics?tab=edge' });
+    expect(screen.getByRole('button', { name: 'Export CSV' })).toBeInTheDocument();
+    mobile = false;
+  });
+
   it('shows evidence, avg R and profit factor per row; rows of a dimension Trades cannot filter open the pane', () => {
     renderWithProviders(<EdgeTab ctx={ctx(st())} />, { route: '/app/analytics?tab=edge&by=setup' });
     const table = screen.getByRole('table', { name: 'Breakdown by strategy' });

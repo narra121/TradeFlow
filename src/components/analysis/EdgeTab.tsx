@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScopeBarSlot } from '@/components/shell/chrome';
 import { LockedPreview } from '@/components/billing/ProGate';
 import { useEntitlements } from '@/hooks/useEntitlements';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { BreakdownExplorer } from '@/components/stats/BreakdownExplorer';
 import { availableDimensions, explorerRows, segmentRows, type DimensionId } from '@/lib/analyticsRows';
 import { previousPeriod } from '@/lib/dashboard';
@@ -55,6 +56,7 @@ const fromParam = (v: string | null): string | null => (v === 'strategy' ? 'setu
 export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
   const { pro, currency, analysis: state } = ctx;
   const ent = useEntitlements();
+  const isMobile = useIsMobile();
   const filters = useAppSelector((s) => s.trades.filters);
   const [params, setParams] = useSearchParams();
   const [comparing, setComparing] = useState(false);
@@ -82,6 +84,13 @@ export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
 
   // All accounts in several currencies: the server will not add them, so the /stats explorer (one currency at a time) stays.
   if (state?.mixed) return <StatsEdge ctx={ctx} currencies={state.mixed} />;
+
+  // A phone's scope bar has no room beside the account and period, so there it goes in the page.
+  const exportCsv = !locked && a ? (
+    <Button type="button" variant="outline" size="sm" disabled={rows.length === 0} onClick={() => downloadExplorerCsv(DIMENSION_LABEL[by], rows, money)}>
+      Export CSV
+    </Button>
+  ) : null;
 
   // In the page, not the scope bar: two selects do not fit beside the account and period on narrow screens.
   const selects = (
@@ -121,13 +130,7 @@ export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
   return (
     <div className="space-y-4">
       {selects}
-      {!locked && a && (
-        <ScopeBarSlot side="right">
-          <Button type="button" variant="outline" size="sm" disabled={rows.length === 0} onClick={() => downloadExplorerCsv(DIMENSION_LABEL[by], rows, money)}>
-            Export CSV
-          </Button>
-        </ScopeBarSlot>
-      )}
+      {exportCsv && (isMobile ? <div className="flex justify-end">{exportCsv}</div> : <ScopeBarSlot side="right">{exportCsv}</ScopeBarSlot>)}
       {locked ? (
         <LockedPreview title={`Group by ${DIMENSION_LABEL[by]}`} question={QUESTION[by]} currency={ent.currency} />
       ) : !a ? (
@@ -173,6 +176,7 @@ export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
 function StatsEdge({ ctx, currencies }: { ctx: AnalyticsContext; currencies: string[] }) {
   const { stats, pro, currency, zone } = ctx;
   const ent = useEntitlements();
+  const isMobile = useIsMobile();
   const [params, setParams] = useSearchParams();
   const dims = useMemo(() => availableDimensions(stats), [stats]);
   const by = (dims.find((d) => d.id === params.get('by'))?.id ?? 'symbol') as DimensionId;
@@ -186,26 +190,28 @@ function StatsEdge({ ctx, currencies }: { ctx: AnalyticsContext; currencies: str
     else next.set('by', id);
     setParams(next, { replace: true });
   };
+  const groupBy = (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span id="group-by-label">Group by</span>
+      <Select value={by} onValueChange={setBy}>
+        <SelectTrigger aria-labelledby="group-by-label" className="h-7 w-40 text-[13px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {dims.map((d) => (
+            <SelectItem key={d.id} value={d.id}>
+              {d.label}
+              {!pro && !d.free ? <span className="ml-2 text-xs text-accent-text">Pro</span> : null}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
   return (
     <div className="space-y-4">
-      <ScopeBarSlot side="left">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span id="group-by-label">Group by</span>
-          <Select value={by} onValueChange={setBy}>
-            <SelectTrigger aria-labelledby="group-by-label" className="h-7 w-40 text-[13px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {dims.map((d) => (
-                <SelectItem key={d.id} value={d.id}>
-                  {d.label}
-                  {!pro && !d.free ? <span className="ml-2 text-xs text-accent-text">Pro</span> : null}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </ScopeBarSlot>
+      {/* A phone's scope bar has no room beside the account and period. */}
+      {isMobile ? groupBy : <ScopeBarSlot side="left">{groupBy}</ScopeBarSlot>}
       <PickAccountNotice currencies={currencies} what="evidence labels and the other breakdowns" />
       {locked ? (
         <LockedPreview title={`Group by ${dim.label}`} question={QUESTION[by === 'strategy' ? 'setup' : by]} currency={ent.currency} />
