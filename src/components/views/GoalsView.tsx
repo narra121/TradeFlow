@@ -284,7 +284,7 @@ export function GoalsView() {
           rows={ruleRows}
           period={periodType}
           readOnly={readOnly}
-          complianceText={comp ? `Followed on ${comp.followed} of ${comp.total} trades this ${noun} (${comp.pct}%)` : undefined}
+          complianceText={comp ? `Followed on ${comp.followed} of ${comp.total} ${comp.total === 1 ? 'trade' : 'trades'} this ${noun} (${comp.pct}%)` : undefined}
           starters={STARTER_RULES}
           pullable={pullable.map((r) => ({ text: r.rule }))}
           siblingLabel={periodType === 'weekly' ? 'monthly' : 'weekly'}

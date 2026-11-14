@@ -70,7 +70,7 @@ export function PastImports({ accounts, sources, onView }: PastImportsProps) {
                       <td className="pr-3">{accountName(b.accountId)}</td>
                       <td className="pr-3 text-right font-mono tabular-nums">{formatCount(b.count)}</td>
                       <td className="text-right">
-                        <Button type="button" variant="ghost" size="sm" onClick={() => onView(b)} aria-label={`View trades from the import of ${formatDateShort(b.importedAt, true)}, ${b.count} trades`}>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => onView(b)} aria-label={`View trades from the import of ${formatDateShort(b.importedAt, true)}, ${b.count} ${b.count === 1 ? 'trade' : 'trades'}`}>
                           View trades →
                         </Button>
                       </td>

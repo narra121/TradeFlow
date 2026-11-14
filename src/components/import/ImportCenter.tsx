@@ -469,7 +469,7 @@ export function ImportCenter() {
         </div>
       )}
 
-      {!flow.columns && flow.detected === SCREENSHOT_SOURCE && <DateNotice rows={flow.rows} readOnly={readOnly} onSwitch={actions.switchDates} />}
+      {!flow.columns && flow.detected === SCREENSHOT_SOURCE && <DateNotice rows={flow.rows} readOnly={readOnly} onSwitch={(shot) => act(`Screenshot ${shot}: day and month switched`, () => actions.switchDates(shot))} />}
 
       {reviewBody}
 

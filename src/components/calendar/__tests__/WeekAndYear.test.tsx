@@ -98,6 +98,12 @@ describe('YearView', () => {
     expect(within(nov).getByRole('button', { name: /November 2026, 5 trades. Open the month/ }).tabIndex).toBe(0);
   });
 
+  it('counts one trade in the singular in the month button name', () => {
+    const one: YearMonth[] = [{ key: '2026-11', date: new Date(2026, 10, 1), model: buildMonth([trades[0]], new Date(2026, 10, 1), accounts) }];
+    render(<YearView months={one} year={2026} metric="pnl" loading={false} capped={false} onOpenMonth={vi.fn()} onOpenDay={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'November 2026, 1 trade. Open the month' })).toBeInTheDocument();
+  });
+
   it('opens a month from its name or table row and a day from its square', async () => {
     const user = userEvent.setup();
     const h = setup();

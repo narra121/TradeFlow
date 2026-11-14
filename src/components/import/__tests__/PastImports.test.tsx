@@ -36,7 +36,7 @@ describe('PastImports', () => {
 
   it('lists date, remembered file, source, account and trade count, and opens the import', async () => {
     rememberBatchFile('b1', 'tradebook-oct.csv');
-    state = { data: [batch(), batch({ batchId: 'b2', source: 'ai_screenshot', accountId: 'a2', count: 4 })], isFetching: false, isError: false };
+    state = { data: [batch(), batch({ batchId: 'b2', source: 'ai_screenshot', accountId: 'a2', count: 1 })], isFetching: false, isError: false };
     const onView = vi.fn();
     render(<PastImports accounts={accounts} sources={sources} onView={onView} />);
     await userEvent.click(screen.getByRole('button', { name: 'Past imports' }));
@@ -47,6 +47,8 @@ describe('PastImports', () => {
     expect(rows[0]).toHaveTextContent('131');
     expect(rows[1]).toHaveTextContent('Screenshots');
     expect(rows[1]).toHaveTextContent('Zerodha F&O');
+    expect(screen.getByRole('button', { name: /, 1 trade$/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /, 131 trades$/ })).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: /View trades/ })[0]);
     expect(onView).toHaveBeenCalledWith(expect.objectContaining({ batchId: 'b1' }));
   });

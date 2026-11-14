@@ -100,6 +100,22 @@ describe('TradeLogView', () => {
     expect(screen.getByTestId('search').textContent).toBe('?trade=t1');
   });
 
+  it('on a phone shows the drill chip and the way back above the list, not in the full scope bar', async () => {
+    const width = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    try {
+      scope = { trades: [mk(1, { strategy: 'Breakout' }), mk(2, { strategy: 'Reversal' })], isLoading: false, isError: false };
+      setup('/app/tradelog?src=analytics&strategy=Breakout');
+      const chip = screen.getByRole('button', { name: 'Remove filter: From Analytics: Strategy = Breakout' });
+      expect(screen.getByRole('toolbar', { name: 'Data shown' })).not.toContainElement(chip);
+      expect(screen.getByRole('toolbar', { name: 'Data shown' })).not.toContainElement(screen.getByRole('button', { name: 'Back to Analytics' }));
+      await userEvent.click(chip);
+      expect(screen.queryByRole('button', { name: /Remove filter/ })).toBeNull();
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+    }
+  });
+
   it('lists the newest trade first by default and exposes sort state', () => {
     scope = { trades: [mk(1), mk(9), mk(5)], isLoading: false, isError: false };
     setup();

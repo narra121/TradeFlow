@@ -61,6 +61,11 @@ describe('TodayStrip', () => {
     expect(screen.queryByText(/Set weekly limits/)).not.toBeInTheDocument();
   });
 
+  it('names a one-trade limit in the singular', () => {
+    wrap(<TodayStrip today={{ count: 0, byCurrency: [] }} todayLoading={false} week={week({ goals: [goal({ current: 0, target: 1 })] })} todayKey="2026-11-11" now={now} />);
+    expect(screen.getByRole('meter', { name: 'Week: 0 of 1 trade' })).toBeInTheDocument();
+  });
+
   it('asks for weekly limits when none are set and reports broken rules', () => {
     wrap(<TodayStrip today={{ count: 0, byCurrency: [] }} todayLoading={false} week={week({ brokenRules: 1 })} todayKey="2026-11-11" now={now} />);
     expect(screen.getByRole('link', { name: /Set weekly limits/ })).toHaveAttribute('href', '/app/goals');

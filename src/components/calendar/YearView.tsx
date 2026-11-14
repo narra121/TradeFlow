@@ -4,6 +4,7 @@ import { DataTable, type DataColumn } from '@/components/ui/data-table';
 import { Money } from '@/components/ui/money';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cellName, compactMoney } from '@/components/calendar/cellText';
+import { plural } from '@/components/calendar/dayText';
 import { dayMetric, metricScale, metricTint, type CalendarMetric, type MonthModel, type Tint } from '@/lib/calendar';
 import { formatPercent } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -37,7 +38,7 @@ function MiniMonth({ m, metric, scale, onOpenMonth, onOpenDay }: { m: YearMonth;
   return (
     <section aria-label={name} className="rounded-lg border border-border bg-card p-3">
       <div className="mb-2 flex items-baseline justify-between gap-2">
-        <button type="button" onClick={() => onOpenMonth(m.key)} className="text-13 font-medium hover:underline focus-visible:underline focus-visible:outline-none" aria-label={`${name}, ${m.model.tradeCount} trades. Open the month`}>
+        <button type="button" onClick={() => onOpenMonth(m.key)} className="text-13 font-medium hover:underline focus-visible:underline focus-visible:outline-none" aria-label={`${name}, ${plural(m.model.tradeCount, 'trade')}. Open the month`}>
           {format(m.date, 'MMMM')}
         </button>
         <span className="flex gap-1.5 font-mono text-2xs tabular-nums">

@@ -568,6 +568,21 @@ export function TradeLogView() {
         />
   );
 
+  const drillControls = (
+    <>
+      {(drill || importBatch) && (
+        <Button type="button" variant="outline" size="sm" className="h-7 min-w-0 max-w-[260px] shrink justify-start truncate" onClick={clearDrill} aria-label={`Remove filter: ${drillText}`}>
+          <span className="truncate">{drillText}</span> <X className="ml-1 h-3 w-3 shrink-0" aria-hidden="true" />
+        </Button>
+      )}
+      {drill?.src && (
+        <Button type="button" variant="ghost" size="sm" className="h-7 shrink-0" onClick={backToOrigin}>
+          Back to {drill.src === 'analytics' ? 'Analytics' : 'Dashboard'}
+        </Button>
+      )}
+    </>
+  );
+
   return (
     <div className="space-y-3">
       <ScopeBarSlot side="left">
@@ -596,16 +611,7 @@ export function TradeLogView() {
             </div>
           )}
         />
-        {(drill || importBatch) && (
-          <Button type="button" variant="outline" size="sm" className="h-7 min-w-0 max-w-[260px] shrink justify-start truncate" onClick={clearDrill} aria-label={`Remove filter: ${drillText}`}>
-            <span className="truncate">{drillText}</span> <X className="ml-1 h-3 w-3 shrink-0" aria-hidden="true" />
-          </Button>
-        )}
-        {drill?.src && (
-          <Button type="button" variant="ghost" size="sm" className="h-7 shrink-0" onClick={backToOrigin}>
-            Back to {drill.src === 'analytics' ? 'Analytics' : 'Dashboard'}
-          </Button>
-        )}
+        {!isMobile && drillControls}
         {activeFilters && !isMobile && (
           <Button type="button" variant="ghost" size="sm" className="h-7 shrink-0" onClick={() => setFilters(EMPTY_FILTERS)}>
             Clear
@@ -654,6 +660,8 @@ export function TradeLogView() {
         </>)}
       </ScopeBarSlot>
 
+      {/* Phones: the scope bar has no room left for the drill chip and its way back, so they sit above the list. */}
+      {isMobile && (drill || importBatch) && <div className="flex min-w-0 flex-wrap items-center gap-2">{drillControls}</div>}
       {truncated && <p role="status" className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">{copy.trades.ceiling}</p>}
 
       {isError ? (

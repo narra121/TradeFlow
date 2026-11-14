@@ -21,7 +21,7 @@ interface TodayStripProps {
 const SEGMENT = 'flex min-h-11 min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-[13px] hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
 
 function GoalSegment({ goal, label }: { goal: WeekGoal; label: string }) {
-  const text = goal.type === 'maxDrawdown' ? `${formatPercent(goal.current)} of ${formatPercent(goal.target)}` : `${goal.current} of ${goal.target} trades`;
+  const text = goal.type === 'maxDrawdown' ? `${formatPercent(goal.current)} of ${formatPercent(goal.target)}` : `${goal.current} of ${goal.target} ${goal.target === 1 ? 'trade' : 'trades'}`;
   return (
     <Link to="/app/goals" className={SEGMENT}>
       <span className="text-muted-foreground">{label}</span>

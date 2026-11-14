@@ -26,6 +26,7 @@ const actions = {
   undoImport: vi.fn(),
   viewImported: vi.fn(),
   viewBatch: vi.fn(),
+  switchDates: vi.fn(),
 };
 vi.mock('../useImportActions', () => ({ useImportActions: () => actions }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
@@ -363,5 +364,20 @@ describe('Read-only plan', () => {
     renderCenter();
     expect(screen.getByRole('status')).toHaveTextContent('Your journal is read-only. Upgrade to Pro to import.');
     expect(screen.getByRole('button', { name: 'Choose files' })).toBeEnabled();
+  });
+});
+
+describe('Screenshot date order', () => {
+  it('switching day and month is announced with an Undo, like the other review actions', async () => {
+    const dates = { shot: 1, order: 'DMY' as const, source: 'default' as const, canSwitch: true, openRaw: '', closeRaw: '03/12/2025 08:41:09.075', openMissing: true, closeMissing: false };
+    const rows = makeRows([trade({ externalId: '1', openDate: '2025-12-03T03:11:09.075Z', closeDate: '2025-12-03T03:11:09.075Z' })], 'Screenshot 1').map((r) => ({ ...r, dates }));
+    actions.switchDates.mockImplementation(() => importFlow.set({ undoRows: importFlow.get().rows }));
+    seed({ detected: 'ai_screenshot', rows, fileLabel: '1 screenshot' });
+    renderCenter();
+    await userEvent.click(screen.getByRole('button', { name: 'Switch to month/day' }));
+    expect(actions.switchDates).toHaveBeenCalledWith(1);
+    expect(screen.getByText('Screenshot 1: day and month switched')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(actions.undoRows).toHaveBeenCalled();
   });
 });

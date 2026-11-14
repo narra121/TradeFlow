@@ -145,7 +145,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
         to="/app/analytics"
         value={statsLoading ? <Skeleton className="h-5 w-16" /> : formatPercent(s?.winRate ?? 0)}
         hint={statsLoading ? undefined : `${wins}W · ${s?.losses ?? 0}L · ${total} ${total === 1 ? 'trade' : 'trades'}`}
-        sample={`${total} trades`}
+        sample={`${total} ${total === 1 ? 'trade' : 'trades'}`}
         delta={prev ? <Delta kind="pts" current={s?.winRate} previous={prev.winRate} {...deltaProps} /> : undefined}
       />
       <StatCell
