@@ -49,6 +49,13 @@ describe('TaxReport', () => {
     expect(screen.getByText('01 Apr 2026 – 31 Mar 2027')).toBeInTheDocument();
   });
 
+  it('the table scrolls inside a named, focusable region, so a phone keyboard can scroll it (it has no links)', () => {
+    renderWithProviders(<TaxReport />);
+    const region = screen.getByRole('region', { name: 'Financial year 2026-27 by category' });
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(within(region).getByRole('table')).toBeInTheDocument();
+  });
+
   it('states the F&O turnover against the audit threshold, the charges, the uncovered trades and the caveat', () => {
     renderWithProviders(<TaxReport />);
     expect(screen.getByText(/the threshold is not exceeded/)).toBeInTheDocument();

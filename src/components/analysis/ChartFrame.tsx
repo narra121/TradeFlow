@@ -26,7 +26,7 @@ export function ChartFrame({ title, description, summary, chart, table }: ChartF
       }
     >
       {asTable ? (
-        <div className="max-h-72 overflow-auto rounded-md border border-border">
+        <div role="region" tabIndex={0} aria-label={`${title}, table`} className="max-h-72 overflow-auto rounded-md border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <table className="w-full text-[13px]">
             <caption className="sr-only">{title}</caption>
             <thead className="sticky top-0 bg-card">

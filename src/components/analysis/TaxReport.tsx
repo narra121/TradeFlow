@@ -110,7 +110,7 @@ export function TaxReport() {
         {total.trades === 0 ? (
           <p className="px-4 pb-4 pt-3 text-sm text-muted-foreground">No closed trades in this financial year.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div role="region" tabIndex={0} aria-label={`Financial year ${data.fy} by category`} className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <table className="w-full text-[13px]">
               <caption className="sr-only">Profit and charges by category, financial year {data.fy}</caption>
               <thead>

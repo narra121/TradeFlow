@@ -82,7 +82,7 @@ export function TwoWayPanel({ scope, by, then, currency, zone }: { scope: Analys
       ) : cells.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">No trade has both values in this period.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div role="region" tabIndex={0} aria-label={`${title}, table`} className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <table className="w-full text-[13px]">
             <caption className="sr-only">{title}</caption>
             <thead>
@@ -161,7 +161,7 @@ export function ComparePanel({ scope, previous, currency }: { scope: AnalysisSco
       ) : !q.currentData ? (
         <QueryState q={q} scopeWhat="the comparison" />
       ) : (
-        <div className="overflow-x-auto">
+        <div role="region" tabIndex={0} aria-label="This period against the one before, table" className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <table className="w-full text-[13px]">
             <caption className="sr-only">This period against the one before</caption>
             <thead>
