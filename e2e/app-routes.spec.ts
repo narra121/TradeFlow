@@ -1,16 +1,5 @@
 import { test, expect } from './fixtures/auth';
-
-export const APP_ROUTES: [path: string, title: string][] = [
-  ['dashboard', 'Dashboard'],
-  ['tradelog', 'Trades'],
-  ['calendar', 'Calendar'],
-  ['analytics', 'Analytics'],
-  ['goals', 'Goals & rules'],
-  ['insights', 'Insights'],
-  ['accounts', 'Accounts'],
-  ['import', 'Import'],
-  ['settings/profile', 'Settings'],
-];
+import { APP_ROUTES } from './fixtures/routes';
 
 test.describe('App routes', () => {
   for (const [path, title] of APP_ROUTES) {

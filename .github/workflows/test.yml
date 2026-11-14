@@ -6,12 +6,6 @@ on:
   pull_request:
     branches: [main, develop]
 
-# vite.config.ts refuses to start or build without these.
-env:
-  VITE_API_URL: ${{ secrets.VITE_API_URL_DEV }}
-  VITE_COGNITO_USER_POOL_ID: ${{ secrets.VITE_COGNITO_USER_POOL_ID_DEV }}
-  VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID_DEV }}
-
 jobs:
   unit-tests:
     name: Unit & Component Tests
@@ -35,6 +29,11 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
+    # vite.config.ts refuses to start or build without these; unit tests must run without them.
+    env:
+      VITE_API_URL: ${{ secrets.VITE_API_URL_DEV }}
+      VITE_COGNITO_USER_POOL_ID: ${{ secrets.VITE_COGNITO_USER_POOL_ID_DEV }}
+      VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID_DEV }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -58,6 +57,10 @@ jobs:
   public-site:
     name: Public site build, audit and budgets
     runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: ${{ secrets.VITE_API_URL_DEV }}
+      VITE_COGNITO_USER_POOL_ID: ${{ secrets.VITE_COGNITO_USER_POOL_ID_DEV }}
+      VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID_DEV }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

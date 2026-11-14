@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './fixtures/auth';
-import { APP_ROUTES } from './app-routes.spec';
+import { APP_ROUTES } from './fixtures/routes';
 
 /**
  * The crawler of E-089 / §0.8: measurements over every app screen, asserted as thresholds.
