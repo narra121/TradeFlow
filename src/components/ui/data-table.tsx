@@ -265,6 +265,8 @@ export function DataTable<T>({
   };
 
   const handleKey = (e: React.KeyboardEvent, i: number, row: T) => {
+    // Events from portals (a row's menu, a dialog) bubble here through React even though their DOM is outside the row.
+    if (!e.currentTarget.contains(e.target as Node)) return;
     if (e.target !== e.currentTarget && (e.target as HTMLElement).closest('button, a, input, [role="checkbox"]')) return;
     if (onRowKey?.(e, row)) return;
     if (e.key === 'Enter') {
@@ -333,6 +335,7 @@ export function DataTable<T>({
         data-state={isOpen ? 'open' : undefined}
         data-row-id={id}
         onClick={(e) => {
+          if (!e.currentTarget.contains(e.target as Node)) return;
           if ((e.target as HTMLElement).closest('[role="checkbox"], button, a, input, select')) return;
           onRowOpen?.(row);
         }}

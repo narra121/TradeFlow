@@ -130,7 +130,7 @@ export function RulesPanel({ rows, period, readOnly, complianceText, starters, p
       width: 'w-32',
       cell: (r) =>
         r.stat?.breaks ? (
-          <button type="button" onClick={() => onOpenTrades(r)} className="text-loss underline-offset-2 hover:underline focus-visible:underline" aria-label={`Broken ${r.stat.breaks} times this ${noun}. Show those trades`}>
+          <button type="button" onClick={() => onOpenTrades(r)} className="text-loss underline-offset-2 hover:underline focus-visible:underline" aria-label={`Broken ${r.stat.breaks} ${r.stat.breaks === 1 ? 'time' : 'times'} this ${noun}. Show those trades`}>
             Broken {r.stat.breaks}× →
           </button>
         ) : r.idle ? (

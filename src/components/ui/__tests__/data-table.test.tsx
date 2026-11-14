@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createPortal } from 'react-dom';
 import { DataTable, type DataColumn } from '../data-table';
 
 interface Row {
@@ -41,6 +42,21 @@ describe('DataTable', () => {
     expect(dataRows()[1]).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     expect(onRowOpen).toHaveBeenCalledWith(rows[1]);
+  });
+
+  it('does not open the row for a click or Enter inside a portal rendered from a cell (a row menu)', () => {
+    const onRowOpen = vi.fn();
+    const withMenu: DataColumn<Row>[] = [
+      ...columns,
+      { id: 'menu', header: 'Actions', cell: (r) => createPortal(<div role="menuitem" tabIndex={0}>Delete {r.name}</div>, document.body) },
+    ];
+    render(<DataTable caption="Things" rows={rows} columns={withMenu} getRowId={(r) => r.id} onRowOpen={onRowOpen} />);
+    const item = screen.getByRole('menuitem', { name: 'Delete Alpha' });
+    fireEvent.click(item);
+    fireEvent.keyDown(item, { key: 'Enter' });
+    expect(onRowOpen).not.toHaveBeenCalled();
+    fireEvent.click(within(dataRows()[0]).getByText('Alpha'));
+    expect(onRowOpen).toHaveBeenCalledWith(rows[0]);
   });
 
   it('selects with the checkbox and with x, and reports the header state', async () => {

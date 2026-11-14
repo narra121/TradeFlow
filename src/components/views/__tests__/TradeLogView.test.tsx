@@ -27,6 +27,8 @@ vi.mock('@/hooks/useScopeTrades', () => ({
 vi.mock('@/hooks/useAccounts', () => ({
   useAccounts: () => ({ accounts, selectedAccountId: null, selectedAccount: null, setSelectedAccountId: vi.fn() }),
 }));
+let tradingRules: { ruleId: string; rule: string }[] = [];
+vi.mock('@/hooks/useTradingRules', () => ({ useTradingRules: () => ({ rules: tradingRules, loading: false }) }));
 const bulkUpdate = vi.hoisted(() => vi.fn());
 vi.mock('@/store/api', async (orig) => ({ ...(await orig<object>()), useBulkDeleteTradesMutation: () => [vi.fn(() => ({ unwrap: () => Promise.resolve({}) })), {}], useBulkUpdateTradesMutation: () => [bulkUpdate, {}] }));
 
@@ -133,6 +135,51 @@ describe('TradeLogView', () => {
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
     }
+  });
+
+  it('saves the changed list as a view and offers Delete view for it (a custom view has no builtIn flag)', async () => {
+    scope = { trades: [mk(1), mk(2, { symbol: 'XAUUSD' })], isLoading: false, isError: false };
+    setup();
+    await userEvent.type(screen.getByRole('textbox', { name: 'Find in trades' }), 'XAU');
+    await userEvent.click(screen.getByRole('button', { name: /^Save$/ }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'View name' }), 'Gold');
+    await userEvent.click(screen.getByRole('button', { name: 'Save view' }));
+    expect(JSON.parse(localStorage.getItem('tq.tradelog.views') ?? '[]')).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Delete view' }));
+    expect(JSON.parse(localStorage.getItem('tq.tradelog.views') ?? '[]')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: 'Delete view' })).toBeNull();
+  });
+
+  it('names a rule copied into a goals period (<period>#<date>#<ruleId>) by its rule, not "Rule removed"', () => {
+    tradingRules = [{ ruleId: 'r1', rule: 'Stick to my plan' }];
+    try {
+      scope = { trades: [mk(1, { brokenRuleIds: ['r1'] }), mk(2)], isLoading: false, isError: false };
+      setup('/app/tradelog?broken=' + encodeURIComponent('r1,week#2026-11-09#r1'));
+      expect(dataRows()).toHaveLength(1);
+      expect(screen.getByRole('button', { name: /^Remove filter: .*Broken rule = Stick to my plan$/ })).toBeInTheDocument();
+    } finally {
+      tradingRules = [];
+    }
+  });
+
+  it('a row menu item does not also open the row (the click does not bubble out of the menu to the row)', async () => {
+    scope = { trades: [mk(1), mk(2)], isLoading: false, isError: false };
+    setup();
+    const row = dataRows().find((r) => r.getAttribute('data-row-id') === 't1')!;
+    await userEvent.click(within(row).getByRole('button', { name: /^Actions for EURUSD/ }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Delete…' }));
+    expect(screen.getByTestId('search').textContent).toBe('');
+  });
+
+  it('closes the pane when the trade open in it is deleted from its row menu', async () => {
+    scope = { trades: [mk(1), mk(2)], isLoading: false, isError: false };
+    setup();
+    const row = dataRows().find((r) => r.getAttribute('data-row-id') === 't1')!;
+    await userEvent.click(within(row).getAllByRole('cell')[2]);
+    expect(screen.getByTestId('search').textContent).toBe('?trade=t1');
+    await userEvent.click(within(row).getByRole('button', { name: /^Actions for EURUSD/ }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Delete…' }));
+    await vi.waitFor(() => expect(screen.getByTestId('search').textContent).toBe(''));
   });
 
   it('lists the newest trade first by default and exposes sort state', () => {

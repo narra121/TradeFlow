@@ -165,7 +165,9 @@ export function TradeLogView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to the URL only
   }, [search]);
 
-  const drillText = drill ? drillLabel(drill, (id) => rules.find((r) => r.ruleId === id)?.rule ?? 'Rule removed', drillZone) : `This import (${trades.length})`;
+  // A rule copied into a goals period has the id <period>#<date>#<ruleId>; it is the same rule.
+  const ruleName = (id: string) => (rules.find((r) => r.ruleId === id) ?? rules.find((r) => r.ruleId === id.split('#').pop()))?.rule ?? 'Rule removed';
+  const drillText = drill ? drillLabel(drill, ruleName, drillZone) : `This import (${trades.length})`;
   const clearDrill = () => {
     const q = new URLSearchParams(search);
     [...DRILL_KEYS, 'importBatch'].forEach((k) => q.delete(k));
@@ -190,7 +192,7 @@ export function TradeLogView() {
       mistakes: distinctValues(trades, (t) => t.mistakes),
       tags: distinctValues(trades, (t) => t.tags),
       assets: distinctValues(trades, (t) => t.assetClass),
-      broken: distinctValues(trades, (t) => t.brokenRuleIds).map((o) => ({ ...o, label: rules.find((r) => r.ruleId === o.value)?.rule ?? 'Rule removed' })),
+      broken: distinctValues(trades, (t) => t.brokenRuleIds).map((o) => ({ ...o, label: ruleName(o.value) })),
     }),
     [trades, rules],
   );
@@ -390,6 +392,8 @@ export function TradeLogView() {
 
   const undoableDelete = useUndoableDelete();
   const deleteSelected = async () => {
+    // The pane would go on asking for a trade that no longer exists.
+    if (param.trade && selected.has(param.trade)) param.close();
     if (await undoableDelete(selectedTrades)) setSelected(new Set());
     else void refetch();
   };
@@ -447,7 +451,9 @@ export function TradeLogView() {
       onDuplicate: (id: string) => param.openNew({ from: id }),
       onDelete: (id: string) => {
         const t = tradeById.get(id);
-        if (t) void undoableDelete([t]);
+        if (!t) return;
+        if (param.trade === id) param.close();
+        void undoableDelete([t]);
       },
     }),
     [param, tradeById, undoableDelete],
@@ -574,7 +580,7 @@ export function TradeLogView() {
       <Button type="button" variant="ghost" size="sm" onClick={saveCurrent}>Save</Button>
       <Button type="button" variant="ghost" size="sm" onClick={() => applyView(activeView)}>Reset</Button>
     </>
-  ) : activeView.builtIn === false ? (
+  ) : !activeView.builtIn ? (
     <Button type="button" variant="ghost" size="sm" onClick={() => removeView(activeView.id)}>Delete view</Button>
   ) : null;
 

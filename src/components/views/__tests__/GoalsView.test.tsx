@@ -324,7 +324,7 @@ describe('GoalsView', () => {
     ];
     setup();
     expect(screen.getByText('Followed on 1 of 2 trades this week (50%)')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Broken 1 times this week/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Broken 1 time this week\. Show those trades$/ })).toBeInTheDocument();
     expect(screen.getByText('−$48.00')).toBeInTheDocument();
   });
 

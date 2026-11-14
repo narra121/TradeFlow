@@ -230,7 +230,8 @@ export function TradeTable({
               <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          {/* React events bubble out of the portal to the row, whose click and Enter open the trade. */}
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
             <DropdownMenuItem onSelect={() => actions.onEdit(t.id)}>Edit</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => actions.onDuplicate(t.id)}>
               <span>
