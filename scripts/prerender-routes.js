@@ -11,13 +11,52 @@ const SITE = 'https://tradequt.com';
 const CONCURRENCY = 4;
 const distDir = join(process.cwd(), 'dist');
 const { routes } = JSON.parse(readFileSync(join(distDir, '_seo', 'routes.json'), 'utf-8'));
-const MODULEPRELOAD = /<link rel="modulepreload"[^>]*href="([^"]+)"[^>]*>/g;
+const STYLESHEET = /<link rel="stylesheet"[^>]*\shref="(\/[^"]+\.css)"[^>]*>/g;
+const FONT_PRELOAD = /<link rel="preload"[^>]*\shref="(\/[^"]+\.woff2)"[^>]*>/g;
+const ENTRY_SCRIPT = /<script type="module"[^>]*\ssrc="[^"]+"[^>]*><\/script>/g;
+const MODULEPRELOAD = /<link rel="modulepreload"[^>]*>/g;
 
-// Vite adds a modulepreload link for every chunk the rendered route imported (about 33 for /login). Saved into the
-// HTML, they download ahead of the stylesheets and the font and delay the first paint; the app adds them again when
-// it starts. Only the shell's own links stay.
-function dropRuntimePreloads(html, shellPreloads) {
-  return html.replace(MODULEPRELOAD, (tag, href) => (shellPreloads.has(href) ? tag : ''));
+// Faces declared `font-display: block` in fonts.css hold their text back until the file arrives.
+const textBlockingFonts = new Set(
+  (readFileSync(join(distDir, 'fonts', 'fonts.css'), 'utf-8').match(/@font-face \{[^}]*\}/g) ?? [])
+    .filter((face) => face.includes('font-display: block'))
+    .map((face) => /url\('([^']+)'\)/.exec(face)?.[1]),
+);
+
+function withTextFontsInline(css) {
+  return [...textBlockingFonts].reduce(
+    (out, url) => out.replace(`url('${url}')`, () => `url(data:font/woff2;base64,${readFileSync(join(distDir, url)).toString('base64')})`),
+    css,
+  );
+}
+
+/**
+ * Lets the saved page paint from its first response, with nothing else on the wire before it:
+ * - every stylesheet is written into the page, so no CSS request blocks rendering (the router's CSP allows inline
+ *   styles). A build stylesheet also leaves a link that is never fetched (`disabled` stops the parser, `media="not all"`
+ *   stops the preload scanner, which ignores `disabled`); Vite finds it when the app starts and so does not download
+ *   the same file again.
+ * - a font that blocks text is written into that CSS as a data: URL, so it is there for the first layout and the text
+ *   paints in the first frame (the router's CSP lists `data:` under font-src for this);
+ * - the entry script, every modulepreload (the shell's, and the one Vite added for each chunk the rendered route
+ *   imported, about 33 for /login) and the other font preloads move to the end of <body>. The browser finds them when
+ *   the page's own bytes have arrived, then downloads them as one batch.
+ */
+function paintBeforeScripts(html) {
+  const tail = [];
+  const keepForTail = (tag) => {
+    tail.push(tag);
+    return '';
+  };
+  return html
+    .replace(STYLESHEET, (tag, href) => {
+      const placeholder = href.startsWith('/assets/') ? tag.replace(/>$/, ' media="not all" disabled>') : '';
+      return `<style>${withTextFontsInline(readFileSync(join(distDir, href), 'utf-8'))}</style>${placeholder}`;
+    })
+    .replace(FONT_PRELOAD, (tag, href) => (textBlockingFonts.has(href) ? '' : keepForTail(tag)))
+    .replace(ENTRY_SCRIPT, keepForTail)
+    .replace(MODULEPRELOAD, keepForTail)
+    .replace('</body>', () => `${tail.join('')}</body>`);
 }
 
 async function renderRoute(browser, base, path) {
@@ -44,7 +83,6 @@ async function renderRoute(browser, base, path) {
 async function prerender() {
   console.log('Starting pre-render...');
   copyFileSync(join(distDir, 'index.html'), join(distDir, '_spa.html'));
-  const shellPreloads = new Set([...readFileSync(join(distDir, '_spa.html'), 'utf-8').matchAll(MODULEPRELOAD)].map((m) => m[1]));
 
   const server = await preview({ preview: { port: 4173, strictPort: false } });
   const base = (server.resolvedUrls?.local?.[0] ?? 'http://localhost:4173').replace(/\/$/, '');
@@ -69,7 +107,7 @@ async function prerender() {
 
   // Written only after every route rendered: the preview server keeps serving the untouched shell meanwhile.
   for (const [path, rendered] of results) {
-    const html = dropRuntimePreloads(rendered, shellPreloads);
+    const html = paintBeforeScripts(rendered);
     if (path === '/') {
       writeFileSync(join(distDir, 'index.html'), html, 'utf-8');
       continue;

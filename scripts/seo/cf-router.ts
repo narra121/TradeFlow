@@ -35,6 +35,7 @@ const GOOGLE_ADS = ['https://pagead2.googlesyndication.com', 'https://*.g.double
  * the AdSense loader, Cognito (Amplify Auth calls cognito-idp and the hosted-UI domain), the API (a custom domain under tradequt.com,
  * or an execute-api URL on dev), presigned S3 PUTs for screenshots, and blob: URLs for screenshots read through the API.
  * Styles stay 'unsafe-inline' (React style props, index.html and the static error pages carry inline CSS).
+ * Fonts allow data: because a prerendered page carries its text font inline (scripts/prerender-routes.js).
  */
 function contentSecurityPolicy(): string {
   return [
@@ -42,7 +43,7 @@ function contentSecurityPolicy(): string {
     `script-src 'self' ${inlineScriptHashes().join(' ')} https://www.googletagmanager.com https://pagead2.googlesyndication.com`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob: ${[...GOOGLE_ANALYTICS, ...GOOGLE_ADS].join(' ')}`,
-    "font-src 'self'",
+    "font-src 'self' data:",
     `connect-src 'self' https://*.tradequt.com https://*.execute-api.us-east-1.amazonaws.com https://cognito-idp.us-east-1.amazonaws.com https://*.s3.us-east-1.amazonaws.com ${[
       ...GOOGLE_ANALYTICS,
       'https://analytics.google.com',
