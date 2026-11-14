@@ -43,7 +43,7 @@ export function PipCalculatorPage() {
       <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
-            <Link to="/resources" className="inline-flex min-h-6 items-center hover:text-foreground">
+            <Link to="/resources" className="inline-flex min-h-6 max-md:min-h-11 items-center hover:text-foreground">
               Resources
             </Link>
           </li>
@@ -142,7 +142,7 @@ export function PipCalculatorPage() {
         </h2>
         <p className="text-muted-foreground leading-relaxed mb-4">
           A{' '}
-          <Link to="/glossary" className="text-primary hover:underline">
+          <Link to="/glossary" className="text-primary underline underline-offset-4">
             pip
           </Link>{' '}
           (percentage in point) is the smallest standard price movement in a currency pair. For
@@ -157,7 +157,7 @@ export function PipCalculatorPage() {
           size, the more each pip is worth. For example, on EUR/USD with a standard lot, one pip
           equals $10. With a mini lot, it equals $1. With a micro lot, it equals $0.10. Choosing
           the right lot size is directly connected to your{' '}
-          <Link to="/resources/position-size" className="text-primary hover:underline">
+          <Link to="/resources/position-size" className="text-primary underline underline-offset-4">
             position sizing strategy
           </Link>
           .
@@ -174,11 +174,11 @@ export function PipCalculatorPage() {
           combine it with your stop loss distance to determine proper position sizing. For example,
           if you know one pip on a mini lot of GBP/USD is worth $1 and your stop loss is 30 pips
           away, your total risk on that trade is $30. Pair this with our{' '}
-          <Link to="/resources/position-size" className="text-primary hover:underline">
+          <Link to="/resources/position-size" className="text-primary underline underline-offset-4">
             position size calculator
           </Link>{' '}
           to determine the ideal lot size for your account balance and risk tolerance, or use the{' '}
-          <Link to="/resources/risk-reward" className="text-primary hover:underline">
+          <Link to="/resources/risk-reward" className="text-primary underline underline-offset-4">
             risk-reward calculator
           </Link>{' '}
           to evaluate whether the trade setup is worth taking in the first place.

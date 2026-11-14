@@ -49,7 +49,7 @@ export function ArticleToc({ root, min = 3 }: { root: RefObject<HTMLElement>; mi
       <ol className="list-decimal space-y-1 pl-5 text-sm">
         {items.map((i) => (
           <li key={i.id}>
-            <a href={`#${i.id}`} className="inline-flex min-h-6 items-center text-foreground-soft hover:text-foreground hover:underline">
+            <a href={`#${i.id}`} className="inline-flex min-h-6 max-md:min-h-11 items-center text-foreground-soft hover:text-foreground hover:underline">
               {i.text}
             </a>
           </li>

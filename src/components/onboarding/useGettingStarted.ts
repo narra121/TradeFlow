@@ -4,6 +4,8 @@ import { useGetRulesAndGoalsQuery } from '@/store/api/goalsRulesApi';
 
 export interface GettingStarted {
   isLoading: boolean;
+  /** A request it depends on failed, or the trade count is not known: the progress must not be shown. */
+  unknown: boolean;
   hasAccount: boolean;
   hasTrade: boolean;
   /** A goal the user edited or a rule the user added; the server's starter set does not count. */
@@ -34,16 +36,18 @@ export function userSetItems(items: Stamped[]): boolean {
 
 /**
  * Progress of the three first-run steps, derived from data and never stored (A.11): an account exists, a trade exists,
- * the user set a goal or rule. `tradeCount` is the whole-journal count the caller already knows.
+ * the user set a goal or rule. `tradeCount` is the whole-journal count the caller already knows; null while it is loading
+ * or failed to load.
  */
-export function useGettingStarted(tradeCount: number): GettingStarted {
+export function useGettingStarted(tradeCount: number | null): GettingStarted {
   const accounts = useGetAccountsQuery();
   const rg = useGetRulesAndGoalsQuery();
   return useMemo(() => {
     const hasAccount = (accounts.data?.accounts.length ?? 0) > 0;
-    const hasTrade = tradeCount > 0;
+    const hasTrade = (tradeCount ?? 0) > 0;
     const hasGoalOrRule = !!rg.data && (userSetItems(rg.data.goals) || userSetItems(rg.data.rules));
     const done = Number(hasAccount) + Number(hasTrade) + Number(hasGoalOrRule);
-    return { isLoading: accounts.isLoading, hasAccount, hasTrade, hasGoalOrRule, done, total: 3 as const, complete: done === 3 };
-  }, [accounts.data, accounts.isLoading, rg.data, tradeCount]);
+    const unknown = accounts.isError || rg.isError || tradeCount === null;
+    return { isLoading: accounts.isLoading, unknown, hasAccount, hasTrade, hasGoalOrRule, done, total: 3 as const, complete: done === 3 };
+  }, [accounts.data, accounts.isLoading, accounts.isError, rg.data, rg.isError, tradeCount]);
 }

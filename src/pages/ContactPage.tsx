@@ -36,7 +36,7 @@ export function ContactPage() {
             <dt className="font-medium text-foreground">Billing or refund</dt>
             <dd className="mt-1 text-foreground-soft">
               Include your registered email and the Stripe receipt reference. See the{' '}
-              <Link to="/refund" className="text-primary hover:underline">Refund &amp; Cancellation Policy</Link>.
+              <Link to="/refund" className="text-primary underline underline-offset-4">Refund &amp; Cancellation Policy</Link>.
             </dd>
           </div>
           <div>

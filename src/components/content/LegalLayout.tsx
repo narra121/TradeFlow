@@ -36,7 +36,7 @@ export function LegalLayout({ title, description, path, updated, sections }: Leg
         <ol className="list-decimal space-y-1 pl-5 text-sm">
           {sections.map((s) => (
             <li key={s.id}>
-              <a href={`#${s.id}`} className="inline-flex min-h-6 items-center text-primary hover:underline">
+              <a href={`#${s.id}`} className="inline-flex min-h-6 max-md:min-h-11 items-center text-primary hover:underline">
                 {s.title}
               </a>
             </li>
@@ -69,13 +69,13 @@ export function ContactBlock() {
       </li>
       <li>
         <span className="font-medium text-foreground">Email:</span>{' '}
-        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">
+        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline underline-offset-4">
           {SUPPORT_EMAIL}
         </a>
       </li>
       <li>
         <span className="font-medium text-foreground">Phone:</span>{' '}
-        <a href={`tel:${COMPANY_FACTS.phone.e164}`} className="text-primary hover:underline">
+        <a href={`tel:${COMPANY_FACTS.phone.e164}`} className="text-primary underline underline-offset-4">
           {COMPANY_FACTS.phone.display}
         </a>
       </li>

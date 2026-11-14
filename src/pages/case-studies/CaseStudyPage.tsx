@@ -1,4 +1,4 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
@@ -7,6 +7,7 @@ import { ShareButtons } from '@/components/content/ShareButtons';
 import { caseStudySchema } from '@/config/seo';
 import { CASE_STUDIES } from '@/content/case-studies/studies';
 import { lazyContent } from '@/content/lazyContent';
+import NotFound from '@/pages/NotFound';
 
 export function CaseStudyPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -14,9 +15,8 @@ export function CaseStudyPage() {
 
   const Content = study ? lazyContent(`case-study/${study.slug}`, study.content) : null;
 
-  if (!study || !Content) {
-    return <Navigate to="/case-studies" replace />;
-  }
+  // A real not-found page, matching the 404 CloudFront answers for a path that was never prerendered.
+  if (!study || !Content) return <NotFound />;
 
   return (
     <ContentPageShell

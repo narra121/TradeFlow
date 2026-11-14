@@ -8,13 +8,13 @@ export default function ForexTradingJournal() {
         Forex traders face a unique measurement challenge. A trade that gains 50 pips on a micro lot has a very
         different dollar impact than 50 pips on a standard lot. This is why a forex trading journal must track both
         pip performance and dollar{' '}
-        <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link>. Pips measure the quality
+        <Link to="/glossary#pnl" className="text-primary underline underline-offset-4 hover:text-primary/80">P&L</Link>. Pips measure the quality
         of your entries and exits, independent of position size. Dollar P&L measures the actual financial impact on
         your account, which is what ultimately determines whether you can continue trading.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         Tracking pips alone can mask poor{' '}
-        <Link to="/glossary#position-sizing" className="text-primary hover:text-primary/80">position sizing</Link>.
+        <Link to="/glossary#position-sizing" className="text-primary underline underline-offset-4 hover:text-primary/80">position sizing</Link>.
         A trader who gains 200 pips on small lots but loses 100 pips on oversized lots can end the week negative in
         dollar terms despite a seemingly strong pip count. Conversely, tracking only dollar P&L can hide whether your
         analysis is sound. If you are only profitable because you happened to size one big winner correctly, your
@@ -35,7 +35,7 @@ export default function ForexTradingJournal() {
         a range trader might perform best during the Asian session when markets are calmer. Without session tagging,
         this insight stays hidden. Most traders who journal session data are surprised by how dramatically their
         performance varies between windows. The{' '}
-        <Link to="/blog/trading-analytics-find-edge" className="text-primary hover:text-primary/80">analytics breakdown</Link>{' '}
+        <Link to="/blog/trading-analytics-find-edge" className="text-primary underline underline-offset-4 hover:text-primary/80">analytics breakdown</Link>{' '}
         by time of day makes this analysis straightforward.
       </p>
 
@@ -79,7 +79,7 @@ export default function ForexTradingJournal() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         This tagging serves two purposes. First, it helps you evaluate whether your strategy performs better or worse
         around news events. If your win rate drops significantly on news days, you should add a rule to{' '}
-        <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">avoid trading</Link>{' '}
+        <Link to="/blog/why-trading-rules-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">avoid trading</Link>{' '}
         during those windows. Second, it allows you to isolate news-related volatility from your regular performance
         data, giving you a cleaner picture of how your strategy performs under normal conditions. Many forex traders
         find that their overall win rate improves by 5 to 10 percentage points simply by filtering out news-related
@@ -104,7 +104,7 @@ export default function ForexTradingJournal() {
         best trades, which pairs keep underperforming, and how much commission and swap take from your results. In
         TradeQut, MetaTrader 4 and 5 reports import with their commission and swap columns, and Analytics breaks results
         down by symbol, session and hour. Import your history through a{' '}
-        <Link to="/blog/importing-trades-from-broker" className="text-primary hover:text-primary/80">MetaTrader report, a CSV or screenshots</Link>{' '}
+        <Link to="/blog/importing-trades-from-broker" className="text-primary underline underline-offset-4 hover:text-primary/80">MetaTrader report, a CSV or screenshots</Link>{' '}
         and the review starts from real numbers.
       </p>
     </>

@@ -48,13 +48,13 @@ export function OL({ children }: { children: ReactNode }) {
 export function A({ to, children }: { to: string; children: ReactNode }) {
   if (/^https?:\/\//.test(to)) {
     return (
-      <a href={to} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline-offset-4 hover:underline">
+      <a href={to} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4 hover:text-primary/80">
         {children}
       </a>
     );
   }
   return (
-    <Link to={to} className="text-primary hover:text-primary/80 underline-offset-4 hover:underline">
+    <Link to={to} className="text-primary underline underline-offset-4 hover:text-primary/80">
       {children}
     </Link>
   );
@@ -132,7 +132,7 @@ export function Sources({ items }: { items: Source[] }) {
       <ol className="list-decimal pl-6 space-y-1 text-sm text-muted-foreground">
         {items.map((s) => (
           <li key={s.url}>
-            <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-foreground underline-offset-4 hover:underline">
+            <a href={s.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-foreground">
               {s.label}
             </a>{' '}
             <span className="text-xs">(checked {s.checked})</span>
@@ -152,13 +152,13 @@ export function Disclaimer({ children }: { children?: ReactNode }) {
   );
 }
 
-export function SignupCta({ text = 'Start a free journal' }: { text?: string }) {
+export function SignupCta({ text = 'Start free' }: { text?: string }) {
   return (
     <div className="signed-out-only mt-10 rounded-lg border border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <p className="text-foreground">Log your trades, see net P&amp;L after charges and find the rules you break most.</p>
       <Link
         to="/signup"
-        className="glow-primary inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        className="inline-flex h-10 max-md:h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
       >
         {text}
       </Link>

@@ -63,7 +63,7 @@ export function RiskRewardCalculatorPage() {
       <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
-            <Link to="/resources" className="inline-flex min-h-6 items-center hover:text-foreground">
+            <Link to="/resources" className="inline-flex min-h-6 max-md:min-h-11 items-center hover:text-foreground">
               Resources
             </Link>
           </li>
@@ -150,7 +150,7 @@ export function RiskRewardCalculatorPage() {
           make two dollars if the trade goes your way. It is one of the most fundamental tools in a
           trader's toolkit because it determines whether a strategy is mathematically viable over a
           large number of trades, independent of the{' '}
-          <Link to="/glossary" className="text-primary hover:underline">
+          <Link to="/glossary" className="text-primary underline underline-offset-4">
             win rate
           </Link>
           .
@@ -171,14 +171,14 @@ export function RiskRewardCalculatorPage() {
         </p>
         <p className="text-muted-foreground leading-relaxed">
           Combining a good risk-reward ratio with proper{' '}
-          <Link to="/resources/position-size" className="text-primary hover:underline">
+          <Link to="/resources/position-size" className="text-primary underline underline-offset-4">
             position sizing
           </Link>{' '}
           is what builds long-term edge. Risk-reward tells you whether a trade is worth taking;
           position sizing tells you how much to commit. Use both calculators together to plan
           trades that protect your capital while maximizing your upside. Tracking your actual R:R
           outcomes in a{' '}
-          <Link to="/guide" className="text-primary hover:underline">
+          <Link to="/guide" className="text-primary underline underline-offset-4">
             trading journal
           </Link>{' '}
           helps you identify whether your real-world execution matches your plan.

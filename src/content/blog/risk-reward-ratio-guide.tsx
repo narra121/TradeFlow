@@ -5,13 +5,13 @@ export default function RiskRewardRatioGuide() {
     <>
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">What Is Risk-Reward Ratio?</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        The <Link to="/glossary#risk-reward-ratio" className="text-primary hover:text-primary/80">risk-reward ratio</Link> (R:R)
+        The <Link to="/glossary#risk-reward-ratio" className="text-primary underline underline-offset-4 hover:text-primary/80">risk-reward ratio</Link> (R:R)
         compares how much you stand to lose on a trade versus how much you stand to gain. It is expressed
         as a ratio of risk to reward. The formula is:
       </p>
       <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
-          Risk-Reward Ratio = (Entry Price - Stop Loss) / (Take Profit - Entry Price)
+          Risk-Reward Ratio = (Entry Price − Stop Loss) / (Take Profit − Entry Price)
         </p>
       </div>
       <p className="text-muted-foreground leading-relaxed mb-4">
@@ -27,13 +27,13 @@ export default function RiskRewardRatioGuide() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         Most professional traders will not enter a trade unless the potential reward is at least twice the
         risk, a 1:2 ratio. The reason is mathematical: with a 1:2 risk-reward, you only need to win 33.3%
-        of your trades to break even. Any <Link to="/glossary#win-rate" className="text-primary hover:text-primary/80">win rate</Link> above
+        of your trades to break even. Any <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">win rate</Link> above
         that threshold produces profit.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         Here is the breakeven calculation. If you risk $100 per trade and target $200, then one win recovers
-        the cost of two losses. Over 100 trades, you need at least 34 winners (34 x $200 = $6,800) to
-        offset 66 losers (66 x $100 = $6,600). The remaining margin is your profit. This mathematical
+        the cost of two losses. Over 100 trades, you need at least 34 winners (34 × $200 = $6,800) to
+        offset 66 losers (66 × $100 = $6,600). The remaining margin is your profit. This mathematical
         cushion is why the 1:2 minimum exists. It gives your strategy room to survive losing streaks while
         remaining profitable over a large sample of trades.
       </p>
@@ -68,7 +68,7 @@ export default function RiskRewardRatioGuide() {
         Notice how a 1:3 ratio only requires a 25% win rate to break even. This is why trend followers
         can be profitable despite losing on most trades. Their winners are large enough that a handful of
         successful trades covers many small losses. Read more about this dynamic in our article on{' '}
-        <Link to="/blog/win-rate-vs-profit-factor" className="text-primary hover:text-primary/80">win rate versus profit factor</Link>.
+        <Link to="/blog/win-rate-vs-profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">win rate versus profit factor</Link>.
       </p>
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">R:R and Position Sizing</h2>
@@ -105,7 +105,7 @@ export default function RiskRewardRatioGuide() {
           <strong className="text-foreground">Taking profit too early.</strong> You planned a 1:3 target but close at 1:1.5
           because you are afraid of giving back gains. Over hundreds of trades, this habit cuts your average
           win in half and significantly reduces your{' '}
-          <Link to="/glossary#profit-factor" className="text-primary hover:text-primary/80">profit factor</Link>.
+          <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">profit factor</Link>.
         </li>
         <li>
           <strong className="text-foreground">Ignoring commissions and slippage.</strong> A 1:1.5 ratio looks profitable on
@@ -132,7 +132,7 @@ export default function RiskRewardRatioGuide() {
         date range, account, or instrument to identify which setups deliver the best actual risk-reward.
         Over time, this data helps you eliminate low-R:R setups from your playbook and focus on the patterns
         where you consistently achieve 1:2 or better. Combine this with{' '}
-        <Link to="/blog/track-reduce-drawdown" className="text-primary hover:text-primary/80">drawdown tracking</Link> to
+        <Link to="/blog/track-reduce-drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">drawdown tracking</Link> to
         ensure that even your losing trades stay within your risk parameters. Together, R:R discipline and
         drawdown management form the backbone of sustainable trading performance.
       </p>

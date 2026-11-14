@@ -69,9 +69,10 @@ describe('BlogArticlePage', () => {
     expect(container.querySelector('svg[aria-label]')).toBeNull();
   });
 
-  it('redirects to /blog for unknown slug', () => {
+  it('shows the not-found page for an unknown slug, not the blog index', () => {
     renderWithRoute('nonexistent-article');
-    expect(screen.getByText('Blog Index')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(screen.queryByText('Blog Index')).not.toBeInTheDocument();
   });
 
   it('renders the footer with copyright', async () => {

@@ -8,7 +8,7 @@ export default function TradingPsychologyManagingEmotions() {
         Every trader, regardless of experience, operates within a constant tension between fear and greed. Fear causes
         you to exit winning trades too early, skip valid setups, and widen your stop losses. Greed pushes you to hold
         losers too long, overtrade, and increase position sizes beyond what your{' '}
-        <Link to="/blog/build-trading-plan" className="text-primary hover:text-primary/80">trading plan</Link> allows.
+        <Link to="/blog/build-trading-plan" className="text-primary underline underline-offset-4 hover:text-primary/80">trading plan</Link> allows.
         These two emotions are not flaws to eliminate. They are biological responses hardwired into the human brain,
         and the best traders learn to manage them rather than pretend they do not exist.
       </p>
@@ -30,7 +30,7 @@ export default function TradingPsychologyManagingEmotions() {
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         The danger of tilt is that it compounds losses. One bad trade becomes three, then five. Position sizes increase.{' '}
-        <Link to="/glossary#stop-loss" className="text-primary hover:text-primary/80">Stop losses</Link> get ignored
+        <Link to="/glossary#stop-loss" className="text-primary underline underline-offset-4 hover:text-primary/80">Stop losses</Link> get ignored
         or removed. By the time the trader regains composure, the damage to their account can be severe. Learning to
         recognize the early signs of tilt, such as elevated heart rate, frustration with the market, or the urge to
         immediately re-enter after a loss, is essential for long-term survival.
@@ -38,7 +38,7 @@ export default function TradingPsychologyManagingEmotions() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         The most effective tilt prevention is a hard rule: after two consecutive losses, stop trading for the session.
         This is one of the{' '}
-        <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">trading rules that matter most</Link>.
+        <Link to="/blog/why-trading-rules-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">trading rules that matter most</Link>.
         It removes the decision from the emotional moment and replaces it with a predetermined action.
       </p>
 
@@ -50,7 +50,7 @@ export default function TradingPsychologyManagingEmotions() {
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         The antidote to bias is data. When you journal every trade and review your performance through{' '}
-        <Link to="/blog/trading-analytics-find-edge" className="text-primary hover:text-primary/80">analytics</Link>,
+        <Link to="/blog/trading-analytics-find-edge" className="text-primary underline underline-offset-4 hover:text-primary/80">analytics</Link>,
         you replace feelings with facts. You might feel like you are terrible at trading on Fridays, but your data
         shows that Friday is actually your most profitable day. You might feel like a particular symbol always stops you
         out, but your journal shows a 62% win rate on that instrument. Data does not lie. Emotions do.
@@ -72,7 +72,7 @@ export default function TradingPsychologyManagingEmotions() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         This score takes five seconds to record but yields invaluable data over time. When you analyze 100 or more
         trades with emotion scores attached, you can see whether your win rate and average{' '}
-        <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link> change based on your
+        <Link to="/glossary#pnl" className="text-primary underline underline-offset-4 hover:text-primary/80">P&L</Link> change based on your
         emotional state at entry. Most traders find a stark correlation: trades taken at emotional level 1 or 2
         significantly outperform trades taken at level 4 or 5.
       </p>
@@ -89,7 +89,7 @@ export default function TradingPsychologyManagingEmotions() {
         These patterns are actionable. If you know that your performance degrades after emotional level 3, you can set
         a rule to stop trading when you notice yourself reaching that threshold. If you know that your afternoon trades
         underperform, you can restrict your trading to the morning session. The{' '}
-        <Link to="/blog/day-trading-journal" className="text-primary hover:text-primary/80">day trader's review cycle</Link>{' '}
+        <Link to="/blog/day-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">day trader's review cycle</Link>{' '}
         is the perfect framework for identifying these time-based emotional patterns.
       </p>
 

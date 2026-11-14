@@ -23,12 +23,13 @@ function renderAt(path: string) {
 }
 
 describe('CaseStudyPage (FE-082)', () => {
-  it('shows a study and sends an unknown slug to the index', async () => {
+  it('shows a study, and the not-found page for an unknown slug', async () => {
     const study = CASE_STUDIES[0];
     renderAt(`/case-studies/${study.slug}`);
     expect(await screen.findByRole('heading', { level: 1, name: study.title })).toBeInTheDocument();
     renderAt('/case-studies/nope');
-    expect(await screen.findByText('Case studies index')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(screen.queryByText('Case studies index')).not.toBeInTheDocument();
   });
 
   it('uses the shared lazy cache: the same study is always the same component', () => {

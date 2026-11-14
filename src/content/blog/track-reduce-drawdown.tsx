@@ -5,14 +5,14 @@ export default function TrackReduceDrawdown() {
     <>
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">What Is Drawdown?</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        <Link to="/glossary#drawdown" className="text-primary hover:text-primary/80">Drawdown</Link> measures
+        <Link to="/glossary#drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">Drawdown</Link> measures
         the decline from a peak in your account equity to a subsequent trough. It represents the worst-case
         loss experienced during a specific period before the account recovers to a new high. Drawdown is
         expressed as either a dollar amount or a percentage of the peak equity.
       </p>
       <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
-          Drawdown % = (Peak Equity - Trough Equity) / Peak Equity x 100
+          Drawdown % = (Peak Equity − Trough Equity) / Peak Equity × 100
         </p>
       </div>
       <p className="text-muted-foreground leading-relaxed mb-4">
@@ -151,17 +151,17 @@ export default function TrackReduceDrawdown() {
         The most valuable use of a trading journal is diagnosing why drawdowns happen. TradeQut's analytics
         dashboard lets you filter trades by date range to isolate losing periods. Look for patterns in your
         worst stretches: were you overtrading, ignoring your{' '}
-        <Link to="/blog/risk-reward-ratio-guide" className="text-primary hover:text-primary/80">risk-reward
+        <Link to="/blog/risk-reward-ratio-guide" className="text-primary underline underline-offset-4 hover:text-primary/80">risk-reward
         ratios</Link>, or trading outside your best hours?
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         Review your maximum consecutive losses, the instruments you traded during the drawdown, and whether
         you followed your rules. Often, the biggest drawdowns correlate with{' '}
-        <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">broken rules</Link> rather
+        <Link to="/blog/why-trading-rules-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">broken rules</Link> rather
         than bad market conditions. The journal makes this visible by tagging each trade with the rules you
         set for yourself. When you can see that 80% of your drawdown came from trades where you violated
         your own stop-loss rules, the fix becomes obvious. Pair drawdown analysis with your{' '}
-        <Link to="/blog/trading-metrics-that-matter" className="text-primary hover:text-primary/80">key trading
+        <Link to="/blog/trading-metrics-that-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">key trading
         metrics</Link> to build a complete picture of risk management performance.
       </p>
     </>

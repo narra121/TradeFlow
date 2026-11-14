@@ -138,7 +138,7 @@ const SECTIONS: LegalSection[] = [
           which uses cookies, and your cookie choice applies.
         </p>
         <p>
-          <button type="button" onClick={openConsentSettings} className="text-primary hover:underline">
+          <button type="button" onClick={openConsentSettings} className="inline-flex min-h-6 max-md:min-h-11 items-center text-primary underline underline-offset-4">
             Change your cookie settings
           </button>
         </p>
@@ -172,8 +172,8 @@ const SECTIONS: LegalSection[] = [
     body: (
       <p>
         We update this page when the Service or the providers above change and change the &ldquo;Last updated&rdquo; date.
-        See also the <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and the{' '}
-        <Link to="/refund" className="text-primary hover:underline">Refund &amp; Cancellation Policy</Link>.
+        See also the <Link to="/terms" className="text-primary underline underline-offset-4">Terms of Service</Link> and the{' '}
+        <Link to="/refund" className="text-primary underline underline-offset-4">Refund &amp; Cancellation Policy</Link>.
       </p>
     ),
   },

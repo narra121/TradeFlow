@@ -23,7 +23,7 @@ export default function HowToKeepTradingJournal() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         A journal replaces gut feeling with data. It turns vague impressions like "I think I trade
         better in the morning" into concrete metrics: your{' '}
-        <Link to="/glossary#win-rate" className="text-primary hover:text-primary/80">
+        <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
           win rate
         </Link>{' '}
         between 9:30 and 11:00 AM is 62%, compared to 38% after 2:00 PM. That kind of insight is
@@ -58,7 +58,7 @@ export default function HowToKeepTradingJournal() {
         </li>
         <li>
           <strong className="text-foreground">Profit or loss</strong> — The realized{' '}
-          <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">
+          <Link to="/glossary#pnl" className="text-primary underline underline-offset-4 hover:text-primary/80">
             P&L
           </Link>{' '}
           in your account currency.
@@ -84,7 +84,7 @@ export default function HowToKeepTradingJournal() {
         If this looks like a lot, it is — but only the first few times. Once you have a{' '}
         <Link
           to="/blog/trading-journal-template"
-          className="text-primary hover:text-primary/80"
+          className="text-primary underline underline-offset-4 hover:text-primary/80"
         >
           consistent template
         </Link>
@@ -162,7 +162,7 @@ export default function HowToKeepTradingJournal() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         <strong className="text-foreground">"It does not actually help."</strong> A journal that
         you never review does not help — that part is true. But a journal paired with a{' '}
-        <Link to="/blog/how-to-review-trades" className="text-primary hover:text-primary/80">
+        <Link to="/blog/how-to-review-trades" className="text-primary underline underline-offset-4 hover:text-primary/80">
           weekly review routine
         </Link>{' '}
         is one of the most practical ways to learn what is working for you. It makes no promise about
@@ -177,12 +177,12 @@ export default function HowToKeepTradingJournal() {
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         For a structured approach,{' '}
-        <Link to="/signup" className="text-primary hover:text-primary/80">
+        <Link to="/signup" className="text-primary underline underline-offset-4 hover:text-primary/80">
           TradeQut
         </Link>{' '}
         provides a ready-made journal with built-in analytics, chart screenshots, goal tracking,
         and{' '}
-        <Link to="/glossary#profit-factor" className="text-primary hover:text-primary/80">
+        <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">
           profit factor
         </Link>{' '}
         calculations, covering everything in this guide. Every account starts with a 14-day free

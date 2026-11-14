@@ -54,7 +54,7 @@ export default function StatusPage() {
         {state.kind === 'unavailable' && (
           <p className="text-foreground-soft">
             We could not load the status file. If TradeQut is not working, email{' '}
-            <a href="mailto:support@tradequt.com" className="text-primary hover:underline">
+            <a href="mailto:support@tradequt.com" className="text-primary underline underline-offset-4">
               support@tradequt.com
             </a>
             .
@@ -81,7 +81,7 @@ export default function StatusPage() {
               </p>
             )}
             {state.notice.link && (
-              <a href={state.notice.link} className="mt-2 inline-flex min-h-6 items-center text-sm text-primary hover:underline">
+              <a href={state.notice.link} className="mt-2 inline-flex min-h-6 max-md:min-h-11 items-center text-sm text-primary hover:underline">
                 More detail
               </a>
             )}

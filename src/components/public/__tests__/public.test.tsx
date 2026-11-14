@@ -123,6 +123,21 @@ describe('PublicLayout', () => {
     expect(screen.queryByRole('navigation', { name: 'Menu' })).not.toBeInTheDocument();
   });
 
+  it('keeps focus in the open mobile menu: the page behind is inert, Escape returns focus to the button (R-049)', async () => {
+    const user = userEvent.setup();
+    wrap(<PublicLayout>x</PublicLayout>);
+    const main = screen.getByRole('main');
+    const footer = screen.getByRole('contentinfo');
+    await user.click(screen.getByRole('button', { name: 'Open menu' }));
+    expect(main.closest('[inert]')).not.toBeNull();
+    expect(footer.closest('[inert]')).not.toBeNull();
+    expect(screen.getByRole('banner').closest('[inert]')).toBeNull();
+    await user.keyboard('{Escape}');
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open menu' }));
+    expect(main.closest('[inert]')).toBeNull();
+    expect(footer.closest('[inert]')).toBeNull();
+  });
+
   it('footer groups legal links and re-opens cookie settings', async () => {
     const user = userEvent.setup();
     const opened = vi.fn();

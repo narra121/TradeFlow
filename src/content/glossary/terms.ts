@@ -34,9 +34,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Drawdown',
     definition:
       'Drawdown measures the decline from a peak in account equity to a subsequent trough, expressed as a percentage or currency amount. It quantifies how much a trader has lost relative to their highest equity point before recovering. Monitoring drawdown is essential for risk management because large drawdowns require disproportionately larger gains to recover -- a 50% drawdown, for instance, demands a 100% return just to break even.',
-    formula: 'Drawdown = (Peak Equity - Trough Equity) / Peak Equity x 100%',
+    formula: 'Drawdown = (Peak Equity − Trough Equity) / Peak Equity × 100%',
     example:
-      'Your account peaks at $12,000 then drops to $10,200. The drawdown is ($12,000 - $10,200) / $12,000 = 15%.',
+      'Your account peaks at $12,000 then drops to $10,200. The drawdown is ($12,000 − $10,200) / $12,000 = 15%.',
     relatedTerms: ['maximum-drawdown', 'equity-curve', 'pnl'],
     relatedArticles: ['track-reduce-drawdown', 'trading-metrics-that-matter'],
   },
@@ -55,9 +55,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Expectancy',
     definition:
       'Expectancy is the average amount a trader can expect to gain or lose per trade over a large sample. It combines win rate and the average sizes of wins and losses into a single number that predicts long-term profitability. A positive expectancy means the strategy is statistically profitable over time, while a negative expectancy guarantees eventual loss regardless of any individual winning streak.',
-    formula: 'Expectancy = (Win Rate x Avg Win) - (Loss Rate x Avg Loss)',
+    formula: 'Expectancy = (Win Rate × Avg Win) − (Loss Rate × Avg Loss)',
     example:
-      'With a 45% win rate, $300 average win, and $180 average loss, expectancy = (0.45 x $300) - (0.55 x $180) = $135 - $99 = $36 per trade.',
+      'With a 45% win rate, $300 average win, and $180 average loss, expectancy = (0.45 × $300) − (0.55 × $180) = $135 − $99 = $36 per trade.',
     relatedTerms: ['win-rate', 'risk-reward-ratio', 'profit-factor'],
     relatedArticles: ['trading-metrics-that-matter', 'win-rate-vs-profit-factor'],
   },
@@ -118,9 +118,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Maximum Drawdown',
     definition:
       'Maximum drawdown (Max DD) is the largest peak-to-trough decline in account equity over a specific period, representing the worst-case loss scenario historically experienced. It is the single most important risk metric for evaluating a trading strategy because it reveals the deepest valley a trader has had to endure. Prop firms and fund managers commonly set maximum drawdown limits, and exceeding them often results in account termination.',
-    formula: 'Max Drawdown = max(Peak[i] - Trough[i]) / Peak[i] x 100% for all i',
+    formula: 'Max Drawdown = max(Peak[i] − Trough[i]) / Peak[i] × 100% for all i',
     example:
-      'Over a year of trading, your account hit a high of $25,000 and dropped to $19,500 at its lowest point before recovering. Your maximum drawdown is ($25,000 - $19,500) / $25,000 = 22%.',
+      'Over a year of trading, your account hit a high of $25,000 and dropped to $19,500 at its lowest point before recovering. Your maximum drawdown is ($25,000 − $19,500) / $25,000 = 22%.',
     relatedTerms: ['drawdown', 'equity-curve', 'funded-account', 'prop-trading'],
     relatedArticles: ['track-reduce-drawdown', 'prop-trading-challenges'],
   },
@@ -129,7 +129,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Pip',
     definition:
       'A pip (percentage in point) is the smallest standard price increment in a forex quote, typically the fourth decimal place for most currency pairs (0.0001) and the second decimal place for JPY pairs (0.01). Pips provide a universal unit for measuring price changes and calculating profit or loss across different currency pairs. Some brokers quote an additional fractional pip (pipette), extending the precision to a fifth decimal place.',
-    formula: 'Pip Value = (Pip Size / Exchange Rate) x Lot Size',
+    formula: 'Pip Value = (Pip Size / Exchange Rate) × Lot Size',
     example:
       'If EUR/USD moves from 1.1050 to 1.1073, the move is 23 pips. On a standard lot, each pip is worth about $10, so the gain is approximately $230.',
     relatedTerms: ['lot-size', 'spread', 'leverage'],
@@ -140,9 +140,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'P&L (Profit and Loss)',
     definition:
       'P&L (profit and loss) is the net monetary result of a trade, a series of trades, or an account over a given period. Realized P&L reflects closed positions, while unrealized P&L accounts for open positions at current market prices. Tracking P&L systematically, broken down by day, week, instrument, or strategy, is the foundation of performance analysis in a trading journal.',
-    formula: 'P&L = (Exit Price - Entry Price) x Position Size - Commissions - Fees',
+    formula: 'P&L = (Exit Price − Entry Price) × Position Size − Commissions − Fees',
     example:
-      'You buy 200 shares at $45.00 and sell at $47.50 with $10 total commission. P&L = ($47.50 - $45.00) x 200 - $10 = $490.',
+      'You buy 200 shares at $45.00 and sell at $47.50 with $10 total commission. P&L = ($47.50 − $45.00) × 200 − $10 = $490.',
     relatedTerms: ['equity-curve', 'drawdown', 'win-rate', 'profit-factor'],
     relatedArticles: ['trading-metrics-that-matter'],
   },
@@ -151,7 +151,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Position Sizing',
     definition:
       'Position sizing determines how many units of an asset to buy or sell on a given trade, based on account size, risk tolerance, and the distance to the stop-loss. It is arguably the most critical component of risk management because it directly controls how much capital is at risk on each trade. Common methods include fixed-percentage risk (typically 1-2% of account per trade), fixed-dollar risk, and the Kelly criterion.',
-    formula: 'Position Size = (Account Equity x Risk %) / (Entry Price - Stop Loss Price)',
+    formula: 'Position Size = (Account Equity × Risk %) / (Entry Price − Stop Loss Price)',
     example:
       'With a $20,000 account risking 1% per trade ($200) and a stop-loss 50 cents below entry, your position size is $200 / $0.50 = 400 shares.',
     relatedTerms: ['stop-loss', 'risk-reward-ratio', 'leverage', 'lot-size'],
@@ -193,7 +193,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Risk-Reward Ratio',
     definition:
       'The risk-reward ratio (R:R) compares the potential loss on a trade to the potential gain, measured from the entry price to the stop-loss and take-profit levels respectively. A ratio of 1:3 means you risk $1 to potentially make $3. This metric is central to trade planning because even a strategy with a low win rate can be profitable if the reward consistently outpaces the risk per trade.',
-    formula: 'R:R = (Entry - Stop Loss) / (Take Profit - Entry)',
+    formula: 'R:R = (Entry − Stop Loss) / (Take Profit − Entry)',
     example:
       'You enter a trade at $100 with a stop-loss at $98 and a take-profit at $106. Risk = $2, reward = $6, so R:R = 1:3.',
     relatedTerms: ['stop-loss', 'take-profit', 'expectancy', 'position-sizing'],
@@ -214,9 +214,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Sharpe Ratio',
     definition:
       'The Sharpe ratio measures risk-adjusted return by calculating the excess return of a strategy above the risk-free rate per unit of volatility. A higher Sharpe ratio indicates better compensation for the risk taken, with values above 1.0 considered acceptable, above 2.0 very good, and above 3.0 exceptional. It is widely used by institutional traders and fund managers to compare strategies on a level playing field regardless of their absolute returns.',
-    formula: 'Sharpe Ratio = (Strategy Return - Risk-Free Rate) / Standard Deviation of Returns',
+    formula: 'Sharpe Ratio = (Strategy Return − Risk-Free Rate) / Standard Deviation of Returns',
     example:
-      'Your strategy returns 24% annually with a 12% standard deviation, and the risk-free rate is 4%. Sharpe ratio = (24% - 4%) / 12% = 1.67.',
+      'Your strategy returns 24% annually with a 12% standard deviation, and the risk-free rate is 4%. Sharpe ratio = (24% − 4%) / 12% = 1.67.',
     relatedTerms: ['volatility', 'equity-curve', 'expectancy', 'drawdown'],
     relatedArticles: ['trading-metrics-that-matter'],
   },
@@ -235,7 +235,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Spread',
     definition:
       'The spread is the difference between the bid price (what buyers will pay) and the ask price (what sellers will accept) for an asset. It represents a built-in transaction cost on every trade and is the primary source of revenue for market makers. Tighter spreads are found in highly liquid instruments like major forex pairs and large-cap stocks, while exotic pairs and small-cap stocks tend to have wider spreads.',
-    formula: 'Spread = Ask Price - Bid Price',
+    formula: 'Spread = Ask Price − Bid Price',
     example:
       'EUR/USD is quoted at 1.1050/1.1052. The spread is 2 pips. On a standard lot, this costs approximately $20 as an implicit entry fee.',
     relatedTerms: ['pip', 'liquidity', 'slippage'],
@@ -316,9 +316,9 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'Win Rate',
     definition:
       'Win rate is the percentage of total trades that result in a profit, calculated by dividing the number of winning trades by the total number of trades. While a high win rate feels psychologically rewarding, it does not guarantee profitability on its own -- a trader can win 80% of the time but still lose money if the average loss far exceeds the average win. Win rate must always be evaluated alongside risk-reward ratio and profit factor for a complete picture of strategy performance.',
-    formula: 'Win Rate = (Number of Winning Trades / Total Trades) x 100%',
+    formula: 'Win Rate = (Number of Winning Trades / Total Trades) × 100%',
     example:
-      'Out of 50 trades in a month, 28 were profitable. Win rate = 28 / 50 x 100% = 56%.',
+      'Out of 50 trades in a month, 28 were profitable. Win rate = 28 / 50 × 100% = 56%.',
     relatedTerms: ['profit-factor', 'expectancy', 'risk-reward-ratio', 'pnl'],
     relatedArticles: ['win-rate-vs-profit-factor', 'trading-metrics-that-matter'],
   },

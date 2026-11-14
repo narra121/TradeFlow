@@ -5,12 +5,12 @@ export default function WinRateVsProfitFactor() {
     <>
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">What Is Win Rate?</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        <Link to="/glossary#win-rate" className="text-primary hover:text-primary/80">Win rate</Link> is the
+        <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">Win rate</Link> is the
         percentage of trades that end in profit. The formula is straightforward:
       </p>
       <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
-          Win Rate = (Number of Winning Trades / Total Number of Trades) x 100
+          Win Rate = (Number of Winning Trades / Total Number of Trades) × 100
         </p>
       </div>
       <p className="text-muted-foreground leading-relaxed mb-4">
@@ -24,7 +24,7 @@ export default function WinRateVsProfitFactor() {
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">What Is Profit Factor?</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        <Link to="/glossary#profit-factor" className="text-primary hover:text-primary/80">Profit factor</Link> measures
+        <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">Profit factor</Link> measures
         the ratio between the money you make and the money you lose. The formula is:
       </p>
       <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
@@ -49,7 +49,7 @@ export default function WinRateVsProfitFactor() {
       <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
         <li>80 winning trades with an average gain of $50 each = $4,000 gross profit</li>
         <li>20 losing trades with an average loss of $300 each = $6,000 gross loss</li>
-        <li>Net result: -$2,000 (a loss despite winning 80% of the time)</li>
+        <li>Net result: −$2,000 (a loss despite winning 80% of the time)</li>
         <li>Profit factor: $4,000 / $6,000 = 0.67</li>
       </ul>
       <p className="text-muted-foreground leading-relaxed mb-4">
@@ -58,7 +58,7 @@ export default function WinRateVsProfitFactor() {
         drawdown. Meanwhile, they cut winners short, banking small profits the moment a trade goes green.
         The win rate looks great in isolation, but the profit factor of 0.67 reveals the strategy is
         bleeding money. This pattern is common among traders who average down into losing positions or who
-        refuse to use <Link to="/glossary#stop-loss" className="text-primary hover:text-primary/80">stop-loss</Link> orders.
+        refuse to use <Link to="/glossary#stop-loss" className="text-primary underline underline-offset-4 hover:text-primary/80">stop-loss</Link> orders.
       </p>
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">When Low Win Rate Makes Money</h2>
@@ -97,7 +97,7 @@ export default function WinRateVsProfitFactor() {
         profit factor stays above 1.0 after accounting for commissions, slippage, and fees.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        Tracking <Link to="/blog/trading-metrics-that-matter" className="text-primary hover:text-primary/80">the right
+        Tracking <Link to="/blog/trading-metrics-that-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">the right
         combination of metrics</Link> helps you understand not just whether you are profitable, but why.
         If your win rate drops but your profit factor stays the same, you may be taking fewer but better
         trades. If your win rate rises but your profit factor drops, you might be cutting winners too early.
@@ -116,7 +116,7 @@ export default function WinRateVsProfitFactor() {
         Review these metrics weekly. Look for divergences: if win rate is climbing but profit factor is
         flat or declining, you may be unconsciously taking smaller winners while letting losses grow.
         Pair these two metrics with your{' '}
-        <Link to="/blog/risk-reward-ratio-guide" className="text-primary hover:text-primary/80">risk-reward ratio</Link> to
+        <Link to="/blog/risk-reward-ratio-guide" className="text-primary underline underline-offset-4 hover:text-primary/80">risk-reward ratio</Link> to
         get a complete picture of your trading edge. Together, they answer the three essential questions:
         how often do you win, how much do you make when you win, and how much do you lose when you are wrong?
       </p>

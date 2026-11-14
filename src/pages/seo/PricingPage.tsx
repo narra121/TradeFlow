@@ -67,8 +67,8 @@ export default function PricingPage() {
       </P>
       <Faq items={[...PRODUCT_FAQ, ...BILLING_FAQ]} />
       <p className="mt-6 text-sm text-muted-foreground">
-        Full terms: <Link to="/refund" className="text-primary hover:underline">Refund &amp; Cancellation Policy</Link> and{' '}
-        <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>.
+        Full terms: <Link to="/refund" className="text-primary underline underline-offset-4">Refund &amp; Cancellation Policy</Link> and{' '}
+        <Link to="/terms" className="text-primary underline underline-offset-4">Terms of Service</Link>.
       </p>
     </ContentPageShell>
   );

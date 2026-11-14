@@ -46,7 +46,7 @@ export default function MistakesNewTradersMake() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         <strong className="text-foreground">How journaling fixes it:</strong> Your journal will show
         exactly how many trades you take per day and the{' '}
-        <Link to="/glossary#win-rate" className="text-primary hover:text-primary/80">
+        <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
           win rate
         </Link>{' '}
         of those trades. Most overtraders discover that their first three trades of the day are
@@ -69,7 +69,7 @@ export default function MistakesNewTradersMake() {
         immediately after entry. If you cannot fill in the strategy field, you did not have a plan.
         After a few weeks, you will notice that "no strategy" entries have significantly worse
         outcomes than planned trades. This data is the push most traders need to{' '}
-        <Link to="/blog/build-trading-plan" className="text-primary hover:text-primary/80">
+        <Link to="/blog/build-trading-plan" className="text-primary underline underline-offset-4 hover:text-primary/80">
           build a formal trading plan
         </Link>
         .
@@ -90,7 +90,7 @@ export default function MistakesNewTradersMake() {
         journal will calculate your average{' '}
         <Link
           to="/glossary#risk-reward-ratio"
-          className="text-primary hover:text-primary/80"
+          className="text-primary underline underline-offset-4 hover:text-primary/80"
         >
           risk-reward ratio
         </Link>{' '}
@@ -110,7 +110,7 @@ export default function MistakesNewTradersMake() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         <strong className="text-foreground">How journaling fixes it:</strong> The fix here is not
         more logging — it is establishing a{' '}
-        <Link to="/blog/how-to-review-trades" className="text-primary hover:text-primary/80">
+        <Link to="/blog/how-to-review-trades" className="text-primary underline underline-offset-4 hover:text-primary/80">
           weekly review routine
         </Link>
         . Set aside 20-30 minutes every Sunday. Pull up your journal entries for the week. Look
@@ -138,7 +138,7 @@ export default function MistakesNewTradersMake() {
         do that. Start with the{' '}
         <Link
           to="/blog/trading-journal-template"
-          className="text-primary hover:text-primary/80"
+          className="text-primary underline underline-offset-4 hover:text-primary/80"
         >
           trading journal template
         </Link>{' '}

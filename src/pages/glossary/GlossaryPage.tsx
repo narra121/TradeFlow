@@ -48,7 +48,7 @@ export function GlossaryPage() {
           placeholder="Search terms..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-10 w-full rounded-md border border-input bg-card pl-10 pr-3 text-foreground placeholder:text-muted-foreground"
+          className="h-10 max-md:h-11 w-full rounded-md border border-input bg-card pl-10 pr-3 text-foreground placeholder:text-muted-foreground"
         />
       </div>
       <p role="status" className="mb-4 text-sm text-muted-foreground">
@@ -100,12 +100,12 @@ export function GlossaryPage() {
                     <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                       {term.relatedTerms.length > 0 && <span className="text-muted-foreground">See also:</span>}
                       {term.relatedTerms.map((rt) => (
-                        <a key={rt} href={`#${rt}`} className="inline-flex min-h-6 min-w-6 items-center justify-center text-primary hover:underline">
+                        <a key={rt} href={`#${rt}`} className="inline-flex min-h-6 max-md:min-h-11 min-w-6 items-center justify-center text-primary hover:underline">
                           {GLOSSARY_TERMS.find((t) => t.id === rt)?.term ?? rt}
                         </a>
                       ))}
                       {term.relatedArticles.map((slug) => (
-                        <Link key={slug} to={`/blog/${slug}`} className="inline-flex min-h-6 items-center text-foreground-soft hover:text-foreground">
+                        <Link key={slug} to={`/blog/${slug}`} className="inline-flex min-h-6 max-md:min-h-11 items-center text-foreground-soft hover:text-foreground">
                           Read more &rarr;
                         </Link>
                       ))}

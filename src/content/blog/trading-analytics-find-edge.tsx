@@ -7,7 +7,7 @@ export default function TradingAnalyticsFindEdge() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         A trading edge is a statistical advantage that, over a large number of trades, produces a positive expected
         value. It is not about winning every trade. It is about having a combination of win rate and{' '}
-        <Link to="/glossary#risk-reward-ratio" className="text-primary hover:text-primary/80">risk-to-reward ratio</Link>{' '}
+        <Link to="/glossary#risk-reward-ratio" className="text-primary underline underline-offset-4 hover:text-primary/80">risk-to-reward ratio</Link>{' '}
         that generates profit over hundreds of trades. A trader with a 45% win rate and a 1:2.5 risk-to-reward ratio
         has a clear mathematical edge. A trader with a 70% win rate who averages a 1:0.5 risk-to-reward does not.
       </p>
@@ -22,10 +22,10 @@ export default function TradingAnalyticsFindEdge() {
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Equity Curve Analysis</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
         Your equity curve is the most honest representation of your trading performance. It plots your cumulative{' '}
-        <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link> over time, showing not
+        <Link to="/glossary#pnl" className="text-primary underline underline-offset-4 hover:text-primary/80">P&L</Link> over time, showing not
         just whether you are profitable, but how you got there. A smooth, upward-sloping equity curve indicates a
         consistent edge. A jagged curve with deep{' '}
-        <Link to="/glossary#drawdown" className="text-primary hover:text-primary/80">drawdowns</Link> followed by
+        <Link to="/glossary#drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">drawdowns</Link> followed by
         sharp recoveries suggests inconsistent execution or a strategy that depends on occasional large winners to
         compensate for frequent losses.
       </p>
@@ -48,7 +48,7 @@ export default function TradingAnalyticsFindEdge() {
         first hour of a trading session has higher volatility and more trend-following opportunities. Midweek tends
         to produce cleaner trends than Mondays (which are often choppy) or Fridays (when institutional desks reduce
         exposure). The{' '}
-        <Link to="/blog/day-trading-journal" className="text-primary hover:text-primary/80">day trading journal</Link>{' '}
+        <Link to="/blog/day-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">day trading journal</Link>{' '}
         approach to time-of-day analysis makes it easy to identify your most and least productive trading windows.
         Once identified, the action is simple: trade more during your profitable windows and less during the others.
       </p>
@@ -61,7 +61,7 @@ export default function TradingAnalyticsFindEdge() {
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         The implications are significant.{' '}
-        <Link to="/blog/forex-trading-journal" className="text-primary hover:text-primary/80">Forex traders</Link>{' '}
+        <Link to="/blog/forex-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">Forex traders</Link>{' '}
         might discover that their edge exists only on EUR/USD and GBP/USD, while their exotic pair trades are
         consistently unprofitable. Stock day traders might find that their strategy works well on high-float
         large-caps but fails on low-float momentum plays. Instead of trying to improve your performance on losing
@@ -79,7 +79,7 @@ export default function TradingAnalyticsFindEdge() {
         When you analyze sessions holistically, you identify conditions that produce your best and worst days.
         Perhaps your best sessions have fewer than 4 trades with full rule compliance, while your worst start
         with an early loss triggering{' '}
-        <Link to="/blog/trading-psychology-managing-emotions" className="text-primary hover:text-primary/80">emotional escalation</Link>.
+        <Link to="/blog/trading-psychology-managing-emotions" className="text-primary underline underline-offset-4 hover:text-primary/80">emotional escalation</Link>.
         These patterns are invisible trade-by-trade but clear when aggregated by session.
       </p>
 
@@ -107,7 +107,7 @@ export default function TradingAnalyticsFindEdge() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         If your data shows that your best performance comes from trading two specific symbols during the morning
         session using a breakout strategy with strict{' '}
-        <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">rule compliance</Link>,
+        <Link to="/blog/why-trading-rules-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">rule compliance</Link>,
         then that is your edge. Everything else is noise. Trim your watchlist. Stop trading in the afternoon. Stop
         experimenting with untested strategies during live sessions. Let the analytics tell you where your edge lives,
         and then ruthlessly organize your trading day around exploiting it.

@@ -25,7 +25,7 @@ const NotFound = () => {
               <li key={l.to} className={l.className}>
                 <Link
                   to={l.to}
-                  className="inline-flex h-10 items-center rounded-md border border-border-strong px-4 text-sm font-medium text-foreground hover:bg-secondary"
+                  className="inline-flex h-10 max-md:h-11 items-center rounded-md border border-border-strong px-4 text-sm font-medium text-foreground hover:bg-secondary"
                 >
                   {l.label}
                 </Link>

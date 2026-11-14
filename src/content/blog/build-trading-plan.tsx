@@ -36,8 +36,8 @@ export default function BuildTradingPlan() {
         </li>
         <li>
           <strong className="text-foreground">Exit Criteria:</strong> Plan your exits before you enter. Specify your{' '}
-          <Link to="/glossary#take-profit" className="text-primary hover:text-primary/80">take profit</Link> target,
-          your <Link to="/glossary#stop-loss" className="text-primary hover:text-primary/80">stop loss</Link> level,
+          <Link to="/glossary#take-profit" className="text-primary underline underline-offset-4 hover:text-primary/80">take profit</Link> target,
+          your <Link to="/glossary#stop-loss" className="text-primary underline underline-offset-4 hover:text-primary/80">stop loss</Link> level,
           and any conditions that would cause you to close early (such as a time-based exit or a reversal signal).
         </li>
         <li>
@@ -47,14 +47,14 @@ export default function BuildTradingPlan() {
         </li>
         <li>
           <strong className="text-foreground">Position Sizing:</strong> Calculate your{' '}
-          <Link to="/glossary#position-sizing" className="text-primary hover:text-primary/80">position size</Link> based
+          <Link to="/glossary#position-sizing" className="text-primary underline underline-offset-4 hover:text-primary/80">position size</Link> based
           on your risk per trade and your stop distance. This ensures that every trade carries the same dollar risk
           regardless of the instrument or the stop loss width.
         </li>
         <li>
           <strong className="text-foreground">Daily and Weekly Limits:</strong> Set a maximum number of trades per day
           and a maximum loss per day. When you hit either limit, you stop trading. This prevents{' '}
-          <Link to="/blog/day-trading-journal" className="text-primary hover:text-primary/80">overtrading</Link>, which
+          <Link to="/blog/day-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">overtrading</Link>, which
           is one of the most common reasons traders lose money.
         </li>
         <li>
@@ -80,7 +80,7 @@ export default function BuildTradingPlan() {
         perfectly in the morning but abandon it in the afternoon when fatigue sets in. Or that you follow entry rules
         consistently but move your stop loss too early, violating your exit criteria. These insights are invisible
         without tracking. A{' '}
-        <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">rule-based framework</Link>{' '}
+        <Link to="/blog/why-trading-rules-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">rule-based framework</Link>{' '}
         makes it straightforward to measure compliance and identify where discipline breaks down.
       </p>
 
@@ -101,7 +101,7 @@ export default function BuildTradingPlan() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         TradeQut tracks plan compliance through your rules. When you log a trade, you mark the rules it broke in the
         Broken rules field. The{' '}
-        <Link to="/blog/trading-analytics-find-edge" className="text-primary hover:text-primary/80">analytics dashboard</Link>{' '}
+        <Link to="/blog/trading-analytics-find-edge" className="text-primary underline underline-offset-4 hover:text-primary/80">analytics dashboard</Link>{' '}
         then shows what each broken rule cost, and the Goals &amp; rules page shows every rule week by week with its
         streak.
       </p>
@@ -109,7 +109,7 @@ export default function BuildTradingPlan() {
         You can also set weekly or monthly limits from your plan, such as a maximum number of trades and a maximum
         drawdown, and the dashboard shows where you stand against them every day. When you combine this
         with performance data, you can see the direct connection between following your plan and your{' '}
-        <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link>. That connection is the
+        <Link to="/glossary#pnl" className="text-primary underline underline-offset-4 hover:text-primary/80">P&L</Link>. That connection is the
         most powerful motivator for building discipline. The data proves that the plan works, and that proof makes it
         easier to follow the plan tomorrow.
       </p>

@@ -198,14 +198,16 @@ export function ParticleAssembly() {
     };
 
     const measure = () => {
-      const r = scene.current!.getBoundingClientRect();
+      // Refs are detached when the page leaves, before this effect's cleanup runs: a scroll or resize in between finds them null.
+      if (!scene.current || !reveal.current) return;
+      const r = scene.current.getBoundingClientRect();
       w = r.width;
       h = r.height;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       cv.width = Math.round(w * dpr);
       cv.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      geo = measureCalendar(scene.current!, reveal.current!);
+      geo = measureCalendar(scene.current, reveal.current);
       points = cloud(geo?.segments ?? blueprint(), w < 600 ? 650 : 1150);
       const f = file.current;
       fileBox = f ? { x: w / 2 - f.offsetWidth / 2, y: h * 0.48 - f.offsetHeight / 2, w: f.offsetWidth, h: f.offsetHeight } : null;
@@ -400,7 +402,8 @@ export function ParticleAssembly() {
       else stamp = 0;
     };
     const read = () => {
-      target = still ? manual : stickyProgress(section.current!, sticky.current!);
+      if (!section.current || !sticky.current) return;
+      target = still ? manual : stickyProgress(section.current, sticky.current);
       if (still) {
         progress = target;
         paint();

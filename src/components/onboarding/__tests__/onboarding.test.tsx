@@ -10,10 +10,11 @@ const navigate = vi.fn();
 const openNew = vi.fn();
 const saveName = vi.fn();
 let entCurrency = 'INR';
+let accountsFailed = false;
 let profile = { name: 'Ann', email: 'ann@example.com', hasName: true, isLoading: false, isSaving: false };
 
 vi.mock('@/store/api/accountsApi', () => ({
-  useGetAccountsQuery: () => ({ data: { accounts }, isLoading: false }),
+  useGetAccountsQuery: () => (accountsFailed ? { data: undefined, isLoading: false, isError: true } : { data: { accounts }, isLoading: false, isError: false }),
   useCreateAccountMutation: () => [(a: unknown) => ({ unwrap: () => createAccount(a) }), { isLoading: false }],
 }));
 vi.mock('@/store/api/goalsRulesApi', () => ({ useGetRulesAndGoalsQuery: () => ({ data: rulesGoals }) }));
@@ -59,6 +60,17 @@ describe('useGettingStarted', () => {
     accounts = [{ id: 'a1', name: 'FTMO' }];
     rerender({ n: 5 });
     expect(result.current).toMatchObject({ hasAccount: true, hasTrade: true, done: 2 });
+  });
+
+  it('is unknown, never "0 of 3", when the trades or the accounts failed to load (R-040)', () => {
+    const { result, rerender } = renderHook(({ n }: { n: number | null }) => useGettingStarted(n), { initialProps: { n: null as number | null } });
+    expect(result.current.unknown).toBe(true);
+    rerender({ n: 21 });
+    expect(result.current.unknown).toBe(false);
+    accountsFailed = true;
+    rerender({ n: 21 });
+    expect(result.current.unknown).toBe(true);
+    accountsFailed = false;
   });
 });
 

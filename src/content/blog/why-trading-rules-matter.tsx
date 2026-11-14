@@ -31,7 +31,7 @@ export default function WhyTradingRulesMatter() {
         determine whether you are allowed to trade at all today, <strong className="text-foreground">in-trade rules</strong>{' '}
         that govern how you manage open positions, and <strong className="text-foreground">post-trade rules</strong>{' '}
         that define your review and recovery process. A complete{' '}
-        <Link to="/blog/build-trading-plan" className="text-primary hover:text-primary/80">trading plan</Link> weaves
+        <Link to="/blog/build-trading-plan" className="text-primary underline underline-offset-4 hover:text-primary/80">trading plan</Link> weaves
         these three layers together into a seamless operating procedure.
       </p>
 
@@ -46,7 +46,7 @@ export default function WhyTradingRulesMatter() {
           <strong className="text-foreground">Maximum 3 trades per day.</strong> Overtrading is the silent killer of
           trading accounts. Every trade carries transaction costs, spread costs, and psychological costs. After three
           trades, most{' '}
-          <Link to="/blog/day-trading-journal" className="text-primary hover:text-primary/80">day traders</Link> find
+          <Link to="/blog/day-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">day traders</Link> find
           that their signal quality degrades as they start forcing setups that do not meet their entry criteria.
           Capping your trade count forces selectivity.
         </li>
@@ -59,14 +59,14 @@ export default function WhyTradingRulesMatter() {
         <li>
           <strong className="text-foreground">Minimum 1:2 risk-to-reward ratio.</strong> Never enter a trade where the
           potential profit is less than twice the potential loss. A 1:2{' '}
-          <Link to="/glossary#risk-reward-ratio" className="text-primary hover:text-primary/80">risk-to-reward ratio</Link>{' '}
+          <Link to="/glossary#risk-reward-ratio" className="text-primary underline underline-offset-4 hover:text-primary/80">risk-to-reward ratio</Link>{' '}
           means you only need to win 34% of your trades to break even. This mathematical advantage transforms a modest
           win rate into a profitable system.
         </li>
         <li>
           <strong className="text-foreground">No single position risking more than 2% of account.</strong> This is the
           most fundamental rule in{' '}
-          <Link to="/glossary#position-sizing" className="text-primary hover:text-primary/80">risk management</Link>.
+          <Link to="/glossary#position-sizing" className="text-primary underline underline-offset-4 hover:text-primary/80">risk management</Link>.
           If you risk 2% per trade, you would need 35 consecutive losses to lose half your account. At 5% per trade,
           that number drops to 14. At 10%, just 7. The math is unforgiving, and capital preservation is the first
           priority.
@@ -75,7 +75,7 @@ export default function WhyTradingRulesMatter() {
           <strong className="text-foreground">No trading during major news events.</strong> Events like Non-Farm
           Payrolls, FOMC announcements, and CPI releases create extreme volatility with unpredictable direction.
           Spreads widen, stops get slipped, and price action becomes erratic.{' '}
-          <Link to="/blog/forex-trading-journal" className="text-primary hover:text-primary/80">Forex traders</Link> are
+          <Link to="/blog/forex-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">Forex traders</Link> are
           particularly vulnerable. Unless your strategy specifically targets news volatility, stay out of the market
           during these windows.
         </li>
@@ -105,8 +105,8 @@ export default function WhyTradingRulesMatter() {
         The most persuasive argument for trading rules comes from your own data. When you separate your trades into two
         groups, those where all rules were followed and those where at least one rule was broken, you can compare
         them directly on win rate, average{' '}
-        <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link> and{' '}
-        <Link to="/glossary#drawdown" className="text-primary hover:text-primary/80">drawdown</Link>. If the
+        <Link to="/glossary#pnl" className="text-primary underline underline-offset-4 hover:text-primary/80">P&L</Link> and{' '}
+        <Link to="/glossary#drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">drawdown</Link>. If the
         rule-following group does better, the rules are earning their place. If it does not, the rules need
         revisiting. Either answer comes from your own trades, not from anyone else&apos;s average.
       </p>

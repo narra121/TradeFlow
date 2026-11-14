@@ -156,7 +156,7 @@ function GuideTOC({ variant, active }: { variant: 'vertical' | 'horizontal'; act
           onClick={() => scrollTo(s.id)}
           aria-current={active === s.id ? 'true' : undefined}
           className={cn(
-            'inline-flex h-8 shrink-0 items-center rounded-md border px-3 text-xs font-medium',
+            'inline-flex h-8 max-md:h-11 shrink-0 items-center rounded-md border px-3 text-xs font-medium',
             active === s.id ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-foreground-soft hover:text-foreground',
           )}
         >

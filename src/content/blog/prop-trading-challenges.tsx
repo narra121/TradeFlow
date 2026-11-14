@@ -16,7 +16,7 @@ export default function PropTradingChallenges() {
         the account) within 30 days. Phase 2 has a smaller target (usually 5%) within 60 days. Both phases enforce
         strict drawdown limits. Some firms offer one-phase evaluations or instant funding options, but the core
         mechanic is always the same: prove you can trade profitably with disciplined{' '}
-        <Link to="/glossary#position-sizing" className="text-primary hover:text-primary/80">risk management</Link>.
+        <Link to="/glossary#position-sizing" className="text-primary underline underline-offset-4 hover:text-primary/80">risk management</Link>.
       </p>
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">The Two Rules That Matter Most</h2>
@@ -31,7 +31,7 @@ export default function PropTradingChallenges() {
         These limits are absolute. There is no appeal, no reset, no second chance. If you enter a trade that moves
         against you by more than your daily limit, the challenge ends even if you close the trade a moment later.
         This means that{' '}
-        <Link to="/glossary#position-sizing" className="text-primary hover:text-primary/80">position sizing</Link>{' '}
+        <Link to="/glossary#position-sizing" className="text-primary underline underline-offset-4 hover:text-primary/80">position sizing</Link>{' '}
         is the single most critical skill for passing a challenge. A trader who risks 3% of the account on one trade
         can hit the daily limit with just two losses. A trader who risks 0.5% per trade can absorb eight consecutive
         losses and still be within limits.
@@ -54,7 +54,7 @@ export default function PropTradingChallenges() {
         account evaluation feels pressure to make it count, which leads to aggressive trading, which leads to hitting
         the drawdown limit. This is exactly backward. The optimal approach is to treat the challenge fee as a sunk
         cost and trade the account as if it were your own money, using the same conservative{' '}
-        <Link to="/blog/build-trading-plan" className="text-primary hover:text-primary/80">trading plan</Link> you
+        <Link to="/blog/build-trading-plan" className="text-primary underline underline-offset-4 hover:text-primary/80">trading plan</Link> you
         would use on a personal account.
       </p>
 
@@ -63,13 +63,13 @@ export default function PropTradingChallenges() {
         A trading journal is your most valuable tool during a prop firm challenge because it provides real-time
         awareness of your risk exposure. When you log every trade immediately, you always know your current daily
         loss, your distance from the maximum{' '}
-        <Link to="/glossary#drawdown" className="text-primary hover:text-primary/80">drawdown</Link> limit, and
+        <Link to="/glossary#drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">drawdown</Link> limit, and
         whether your recent behavior pattern suggests approaching tilt.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         Beyond real-time tracking, your journal from before the challenge tells you exactly what to expect from
         yourself. What is your actual win rate over the last 200 trades? What is your average{' '}
-        <Link to="/glossary#risk-reward-ratio" className="text-primary hover:text-primary/80">risk-to-reward ratio</Link>?
+        <Link to="/glossary#risk-reward-ratio" className="text-primary underline underline-offset-4 hover:text-primary/80">risk-to-reward ratio</Link>?
         What is your maximum losing streak? If you know that your worst historical losing streak is 7 trades and your
         risk per trade is 0.75%, your worst expected drawdown is about 5.25%. That fits within most challenge limits.
         Without this data, you are guessing, and guessing during a challenge is how traders lose their evaluation fee.
@@ -84,7 +84,7 @@ export default function PropTradingChallenges() {
         <li><strong className="text-foreground">Pre-session:</strong> Record your current account balance, calculate today's maximum allowable loss (daily drawdown limit minus any unrealized losses), determine your maximum position size based on that allowable loss, and check the economic calendar for news events.</li>
         <li><strong className="text-foreground">During session:</strong> Log each trade immediately with entry price, stop loss, and position size. After each trade, update your running daily P&L. If you hit 50% of your daily limit, reduce your position size by half for the remaining session.</li>
         <li><strong className="text-foreground">Post-session:</strong> Record final daily P&L, mark which{' '}
-          <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">trading rules</Link> you followed and broke, note your emotional state, and calculate your remaining buffer to the maximum drawdown limit.</li>
+          <Link to="/blog/why-trading-rules-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">trading rules</Link> you followed and broke, note your emotional state, and calculate your remaining buffer to the maximum drawdown limit.</li>
       </ul>
       <p className="text-muted-foreground leading-relaxed mb-4">
         This checklist takes 5 minutes per day and can save hundreds of dollars in failed challenge fees. The
@@ -100,10 +100,10 @@ export default function PropTradingChallenges() {
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         TradeQut supports this ongoing discipline with{' '}
-        <Link to="/blog/trading-analytics-find-edge" className="text-primary hover:text-primary/80">analytics</Link>{' '}
+        <Link to="/blog/trading-analytics-find-edge" className="text-primary underline underline-offset-4 hover:text-primary/80">analytics</Link>{' '}
         that track your equity curve, drawdown levels, and rule compliance over time. You can set goals like
         "maintain maximum drawdown under 4%" and track your progress in real time. The{' '}
-        <Link to="/blog/day-trading-journal" className="text-primary hover:text-primary/80">daily review cycle</Link>{' '}
+        <Link to="/blog/day-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">daily review cycle</Link>{' '}
         keeps you accountable, and the data gives you confidence that your approach is sustainable.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">

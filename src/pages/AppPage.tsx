@@ -110,10 +110,11 @@ function AppFrame() {
 
   useGetSavedOptionsQuery();
   useTradesSync();
-  const { trades } = useScopeTrades(undefined, { skip: false });
+  const { trades, isLoading: tradesLoading, isError: tradesFailed } = useScopeTrades(undefined, { skip: false });
   const tradesWithoutAccount = useMemo(() => trades.filter((t) => !t.accountId).length, [trades]);
-  const started = useGettingStarted(trades.length);
-  const gettingStarted = started.isLoading || started.complete ? null : { done: started.done, total: started.total };
+  // A failed or unfinished load is not "no trades": the notice waits for real counts (R-040).
+  const started = useGettingStarted(tradesLoading || tradesFailed ? null : trades.length);
+  const gettingStarted = started.isLoading || started.unknown || started.complete ? null : { done: started.done, total: started.total };
   const importInReview = useImportPending();
   useSyncServerPreferences();
   useContentScroll();

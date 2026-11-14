@@ -22,7 +22,7 @@ export function TagFilter({ tags, activeTag, onTagChange, counts }: TagFilterPro
         id={id}
         value={activeTag ?? ''}
         onChange={(e) => onTagChange(e.target.value || null)}
-        className="h-10 min-w-48 rounded-md border border-input bg-card px-3 text-sm text-foreground"
+        className="h-10 max-md:h-11 min-w-48 rounded-md border border-input bg-card px-3 text-sm text-foreground"
       >
         <option value="">All topics</option>
         {tags.map((tag) => (

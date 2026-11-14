@@ -17,7 +17,7 @@ export default function DayTradingJournal() {
         more of their profits come from the first and last hours of the session, while the middle of the day is a net
         loser. Once you see this pattern in your data, the logical response is to stop trading during your
         unprofitable hours. This single adjustment can transform a breakeven trader into a profitable one. Use the{' '}
-        <Link to="/blog/trading-analytics-find-edge" className="text-primary hover:text-primary/80">hourly analytics breakdown</Link>{' '}
+        <Link to="/blog/trading-analytics-find-edge" className="text-primary underline underline-offset-4 hover:text-primary/80">hourly analytics breakdown</Link>{' '}
         to visualize these patterns clearly.
       </p>
 
@@ -31,10 +31,10 @@ export default function DayTradingJournal() {
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         A journal reveals overtrading through simple metrics. Track your trade count per day alongside your daily{' '}
-        <Link to="/glossary#pnl" className="text-primary hover:text-primary/80">P&L</Link>. If you consistently
+        <Link to="/glossary#pnl" className="text-primary underline underline-offset-4 hover:text-primary/80">P&L</Link>. If you consistently
         see that days with 5 or more trades have lower average P&L than days with 2 to 3 trades, you have a
         quantified overtrading problem. The fix is a hard daily trade limit as part of your{' '}
-        <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">trading rules</Link>.
+        <Link to="/blog/why-trading-rules-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">trading rules</Link>.
         Start restrictive (3 trades per day) and only loosen the limit if your data shows that additional trades
         maintain the same quality as your first few.
       </p>
@@ -81,9 +81,9 @@ export default function DayTradingJournal() {
         Your journal data will tell you which approach works better for you. Look at days where you exceeded your
         target. Did the extra trades add to the profit, or did they give back gains? If trading beyond the target
         consistently produces worse results, enforce a hard stop. For traders pursuing{' '}
-        <Link to="/blog/prop-trading-challenges" className="text-primary hover:text-primary/80">prop firm challenges</Link>,
+        <Link to="/blog/prop-trading-challenges" className="text-primary underline underline-offset-4 hover:text-primary/80">prop firm challenges</Link>,
         daily loss limits are especially critical since exceeding the firm's daily{' '}
-        <Link to="/glossary#drawdown" className="text-primary hover:text-primary/80">drawdown</Link> limit means
+        <Link to="/glossary#drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">drawdown</Link> limit means
         instant failure.
       </p>
 
@@ -107,14 +107,14 @@ export default function DayTradingJournal() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         Daily reviews catch tactical issues. Weekly reviews reveal patterns. Monthly reviews measure genuine progress
         against your{' '}
-        <Link to="/blog/build-trading-plan" className="text-primary hover:text-primary/80">trading plan</Link> goals.
+        <Link to="/blog/build-trading-plan" className="text-primary underline underline-offset-4 hover:text-primary/80">trading plan</Link> goals.
         Each review level serves a different purpose, and skipping any of them creates blind spots.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         The daily review (5 to 10 minutes) focuses on execution: did you follow your rules and how was your
         emotional state. The weekly review (30 minutes on the weekend) examines aggregated data: win rate by day,
         average{' '}
-        <Link to="/glossary#risk-reward-ratio" className="text-primary hover:text-primary/80">risk-to-reward ratio</Link>,
+        <Link to="/glossary#risk-reward-ratio" className="text-primary underline underline-offset-4 hover:text-primary/80">risk-to-reward ratio</Link>,
         trade count trends, and P&L curve. The monthly review (1 hour at month end) evaluates whether your strategy
         is still working, whether your rules need adjustment, and whether you are progressing toward your goals.
       </p>

@@ -51,7 +51,7 @@ export function PositionSizeCalculatorPage() {
       <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
-            <Link to="/resources" className="inline-flex min-h-6 items-center hover:text-foreground">
+            <Link to="/resources" className="inline-flex min-h-6 max-md:min-h-11 items-center hover:text-foreground">
               Resources
             </Link>
           </li>
@@ -141,7 +141,7 @@ export function PositionSizeCalculatorPage() {
               <p>Position size (lots) = amount at risk ÷ (stop pips × pip value per standard lot).</p>
               <p>Pip value uses approximate rates for {pair.label}; use your broker&apos;s live value for real trades.</p>
             </FormulaDisclosure>
-            <Link to="/signup" className="mt-4 inline-flex min-h-6 items-center text-sm font-medium text-primary hover:underline">
+            <Link to="/signup" className="mt-4 inline-flex min-h-6 max-md:min-h-11 items-center text-sm font-medium text-primary hover:underline">
               Log this trade in your journal &rarr;
             </Link>
             <LiveResult text={summary} />
@@ -158,7 +158,7 @@ export function PositionSizeCalculatorPage() {
           Position sizing is one of the most important concepts in trading risk management. It
           determines how many units of an asset you buy or sell per trade, directly controlling how
           much capital is at risk. Even a strategy with a high{' '}
-          <Link to="/glossary" className="text-primary hover:underline">
+          <Link to="/glossary" className="text-primary underline underline-offset-4">
             win rate
           </Link>{' '}
           can blow up an account if position sizes are too large, because a string of losses is
@@ -174,7 +174,7 @@ export function PositionSizeCalculatorPage() {
         </p>
         <p className="text-muted-foreground leading-relaxed mb-4">
           Your{' '}
-          <Link to="/glossary" className="text-primary hover:underline">
+          <Link to="/glossary" className="text-primary underline underline-offset-4">
             stop loss
           </Link>{' '}
           distance is the other critical variable. A tighter stop loss lets you trade a larger
@@ -185,7 +185,7 @@ export function PositionSizeCalculatorPage() {
         </p>
         <p className="text-muted-foreground leading-relaxed">
           Proper position sizing also ties directly into your{' '}
-          <Link to="/resources/risk-reward" className="text-primary hover:underline">
+          <Link to="/resources/risk-reward" className="text-primary underline underline-offset-4">
             risk-reward ratio
           </Link>
           . When you know exactly how much you stand to lose on every trade, you can plan your take
@@ -193,7 +193,7 @@ export function PositionSizeCalculatorPage() {
           consistent position sizing and a positive risk-reward edge is what separates profitable
           traders from those who blow up their accounts. For a deeper look at how risk and reward
           interact, check out our{' '}
-          <Link to="/resources/risk-reward" className="text-primary hover:underline">
+          <Link to="/resources/risk-reward" className="text-primary underline underline-offset-4">
             risk-reward calculator
           </Link>
           .

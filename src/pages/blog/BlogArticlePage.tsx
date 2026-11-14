@@ -1,5 +1,5 @@
 import { Suspense, useRef } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { ArticleToc } from '@/components/content/ArticleToc';
 import { AuthorBox } from '@/components/content/AuthorBox';
@@ -10,6 +10,7 @@ import { blogArticleSchema } from '@/config/seo';
 import { BLOG_ARTICLES, getRelatedArticles } from '@/content/blog/articles';
 import { Faq, ShortAnswer, SignupCta } from '@/content/components/ArticleParts';
 import { lazyContent } from '@/content/lazyContent';
+import NotFound from '@/pages/NotFound';
 
 /** The brand suffix only while the whole title stays within the 65 characters a results page shows. */
 function articlePageTitle(title: string): string {
@@ -22,9 +23,8 @@ export function BlogArticlePage() {
   const article = BLOG_ARTICLES.find((a) => a.slug === slug);
   const bodyRef = useRef<HTMLDivElement>(null);
 
-  if (!article) {
-    return <Navigate to="/blog" replace />;
-  }
+  // A real not-found page, matching the 404 CloudFront answers for a path that was never prerendered.
+  if (!article) return <NotFound />;
 
   const ContentComponent = lazyContent(`blog/${article.slug}`, article.content);
   const related = getRelatedArticles(article.slug, 3);
@@ -41,7 +41,7 @@ export function BlogArticlePage() {
       modifiedTime={modified}
       maxWidth="max-w-[62ch]"
     >
-      <Link to="/blog" className="mb-6 inline-flex min-h-6 items-center gap-1 text-sm text-foreground-soft hover:text-foreground">
+      <Link to="/blog" className="mb-6 inline-flex min-h-6 max-md:min-h-11 items-center gap-1 text-sm text-foreground-soft hover:text-foreground">
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         Blog
       </Link>

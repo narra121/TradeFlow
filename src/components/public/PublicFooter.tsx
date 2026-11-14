@@ -13,7 +13,7 @@ export function PublicFooter() {
               <ul className="space-y-1">
                 {g.links.map((l) => (
                   <li key={l.label}>
-                    <Link to={l.to} className="inline-flex min-h-6 items-center text-sm text-foreground-soft hover:text-foreground">
+                    <Link to={l.to} className="inline-flex min-h-6 max-md:min-h-11 items-center text-sm text-foreground-soft hover:text-foreground">
                       {l.label}
                     </Link>
                   </li>
@@ -23,7 +23,7 @@ export function PublicFooter() {
                     <button
                       type="button"
                       onClick={openConsentSettings}
-                      className="inline-flex min-h-6 items-center text-sm text-foreground-soft hover:text-foreground"
+                      className="inline-flex min-h-6 max-md:min-h-11 items-center text-sm text-foreground-soft hover:text-foreground"
                     >
                       Cookie settings
                     </button>

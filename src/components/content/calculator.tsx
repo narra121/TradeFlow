@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 export const calcInputClass =
-  'h-10 w-full rounded-md border border-input bg-card px-3 text-foreground placeholder:text-muted-foreground';
+  'h-10 max-md:h-11 w-full rounded-md border border-input bg-card px-3 text-foreground placeholder:text-muted-foreground';
 export const calcLabelClass = 'mb-1.5 block text-sm font-medium text-foreground';
 
 /** Parses what a person types: spaces and thousands commas are ignored, "." is the decimal mark; anything else is 0. */
@@ -64,7 +64,7 @@ export function DirectionRadios({ value, onChange }: DirectionRadiosProps) {
           <label
             key={d}
             className={cn(
-              'flex h-10 flex-1 cursor-pointer items-center justify-center rounded-md border text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring',
+              'flex h-10 max-md:h-11 flex-1 cursor-pointer items-center justify-center rounded-md border text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring',
               value === d
                 ? d === 'long'
                   ? 'border-profit bg-profit/10 text-profit'
@@ -91,7 +91,7 @@ export function DirectionRadios({ value, onChange }: DirectionRadiosProps) {
 export function FormulaDisclosure({ children }: { children: ReactNode }) {
   return (
     <details className="mt-4 text-sm text-foreground-soft">
-      <summary className="cursor-pointer font-medium text-foreground">How this is calculated</summary>
+      <summary className="cursor-pointer font-medium text-foreground max-md:py-3">How this is calculated</summary>
       <div className="mt-2 space-y-1">{children}</div>
     </details>
   );

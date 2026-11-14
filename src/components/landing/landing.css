@@ -1062,3 +1062,18 @@
   font-size: 16px;
   line-height: 24px;
 }
+
+/* Touch targets on phones: 44 px (DESIGN-SHARED S10). The motion control becomes a 6 px tile at that size, because the
+   public audit counts a round control wider than 40 px as a wide pill. */
+@media (max-width: 767px) {
+  .lp-link,
+  .lp-scroll-cue,
+  .lp-steps button {
+    min-height: 44px;
+  }
+  .lp-motion {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
+}

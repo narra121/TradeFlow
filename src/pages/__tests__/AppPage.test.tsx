@@ -28,10 +28,12 @@ vi.mock('@/components/billing/BillingView', () => ({ BillingView: () => <div dat
 vi.mock('@/components/billing/PlanCard', () => ({ PlanCard: () => null }));
 vi.mock('@/store/api', () => ({ useGetSavedOptionsQuery: () => ({ data: undefined }), useGetAccountsQuery: () => ({ data: { accounts: [] } }) }));
 vi.mock('@/components/views/SettingsView', () => ({ SettingsView: () => <div data-testid="settings-view">s</div> }));
-vi.mock('@/components/onboarding/useGettingStarted', () => ({ useGettingStarted: () => ({ isLoading: false, complete: true, done: 3, total: 3 }) }));
+const gettingStarted = vi.fn((_n: number | null) => ({ isLoading: false, unknown: false, complete: true, done: 3, total: 3 }));
+vi.mock('@/components/onboarding/useGettingStarted', () => ({ useGettingStarted: (n: number | null) => gettingStarted(n) }));
 vi.mock('@/components/settings/usePreferences', () => ({ useSyncServerPreferences: () => undefined }));
 vi.mock('@/hooks/useTradesSync', () => ({ useTradesSync: () => undefined }));
-vi.mock('@/hooks/useScopeTrades', () => ({ useScopeTrades: () => ({ trades: [] }) }));
+let scopeTrades: { trades: unknown[]; isLoading?: boolean; isError?: boolean } = { trades: [] };
+vi.mock('@/hooks/useScopeTrades', () => ({ useScopeTrades: () => scopeTrades }));
 const isMobile = vi.fn(() => false);
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => isMobile() }));
 
@@ -56,6 +58,16 @@ function renderAt(path: string) {
 }
 
 describe('AppPage', () => {
+  it('gives Getting started no trade count while the trades failed to load, so it never says 0 of 3 (R-040)', async () => {
+    scopeTrades = { trades: [], isError: true };
+    gettingStarted.mockClear();
+    renderAt('/app/dashboard');
+    await screen.findByTestId('dashboard-view');
+    expect(gettingStarted).toHaveBeenCalledWith(null);
+    expect(gettingStarted).not.toHaveBeenCalledWith(0);
+    scopeTrades = { trades: [] };
+  });
+
   it.each([
     ['/app/dashboard', 'dashboard-view'],
     ['/app/tradelog', 'tradelog-view'],

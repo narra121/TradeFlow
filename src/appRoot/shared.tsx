@@ -51,7 +51,7 @@ export class ChunkErrorBoundary extends Component<{ children: ReactNode }, { has
             {this.state.isChunk ? 'A new version is available.' : 'An unexpected error occurred. Error logs have been sent \u2014 we\u2019ll provide a fix soon.'}
           </p>
           <button
-            className="glow-primary px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+            className="px-4 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => {
               sessionStorage.removeItem(RELOAD_KEY);
               const url = new URL(window.location.href);

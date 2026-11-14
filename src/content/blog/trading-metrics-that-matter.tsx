@@ -5,7 +5,7 @@ export default function TradingMetricsThatMatter() {
     <>
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Beyond Win Rate — The Full Picture</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        Most traders check their <Link to="/glossary#win-rate" className="text-primary hover:text-primary/80">win rate</Link> and
+        Most traders check their <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">win rate</Link> and
         call it a day. But win rate alone is one of the least reliable indicators of trading performance.
         A 70% win rate means nothing if your average loss is three times your average win. Professional
         traders track a suite of metrics that together reveal whether a strategy has a genuine edge, how
@@ -21,12 +21,12 @@ export default function TradingMetricsThatMatter() {
       </p>
       <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
         <p className="text-foreground font-mono text-center">
-          Expectancy = (Win% x Avg Win) - (Loss% x Avg Loss)
+          Expectancy = (Win% × Avg Win) − (Loss% × Avg Loss)
         </p>
       </div>
       <p className="text-muted-foreground leading-relaxed mb-4">
         Suppose your win rate is 55%, your average win is $200, and your average loss is $150. Your
-        expectancy is: (0.55 x $200) - (0.45 x $150) = $110 - $67.50 = $42.50 per trade. Over 200
+        expectancy is: (0.55 × $200) − (0.45 × $150) = $110 − $67.50 = $42.50 per trade. Over 200
         trades per month, that is $8,500 in expected profit. Negative expectancy means your strategy
         loses money over time, regardless of any hot streak. A positive expectancy, even $5 per trade,
         becomes significant when multiplied by hundreds of trades.
@@ -34,12 +34,12 @@ export default function TradingMetricsThatMatter() {
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Profit Factor</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        <Link to="/glossary#profit-factor" className="text-primary hover:text-primary/80">Profit factor</Link> is
+        <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">Profit factor</Link> is
         the ratio of gross profit to gross loss. A profit factor of 1.5 means you make $1.50 for every
         $1.00 you lose. Above 1.0 is profitable, below 1.0 is unprofitable, and anything above 2.0 is
         considered strong. For a detailed breakdown of how profit factor interacts with win rate, including
         scenarios where high win rates lose money, read our dedicated article on{' '}
-        <Link to="/blog/win-rate-vs-profit-factor" className="text-primary hover:text-primary/80">win rate versus
+        <Link to="/blog/win-rate-vs-profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">win rate versus
         profit factor</Link>.
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
@@ -83,7 +83,7 @@ export default function TradingMetricsThatMatter() {
         with remarkably low variation. Below 0.5 suggests noisy, inconsistent results even if positive on
         average. The Sharpe ratio penalizes wild equity swings: two strategies returning 30% annually are
         not equal if one has a Sharpe of 1.8 (smooth returns) and the other 0.6 (gut-wrenching{' '}
-        <Link to="/blog/track-reduce-drawdown" className="text-primary hover:text-primary/80">drawdowns</Link>).
+        <Link to="/blog/track-reduce-drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">drawdowns</Link>).
       </p>
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Consecutive Wins and Losses</h2>
@@ -95,7 +95,7 @@ export default function TradingMetricsThatMatter() {
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         If your maximum consecutive loss count is 7 and you risk 2% per trade, you should expect a 14%{' '}
-        <Link to="/glossary#drawdown" className="text-primary hover:text-primary/80">drawdown</Link> at some point.
+        <Link to="/glossary#drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">drawdown</Link> at some point.
         Can you handle that emotionally? If not, reduce your risk per trade. Conversely, tracking maximum
         consecutive wins helps you avoid overconfidence. A streak of 12 wins does not mean your strategy
         has become invincible. It means you are statistically due for a correction, and your position sizing
@@ -160,7 +160,7 @@ export default function TradingMetricsThatMatter() {
         Start with expectancy and profit factor regardless of your style. These two numbers answer the most
         fundamental question: does your strategy make money? Then layer in style-specific metrics and
         review your{' '}
-        <Link to="/blog/risk-reward-ratio-guide" className="text-primary hover:text-primary/80">risk-reward
+        <Link to="/blog/risk-reward-ratio-guide" className="text-primary underline underline-offset-4 hover:text-primary/80">risk-reward
         ratios</Link> to ensure your trade management supports the edge your analysis provides.
       </p>
     </>

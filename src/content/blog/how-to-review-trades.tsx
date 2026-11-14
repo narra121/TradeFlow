@@ -45,11 +45,11 @@ export default function HowToReviewTrades() {
         <li>
           <strong className="text-foreground">Check your numbers.</strong> Open your journal and look
           at the week's summary:{' '}
-          <Link to="/glossary#win-rate" className="text-primary hover:text-primary/80">
+          <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
             win rate
           </Link>
           , total P&L, number of trades, and average{' '}
-          <Link to="/glossary#risk-reward-ratio" className="text-primary hover:text-primary/80">
+          <Link to="/glossary#risk-reward-ratio" className="text-primary underline underline-offset-4 hover:text-primary/80">
             risk-reward ratio
           </Link>
           . Compare these to your trailing averages. Are you improving, declining, or flat?
@@ -68,7 +68,7 @@ export default function HowToReviewTrades() {
         </li>
         <li>
           <strong className="text-foreground">Count broken rules.</strong> If you track{' '}
-          <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">
+          <Link to="/blog/why-trading-rules-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">
             trading rules
           </Link>{' '}
           in your journal, count how many times you broke them this week. Compare to last week.
@@ -140,7 +140,7 @@ export default function HowToReviewTrades() {
       </p>
       <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
         <li>Is my overall{' '}
-          <Link to="/glossary#profit-factor" className="text-primary hover:text-primary/80">
+          <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">
             profit factor
           </Link>{' '}
           improving, declining, or flat month over month?
@@ -148,7 +148,7 @@ export default function HowToReviewTrades() {
         <li>Am I sticking to the focus areas I set in my weekly reviews?</li>
         <li>Are there strategies I should add, modify, or drop entirely?</li>
         <li>How does my current{' '}
-          <Link to="/glossary#drawdown" className="text-primary hover:text-primary/80">
+          <Link to="/glossary#drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">
             drawdown
           </Link>{' '}
           compare to my maximum acceptable drawdown?
@@ -178,7 +178,7 @@ export default function HowToReviewTrades() {
       </p>
       <p className="text-muted-foreground leading-relaxed mb-4">
         If you use{' '}
-        <Link to="/blog/getting-started-tradequt" className="text-primary hover:text-primary/80">
+        <Link to="/blog/getting-started-tradequt" className="text-primary underline underline-offset-4 hover:text-primary/80">
           TradeQut
         </Link>
         , the analytics dashboard calculates most of these metrics automatically — win rate by

@@ -27,7 +27,7 @@ const SECTIONS: LegalSection[] = [
         own trading. Every new account starts with a {TRIAL_DAYS}-day free trial of Pro without a card. When the trial ends, or a
         Pro subscription ends, the account is read-only: you can view, export and delete your data, but you cannot add, edit or
         delete trades or other records until you subscribe to Pro. Pro is described on the{' '}
-        <Link to="/pricing" className="text-primary hover:underline">pricing page</Link>. Features marked &ldquo;Planned&rdquo; are not
+        <Link to="/pricing" className="text-primary underline underline-offset-4">pricing page</Link>. Features marked &ldquo;Planned&rdquo; are not
         part of the Service until released.
       </p>
     ),
@@ -78,7 +78,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <p>
         You keep ownership of the data you enter. You give us a limited licence to process it to provide the Service to you,
-        including by the providers named in the <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>. The
+        including by the providers named in the <Link to="/privacy" className="text-primary underline underline-offset-4">Privacy Policy</Link>. The
         Service&apos;s design, code and branding belong to TradeQutJournal.
       </p>
     ),
@@ -96,7 +96,7 @@ const SECTIONS: LegalSection[] = [
         <p>
           Payments are processed by Stripe under Stripe&apos;s terms. A subscription renews automatically each period until you
           cancel it in the billing portal. Refunds and cancellation are covered by the{' '}
-          <Link to="/refund" className="text-primary hover:underline">Refund &amp; Cancellation Policy</Link>.
+          <Link to="/refund" className="text-primary underline underline-offset-4">Refund &amp; Cancellation Policy</Link>.
         </p>
       </>
     ),

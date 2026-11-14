@@ -65,7 +65,7 @@ export default function SecurityPage() {
         </li>
       </UL>
       <P>
-        The full list is in the <Link to="/privacy" className="text-primary hover:underline">privacy policy</Link>.
+        The full list is in the <Link to="/privacy" className="text-primary underline underline-offset-4">privacy policy</Link>.
       </P>
 
       <H2>What TradeQut does not do</H2>
@@ -84,7 +84,7 @@ export default function SecurityPage() {
 
       <H2>Report a vulnerability</H2>
       <P>
-        If you find a security problem, email <a href="mailto:support@tradequt.com" className="text-primary hover:underline">support@tradequt.com</a> with
+        If you find a security problem, email <a href="mailto:support@tradequt.com" className="text-primary underline underline-offset-4">support@tradequt.com</a> with
         the steps to reproduce it. Please do not access other users&apos; data or disrupt the service while testing. We
         read every report; we do not run a paid bounty programme.
       </P>

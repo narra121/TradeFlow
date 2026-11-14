@@ -65,7 +65,7 @@ export default function TradingJournalTemplate() {
               <td className="px-4 py-3 font-medium text-foreground">Outcome</td>
               <td className="px-4 py-3">Win / Loss / Breakeven</td>
               <td className="px-4 py-3">
-                <Link to="/glossary#win-rate" className="text-primary hover:text-primary/80">
+                <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
                   Win rate
                 </Link>{' '}
                 calculation
@@ -92,7 +92,7 @@ export default function TradingJournalTemplate() {
         The required fields tell you <em>what</em> happened. Context fields tell you <em>why</em>.
         They are optional in the sense that your journal still functions without them, but they
         dramatically increase the depth of insights you can extract during{' '}
-        <Link to="/blog/how-to-review-trades" className="text-primary hover:text-primary/80">
+        <Link to="/blog/how-to-review-trades" className="text-primary underline underline-offset-4 hover:text-primary/80">
           weekly reviews
         </Link>
         .
@@ -150,7 +150,7 @@ export default function TradingJournalTemplate() {
         <li>Held through a predetermined exit signal (greed)</li>
         <li>
           Took a{' '}
-          <Link to="/blog/mistakes-new-traders-make" className="text-primary hover:text-primary/80">
+          <Link to="/blog/mistakes-new-traders-make" className="text-primary underline underline-offset-4 hover:text-primary/80">
             revenge trade
           </Link>{' '}
           after a loss (anger)
@@ -197,7 +197,7 @@ export default function TradingJournalTemplate() {
         The mistake and lesson fields are built directly into the trade form, making them first-class
         data points rather than afterthoughts buried in a notes section. You can attach chart
         screenshots, add tags, and mark which of your{' '}
-        <Link to="/blog/why-trading-rules-matter" className="text-primary hover:text-primary/80">
+        <Link to="/blog/why-trading-rules-matter" className="text-primary underline underline-offset-4 hover:text-primary/80">
           trading rules
         </Link>
         {' '}a trade broke.
@@ -206,7 +206,7 @@ export default function TradingJournalTemplate() {
         Strategies, sessions and mistakes come from pick lists you edit in Settings, so the same
         value is spelled the same way every time and can be grouped later. For a full walkthrough of
         the trade entry process, see the{' '}
-        <Link to="/guide" className="text-primary hover:text-primary/80">
+        <Link to="/guide" className="text-primary underline underline-offset-4 hover:text-primary/80">
           TradeQut User Guide
         </Link>
         .

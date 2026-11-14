@@ -58,19 +58,32 @@ function ResourcesMenu() {
 export function PublicHeader() {
   const [open, setOpen] = useState(false);
   const { pathname, hash } = useLocation();
+  const header = useRef<HTMLElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
 
   useEffect(() => setOpen(false), [pathname, hash]);
+  // While the phone menu is open, focus stays in the header and its menu: the page behind is inert. Escape closes it and
+  // returns focus to the menu button.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    const behind = Array.from(header.current?.parentElement?.children ?? []).filter((el) => el !== header.current && !el.hasAttribute('inert'));
+    behind.forEach((el) => el.setAttribute('inert', ''));
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      toggle.current?.focus();
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      behind.forEach((el) => el.removeAttribute('inert'));
+    };
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background">
+    <header ref={header} className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link to="/" className="text-foreground" aria-label="TradeQut home">
+        <Link to="/" className="inline-flex items-center text-foreground max-md:min-h-11" aria-label="TradeQut home">
           <BrandMark />
         </Link>
 
@@ -94,6 +107,7 @@ export function PublicHeader() {
             <Link to="/app/dashboard">Dashboard</Link>
           </Button>
           <Button
+            ref={toggle}
             variant="ghost"
             size="icon"
             className="md:hidden"
