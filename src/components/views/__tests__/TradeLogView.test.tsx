@@ -116,6 +116,25 @@ describe('TradeLogView', () => {
     }
   });
 
+  it('on a phone offers Save and Reset of a changed view in the Filters sheet, not in the scope bar', async () => {
+    const width = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    try {
+      scope = { trades: [mk(1), mk(2, { symbol: 'XAUUSD' })], isLoading: false, isError: false };
+      setup();
+      await userEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+      await userEvent.type(screen.getByRole('textbox', { name: 'Find in trades' }), 'XAU');
+      const sheet = screen.getByRole('dialog', { name: 'Filters' });
+      expect(within(sheet).getByText('View: All')).toBeInTheDocument();
+      expect(within(sheet).getByRole('button', { name: 'Reset' })).toBeInTheDocument();
+      const bar = document.querySelector('[role="toolbar"][aria-label="Data shown"]') as HTMLElement;
+      expect(bar).not.toBeNull();
+      expect(within(bar).queryByText('Reset')).toBeNull();
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+    }
+  });
+
   it('lists the newest trade first by default and exposes sort state', () => {
     scope = { trades: [mk(1), mk(9), mk(5)], isLoading: false, isError: false };
     setup();

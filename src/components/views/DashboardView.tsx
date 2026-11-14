@@ -21,6 +21,7 @@ import { usePeriodStats } from '@/components/stats/usePeriodStats';
 import { useScopeCapital } from '@/components/stats/useScopeCapital';
 import { useScopeTrades } from '@/hooks/useScopeTrades';
 import { useTradeParam } from '@/hooks/useTradeParam';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { appToday, appTodayKey } from '@/lib/appTimeZone';
@@ -50,6 +51,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
   const todayKey = appTodayKey();
   const todayScope = useScopeTrades({ accountId: filters.accountId, startDate: todayKey, endDate: todayKey });
   const week = useWeekGoals();
+  const isMobile = useIsMobile();
 
   const view = useCurrencyView(stats, prev);
   const byCurrency = (stats as { byCurrency?: Record<string, { totalPnl: number; totalTrades: number; profitFactor: number | null; wins: number }> } | undefined)?.byCurrency;
@@ -78,10 +80,15 @@ export function DashboardView(_props: DashboardViewProps = {}) {
   if (accountsError) return <ErrorState title="Couldn't load your accounts." description="Your data is safe." error={accountsErrorDetail} onRetry={() => window.location.reload()} />;
   if (!accountsLoading && accounts.length === 0) return <FirstRunPage tradeCount={0} />;
 
+  // Phones: the scope bar has no room for the switch beside the account and period, so it sits in the page.
   const compareSlot = ps.canCompare ? (
-    <ScopeBarSlot side="right">
-      <CompareSwitch />
-    </ScopeBarSlot>
+    isMobile ? (
+      <div className="flex justify-end"><CompareSwitch /></div>
+    ) : (
+      <ScopeBarSlot side="right">
+        <CompareSwitch />
+      </ScopeBarSlot>
+    )
   ) : null;
 
   const statsLoading = ps.isLoading || !ps.accountsReady;

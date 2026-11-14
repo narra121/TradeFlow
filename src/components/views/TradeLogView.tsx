@@ -568,6 +568,16 @@ export function TradeLogView() {
         />
   );
 
+  // Phones show these in the Filters sheet: in the scope bar they would squeeze the period control.
+  const viewControls = modified ? (
+    <>
+      <Button type="button" variant="ghost" size="sm" onClick={saveCurrent}>Save</Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => applyView(activeView)}>Reset</Button>
+    </>
+  ) : activeView.builtIn === false ? (
+    <Button type="button" variant="ghost" size="sm" onClick={() => removeView(activeView.id)}>Delete view</Button>
+  ) : null;
+
   const drillControls = (
     <>
       {(drill || importBatch) && (
@@ -596,6 +606,12 @@ export function TradeLogView() {
           isMobile={isMobile}
           sheetExtra={(closeSheet) => (
             <div className="space-y-2 border-t border-border pt-3">
+              {viewControls && (
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">View: {activeView.name}</span>
+                  {viewControls}
+                </div>
+              )}
               <Button type="button" variant="outline" className="w-full" onClick={() => { setSelectMode(true); closeSheet(); }}>
                 Select trades
               </Button>
@@ -619,15 +635,7 @@ export function TradeLogView() {
         )}
       </ScopeBarSlot>
       <ScopeBarSlot side="right">
-        {modified && (
-          <>
-            <Button type="button" variant="ghost" size="sm" onClick={saveCurrent}>Save</Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => applyView(activeView)}>Reset</Button>
-          </>
-        )}
-        {!modified && activeView.builtIn === false && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => removeView(activeView.id)}>Delete view</Button>
-        )}
+        {!isMobile && viewControls}
         {!isMobile && (<>
         <label htmlFor="group-by" className="sr-only">Group by</label>
         <Select value={groupBy} onValueChange={(v) => changeGroup(v as GroupBy)}>

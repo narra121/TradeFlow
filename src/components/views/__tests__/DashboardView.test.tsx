@@ -25,6 +25,8 @@ vi.mock('@/components/dashboard/useWeekGoals', () => ({ useWeekGoals: () => ({ i
 vi.mock('@/components/dashboard/MonthHeat', () => ({ MonthHeat: () => <section aria-label="Month heat map" /> }));
 vi.mock('@/components/onboarding/FirstRunPage', () => ({ FirstRunPage: () => <section aria-label="First run" /> }));
 vi.mock('@/components/dashboard/LatestInsight', () => ({ LatestInsight: () => null }));
+let mobile = false;
+vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
 
 import { DashboardView } from '../DashboardView';
 
@@ -72,6 +74,17 @@ describe('DashboardView', () => {
     periodStats.mockReturnValue(period({ prev: { ...stats, totalPnl: 1092.3 }, prevRange: { startDate: '', endDate: '', name: 'Oct', spokenName: 'October' }, canCompare: true }));
     renderWithProviders(<DashboardView />);
     expect(screen.getByText('up $320.00 versus October')).toBeInTheDocument();
+  });
+
+  it('on a phone shows the Compare switch in the page, where the scope bar has no room for it', () => {
+    periodStats.mockReturnValue(period({ canCompare: true }));
+    mobile = true;
+    try {
+      renderWithProviders(<DashboardView />);
+      expect(screen.getByRole('switch', { name: 'Compare: previous period' })).toBeInTheDocument();
+    } finally {
+      mobile = false;
+    }
   });
 
   it('shows no delta line when Compare is off or the range is All time', () => {
