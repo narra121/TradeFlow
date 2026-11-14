@@ -83,6 +83,15 @@ describe('AnalyticsView', () => {
     expect(screen.getByText('What is working · what is not')).toBeInTheDocument();
   });
 
+  it('shows an error with Retry, not the "add trades" empty state, when the accounts fail to load', () => {
+    capital.mockReturnValue({ accounts: [], selectedAccountId: null, totalCapital: 0, accountsReady: false, accountsLoading: false, accountsError: true, accountsErrorDetail: { status: 500, data: { message: 'Internal error' } } });
+    periodStats.mockReturnValue(ready({ stats: undefined, isLoading: false, accountsReady: false }));
+    renderWithProviders(<AnalyticsView />);
+    expect(screen.getByText("Couldn't load your accounts.")).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Retry/ })).toBeInTheDocument();
+    expect(screen.queryByText('Add at least 3 trades to see analytics.')).not.toBeInTheDocument();
+  });
+
   it('shows the empty state, not a skeleton, when the user has no account yet', () => {
     capital.mockReturnValue({ accounts: [], selectedAccountId: null, totalCapital: 0, accountsReady: false, accountsLoading: false, accountsError: false });
     periodStats.mockReturnValue(ready({ stats: undefined, isLoading: false, accountsReady: false }));

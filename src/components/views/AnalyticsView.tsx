@@ -51,7 +51,7 @@ export function AnalyticsView() {
   const trade = useTradeParam();
   const ent = useEntitlements();
   const isMobile = useIsMobile();
-  const { accounts, selectedAccountId, accountsLoading, drawdownBasis } = useScopeCapital();
+  const { accounts, selectedAccountId, accountsLoading, accountsError, accountsErrorDetail, drawdownBasis } = useScopeCapital();
   const selectedCurrency = accounts.find((a) => a.id === selectedAccountId)?.currency;
 
   const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'overview') as TabId;
@@ -103,6 +103,8 @@ export function AnalyticsView() {
       <Button asChild size="sm" variant="outline"><Link to="/app/import">Import</Link></Button>
     </>
   );
+  // A failed account list is an outage, not "no trades": say so and offer Retry before any empty state.
+  if (accountsError) return <ErrorState title="Couldn't load your accounts." description="Your data is safe." error={accountsErrorDetail} onRetry={() => window.location.reload()} />;
   if (!accountsLoading && accounts.length === 0) return <EmptyState title={`Add at least ${MIN_TRADES} trades to see analytics.`} action={noTradesCta} />;
   if (ps.isError) return <ErrorState title="Couldn't load this tab." description="The other tabs keep working." error={ps.error} onRetry={ps.refetch} />;
   if (ps.isLoading || !ps.stats || ent.isLoading) {

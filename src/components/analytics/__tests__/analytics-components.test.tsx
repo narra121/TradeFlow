@@ -29,6 +29,24 @@ describe('ConsentBanner', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('reserves its height at the bottom of the page while open, so a focused control never sits under it (WCAG 2.4.11)', () => {
+    const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(180);
+    try {
+      const { unmount } = render(
+        <MemoryRouter>
+          <ConsentBanner onClose={vi.fn()} />
+        </MemoryRouter>,
+      );
+      expect(document.documentElement.style.scrollPaddingBottom).toBe('180px');
+      expect(document.body.style.paddingBottom).toBe('180px');
+      unmount();
+      expect(document.documentElement.style.scrollPaddingBottom).toBe('');
+      expect(document.body.style.paddingBottom).toBe('');
+    } finally {
+      height.mockRestore();
+    }
+  });
+
   it('saves per-category choices from Customize', async () => {
     const user = userEvent.setup();
     render(

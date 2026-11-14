@@ -92,6 +92,23 @@ describe('ChatView chat list', () => {
   });
 });
 
+describe('ChatView opened by a link', () => {
+  it('shows the account its answers used in the scope bar, once (R-047)', () => {
+    accounts = [{ id: 'a1', name: 'FTMO 100K', currency: 'USD', status: 'active', balance: 1 }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR', status: 'active', balance: 1 }];
+    sessions = [{ ...session('s1', 'Old question'), accountId: 'a1' }];
+    messages = [msg('m1', 'user', 'Old question'), msg('m2', 'assistant', 'Old answer')];
+    renderChat('/app/chat?s=s1');
+    expect(setSelectedAccountId).toHaveBeenCalledTimes(1);
+    expect(setSelectedAccountId).toHaveBeenCalledWith('a1');
+  });
+
+  it('leaves the scope alone for an older chat without an account', () => {
+    sessions = [session('s1', 'Old question')];
+    renderChat('/app/chat?s=s1');
+    expect(setSelectedAccountId).not.toHaveBeenCalled();
+  });
+});
+
 describe('ChatView empty thread', () => {
   it('offers the four calculation starters and names the account and period the answers use', () => {
     renderChat();

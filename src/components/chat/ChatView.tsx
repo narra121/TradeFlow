@@ -157,6 +157,16 @@ export function ChatView() {
 
   useEffect(() => () => abort.current?.abort(), []);
 
+  // A chat opened by its link shows the account its answers used, so the scope bar agrees with the thread (once).
+  const linkedSession = useRef(sessionId);
+  useEffect(() => {
+    const id = linkedSession.current;
+    const s = id ? sessions.find((x) => x.id === id) : undefined;
+    if (!s || linkedId) return;
+    linkedSession.current = null;
+    if (s.accountId && s.accountId !== selectedAccountId && accounts.some((a) => a.id === s.accountId)) setSelectedAccountId(s.accountId);
+  }, [sessions, linkedId, selectedAccountId, accounts, setSelectedAccountId]);
+
   const scrollToEnd = useCallback(() => endRef.current?.scrollIntoView?.({ block: 'end' }), []);
   useEffect(() => {
     if (atBottomRef.current) scrollToEnd();

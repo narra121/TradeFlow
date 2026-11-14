@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -21,8 +21,32 @@ export function ConsentBanner({ onClose }: ConsentBannerProps) {
     onClose();
   };
 
+  // The panel stays non-blocking, so the page must keep its own focused control out from under it (WCAG 2.4.11):
+  // scroll-padding makes focus scroll stop above the panel, and body padding lets the last content scroll clear of it.
+  const panel = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = panel.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const before = { scroll: root.style.scrollPaddingBottom, pad: document.body.style.paddingBottom };
+    const reserve = () => {
+      const h = `${el.offsetHeight}px`;
+      root.style.scrollPaddingBottom = h;
+      document.body.style.paddingBottom = h;
+    };
+    reserve();
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(reserve);
+    ro?.observe(el);
+    return () => {
+      ro?.disconnect();
+      root.style.scrollPaddingBottom = before.scroll;
+      document.body.style.paddingBottom = before.pad;
+    };
+  }, []);
+
   return (
     <div
+      ref={panel}
       role="dialog"
       aria-modal="false"
       aria-labelledby={titleId}

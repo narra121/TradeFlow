@@ -14,7 +14,7 @@ export function periodLabel(from: string, to: string): string {
   if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === 1 && b.getDate() === lastOfMonth) return MONTH.format(a);
   if (a.getMonth() === 0 && a.getDate() === 1 && b.getMonth() === 11 && b.getDate() === 31 && a.getFullYear() === b.getFullYear()) return String(a.getFullYear());
   const days = Math.round((b.getTime() - a.getTime()) / 86_400_000) + 1;
-  const range = `${formatDateShort(from)} – ${formatDateShort(to, true)}`;
+  const range = `${formatDateShort(from, a.getFullYear() !== b.getFullYear())} – ${formatDateShort(to, true)}`;
   return days === 7 ? `Week of ${formatDateShort(from)}` : range;
 }
 

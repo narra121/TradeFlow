@@ -238,9 +238,21 @@ describe('InsightsView generating', () => {
   });
 
   it('shows the API message when the report list fails to load', () => {
+    insights = [];
     listFailure = { status: 500, data: { message: 'Your reports are being restored.' } };
     renderView();
     expect(screen.getByRole('alert')).toHaveTextContent('Your reports are being restored.');
+    // An outage is not "no reports".
+    expect(screen.queryByText('No reports yet.')).not.toBeInTheDocument();
+  });
+
+  it('on a phone a failed report list shows the error too, never "No reports yet."', () => {
+    mobile = true;
+    insights = [];
+    listFailure = { status: 500, data: { message: 'Your reports are being restored.' } };
+    renderView();
+    expect(screen.getByRole('alert')).toHaveTextContent('Your reports are being restored.');
+    expect(screen.queryByText('No reports yet.')).not.toBeInTheDocument();
   });
 
   it('a failed attempt shows Retry and the report list stays', async () => {
@@ -253,6 +265,18 @@ describe('InsightsView generating', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     });
     expect(generate).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('InsightsView opened by a link', () => {
+  it('shows the report’s own account in the scope bar once (R-047), and leaves the scope alone when browsing', async () => {
+    accountsState = { accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD' }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR' }], selectedAccountId: null };
+    insights = [insight(), insight({ id: 'i2', accountId: 'a2' })];
+    renderView('/app/insights?id=i2');
+    expect(setSelectedAccountId).toHaveBeenCalledTimes(1);
+    expect(setSelectedAccountId).toHaveBeenCalledWith('a2');
+    await userEvent.click(screen.getAllByRole('button').find((b) => b.getAttribute('aria-current') !== 'true' && /trades/.test(b.textContent ?? ''))!);
+    expect(setSelectedAccountId).toHaveBeenCalledTimes(1);
   });
 });
 

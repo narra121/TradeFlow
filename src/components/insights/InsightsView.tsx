@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -65,6 +65,15 @@ export function InsightsView() {
   }, [data, older]);
   const nextCursor = olderCursor === undefined ? data?.nextCursor ?? null : olderCursor;
   const selectedId = params.get('id');
+  // A report opened by its link shows its own account in the scope bar (once; browsing the list leaves the scope alone).
+  const linkedReport = useRef(selectedId);
+  useEffect(() => {
+    const id = linkedReport.current;
+    const r = id ? insights.find((i) => i.id === id) : undefined;
+    if (!r) return;
+    linkedReport.current = null;
+    if (r.accountId && r.accountId !== selectedAccountId && accounts.some((a) => a.id === r.accountId)) setSelectedAccountId(r.accountId);
+  }, [insights, selectedAccountId, accounts, setSelectedAccountId]);
   const current = insights.find((i) => i.id === selectedId) ?? (isMobile ? null : insights[0] ?? null);
   const row = ent.usage.find((u) => u.feature === 'ai_insight');
   const remaining = row && row.limit !== null ? Math.max(0, row.limit - row.used) : null;
@@ -175,7 +184,7 @@ export function InsightsView() {
       <h2 className="px-3 py-2 text-xs font-medium text-muted-foreground">Reports</h2>
       {isLoading ? (
         <div className="space-y-1 p-3"><Skeleton className="h-11" /><Skeleton className="h-11" /><Skeleton className="h-11" /></div>
-      ) : insights.length === 0 ? (
+      ) : isError ? null : insights.length === 0 ? (
         <p className="px-3 pb-3 text-13 text-muted-foreground">No reports yet.</p>
       ) : (
         <ul>
@@ -268,6 +277,7 @@ export function InsightsView() {
               <Button type="button" variant="outline" onClick={run} disabled={generating || mixed || tooFew} className="w-full">{generateLabel}</Button>
               {tooFewText && <p className="text-13 text-muted-foreground">{tooFewText}</p>}
               {meter && <p className="font-mono text-xs tabular-nums text-muted-foreground">{meter}</p>}
+              {isError && <ErrorState title="Couldn’t load your reports." error={error} onRetry={refetch} />}
               {list}
               <NotesSwitch className="border-t border-border px-3 pt-3" />
             </>

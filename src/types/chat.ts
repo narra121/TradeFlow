@@ -11,6 +11,8 @@ export interface ChatSession {
   id: string;
   title: string;
   insightId?: string;
+  /** account of the latest answered question; null = all accounts; absent on older sessions */
+  accountId?: string | null;
   createdAt: string;
   updatedAt: string;
   messageCount: number;
