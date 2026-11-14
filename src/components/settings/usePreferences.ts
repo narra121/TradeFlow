@@ -1,4 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { browserZone } from '@/components/settings/timeZones';
+import { useEntitlements } from '@/hooks/useEntitlements';
 import { patchUiState, readUiState, type UiState } from '@/hooks/useUiState';
 import { useGetProfileQuery, useUpdatePreferencesMutation } from '@/store/api/userApi';
 
@@ -53,13 +55,35 @@ export function usePreferences(): PreferencesApi {
   };
 }
 
-/** Copies account-level preferences into the device copy once they are loaded; mount once inside the app shell. */
+/**
+ * True when the account has never saved a time zone (GET /user/profile sends none until one is stored), so this
+ * browser's zone should become the account's. A read-only plan cannot save (402), so it is left alone.
+ */
+export function needsTimeZone(prefs: ServerPreferences | undefined, plan: { isLoading: boolean; readOnly: boolean; plan: string | null }): boolean {
+  return !!prefs && !prefs.timeZone && !plan.isLoading && !!plan.plan && !plan.readOnly;
+}
+
+/**
+ * Copies account-level preferences into the device copy once they are loaded, and saves the browser's zone once for
+ * an account that has none, so the screen and the server's day buckets (stats, reports) use one zone. Mount once inside the app shell.
+ */
 export function useSyncServerPreferences(): void {
   const { prefs } = usePreferences();
+  const ent = useEntitlements();
+  const [update] = useUpdatePreferencesMutation();
+  const adopting = useRef(false);
   useEffect(() => {
     const patch = deviceFromServer(prefs);
     const current = readUiState();
     const changed = (Object.keys(patch) as (keyof UiState)[]).some((k) => current[k] !== patch[k]);
     if (changed) patchUiState(patch);
   }, [prefs]);
+  useEffect(() => {
+    if (adopting.current || !needsTimeZone(prefs, ent)) return;
+    adopting.current = true;
+    const zone = browserZone();
+    // Once per app load: a failed save is tried again on the next load. The profile refetch that follows a save brings
+    // the zone back into the device copy above.
+    update({ timeZone: zone }).unwrap().catch(() => undefined);
+  }, [prefs, ent, update]);
 }

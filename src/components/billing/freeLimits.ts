@@ -15,6 +15,7 @@ export function yearlySavingPercent(currency: Currency): number {
 /** `$49.99 a year` with the monthly equivalent for yearly; the one way a Pro price is written in the app. */
 export function priceLine(currency: Currency, interval: Interval): { main: string; sub?: string } {
   const p = proPrice(currency, interval);
-  const main = `${formatMoney(p.amount, currency)} a ${interval}`;
+  // `display` is the price as the pricing page and Stripe show it (₹4,999, $49.99), never ₹4,999.00.
+  const main = `${p.display} a ${interval}`;
   return interval === 'year' ? { main, sub: `${formatMoney(p.amount / 12, currency)} a month` } : { main };
 }

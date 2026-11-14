@@ -24,14 +24,15 @@ vi.mock('@/store/api/savedOptionsApi', () => ({
   useUpdateSavedOptionsMutation: () => [(a: unknown) => ({ unwrap: () => writeOptions(a) }), { isLoading: false }],
 }));
 vi.mock('@/hooks/useScopeTrades', () => ({ useScopeTrades: () => ({ trades, isLoading: false, truncated: false }) }));
-vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ isPro: plan === 'pro' }) }));
+vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ isPro: plan === 'pro', isLoading: false, plan, readOnly: plan === 'free' }) }));
 
 import { OptionList } from '../OptionList';
 import { OptionsSection } from '../OptionsSection';
 import { PreferencesSection } from '../PreferencesSection';
 import { NotificationsSection } from '../NotificationsSection';
 import { MAIN_LISTS, MORE_LISTS, countUsage, hasValue, isStarterList, ownEntries } from '../optionLists';
-import { deviceFromServer, periodToServer } from '../usePreferences';
+import { browserZone } from '../timeZones';
+import { deviceFromServer, needsTimeZone, periodToServer, useSyncServerPreferences } from '../usePreferences';
 import { resetUiStateCache, patchUiState } from '@/hooks/useUiState';
 
 const strategies = MAIN_LISTS.find((l) => l.key === 'strategies')!;
@@ -274,5 +275,46 @@ describe('NotificationsSection', () => {
     await userEvent.click(sw);
     await screen.findByRole('alert');
     expect(sw).toBeChecked();
+  });
+});
+
+describe('an account without a saved time zone takes the browser zone once (REQUESTS leaf-1.4 #2)', () => {
+  const Sync = () => {
+    useSyncServerPreferences();
+    return null;
+  };
+  // The canonical IANA name (Asia/Calcutta → Asia/Kolkata), as the time zone list shows it.
+  const zone = browserZone();
+
+  it('needsTimeZone: only a loaded profile without timeZone, on a plan that can save', () => {
+    const ok = { isLoading: false, readOnly: false, plan: 'trial' };
+    expect(needsTimeZone({}, ok)).toBe(true);
+    expect(needsTimeZone({ timeZone: 'UTC' }, ok)).toBe(false);
+    expect(needsTimeZone({ timeZone: 'Asia/Kolkata' }, ok)).toBe(false);
+    expect(needsTimeZone(undefined, ok)).toBe(false);
+    expect(needsTimeZone({}, { ...ok, isLoading: true })).toBe(false);
+    expect(needsTimeZone({}, { ...ok, plan: null })).toBe(false);
+    expect(needsTimeZone({}, { ...ok, plan: 'free', readOnly: true })).toBe(false);
+  });
+
+  it('saves the browser zone once through PUT /user/preferences when the profile has none', () => {
+    profile = { name: 'Ann', email: 'ann@example.com', preferences: { notifications: { weeklyReport: true } } };
+    const { rerender } = render(<Sync />);
+    rerender(<Sync />);
+    expect(updatePrefs).toHaveBeenCalledTimes(1);
+    expect(updatePrefs).toHaveBeenCalledWith({ timeZone: zone });
+  });
+
+  it('never overwrites a chosen zone, UTC included', () => {
+    profile = { name: 'Ann', email: 'ann@example.com', preferences: { timeZone: 'UTC' } };
+    render(<Sync />);
+    expect(updatePrefs).not.toHaveBeenCalled();
+  });
+
+  it('a read-only plan does not try (the save would be refused with 402 and open the upgrade dialog)', () => {
+    plan = 'free';
+    profile = { name: 'Ann', email: 'ann@example.com', preferences: {} };
+    render(<Sync />);
+    expect(updatePrefs).not.toHaveBeenCalled();
   });
 });

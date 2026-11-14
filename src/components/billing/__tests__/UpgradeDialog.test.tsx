@@ -6,10 +6,11 @@ import { emitPlanSignal } from '@/lib/planErrors';
 
 const checkout = vi.fn();
 const refetch = vi.fn();
+const plan: { proEndedAt?: string } = {};
 vi.mock('@/store/api/billingApi', () => ({
   useGetEntitlementsQuery: () => ({
     data: {
-      entitlements: { plan: 'free', status: 'free', limits: { ai_extract: 5, ai_insight: 1, ai_chat: 10, broker_import: 3 }, features: { advanced_analytics: false, tax_report: false, unlimited_accounts: false, auto_sync: false } },
+      entitlements: { plan: 'free', status: 'free', ...plan, limits: { ai_extract: 5, ai_insight: 1, ai_chat: 10, broker_import: 3 }, features: { advanced_analytics: false, tax_report: false, unlimited_accounts: false, auto_sync: false } },
       usage: { ai_extract: 5, ai_insight: 0, ai_chat: 0, broker_import: 0 },
       periodResetsAt: '2026-12-01T00:00:00Z',
       billingCurrency: 'USD',
@@ -35,6 +36,7 @@ const setup = () =>
 beforeEach(() => {
   checkout.mockReset();
   refetch.mockReset();
+  delete plan.proEndedAt;
   localStorage.clear();
 });
 
@@ -62,6 +64,10 @@ describe('describePlanSignal', () => {
     });
   });
 
+  it('a former Pro user is told Pro ended, not the free trial', () => {
+    expect(describePlanSignal({ code: 'TRIAL_EXPIRED', message: 'x', kind: 'mutation' }, { proEnded: true }).title).toBe('Your Pro plan has ended');
+  });
+
   it('uses the server message when the feature is unknown', () => {
     expect(describePlanSignal({ code: 'QUOTA_EXCEEDED', message: 'Limit hit', kind: 'mutation' }).body).toBe('Limit hit');
   });
@@ -85,6 +91,13 @@ describe('UpgradeDialog', () => {
     expect(screen.getByRole('button', { name: 'Upgrade to Pro' })).toBeInTheDocument();
     expect(refetch).toHaveBeenCalled();
     expect(screen.queryByText(/monthly limit|of 5/)).toBeNull();
+  });
+
+  it('after a lapsed Pro plan (proEndedAt) the TRIAL_EXPIRED dialog says Pro ended', async () => {
+    plan.proEndedAt = '2026-11-12T00:00:00.000Z';
+    setup();
+    act(() => emitPlanSignal({ code: 'TRIAL_EXPIRED', message: 'x', kind: 'mutation' }));
+    expect(await screen.findByRole('dialog', { name: 'Your Pro plan has ended' })).toBeInTheDocument();
   });
 
   it('ignores query signals (those render a locked preview in place)', () => {

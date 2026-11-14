@@ -22,10 +22,13 @@ function proIncludes(row: string): string {
   return text ? `Pro includes ${text.charAt(0).toLowerCase()}${text.slice(1)}.` : '';
 }
 
-/** Copy per feature from the 402 payload: what was used, when it resets, what Pro gives (E-070, D.5). */
-export function describePlanSignal(signal: PlanSignal): { title: string; body: string } {
+/**
+ * Copy per feature from the 402 payload: what was used, when it resets, what Pro gives (E-070, D.5).
+ * `proEnded`: the user is read-only because a Pro plan ended (entitlements `proEndedAt`), not a trial.
+ */
+export function describePlanSignal(signal: PlanSignal, { proEnded = false }: { proEnded?: boolean } = {}): { title: string; body: string } {
   if (signal.code === 'TRIAL_EXPIRED') {
-    return { title: 'Your free trial has ended', body: 'Your trades are safe, and you can still view and export them. Upgrade to Pro to add, edit or delete.' };
+    return { title: proEnded ? 'Your Pro plan has ended' : 'Your free trial has ended', body: 'Your trades are safe, and you can still view and export them. Upgrade to Pro to add, edit or delete.' };
   }
   if (signal.code === 'PLAN_REQUIRED') {
     const f = signal.feature ? PLAN_FEATURES[signal.feature] : undefined;

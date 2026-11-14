@@ -1,7 +1,7 @@
 import type { TradingAccount } from '@/types/trade';
 
-/** Sentence shown wherever a read-only account blocks an edit. */
-export const READ_ONLY_REASON = 'Your free trial has ended, so your journal is read-only. Upgrade to Pro to add, edit or delete.';
+/** Sentence shown wherever a read-only account blocks an edit; it names no cause, because a lapsed Pro plan reads the same as an ended trial. */
+export const READ_ONLY_REASON = 'Your journal is read-only. Upgrade to Pro to add, edit or delete.';
 
 /**
  * Accounts the user cannot write to: every account while the plan is read-only (`writable` is `[]`). `writable` is

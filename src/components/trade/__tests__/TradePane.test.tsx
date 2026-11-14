@@ -77,7 +77,7 @@ describe('TradePane', () => {
     setup();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled();
     // The debrief's loading state is a status too, so the reason's status is found through its text.
-    expect(screen.getByText(/Your free trial has ended, so your journal is read-only/).closest('[role="status"]')).toHaveTextContent('Your free trial has ended, so your journal is read-only');
+    expect(screen.getByText(/Your journal is read-only\. Upgrade to Pro/).closest('[role="status"]')).toHaveTextContent('Your journal is read-only. Upgrade to Pro to add, edit or delete.');
     expect(screen.queryByRole('button', { name: /^Edit strategy/ })).toBeNull();
   });
 
@@ -109,7 +109,7 @@ describe('TradePane', () => {
       await userEvent.click(edit);
       expect(seen).toHaveBeenCalledWith('TRIAL_EXPIRED');
       expect(param.setEdit).not.toHaveBeenCalled();
-      expect(screen.getByText(/Your free trial has ended, so your journal is read-only/)).toBeInTheDocument();
+      expect(screen.getByText(/Your journal is read-only\. Upgrade to Pro/)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Upgrade to Pro' })).toHaveAttribute('href', '/app/settings/billing');
       expect(screen.getByRole('switch', { name: 'Reviewed · followed plan' })).toBeDisabled();
     });

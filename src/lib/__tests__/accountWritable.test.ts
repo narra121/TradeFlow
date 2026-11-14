@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { readOnlyAccountIds } from '../accountWritable';
+import { READ_ONLY_REASON, readOnlyAccountIds } from '../accountWritable';
+
+describe('READ_ONLY_REASON', () => {
+  it('fits both read-only states: it never says a free trial ended (a lapsed Pro user sees it too)', () => {
+    expect(READ_ONLY_REASON).toBe('Your journal is read-only. Upgrade to Pro to add, edit or delete.');
+    expect(READ_ONLY_REASON).not.toMatch(/trial/i);
+  });
+});
 
 describe('readOnlyAccountIds', () => {
   const accounts = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];

@@ -7,6 +7,7 @@ import type { EntitlementsResponse } from '@/types/entitlements';
 
 let response: EntitlementsResponse | undefined;
 let isError = false;
+let loading = false;
 let failure: unknown;
 let accounts: { id: string; name: string; currency: string }[] = [];
 const checkout = vi.fn();
@@ -14,7 +15,7 @@ const portal = vi.fn();
 const verify = vi.fn();
 const refetch = vi.fn();
 vi.mock('@/store/api/billingApi', () => ({
-  useGetEntitlementsQuery: () => ({ data: response, isLoading: false, isError, error: failure, refetch }),
+  useGetEntitlementsQuery: () => ({ data: response, isLoading: loading, isError, error: failure, refetch }),
   useCreateCheckoutMutation: () => [(a: unknown) => ({ unwrap: () => checkout(a) }), { isLoading: false }],
   useOpenPortalMutation: () => [() => ({ unwrap: () => portal() }), { isLoading: false }],
   useVerifyCheckoutMutation: () => [(id: string) => ({ unwrap: () => verify(id) })],
@@ -25,7 +26,7 @@ import { BillingView } from '../BillingView';
 import { PlanCard } from '../PlanCard';
 import { UsageMeter } from '../UsageMeter';
 import { planRowText, planState } from '../planState';
-import { yearlySavingPercent } from '../freeLimits';
+import { priceLine, yearlySavingPercent } from '../freeLimits';
 
 type Ent = EntitlementsResponse['entitlements'] & Record<string, unknown>;
 const NOW = new Date('2026-11-11T12:00:00Z');
@@ -205,7 +206,14 @@ describe('BillingView', () => {
   it('shows INR prices for an INR billing currency', () => {
     response = base({}, {}, { billingCurrency: 'INR' });
     wrap();
-    expect(within(screen.getByRole('table')).getByText('₹4,999.00 a year')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('₹4,999 a year')).toBeInTheDocument();
+  });
+
+  it('writes prices as the pricing page does: ₹499 a month, not ₹499.00', () => {
+    expect(priceLine('INR', 'month')).toEqual({ main: '₹499 a month' });
+    expect(priceLine('INR', 'year').main).toBe('₹4,999 a year');
+    expect(priceLine('USD', 'month')).toEqual({ main: '$4.99 a month' });
+    expect(priceLine('USD', 'year')).toEqual({ main: '$49.99 a year', sub: '$4.17 a month' });
   });
 
   describe('a failed checkout shows the API message next to the button that was pressed (former leaf 4.1)', () => {
@@ -224,6 +232,21 @@ describe('BillingView', () => {
       expect(screen.getAllByRole('alert')).toHaveLength(1);
       expect(scrolled).toHaveBeenCalled();
       expect(assign).not.toHaveBeenCalled();
+    });
+
+    it('on a phone the message follows the Pro card and its button, before the Free trial card', async () => {
+      response = readOnly();
+      checkout.mockRejectedValue(PRICE_NOT_CONFIGURED);
+      wrap();
+      const pro = screen.getByRole('region', { name: 'Pro plan' });
+      await userEvent.click(within(pro).getByRole('button', { name: 'Upgrade to Pro' }));
+      const alert = await screen.findByRole('alert');
+      const trial = screen.getByRole('region', { name: 'Free trial' });
+      // Same flex column: the order classes put the alert between the two phone cards.
+      expect(alert.closest('.order-3')?.parentElement).toBe(pro.parentElement);
+      expect(trial.parentElement).toBe(pro.parentElement);
+      expect(pro.className).toContain('order-2');
+      expect(trial.className).toContain('order-4');
     });
 
     it('the status button: the alert sits in the plan section', async () => {
@@ -264,6 +287,18 @@ describe('BillingView', () => {
     expect(screen.getByText('Your last payment failed. Update your card to keep Pro.')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByRole('button', { name: 'Update card' })).toBeInTheDocument();
+  });
+
+  it('loading: the skeleton is a named busy status (aria-label needs a role)', () => {
+    loading = true;
+    try {
+      response = undefined;
+      wrap();
+      const busy = screen.getByRole('status', { name: 'Loading your plan' });
+      expect(busy).toHaveAttribute('aria-busy', 'true');
+    } finally {
+      loading = false;
+    }
   });
 
   it('error: shows the API message; the connection message only without a response', () => {

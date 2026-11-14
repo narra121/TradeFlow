@@ -94,7 +94,7 @@ export function BillingView() {
 
   if (ent.isLoading) {
     return (
-      <div className="space-y-4" aria-busy="true" aria-label="Loading your plan">
+      <div role="status" className="space-y-4" aria-busy="true" aria-label="Loading your plan">
         <Skeleton className="h-16" />
         <Skeleton className="h-32" />
         <Skeleton className="h-56" />
@@ -162,8 +162,8 @@ export function BillingView() {
             canUpgrade
             busy={up.busy === 'checkout'}
             onUpgrade={upgradeFromPlans}
+            error={up.error && pressed === 'plans' ? <ActionError text={up.error} /> : null}
           />
-          {up.error && pressed === 'plans' && <div className="mt-3"><ActionError text={up.error} /></div>}
         </section>
       ) : (
         <details className="rounded-lg border border-border bg-card p-4">

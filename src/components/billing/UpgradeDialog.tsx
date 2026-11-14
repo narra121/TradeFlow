@@ -30,7 +30,7 @@ export function UpgradeDialog() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const text = signal ? describePlanSignal(signal) : null;
+  const text = signal ? describePlanSignal(signal, { proEnded: !!ent.proEndedAt }) : null;
   const price = priceLine(ent.currency, readInterval());
 
   return (
