@@ -35,6 +35,11 @@ describe('AnalyticsContents', () => {
 });
 
 describe('PricingTable', () => {
+  it('keeps each price period on one line, so a phone never breaks "/ 14 days" between the number and the word', () => {
+    wrap(<PricingTable />);
+    for (const text of [/\/ 14 days/, /\/ month/]) expect(screen.getByText(text)).toHaveClass('whitespace-nowrap');
+  });
+
   it('renders one row per plan limit from product-facts', () => {
     wrap(<PricingTable />);
     const rows = screen.getAllByRole('row');

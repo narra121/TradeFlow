@@ -99,8 +99,10 @@ function AppRoutes() {
       <ReloadGuardReset />
       <Routes>
         <Route path="/" element={isAuthenticated ? <Navigate to="/app/dashboard" replace /> : <LandingPage />} />
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/app/dashboard" replace /> : <LoginPage />} />
-        <Route path="/signup" element={isAuthenticated ? <Navigate to="/app/dashboard" replace /> : <SignupPage />} />
+        {/* LoginPage and SignupPage route a signed-in user themselves: a visit that starts signed in goes to the app, and a log-in
+            made on the page goes to the page that was asked for. A <Navigate> here would unmount them before that redirect. */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/app/*" element={
           <RequireAuth>

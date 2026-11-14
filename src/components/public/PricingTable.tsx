@@ -91,14 +91,14 @@ export function PricingTable({ headingLevel = 2 }: { headingLevel?: 2 | 3 }) {
                 <Heading className="text-base font-semibold text-foreground">Free trial</Heading>
                 <p className="num mt-1 text-base font-semibold text-foreground sm:text-2xl">
                   {currency === 'INR' ? '₹0' : '$0'}
-                  <span className="text-xs font-normal text-muted-foreground sm:text-sm"> / {TRIAL_DAYS} days</span>
+                  <span className="whitespace-nowrap text-xs font-normal text-muted-foreground sm:text-sm"> / {TRIAL_DAYS} days</span>
                 </p>
               </th>
               <th scope="col" className="px-2 py-3 text-left align-bottom sm:px-4">
                 <Heading className="text-base font-semibold text-foreground">Pro</Heading>
                 <p className="num mt-1 text-base font-semibold text-foreground sm:text-2xl">
                   {price.display}
-                  <span className="text-xs font-normal text-muted-foreground sm:text-sm"> / {interval === 'month' ? 'month' : 'year'}</span>
+                  <span className="whitespace-nowrap text-xs font-normal text-muted-foreground sm:text-sm"> / {interval === 'month' ? 'month' : 'year'}</span>
                 </p>
               </th>
             </tr>
