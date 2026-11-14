@@ -19,6 +19,7 @@ import { usePeriodStats } from '@/components/stats/usePeriodStats';
 import { useCurrencyView } from '@/components/stats/useCurrencyView';
 import { useScopeCapital } from '@/components/stats/useScopeCapital';
 import { useEntitlements } from '@/hooks/useEntitlements';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTradeParam } from '@/hooks/useTradeParam';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
@@ -49,6 +50,7 @@ export function AnalyticsView() {
   const filters = useAppSelector((s) => s.trades.filters);
   const trade = useTradeParam();
   const ent = useEntitlements();
+  const isMobile = useIsMobile();
   const { accounts, selectedAccountId, accountsLoading, drawdownBasis } = useScopeCapital();
   const selectedCurrency = accounts.find((a) => a.id === selectedAccountId)?.currency;
 
@@ -79,10 +81,15 @@ export function AnalyticsView() {
     dispatch(setDateRangeFilter({ startDate: formatLocalDateOnly(range.from), endDate: formatLocalDateOnly(range.to), datePreset: 'all' }));
   };
 
+  // A phone's scope bar has no room beside the account and period: the switch would clip the period control.
   const compare = tab === 'overview' && ps.canCompare ? (
-    <ScopeBarSlot side="right">
-      <CompareSwitch />
-    </ScopeBarSlot>
+    isMobile ? (
+      <div className="flex justify-end"><CompareSwitch /></div>
+    ) : (
+      <ScopeBarSlot side="right">
+        <CompareSwitch />
+      </ScopeBarSlot>
+    )
   ) : null;
 
   if (tab === 'tax') return <TaxReport />;

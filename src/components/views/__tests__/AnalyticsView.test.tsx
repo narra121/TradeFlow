@@ -17,7 +17,9 @@ const periodStats = vi.fn();
 const entitlements = vi.fn();
 const taxReport = vi.fn();
 
-vi.mock('@/components/shell/chrome', () => ({ ScopeBarSlot: ({ children }: { children: React.ReactNode }) => <>{children}</>, usePageChrome: () => undefined }));
+vi.mock('@/components/shell/chrome', () => ({ ScopeBarSlot: ({ children, side }: { children: React.ReactNode; side: string }) => <div data-testid={`slot-${side}`}>{children}</div>, usePageChrome: () => undefined }));
+let mobile = false;
+vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
 vi.mock('@/components/stats/usePeriodStats', () => ({ usePeriodStats: (o: unknown) => periodStats(o) }));
 const capital = vi.fn();
 vi.mock('@/components/stats/useScopeCapital', () => ({ useScopeCapital: () => capital() }));
@@ -55,6 +57,7 @@ const ready = (over: Record<string, unknown> = {}) => ({
 });
 
 beforeEach(() => {
+  mobile = false;
   capital.mockReset().mockReturnValue({ accounts: [{ id: 'a', currency: 'USD' }, { id: 'b', currency: 'INR' }], selectedAccountId: null, totalCapital: 0, accountsReady: true, accountsLoading: false, accountsError: false });
   periodStats.mockReset().mockReturnValue(ready());
   entitlements.mockReset().mockReturnValue({ isLoading: false, isError: false, can: () => true, currency: 'USD' });
@@ -63,6 +66,17 @@ beforeEach(() => {
 });
 
 describe('AnalyticsView', () => {
+  it('puts Compare in the scope bar on a desktop, and in the page on a phone (the bar has no room beside the period)', () => {
+    periodStats.mockReturnValue(ready({ canCompare: true }));
+    const { unmount } = renderWithProviders(<AnalyticsView />, { route: '/app/analytics' });
+    expect(screen.getByTestId('slot-right')).toContainElement(screen.getByRole('switch', { name: 'Compare: previous period' }));
+    unmount();
+    mobile = true;
+    renderWithProviders(<AnalyticsView />, { route: '/app/analytics' });
+    expect(screen.getByRole('switch', { name: 'Compare: previous period' })).toBeInTheDocument();
+    expect(screen.queryByTestId('slot-right')).toBeNull();
+  });
+
   it('renders the tabs as links with the current one marked, Tax as Planned', () => {
     renderWithProviders(<AnalyticsView />, { route: '/app/analytics' });
     expect(screen.getByText('Performance')).toBeInTheDocument();
