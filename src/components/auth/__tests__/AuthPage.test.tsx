@@ -28,6 +28,7 @@ vi.mock('@/components/auth/useGoogleSignIn', () => ({ useGoogleSignIn: () => ({ 
 vi.mock('@/components/auth/googleConfig', () => ({ isGoogleConfigured: () => googleOn.value, COGNITO_DOMAIN: 'd', COGNITO_CLIENT_ID: 'c' }));
 
 import { AuthPage } from '../AuthPage';
+import { capturePrerenderedInput, clearPrerenderedInput, peekPrerenderedInput } from '../prerenderedInput';
 
 // jsdom has no ResizeObserver; the one-time-code input measures its slots with it.
 globalThis.ResizeObserver ??= class {
@@ -678,5 +679,58 @@ describe('history', () => {
   it('a reload on ?view=reset (email lost) falls back to the form that asks for it', () => {
     renderAt('/login?view=reset');
     expect(screen.getByRole('heading', { name: 'Reset your password' })).toBeInTheDocument();
+  });
+});
+
+describe('typing into the prerendered form before the app loads', () => {
+  /** The static /login or /signup markup main.tsx replaces: the visitor typed into it, then the app captured and dropped it. */
+  const typeIntoPrerendered = (path: string, email: string, password: string, focus: 'email' | 'password') => {
+    const shell = document.createElement('div');
+    shell.innerHTML = '<input id="auth-email" type="email"><input id="auth-password" type="password">';
+    document.body.appendChild(shell);
+    (shell.querySelector('#auth-email') as HTMLInputElement).value = email;
+    (shell.querySelector('#auth-password') as HTMLInputElement).value = password;
+    (shell.querySelector(`#auth-${focus}`) as HTMLInputElement).focus();
+    capturePrerenderedInput(shell, path);
+    shell.remove();
+  };
+
+  afterEach(() => clearPrerenderedInput());
+
+  it('log in keeps the email and password and the caret stays in the password', () => {
+    typeIntoPrerendered('/login', 'early@example.com', 'Secret1!', 'password');
+    setup('login');
+    expect(screen.getByLabelText('Email')).toHaveValue('early@example.com');
+    expect(screen.getByLabelText('Password')).toHaveValue('Secret1!');
+    expect(document.activeElement?.id).toBe('auth-password');
+    // Used once, and never written anywhere.
+    expect(peekPrerenderedInput('/login')).toBeNull();
+    expect(JSON.stringify({ ...localStorage })).not.toContain('Secret1!');
+    expect(JSON.stringify({ ...sessionStorage })).not.toContain('Secret1!');
+  });
+
+  it('sign up keeps what was typed and the caret stays in the email', () => {
+    typeIntoPrerendered('/signup', 'new@example.com', 'Abc', 'email');
+    setup('signup');
+    expect(screen.getByLabelText('Email')).toHaveValue('new@example.com');
+    expect(screen.getByLabelText('Password')).toHaveValue('Abc');
+    expect(document.activeElement?.id).toBe('auth-email');
+  });
+
+  it('is not used by another page or another view', () => {
+    typeIntoPrerendered('/login', 'early@example.com', 'Secret1!', 'password');
+    setup('signup').unmount();
+    expect(peekPrerenderedInput('/login')).not.toBeNull();
+    clearPrerenderedInput();
+    typeIntoPrerendered('/login', 'early@example.com', 'Secret1!', 'password');
+    setup('login', '/login?view=forgot');
+    expect(screen.getByLabelText('Email')).toHaveValue('');
+  });
+
+  it('captures nothing from an untouched form', () => {
+    const shell = document.createElement('div');
+    shell.innerHTML = '<input id="auth-email" type="email"><input id="auth-password" type="password">';
+    capturePrerenderedInput(shell, '/login');
+    expect(peekPrerenderedInput('/login')).toBeNull();
   });
 });

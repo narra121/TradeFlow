@@ -9,6 +9,7 @@ import { CodeInput } from '@/components/auth/CodeInput';
 import { FormSummary, type SummaryItem } from '@/components/auth/FormSummary';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { PasswordField } from '@/components/auth/PasswordField';
+import { clearPrerenderedInput, peekPrerenderedInput } from '@/components/auth/prerenderedInput';
 import { StatusView } from '@/components/auth/StatusView';
 import { describeAuthError, formatWait, rateLimitBody, type AuthCall, type AuthErrorInfo } from '@/components/auth/authErrors';
 import { isGoogleConfigured } from '@/components/auth/googleConfig';
@@ -102,10 +103,12 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
 
   const requested = params.get('view');
   const wanted: AuthView = requested === 'forgot' || requested === 'otp' || requested === 'reset' ? requested : initialView;
+  // What was typed into the prerendered form before the app loaded (main.tsx); it seeds the first render only.
+  const [handoff] = useState(() => (wanted === initialView ? peekPrerenderedInput(location.pathname) : null));
   /** The view that opened the verify screen, so Back returns there. */
   const [origin, setOrigin] = useState<'login' | 'signup'>(initialView);
-  const [email, setEmail] = useState(carried.email ?? '');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(handoff?.email || carried.email || '');
+  const [password, setPassword] = useState(handoff?.password ?? '');
   const [code, setCode] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [showSummary, setShowSummary] = useState(false);
@@ -150,6 +153,20 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
   useEffect(() => {
     if (signupSuccess) dispatch(clearSignupSuccess());
   }, [signupSuccess, dispatch]);
+
+  // The hand-over is used once; the caret goes back to the field it was in, after what was typed.
+  useEffect(() => {
+    if (!handoff) return;
+    clearPrerenderedInput();
+    if (!handoff.focus) return;
+    const el = document.getElementById(handoff.focus === 'email' ? IDS.email : IDS.password) as HTMLInputElement | null;
+    el?.focus();
+    try {
+      el?.setSelectionRange(el.value.length, el.value.length);
+    } catch {
+      // type=email has no selection API
+    }
+  }, [handoff]);
 
   // Read from the flag's own change: a second `online` listener is removed by this effect's cleanup before the browser calls it.
   useEffect(() => {

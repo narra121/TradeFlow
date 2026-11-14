@@ -5,6 +5,7 @@ import { preloadRoute } from './content/preloadRoute';
 import { entryFor } from './entry';
 import { hasStoredSession } from './lib/auth/storedSession';
 import { retireLegacySession } from './lib/auth/legacySession';
+import { capturePrerenderedInput } from './components/auth/prerenderedInput';
 
 initErrorReporter();
 retireLegacySession();
@@ -34,6 +35,8 @@ preloadRoute(window.location.pathname).then(async () => {
   };
   syncSignedIn();
   store.subscribe(syncSignedIn);
+  // The render below replaces the prerendered /login or /signup form: hand what was typed into it to AuthPage.
+  capturePrerenderedInput(rootElement, window.location.pathname);
   root.render(
     <Provider store={store}>
       <App />
