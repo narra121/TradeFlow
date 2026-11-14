@@ -35,9 +35,14 @@ describe('AnalyticsContents', () => {
 });
 
 describe('PricingTable', () => {
-  it('keeps each price period on one line, so a phone never breaks "/ 14 days" between the number and the word', () => {
+  it('keeps each price period on one line and lets it wrap under the price, so a phone never splits "/ 14 days" or overflows the column', () => {
     wrap(<PricingTable />);
-    for (const text of [/\/ 14 days/, /\/ month/]) expect(screen.getByText(text)).toHaveClass('whitespace-nowrap');
+    for (const text of [/\/ 14 days/, /\/ month/]) {
+      const suffix = screen.getByText(text);
+      expect(suffix).toHaveClass('whitespace-nowrap');
+      // The break opportunity sits before the span, so a narrow column wraps the whole suffix under the price.
+      expect(suffix.textContent?.startsWith('/')).toBe(true);
+    }
   });
 
   it('renders one row per plan limit from product-facts', () => {
