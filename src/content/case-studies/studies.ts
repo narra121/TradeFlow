@@ -46,7 +46,7 @@ export const CASE_STUDIES: CaseStudy[] = [
   },
   {
     slug: 'revenge-trading-to-discipline',
-    title: 'Scenario: spotting revenge trades with tags and a cooling-off rule',
+    title: 'Scenario: spotting revenge trades with a cooling-off rule',
     description:
       'An illustrative walk-through of tagging emotions and after-loss entries to see whether revenge trading shows up, using hypothetical data.',
     traderType: 'Swing trader',

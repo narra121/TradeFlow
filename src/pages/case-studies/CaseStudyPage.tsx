@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { AuthorBox } from '@/components/content/AuthorBox';
 import { ShareButtons } from '@/components/content/ShareButtons';
-import { caseStudySchema } from '@/config/seo';
+import { caseStudySchema, pageTitle } from '@/config/seo';
 import { CASE_STUDIES } from '@/content/case-studies/studies';
 import { lazyContent } from '@/content/lazyContent';
 import NotFound from '@/pages/NotFound';
@@ -20,7 +20,7 @@ export function CaseStudyPage() {
 
   return (
     <ContentPageShell
-      title={`${study.title} - TradeQut`}
+      title={pageTitle(study.title, ' - TradeQut')}
       description={study.description}
       path={`/case-studies/${study.slug}`}
       jsonLd={caseStudySchema(study)}

@@ -27,7 +27,7 @@ const DOES_NOT = [
 export function AboutPage() {
   return (
     <ContentPageShell
-      title="About TradeQut - Trading Journal for F&O, Forex and Prop Traders"
+      title="About TradeQut: a Trading Journal for F&O and Forex Traders"
       description="What TradeQut does and does not do, who it is built for, how your trading data is handled, and how to reach the team behind it."
       path="/about"
       jsonLd={breadcrumbSchema([

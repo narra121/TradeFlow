@@ -4,6 +4,41 @@ import type { FaqItem } from '../product-facts';
 
 /** Building blocks for articles and SEO pages; class names match the existing article styling. */
 
+/** Visible trail for a page that sits under a hub; mirrors the BreadcrumbList in its JSON-LD. */
+export function Crumbs({ parent, current }: { parent: { path: string; label: string }; current: string }) {
+  return (
+    <nav aria-label="Breadcrumb" className="mb-6">
+      <ol className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <li>
+          <Link to={parent.path} className="inline-flex min-h-6 max-md:min-h-11 items-center hover:text-foreground">
+            {parent.label}
+          </Link>
+        </li>
+        <li aria-hidden="true">/</li>
+        <li className="font-medium text-foreground">{current}</li>
+      </ol>
+    </nav>
+  );
+}
+
+export function RelatedLinks({ links }: { links: { to: string; label: string }[] }) {
+  if (links.length === 0) return null;
+  return (
+    <section aria-labelledby="related-links" className="mt-10">
+      <h2 id="related-links" className="text-base font-semibold text-foreground mb-3">
+        Related tools and pages
+      </h2>
+      <UL>
+        {links.map((l) => (
+          <li key={l.to}>
+            <A to={l.to}>{l.label}</A>
+          </li>
+        ))}
+      </UL>
+    </section>
+  );
+}
+
 export function ShortAnswer({ children }: { children: ReactNode }) {
   return (
     <aside aria-label="Short answer" className="rounded-lg border border-primary/30 bg-primary/5 p-5 mb-8">

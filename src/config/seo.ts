@@ -18,6 +18,12 @@ const PUBLISHER = {
 };
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
+/** `title` with the brand suffix only while the whole stays within the ~60 characters a results page shows. */
+export function pageTitle(title: string, suffix: string, limit = 60): string {
+  const full = `${title}${suffix}`;
+  return full.length <= limit ? full : title;
+}
+
 export const WEBSITE_SCHEMA = {
   '@type': 'WebSite',
   name: 'TradeQut',
@@ -31,6 +37,7 @@ export const ORGANIZATION_SCHEMA = {
   url: SITE_URL,
   logo: COMPANY_FACTS.logo,
   description: PRODUCT_DEFINITION,
+  ...(COMPANY_FACTS.profiles.length ? { sameAs: COMPANY_FACTS.profiles } : {}),
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'Customer Service',
@@ -253,12 +260,17 @@ export function caseStudySchema(study: ArticleLike & { slug: string }) {
 }
 
 /** Stand-alone SEO pages (/pricing, /trading-journal-india, /alternatives/*). */
-export function seoPageSchema(page: { path: string; title: string; description: string; label: string }, extra: object[] = [], faq?: FaqItem[]) {
+export function seoPageSchema(
+  page: { path: string; title: string; description: string; label: string; parent?: { path: string; label: string } },
+  extra: object[] = [],
+  faq?: FaqItem[],
+) {
   const url = `${SITE_URL}${page.path}`;
   const graph: object[] = [
     { '@type': 'WebPage', name: page.title, description: page.description, url, isPartOf: { '@type': 'WebSite', name: 'TradeQut', url: SITE_URL } },
     breadcrumbList([
       { name: 'Home', url: SITE_URL },
+      ...(page.parent ? [{ name: page.parent.label, url: `${SITE_URL}${page.parent.path}` }] : []),
       { name: page.label, url },
     ]),
     ...extra,

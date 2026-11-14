@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { PricingTable } from '@/components/public/PricingTable';
 import { AnalyticsContents } from '@/components/public/AnalyticsContents';
-import { Faq, H2, P, ShortAnswer } from '@/content/components/ArticleParts';
+import { A, Faq, H2, P, ShortAnswer } from '@/content/components/ArticleParts';
+import { COMPETITORS } from '@/content/alternatives';
 import { PRODUCT_FAQ, TRIAL_DAYS, TRIAL_END_FAQ, proPrice, type FaqItem } from '@/content/product-facts';
 import { getSeoPage } from '@/content/seo-pages';
 import { SOFTWARE_APP_SCHEMA, seoPageSchema } from '@/config/seo';
@@ -64,6 +65,18 @@ export default function PricingPage() {
         seven days is also made for you each week with five or more trades, unless you switch Weekly report off in Settings.
         The figures in a report and in a chat answer’s table are calculated by code; the model writes the sentences.
         Neither one recommends a trade.
+      </P>
+      <H2 id="compare">How the price compares</H2>
+      <P>
+        Each comparison gives the date the other product&apos;s pricing page was read, says what could not be verified
+        and where that product is stronger:{' '}
+        {COMPETITORS.map((c, i) => (
+          <span key={c.id}>
+            <A to={`/alternatives/${c.id}`}>{c.name}</A>
+            {i < COMPETITORS.length - 1 ? ', ' : '. '}
+          </span>
+        ))}
+        Trading in India? See the <A to="/trading-journal-india">journal for Indian traders</A>.
       </P>
       <Faq items={[...PRODUCT_FAQ, ...BILLING_FAQ]} />
       <p className="mt-6 text-sm text-muted-foreground">

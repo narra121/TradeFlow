@@ -107,6 +107,8 @@ export const COMPANY_FACTS = {
   country: 'India',
   founded: '2026',
   logo: `${SITE_URL}/favicon-512.png`,
+  /** TradeQut's own public profile URLs (LinkedIn, X, YouTube, ...), emitted as Organization `sameAs`. Empty = nothing emitted. */
+  profiles: [] as string[],
   /** Legal name shown on the contact block. */
   business: 'TradeQutJournal',
   /** `e164` for `tel:` links and JSON-LD, `display` for the page. */

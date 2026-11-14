@@ -4,6 +4,8 @@ import AlternativesIndexPage from '../seo/AlternativesIndexPage';
 import TradeZellaAlternativePage from '../seo/TradeZellaAlternativePage';
 import TraderSyncAlternativePage from '../seo/TraderSyncAlternativePage';
 import TradesVizAlternativePage from '../seo/TradesVizAlternativePage';
+import TradervueAlternativePage from '../seo/TradervueAlternativePage';
+import EdgewonkAlternativePage from '../seo/EdgewonkAlternativePage';
 import { COMPETITORS } from '@/content/alternatives';
 
 const SUPERLATIVES = /\b(best|better than|#1|leading|top[- ]rated|worst|superior|unbeatable|number one|the only)\b/i;
@@ -12,6 +14,8 @@ const PAGES = [
   ['tradezella', TradeZellaAlternativePage],
   ['tradersync', TraderSyncAlternativePage],
   ['tradesviz', TradesVizAlternativePage],
+  ['tradervue', TradervueAlternativePage],
+  ['edgewonk', EdgewonkAlternativePage],
 ] as const;
 
 describe('comparison pages (E-084)', () => {
@@ -39,10 +43,10 @@ describe('comparison pages (E-084)', () => {
     expect(container.textContent).toMatch(/403/);
   });
 
-  it('the hub states that unverified facts are marked and lists all three comparisons', () => {
+  it('the hub states that unverified facts are marked and lists every comparison', () => {
     const { container } = renderWithProviders(<AlternativesIndexPage />);
     expect(container.textContent).not.toMatch(SUPERLATIVES);
-    expect(screen.getAllByRole('link', { name: /alternative$/ })).toHaveLength(3);
+    expect(screen.getAllByRole('link', { name: /alternative$/ })).toHaveLength(COMPETITORS.length);
     expect(container.textContent).toMatch(/could not\s+be read, we say so/);
   });
 });

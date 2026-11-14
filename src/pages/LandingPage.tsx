@@ -294,8 +294,8 @@ export function LandingPage() {
   return (
     <>
       <SEO
-        title="TradeQut - Trading Journal with Broker Import and Rule Tracking"
-        description={`Trading journal with Zerodha, Dhan, Upstox and MT5 import, net P&L after charges, and the cost of every broken rule. ${TRIAL_DAYS}-day free trial with every Pro feature, no card.`}
+        title="TradeQut - Trading Journal With Import and Rule Tracking"
+        description={`Trading journal with Zerodha, Dhan, Upstox and MT5 import, net P&L after charges and the cost of every broken rule. ${TRIAL_DAYS}-day free trial, every feature, no card.`}
         path="/"
         jsonLd={JSON_LD}
       />

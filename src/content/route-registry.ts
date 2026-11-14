@@ -39,8 +39,8 @@ export const CANONICAL_HOST = 'tradequt.com';
 export const REDIRECT_HOSTS = ['www.tradequt.com'] as const;
 
 const STATIC_ROUTES: PublicRoute[] = [
-  { path: '/', kind: 'home', label: 'Home', lastmod: '2026-11-11', inSitemap: true },
-  { path: '/guide', kind: 'static', label: 'User guide', lastmod: '2026-11-11', inSitemap: true },
+  { path: '/', kind: 'home', label: 'Home', lastmod: '2026-11-14', inSitemap: true },
+  { path: '/guide', kind: 'static', label: 'User guide', lastmod: '2026-11-12', inSitemap: true },
   { path: '/about', kind: 'static', label: 'About', lastmod: '2026-11-11', inSitemap: true },
   { path: '/contact', kind: 'static', label: 'Contact', lastmod: '2026-11-11', inSitemap: true },
   { path: '/privacy', kind: 'legal', label: 'Privacy policy', lastmod: '2026-11-11', inSitemap: true },
@@ -50,7 +50,7 @@ const STATIC_ROUTES: PublicRoute[] = [
   { path: '/signup', kind: 'auth', label: 'Sign up', lastmod: '2026-11-11', inSitemap: false },
   { path: '/blog', kind: 'hub', label: 'Blog', lastmod: '2026-11-11', inSitemap: true },
   { path: '/glossary', kind: 'hub', label: 'Trading glossary', lastmod: '2026-11-11', inSitemap: true },
-  { path: '/resources', kind: 'hub', label: 'Trading calculators', lastmod: '2026-11-11', inSitemap: true },
+  { path: '/resources', kind: 'hub', label: 'Trading calculators', lastmod: '2026-11-14', inSitemap: true },
   { path: '/resources/position-size', kind: 'resource', label: 'Position size calculator', lastmod: '2026-11-11', inSitemap: true },
   { path: '/resources/risk-reward', kind: 'resource', label: 'Risk-reward calculator', lastmod: '2026-11-11', inSitemap: true },
   { path: '/resources/pip-calculator', kind: 'resource', label: 'Pip value calculator', lastmod: '2026-11-11', inSitemap: true },

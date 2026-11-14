@@ -367,7 +367,7 @@ export function GuidePage() {
   return (
     <PublicLayout>
       <SEO
-        title="TradeQut User Guide - How to Log, Import and Review Your Trades"
+        title="TradeQut User Guide: Log, Import and Review Your Trades"
         description="How to use TradeQut: add trading accounts, log or import trades, read the dashboard, calendar and analytics, set goals and rules."
         path="/guide"
         type="article"

@@ -31,6 +31,8 @@ export const FOOTER_GROUPS: { title: string; links: NavLink[] }[] = [
       { to: '/guide#insights', label: 'AI insights' },
       { to: '/pricing', label: 'Pricing' },
       { to: '/trading-journal-india', label: 'For Indian traders' },
+      { to: '/zerodha-trading-journal', label: 'Zerodha journal' },
+      { to: '/fo-trading-journal', label: 'F&O journal' },
     ],
   },
   {

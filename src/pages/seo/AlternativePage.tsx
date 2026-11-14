@@ -1,6 +1,7 @@
 import { ContentPageShell } from '@/components/content/ContentPageShell';
-import { A, Disclaimer, Faq, H2, P, ShortAnswer, SignupCta, Sources, Table, UL } from '@/content/components/ArticleParts';
-import { getCompetitor, type Competitor } from '@/content/alternatives';
+import { A, Crumbs, Disclaimer, Faq, H2, P, ShortAnswer, SignupCta, Sources, Table, UL } from '@/content/components/ArticleParts';
+import { COMPETITORS, getCompetitor, type Competitor } from '@/content/alternatives';
+import { BROKER_PAGES } from '@/content/brokers';
 import { getSeoPage } from '@/content/seo-pages';
 import { seoPageSchema } from '@/config/seo';
 import { proPrice, TRIAL_DAYS } from '@/content/product-facts';
@@ -21,6 +22,7 @@ export function AlternativePage({ id }: { id: Competitor['id'] }) {
       publishedTime={page.publishedAt}
       modifiedTime={page.updatedAt}
     >
+      {page.parent && <Crumbs parent={page.parent} current={page.label} />}
       <h1 className="mb-4 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">{c.name} alternative: TradeQut compared</h1>
       <ShortAnswer>
         {c.name} is {c.summary.charAt(0).toLowerCase() + c.summary.slice(1)} TradeQut is a smaller journal with a
@@ -59,23 +61,35 @@ export function AlternativePage({ id }: { id: Competitor['id'] }) {
         caption={`Checked ${c.checked}`}
         head={['Feature', c.name, 'TradeQut']}
         rows={[
-          ['Free plan or trial', c.id === 'tradesviz' ? 'Free plan (stocks only, 1 account)' : c.id === 'tradezella' ? 'None advertised' : 'Not verified', `${TRIAL_DAYS}-day free trial with every Pro feature, then read-only`],
-          [
-            'Pro / paid price',
-            c.id === 'tradezella'
-              ? 'From $35/month'
-              : c.id === 'tradesviz'
-                ? 'From ₹1,400/month (₹980 in the promotion to 30 Nov 2026)'
-                : 'Not verified (a third-party guide lists from $29.95/month)',
-            `${usd}/month or ${inr}/month`,
-          ],
-          ['Broker connection', c.id === 'tradezella' ? 'Automatic sync' : 'See vendor page', 'File import (auto sync planned)'],
+          ['Free plan or trial', c.table.free, `${TRIAL_DAYS}-day free trial with every Pro feature, then read-only`],
+          ['Pro / paid price', c.table.price, `${usd}/month or ${inr}/month`],
+          ['Broker connection', c.table.connection, 'File import (auto sync planned)'],
         ]}
       />
+      <H2>If you trade Indian markets</H2>
+      <P>
+        TradeQut bills in rupees in India ({inr} a month) and reads the trade files of{' '}
+        {BROKER_PAGES.map((b, i) => (
+          <span key={b.id}>
+            <A to={b.path}>{b.name}</A>
+            {i < BROKER_PAGES.length - 2 ? ', ' : i === BROKER_PAGES.length - 2 ? ' and ' : ''}
+          </span>
+        ))}
+        , estimating brokerage, STT and the other charges on each trade. See the{' '}
+        <A to="/trading-journal-india">journal for Indian traders</A> and the{' '}
+        <A to="/fo-trading-journal">F&amp;O journal</A>. Check {c.name}&apos;s own pages for its Indian broker support.
+      </P>
+
       <P>
         Not sure? <A to="/signup">Start a free TradeQut journal</A>, import your own broker file and compare the result
         with what you use today. More on <A to="/pricing">TradeQut pricing</A> and{' '}
-        <A to="/alternatives">other alternatives</A>.
+        <A to="/alternatives">other alternatives</A>:{' '}
+        {COMPETITORS.filter((o) => o.id !== id).map((o, i, all) => (
+          <span key={o.id}>
+            <A to={`/alternatives/${o.id}`}>{o.name}</A>
+            {i < all.length - 1 ? ', ' : '.'}
+          </span>
+        ))}
       </P>
 
       <Faq items={c.faq} />

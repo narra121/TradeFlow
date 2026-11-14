@@ -418,13 +418,13 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'importing-trades-from-broker',
-    title: 'Importing trades from your broker: files, CSV and screenshots',
+    title: 'Import trades from your broker: files, CSV and screenshots',
     description:
       'How to import broker trade files (Zerodha, Dhan, Upstox, Angel One, Groww, MT4, MT5), any CSV or Excel file, or screenshots into TradeQut, and what to check.',
     tags: ['tradequt', 'import', 'practical'],
     publishedAt: '2026-05-06',
     readingTime: 5,
-    updatedAt: '2026-11-12',
+    updatedAt: '2026-11-14',
     summary:
       'TradeQut imports trade files from Zerodha, Dhan, Upstox, Angel One, Groww, MetaTrader 4 and MetaTrader 5, or any CSV or Excel file with column matching, and reads screenshots with AI when there is no file. Every trade is reviewed before saving, duplicates are skipped, and Indian broker trades get estimated charges.',
     faq: [
@@ -448,12 +448,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'fo-trading-charges-india',
-    title: 'F&O trading charges in India: STT, GST, stamp duty and a worked example',
+    title: 'F&O charges in India: STT, GST and a worked example',
     description:
       'Every charge on an F&O trade in India, rates from Zerodha as of November 2026, the STT change of 1 April 2026, and a worked net P&L example.',
     tags: ['india', 'charges', 'options', 'futures'],
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-12',
+    updatedAt: '2026-11-14',
     readingTime: 7,
     summary:
       'An F&O trade pays brokerage, STT, exchange charges, a SEBI fee, GST and stamp duty. On a hypothetical option trade with a ₹1,000 gross gain, charges at Zerodha rates came to ₹72.83, leaving ₹927.17. STT on derivatives rose on 1 April 2026.',
@@ -477,11 +477,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'zerodha-tradebook-pnl',
-    title: 'Zerodha tradebook: how to download it and turn it into P&L',
+    title: 'How to analyse your Zerodha tradebook: download to net P&L',
     description:
-      'Download the tradebook from Console (CSV or XLSX, 365 days per file), understand what it contains, match buys with sells and add charges for net P&L.',
+      'How to analyse a Zerodha tradebook: download it from Console (CSV or XLSX, 365 days per file), match buys with sells, and add charges to get net P&L.',
     tags: ['india', 'zerodha', 'import', 'practical'],
     publishedAt: '2026-11-11',
+    updatedAt: '2026-11-14',
     readingTime: 5,
     summary:
       'In Zerodha Console go to Reports, then Tradebook, pick a segment and dates, and download CSV or XLSX; each export covers at most 365 days. The file lists executions, not closed trades or charges, so you must match buys with sells and add charges.',
@@ -513,12 +514,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'best-free-trading-journal',
-    title: 'Best free trading journal: what the free plans actually include',
+    title: 'Best free trading journal: what free plans really include',
     description:
-      'Free trading journal options compared on the limits that matter: monthly imports, accounts, asset classes and review tools. Facts read from vendor pages in November 2026.',
+      'Free trading journal plans compared on the limits that matter: monthly imports, accounts, asset classes and review tools. Read from vendor pages, November 2026.',
     tags: ['comparison', 'journaling', 'free'],
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-13',
+    updatedAt: '2026-11-14',
     readingTime: 5,
     summary:
       'A spreadsheet is free but manual. TradesViz Basic is free with 3,000 executions a month and one account. TradeQut has no free plan: a 14-day free trial with every Pro feature, then read-only without Pro. Test two tools with your own broker file before choosing.',
@@ -538,11 +539,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'trading-journal-excel-template',
-    title: 'Trading journal Excel template: columns and formulas that work',
+    title: 'Trading journal Excel template: columns and formulas',
     description:
-      'Build a trading journal in Excel or Google Sheets: the columns to keep, the net P&L and R formulas, and a summary block for win rate, profit factor and expectancy.',
+      'Build a trading journal in Excel or Google Sheets: the columns to keep, net P&L and R formulas, and a summary of win rate, profit factor and expectancy.',
     tags: ['journaling', 'template', 'excel'],
     publishedAt: '2026-11-11',
+    updatedAt: '2026-11-14',
     readingTime: 5,
     summary:
       'Use one row per closed trade with date, symbol, setup, direction, entry, exit, quantity, fees and risk. Net P&L is =IF(D2="Long",1,-1)*(F2-E2)*G2-H2 and R is net P&L divided by risk. Add COUNTIF, SUMIF and AVERAGE formulas for the summary.',
@@ -561,11 +563,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'options-trading-journal-india',
-    title: 'Options trading journal for India: what to record on every trade',
+    title: 'Options trading journal in India: what to record',
     description:
       'The fields an options journal needs for Nifty and Bank Nifty trades: expiry, strike, structure, units, premium, charges, and the questions the data can answer.',
     tags: ['india', 'options', 'journaling'],
     publishedAt: '2026-11-11',
+    updatedAt: '2026-11-14',
     readingTime: 5,
     summary:
       'An options journal should record underlying, expiry, strike, call or put, buy or sell, quantity in units, entry and exit premium, planned stop, structure, charges, setup and a mistake tag. With these you can compare expiry-day trades and option buyers versus sellers.',
@@ -605,11 +608,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'r-multiple-explained',
-    title: 'R multiple explained: how to measure every trade in risk units',
+    title: 'R multiple explained: measure every trade in risk units',
     description:
       'What an R multiple is, how to compute it with a worked EURUSD example, and how to use R to compare trades, find rule breaks and size positions.',
     tags: ['metrics', 'risk', 'beginner'],
     publishedAt: '2026-11-11',
+    updatedAt: '2026-11-14',
     readingTime: 4,
     summary:
       "1R is the amount you lose if your stop is hit. A trade's R multiple is its result divided by that planned risk, so a trade that makes 1.7 times its risk is +1.7R in any market or currency. Losses bigger than 1R show broken stop rules.",
@@ -627,11 +631,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'trading-expectancy-formula',
-    title: 'Trading expectancy formula: average R per trade with examples',
+    title: 'Trading expectancy formula: average R per trade',
     description:
       'Expectancy = win rate × average win − loss rate × average loss. Worked examples in R, why 35% win rates can beat 50%, and the sample size you need.',
     tags: ['metrics', 'analytics'],
     publishedAt: '2026-11-11',
+    updatedAt: '2026-11-14',
     readingTime: 4,
     summary:
       'Expectancy is the average result per trade: win rate times average win minus loss rate times average loss, ideally in R. A 40% win rate with 2R wins and 1R losses gives +0.2R per trade. Use at least 100 trades per setup before trusting it.',
@@ -651,9 +656,10 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     slug: 'position-sizing-fixed-risk',
     title: 'Position sizing with fixed risk: formula and worked examples',
     description:
-      'Fixed-risk position sizing: decide the money to risk, then size from the stop distance. Worked examples for Indian shares and forex lots, with rules to keep it honest.',
+      'Fixed-risk position sizing: decide the money to risk, then size from the stop distance. Worked examples for Indian shares and forex lots.',
     tags: ['risk', 'position-sizing', 'beginner'],
     publishedAt: '2026-11-11',
+    updatedAt: '2026-11-14',
     readingTime: 4,
     summary:
       'Position size equals the money you will risk divided by the distance to your stop times the value per unit of price. With ₹5,00,000 and 1% risk, a ₹10 stop gives 500 shares; with $10,000 and 1% risk, a 20-pip stop gives 0.5 lots.',
@@ -671,11 +677,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'trading-drawdown-calculation',
-    title: 'How to calculate trading drawdown: formula, recovery table, prop limits',
+    title: 'How to calculate trading drawdown: formula, recovery table',
     description:
       'Drawdown = (peak − current) ÷ peak. Worked example, the gain needed to recover from 10% to 50% drawdowns, and balance versus equity for prop-firm limits.',
     tags: ['risk', 'drawdown', 'metrics'],
     publishedAt: '2026-11-11',
+    updatedAt: '2026-11-14',
     readingTime: 5,
     summary:
       'Drawdown is the fall from peak equity, as a percentage of the peak: from 1,10,000 to 99,000 is 10%. Recovering needs 1 ÷ (1 − drawdown) − 1, so 10% needs 11.1% and 50% needs 100%. Prop firms define their own limits, so use their rules.',

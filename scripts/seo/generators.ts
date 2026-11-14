@@ -61,10 +61,7 @@ export function buildLlmsTxt(): string {
     '',
     '## Product',
     [
-      link('/pricing'),
-      link('/trading-journal-india'),
-      link('/alternatives'),
-      ...COMPETITORS.map((c) => link(`/alternatives/${c.id}`)),
+      ...routes.filter((r) => r.kind === 'seo').map((r) => link(r.path)),
       link('/guide'),
       link('/about'),
       link('/changelog'),

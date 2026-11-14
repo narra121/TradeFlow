@@ -1,6 +1,7 @@
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { CalculatorCard } from '@/components/content/CalculatorCard';
 import { RESOURCES_SCHEMA } from '@/config/seo';
+import { A, H2, P } from '@/content/components/ArticleParts';
 import { Crosshair, Scale, DollarSign } from 'lucide-react';
 
 export function ResourcesPage() {
@@ -39,6 +40,26 @@ export function ResourcesPage() {
           icon={DollarSign}
         />
       </div>
+
+      <H2>Which calculator to use</H2>
+      <P>
+        Start with the <A to="/resources/position-size">position size calculator</A> before every trade: it turns the
+        money you are willing to lose and the distance to your stop into a quantity. The method is explained in{' '}
+        <A to="/blog/position-sizing-fixed-risk">position sizing with fixed risk</A>.
+      </P>
+      <P>
+        Use the <A to="/resources/risk-reward">risk-reward calculator</A> to check a setup: it gives the ratio and the
+        win rate you need to break even at that ratio. Background reading:{' '}
+        <A to="/blog/risk-reward-ratio-guide">the risk-reward guide</A>, <A to="/blog/r-multiple-explained">R multiples</A>{' '}
+        and <A to="/blog/trading-expectancy-formula">the expectancy formula</A>.
+      </P>
+      <P>
+        Forex traders can value a pip in their account currency with the{' '}
+        <A to="/resources/pip-calculator">pip value calculator</A>; see also the{' '}
+        <A to="/blog/forex-trading-journal">forex journal guide</A>. Terms such as drawdown, expectancy and R multiple are
+        defined in the <A to="/glossary">glossary</A>. A calculator plans one trade; a journal shows whether you followed
+        the plan, which is what <A to="/pricing">TradeQut</A> is for.
+      </P>
     </ContentPageShell>
   );
 }

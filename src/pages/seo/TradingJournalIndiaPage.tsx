@@ -1,6 +1,7 @@
 import { ContentPageShell } from '@/components/content/ContentPageShell';
-import { A, Disclaimer, Faq, H2, OL, P, ShortAnswer, SignupCta, Sources, UL } from '@/content/components/ArticleParts';
-import { IMPORT_SOURCES, PLAN_LIMITS, PRODUCT_DEFINITION, TRIAL_DAYS, proPrice } from '@/content/product-facts';
+import { A, Disclaimer, Faq, H2, OL, P, ShortAnswer, SignupCta, Sources, Table, UL } from '@/content/components/ArticleParts';
+import { BROKER_PAGES } from '@/content/brokers';
+import { PLAN_LIMITS, PRODUCT_DEFINITION, TRIAL_DAYS, proPrice } from '@/content/product-facts';
 import { getSeoPage } from '@/content/seo-pages';
 import { seoPageSchema } from '@/config/seo';
 
@@ -9,6 +10,11 @@ const inrYear = proPrice('INR', 'year').display;
 const trialImports = PLAN_LIMITS.find((r) => r.feature === 'Broker file imports')?.trial ?? '';
 
 const FAQ = [
+  {
+    question: 'Is there a trading journal made for Indian markets?',
+    answer:
+      'Yes. TradeQut reads the trade files of Zerodha, Dhan, Upstox, Angel One and Groww, tells shares, futures and options apart from the symbol, estimates Indian charges on each trade and bills in rupees. Other journals also support Indian brokers; the comparison pages list what we verified about them.',
+  },
   {
     question: 'Which Indian brokers can I import into TradeQut?',
     answer:
@@ -24,6 +30,11 @@ const FAQ = [
       'For files from Zerodha, Dhan, Upstox, Angel One and Groww, TradeQut estimates brokerage, STT, exchange transaction charges, SEBI fee, stamp duty and GST for each trade at the rates in force on the trade date, and records them as the fees of that trade. Your contract note is the authoritative figure.',
   },
   {
+    question: 'Can I journal intraday equity trades as well as F&O?',
+    answer:
+      'Yes. Every trade carries its asset class, so intraday equity, delivery, futures, options and commodity trades sit in one journal. Analytics shows results by hour and by trade number in the day, and the tax report separates intraday equity, F&O, commodity and delivery.',
+  },
+  {
     question: 'Does TradeQut make a tax P&L report for my CA?',
     answer:
       'Yes, on Pro. For each financial year it splits the charges into STT, exchange charges, SEBI fee and stamp duty, with brokerage, GST and other charges as the remainder, and shows P&L by tax category: intraday equity, F&O, commodity, and short- and long-term delivery. It needs accounts in rupees. TradeQut does not file taxes and this is not tax advice.',
@@ -36,7 +47,6 @@ const FAQ = [
 
 export default function TradingJournalIndiaPage() {
   const page = getSeoPage('/trading-journal-india');
-  const brokers = IMPORT_SOURCES.filter((s) => s.id !== 'generic_csv' && s.id !== 'mt4' && s.id !== 'mt5');
   return (
     <ContentPageShell
       title={page.title}
@@ -44,30 +54,35 @@ export default function TradingJournalIndiaPage() {
       path={page.path}
       jsonLd={seoPageSchema(page, [], FAQ)}
     >
-      <h1 className="mb-4 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">A trading journal for Indian F&amp;O traders</h1>
+      <h1 className="mb-4 text-[32px] font-semibold leading-tight text-foreground sm:text-[40px]">
+        Trading journal for Indian traders: F&amp;O, intraday and delivery
+      </h1>
       <ShortAnswer>
-        TradeQut imports your {brokers.map((b) => b.name).join(', ')} trade file, records each trade with fees, and shows
+        TradeQut imports your {BROKER_PAGES.map((b) => b.name).join(', ')} trade file, records each trade with fees, and shows
         which strategies, hours and broken rules make or lose money, net of charges. Pricing is in INR: {inrMonth} a month or{' '}
         {inrYear} a year, after a {TRIAL_DAYS}-day trial.
       </ShortAnswer>
       <P>{PRODUCT_DEFINITION}</P>
 
-      <H2>Get your trades in</H2>
+      <H2>Import from your Indian broker</H2>
       <P>
         Download the trade report from your broker and drop it on the Import page. TradeQut detects the broker, shows every
-        trade for review before saving, and skips trades that were already imported into that account.
+        trade for review before saving, and skips trades that were already imported into that account. Each broker has a
+        page with the export steps and the columns TradeQut reads:
       </P>
       <UL>
-        {brokers.map((b) => (
+        {BROKER_PAGES.map((b) => (
           <li key={b.id}>
-            <strong>{b.name}</strong>: {b.file}
+            <A to={b.path}>{b.name} trading journal</A>: import the {b.fileName}
           </li>
         ))}
       </UL>
       <P>
         Example for Zerodha: in Console go to <em>Reports &rarr; Tradebook</em>, choose the segment and a date range, then
         download as CSV or XLSX. Zerodha allows at most 365 days per download. A step-by-step version is in{' '}
-        <A to="/blog/zerodha-tradebook-pnl">the Zerodha tradebook guide</A>.
+        <A to="/blog/zerodha-tradebook-pnl">the Zerodha tradebook guide</A>. Any other broker works through a CSV or Excel
+        file where you match the columns, and when there is no export at all you can{' '}
+        <A to="/import-trades-from-screenshot">import trades from a screenshot</A>.
       </P>
 
       <H2>See what trading really cost</H2>
@@ -78,8 +93,9 @@ export default function TradingJournalIndiaPage() {
           final word.
         </li>
         <li>
-          Analytics shows results by strategy, session, weekday and hour, and what each mistake and broken rule cost. Start
-          with the{' '}
+          Analytics shows results by strategy, session, weekday and hour, and what each mistake and broken rule cost. For
+          options it also splits calls from puts and expiry day from other days; see the{' '}
+          <A to="/fo-trading-journal">F&amp;O trading journal</A> and the{' '}
           <A to="/blog/options-trading-journal-india">options journal fields</A>.
         </li>
         <li>
@@ -91,6 +107,36 @@ export default function TradingJournalIndiaPage() {
         What the charges are, and how STT on futures and options rose on 1 April 2026, is explained in{' '}
         <A to="/blog/fo-trading-charges-india">F&amp;O charges in India</A>. Pro includes a tax report for each financial year: the charges split into STT, exchange charges, SEBI fee and stamp duty, with brokerage, GST and other charges as the remainder, and P&amp;L by tax category (intraday equity, F&amp;O, commodity, short- and long-term delivery) to take to your CA. TradeQut does not file taxes and
         this is not tax advice.
+      </P>
+
+      <H2>What it does for each kind of trading</H2>
+      <Table
+        caption="By what you trade"
+        head={['If you trade', 'What you get']}
+        rows={[
+          ['Nifty and Bank Nifty options', 'Strike, expiry and call or put read from the symbol; results by calls and puts and by expiry day'],
+          ['Futures', 'Each contract as a trade with its estimated charges, including the higher STT from 1 April 2026'],
+          ['Intraday equity', 'Results by hour, by trade number in the day and by holding time of winners against losers'],
+          ['Delivery and swing trades', 'One journal across accounts, with strategy, notes, tags and chart screenshots on each trade'],
+          ['More than one broker', 'A separate account per broker, viewed together or apart'],
+        ]}
+      />
+
+      <H2>What TradeQut does not do</H2>
+      <UL>
+        <li>It does not connect to your broker. You upload files; automatic sync is planned, not available.</li>
+        <li>It gives no tips, signals or strike recommendations, and it is not a SEBI-registered investment adviser.</li>
+        <li>It has no native mobile app. It is a web app that works in desktop and mobile browsers.</li>
+        <li>Its charges are estimates from published rates, not a copy of your contract note.</li>
+      </UL>
+
+      <H2>How it compares</H2>
+      <P>
+        Other journals serve Indian traders too. TradesViz has a free plan and imports the Zerodha tradebook; TradeZella
+        syncs with brokers automatically and prices in dollars. Each comparison gives the date the other product&apos;s
+        pages were read, says what could not be verified and where that product is stronger: <A to="/alternatives/tradesviz">TradesViz</A>,{' '}
+        <A to="/alternatives/tradezella">TradeZella</A>, <A to="/alternatives/tradervue">Tradervue</A>,{' '}
+        <A to="/alternatives/edgewonk">Edgewonk</A> and <A to="/alternatives/tradersync">TraderSync</A>.
       </P>
 
       <H2>What it costs</H2>

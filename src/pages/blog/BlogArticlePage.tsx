@@ -6,17 +6,12 @@ import { AuthorBox } from '@/components/content/AuthorBox';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { RelatedArticles } from '@/components/content/RelatedArticles';
 import { ShareButtons } from '@/components/content/ShareButtons';
-import { blogArticleSchema } from '@/config/seo';
+import { blogArticleSchema, pageTitle } from '@/config/seo';
 import { BLOG_ARTICLES, getRelatedArticles } from '@/content/blog/articles';
-import { Faq, ShortAnswer, SignupCta } from '@/content/components/ArticleParts';
+import { Faq, RelatedLinks, ShortAnswer, SignupCta } from '@/content/components/ArticleParts';
+import { SEE_ALSO } from '@/content/blog/see-also';
 import { lazyContent } from '@/content/lazyContent';
 import NotFound from '@/pages/NotFound';
-
-/** The brand suffix only while the whole title stays within the 65 characters a results page shows. */
-function articlePageTitle(title: string): string {
-  const full = `${title} - TradeQut Blog`;
-  return full.length <= 65 ? full : title;
-}
 
 export function BlogArticlePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -32,7 +27,7 @@ export function BlogArticlePage() {
 
   return (
     <ContentPageShell
-      title={articlePageTitle(article.title)}
+      title={pageTitle(article.title, ' - TradeQut Blog')}
       description={article.description}
       path={`/blog/${article.slug}`}
       jsonLd={blogArticleSchema(article)}
@@ -70,6 +65,7 @@ export function BlogArticlePage() {
           <ContentComponent />
         </Suspense>
         {article.faq && <Faq items={article.faq} />}
+        <RelatedLinks links={SEE_ALSO[article.slug] ?? []} />
       </div>
 
       <SignupCta text="Start free" />
