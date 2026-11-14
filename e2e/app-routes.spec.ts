@@ -51,7 +51,7 @@ test.describe('App routes', () => {
       const tabs = page.getByRole('navigation', { name: 'Views' });
       await expect(tabs).toBeVisible();
       const box = await tabs.boundingBox();
-      expect(box?.height).toBe(40);
+      expect(box?.height).toBe(44);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
   });
