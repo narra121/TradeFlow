@@ -102,6 +102,14 @@ describe('too few trades', () => {
     expect(screen.queryByRole('list', { name: 'Edges and leaks' })).not.toBeInTheDocument();
   });
 
+  it('What is working: a row is named by its visible text, then where it leads (label in name)', () => {
+    renderWithProviders(<WorkingPanel ctx={ctx(st())} />);
+    const link = within(screen.getByRole('list', { name: 'Patterns to watch' })).getAllByRole('link')[0];
+    expect(link).not.toHaveAttribute('aria-label');
+    const visible = link.querySelector('.font-medium')!.textContent!;
+    expect(link).toHaveAccessibleName(new RegExp(`^${visible.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} · .*\\. Open its trades in Trades$`));
+  });
+
   it('Detectors: none seen', () => {
     const a: Analysis = { ...QA_USD, detectors: QA_USD.detectors.map((d) => ({ ...d, count: 0, tradeIds: [] })) };
     renderWithProviders(<DetectorBoard state={st({ data: a })} currency="USD" pro />);

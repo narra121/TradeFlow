@@ -121,7 +121,7 @@ export function AnalyticsView() {
     );
   }
 
-  const ctx: AnalyticsContext = { stats: view.stats ?? ps.stats, prev: view.prev, prevRange: ps.prevRange, currency, multi: view.currencies.length > 1, noBalance: drawdownBasis === 'balance', zone: (ps.stats.timeZone as string | undefined) ?? 'UTC', pro, analysis };
+  const ctx: AnalyticsContext = { stats: view.stats ?? ps.stats, prev: view.prev, prevRange: ps.prevRange, prevEmpty: ps.prevEmpty, currency, multi: view.currencies.length > 1, noBalance: drawdownBasis === 'balance', zone: (ps.stats.timeZone as string | undefined) ?? 'UTC', pro, analysis };
 
   return (
     <div className="space-y-4">

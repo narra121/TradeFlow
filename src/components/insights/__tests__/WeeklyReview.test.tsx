@@ -66,6 +66,13 @@ describe('Weekly review (QA INR shape)', () => {
     expect(openTrades).toHaveBeenCalledWith(expect.arrayContaining(['b1', 'b11']));
   });
 
+  it('a cost whose trades net to 0R shows the money only, never "(0.00R)"', () => {
+    renderReport(reviewInsight({}, { theOne: { ...reviewInsight().review!.theOne!, trades: 2, cost: 104.58, costR: 0 } }));
+    const one = screen.getByRole('region', { name: 'The one thing' });
+    expect(one).toHaveTextContent('2 trades · cost ₹104.58');
+    expect(one).not.toHaveTextContent('0.00R');
+  });
+
   it('patterns to watch carry their trade count, how many more trades a verdict needs, and "paid so far"', () => {
     renderReport(reviewInsight());
     const watch = screen.getByRole('region', { name: /Patterns to watch/ });

@@ -66,6 +66,10 @@ describe('chat helpers', () => {
     const weekly = { sections: [], review: { theOne: { title: 'Losses beyond the stop' }, more: [{ title: 'No stop recorded' }] } } as unknown as Insight;
     expect(starterQuestions(weekly)).toEqual(['Which trades make up "Losses beyond the stop"?', 'Which trades make up "No stop recorded"?', ...CHAT_STARTERS.slice(0, 2)]);
   });
+  it('a finding title with its own quotes does not nest double quotes in the starter', () => {
+    const weekly = { sections: [], review: { theOne: { title: 'Tagged "Late Entry"' }, more: [] } } as unknown as Insight;
+    expect(starterQuestions(weekly)[0]).toBe('Which trades make up "Tagged ‘Late Entry’"?');
+  });
   it('the marketing demo keeps its own fixed questions', () => expect(FIXED_STARTERS[0]).toBe('What is my biggest leak this month?'));
   it('names the calculations of the tool frames once each, in plain words', () => {
     expect(toolsLine(['stats', 'whatIf', 'stats'])).toBe('Calculated: figures by group, a what-if replay');

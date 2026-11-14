@@ -98,7 +98,9 @@ describe('TimingGrid', () => {
 
   it('names every cell with value, count and win rate and states the zone', () => {
     wrap(<TimingGrid grid={grid} currency="USD" zone="UTC" />);
-    expect(screen.getByRole('link', { name: 'Monday 09:00, net +$50.00, 4 trades, win rate 75%, too few trades to tell' })).toBeInTheDocument();
+    // The name starts with the figure printed in the cell (WCAG 2.5.3).
+    expect(screen.getByRole('link', { name: '50, Monday 09:00, net +$50.00, 4 trades, win rate 75%, too few trades to tell' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^−20, Monday 10:00/ })).toHaveTextContent(/^−20/);
     expect(screen.getByText(/^Times in UTC\./)).toBeInTheDocument();
   });
 
@@ -144,6 +146,12 @@ describe('StatementPanel', () => {
     expect(screen.getByText('down 0.6 pts versus October, better')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Planned R:R' })).toBeInTheDocument();
     expect(screen.getByText('−$121.40')).toBeInTheDocument();
+  });
+
+  it('says there is nothing to compare with when the previous period has no trades, and prints no change', () => {
+    render(<StatementPanel ctx={ctx({ prevEmpty: true, prevRange: { startDate: '2026-04-17', endDate: '2026-07-31', name: 'previous period', spokenName: 'the previous period' } })} />);
+    expect(screen.getByText('No trades in the previous period (17 Apr 2026 – 31 Jul 2026), so there is nothing to compare with.')).toBeInTheDocument();
+    expect(screen.queryByText(/versus the previous period/)).not.toBeInTheDocument();
   });
 
   it('does not show the drawdown percentage when several currencies share the scope', () => {

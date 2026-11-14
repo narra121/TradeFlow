@@ -27,6 +27,8 @@ export function usePeriodStats({ includeEquityCurve, skip }: Options = {}) {
   const prevRange = useMemo(() => previousPeriod(filters.datePreset, filters.startDate, filters.endDate), [filters.datePreset, filters.startDate, filters.endDate]);
   const prevArgs = accountsReady && !skip && compareOn && prevRange ? { ...base, startDate: prevRange.startDate, endDate: prevRange.endDate } : skipToken;
   const previous = useGetStatsQuery(prevArgs);
+  // An empty period answers zeros; a change against them would be invented, so it is not a comparison.
+  const prevEmpty = !!(compareOn && prevRange && previous.data && !previous.data.totalTrades);
 
   return {
     stats: current.data,
@@ -36,7 +38,9 @@ export function usePeriodStats({ includeEquityCurve, skip }: Options = {}) {
     error: current.error,
     refetch: () => void current.refetch(),
     /** Present only while Compare is on, the range has a predecessor and the request succeeded. */
-    prev: compareOn && prevRange ? previous.data : undefined,
+    prev: compareOn && prevRange && !prevEmpty ? previous.data : undefined,
+    /** Compare is on and the previous period has no trades. */
+    prevEmpty,
     prevRange: compareOn ? prevRange : null,
     canCompare: prevRange !== null,
     accountsReady,

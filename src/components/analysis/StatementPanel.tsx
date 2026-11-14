@@ -6,7 +6,7 @@ import { MetricInfo } from '@/components/stats/MetricInfo';
 import type { MetricKey } from '@/components/stats/metricDefs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { realisedRStat, rNoteLine } from '@/lib/analyticsRows';
-import { formatPercent, formatProfitFactor } from '@/lib/format';
+import { formatDateShort, formatPercent, formatProfitFactor } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AnalyticsContext } from './drill';
 
@@ -70,39 +70,46 @@ export function StatementPanel({ ctx }: { ctx: AnalyticsContext }) {
   const moneyDelta = (cur: number | undefined, p: number | undefined) => (prev ? <Delta kind="money" current={cur} previous={p} currency={currency} {...d} /> : undefined);
 
   return (
-    <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-3">
-      <Column title="Performance" collapsible={mobile} defaultOpen>
-        <Row metric="netPnl" value={money(s.totalPnl)} delta={moneyDelta(s.totalPnl, prev?.totalPnl)} />
-        <Row metric="expectancy" value={money(s.expectancy)} delta={moneyDelta(s.expectancy, prev?.expectancy)} />
-        <Row metric="profitFactor" value={formatProfitFactor(s.profitFactor, wins, s.totalTrades)} delta={prev ? <Delta kind="ratio" current={s.profitFactor} previous={prev.profitFactor} {...d} /> : undefined} />
-        <Row metric="winRate" value={`${formatPercent(s.winRate)} · ${s.totalTrades} tr`} delta={prev ? <Delta kind="pts" current={s.winRate} previous={prev.winRate} {...d} /> : undefined} />
-      </Column>
-      <Column title="Trades" collapsible={mobile} defaultOpen={false}>
-        <Row metric="trades" value={s.totalTrades} delta={prev ? <Delta kind="count" current={s.totalTrades} previous={prev.totalTrades} {...d} /> : undefined} />
-        <Row metric="avgWin" value={money(s.avgWin)} delta={moneyDelta(s.avgWin, prev?.avgWin)} />
-        <Row metric="avgLoss" value={money(-Math.abs(s.avgLoss))} delta={moneyDelta(-Math.abs(s.avgLoss), prev ? -Math.abs(prev.avgLoss) : undefined)} />
-        <Row
-          metric="bestWorst"
-          wide
-          value={
-            <>
-              <Money value={s.bestTrade} currency={currency} /> / <Money value={s.worstTrade} currency={currency} />
-            </>
-          }
-        />
-      </Column>
-      <Column title="Risk" collapsible={mobile} defaultOpen={false}>
-        <Row
-          metric={hasR ? 'avgR' : 'plannedRR'}
-          value={hasR ? <RMultiple value={r.avgR} /> : r.planned !== null ? r.planned.toFixed(2) : '—'}
-          delta={prev ? (hasR ? <Delta kind="r" current={r.avgR as number} previous={prevR} {...d} /> : <Delta kind="ratio" current={s.avgRiskReward} previous={prev.avgRiskReward} {...d} />) : undefined}
-          note={rNoteLine(r)}
-          sample={r.sample || undefined}
-        />
-        <Row metric="maxDrawdown" value={noDrawdown ? '—' : formatPercent(s.maxDrawdown)} delta={!noDrawdown && prev ? <Delta kind="pts" current={s.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...d} /> : undefined} />
-        <Row metric="winStreak" value={s.consecutiveWins ?? 0} />
-        <Row metric="lossStreak" value={s.consecutiveLosses ?? 0} />
-      </Column>
+    <div className="space-y-2">
+      {ctx.prevEmpty && prevRange && (
+        <p className="text-xs text-muted-foreground">
+          No trades in the previous period ({formatDateShort(prevRange.startDate, true)} – {formatDateShort(prevRange.endDate, true)}), so there is nothing to compare with.
+        </p>
+      )}
+      <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-3">
+        <Column title="Performance" collapsible={mobile} defaultOpen>
+          <Row metric="netPnl" value={money(s.totalPnl)} delta={moneyDelta(s.totalPnl, prev?.totalPnl)} />
+          <Row metric="expectancy" value={money(s.expectancy)} delta={moneyDelta(s.expectancy, prev?.expectancy)} />
+          <Row metric="profitFactor" value={formatProfitFactor(s.profitFactor, wins, s.totalTrades)} delta={prev ? <Delta kind="ratio" current={s.profitFactor} previous={prev.profitFactor} {...d} /> : undefined} />
+          <Row metric="winRate" value={`${formatPercent(s.winRate)} · ${s.totalTrades} tr`} delta={prev ? <Delta kind="pts" current={s.winRate} previous={prev.winRate} {...d} /> : undefined} />
+        </Column>
+        <Column title="Trades" collapsible={mobile} defaultOpen={false}>
+          <Row metric="trades" value={s.totalTrades} delta={prev ? <Delta kind="count" current={s.totalTrades} previous={prev.totalTrades} {...d} /> : undefined} />
+          <Row metric="avgWin" value={money(s.avgWin)} delta={moneyDelta(s.avgWin, prev?.avgWin)} />
+          <Row metric="avgLoss" value={money(-Math.abs(s.avgLoss))} delta={moneyDelta(-Math.abs(s.avgLoss), prev ? -Math.abs(prev.avgLoss) : undefined)} />
+          <Row
+            metric="bestWorst"
+            wide
+            value={
+              <>
+                <Money value={s.bestTrade} currency={currency} /> / <Money value={s.worstTrade} currency={currency} />
+              </>
+            }
+          />
+        </Column>
+        <Column title="Risk" collapsible={mobile} defaultOpen={false}>
+          <Row
+            metric={hasR ? 'avgR' : 'plannedRR'}
+            value={hasR ? <RMultiple value={r.avgR} /> : r.planned !== null ? r.planned.toFixed(2) : '—'}
+            delta={prev ? (hasR ? <Delta kind="r" current={r.avgR as number} previous={prevR} {...d} /> : <Delta kind="ratio" current={s.avgRiskReward} previous={prev.avgRiskReward} {...d} />) : undefined}
+            note={rNoteLine(r)}
+            sample={r.sample || undefined}
+          />
+          <Row metric="maxDrawdown" value={noDrawdown ? '—' : formatPercent(s.maxDrawdown)} delta={!noDrawdown && prev ? <Delta kind="pts" current={s.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...d} /> : undefined} />
+          <Row metric="winStreak" value={s.consecutiveWins ?? 0} />
+          <Row metric="lossStreak" value={s.consecutiveLosses ?? 0} />
+        </Column>
+      </div>
     </div>
   );
 }

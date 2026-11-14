@@ -232,8 +232,9 @@ function FindingRow({ f, zone, currency, pro }: { f: Finding; zone: string; curr
     </>
   );
   const cls = 'grid min-h-10 w-full grid-cols-[1rem_minmax(0,1fr)_4.5rem] items-center gap-x-3 rounded-sm px-1 text-left text-[13px] hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[1rem_minmax(0,1fr)_10rem_4.5rem_7rem_1rem]';
-  if (href) return <li><Link to={href} aria-label={`${name} in Trades`} className={cls}>{body}</Link></li>;
-  if (pro) return <li><button type="button" aria-label={name} className={cls} onClick={() => open(f.seg.tradeIds)}>{body}</button></li>;
+  // Links and buttons are named by their visible text plus where they lead (WCAG 2.5.3, label in name).
+  if (href) return <li><Link to={href} className={cls}>{body}<span className="sr-only">. Open its trades in Trades</span></Link></li>;
+  if (pro) return <li><button type="button" className={cls} onClick={() => open(f.seg.tradeIds)}>{body}<span className="sr-only">. Open its trades</span></button></li>;
   return <li><div aria-label={name.replace('. Open its trades', '')} role="group" className={cn(cls, 'hover:bg-transparent')}>{body}</div></li>;
 }
 

@@ -25,6 +25,7 @@ let usage = { used: 2, limit: 500 as number | null };
 let mobile = false;
 let sessionsFailure: unknown;
 let messagesFailure: unknown;
+let messagesFor: ((id: string) => ChatMessage[] | undefined) | null = null;
 
 vi.mock('sonner', () => ({ toast: vi.fn() }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
@@ -41,7 +42,8 @@ vi.mock('@/hooks/useAccounts', () => ({
 }));
 vi.mock('@/store/api/chatApi', () => ({
   useListChatSessionsQuery: () => ({ data: sessions, isLoading: false, isError: !!sessionsFailure, error: sessionsFailure, refetch: vi.fn() }),
-  useGetChatMessagesQuery: () => ({ data: messages, isFetching: false, isError: !!messagesFailure, error: messagesFailure, refetch: vi.fn() }),
+  // RTK keeps `data` across arguments and skips; `currentData` is only the current chat's (messagesFor, when set).
+  useGetChatMessagesQuery: (id: string, o?: { skip?: boolean }) => ({ data: messages, currentData: o?.skip ? undefined : messagesFor ? messagesFor(id) : messages, isFetching: false, isError: !!messagesFailure, error: messagesFailure, refetch: vi.fn() }),
   useCreateChatSessionMutation: () => [createSession],
   useDeleteChatSessionMutation: () => [deleteSession],
   useSendChatMessageMutation: () => [send],
@@ -69,6 +71,7 @@ beforeEach(() => {
   mobile = false;
   sessionsFailure = undefined;
   messagesFailure = undefined;
+  messagesFor = null;
   createSession.mockReturnValue(call({ id: 's-new', title: '', createdAt: '', updatedAt: '', messageCount: 0 }));
 });
 
@@ -89,6 +92,33 @@ describe('ChatView empty thread', () => {
     expect(screen.getByRole('button', { name: 'What is behind this: Trades after 20:00 lose?' })).toBeInTheDocument();
     expect(screen.getByText('Answers use the report’s period and account.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Account:/ })).toBeNull();
+  });
+
+  it('New chat leaves an open conversation for the starters (a skipped messages query keeps its old data)', async () => {
+    sessions = [session('s1', 'Old question')];
+    messages = [msg('m1', 'user', 'Old question'), msg('m2', 'assistant', 'Old answer')];
+    renderChat('/app/chat?s=s1');
+    expect(screen.getByText('Old answer')).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: 'New chat' })[0]);
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(/^$/));
+    expect(screen.queryByText('Old answer')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Which setup has made me the most money?' })).toBeInTheDocument();
+  });
+
+  it('a new chat’s first answer streams on without the previous chat’s messages (they would end the turn early)', async () => {
+    sessions = [session('s1', 'Old question')];
+    messages = [msg('m1', 'user', 'Old question'), msg('m2', 'assistant', 'Old answer')];
+    messagesFor = (id) => (id === 's1' ? messages : undefined);
+    send.mockImplementation((args: { onToken: (t: string) => void }) => {
+      args.onToken('Fresh answer');
+      return { unwrap: () => new Promise(() => undefined), abort: vi.fn() };
+    });
+    renderChat('/app/chat?s=s1');
+    await userEvent.click(screen.getAllByRole('button', { name: 'New chat' })[0]);
+    await userEvent.click(await screen.findByRole('button', { name: 'Which weekday costs me the most?' }));
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('?s=s-new'));
+    expect(await screen.findByText('Fresh answer')).toBeInTheDocument();
+    expect(screen.queryByText('Old answer')).toBeNull();
   });
 
   it('a starter creates a session, sends the question and puts the session in the URL', async () => {

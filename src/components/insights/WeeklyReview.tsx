@@ -148,7 +148,8 @@ function FindingBody({ f, currency, isWeek, primary, onOpenTrades, feedback }: {
         <h4 className={cn('font-medium', primary ? 'text-sm' : 'text-13')}>{f.title}</h4>
         <span className="text-13 text-foreground-soft">
           {plural(f.trades, 'trade')} · cost <Money value={f.cost} currency={currency} sign={false} neutral />
-          {f.costR !== null && <span className="font-mono tabular-nums"> ({rText(f.costR).replace('+', '')})</span>}
+          {/* 0R beside a money cost reads as a contradiction (the trades' R can net out); the server's sentence omits it too. */}
+          {!!f.costR && <span className="font-mono tabular-nums"> ({rText(f.costR).replace('+', '')})</span>}
         </span>
       </div>
       {history && <p className="text-xs font-medium text-foreground-soft">{history}</p>}

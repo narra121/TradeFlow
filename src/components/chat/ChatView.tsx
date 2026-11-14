@@ -103,7 +103,10 @@ export function ChatView() {
   const insightId = params.get('insight');
   const ref = params.get('ref');
   const { data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, error: sessionsErrorDetail, refetch: refetchSessions } = useListChatSessionsQuery();
-  const { data: messages = [], isFetching: messagesFetching, isError: messagesError, error: messagesErrorDetail, refetch: refetchMessages } = useGetChatMessagesQuery(sessionId ?? '', { skip: !sessionId });
+  const { currentData: sessionMessages, isFetching: messagesFetching, isError: messagesError, error: messagesErrorDetail, refetch: refetchMessages } = useGetChatMessagesQuery(sessionId ?? '', { skip: !sessionId });
+  // `data` would keep the previous chat's messages (after New chat, and while a new chat's first answer streams), and
+  // the running turn is cleared once the stored messages look caught up: only this chat's own messages count.
+  const messages = useMemo(() => (sessionId ? sessionMessages ?? [] : []), [sessionId, sessionMessages]);
   const linkedId = insightId ?? sessions.find((s) => s.id === sessionId)?.insightId ?? null;
   const { data: linkedInsight } = useGetInsightQuery(linkedId ?? '', { skip: !linkedId });
   const [createSession] = useCreateChatSessionMutation();

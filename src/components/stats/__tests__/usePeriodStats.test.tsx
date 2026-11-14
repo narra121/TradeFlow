@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { skipToken } from '@reduxjs/toolkit/query/react';
 import { screen } from '@testing-library/react';
@@ -58,6 +59,18 @@ describe('usePeriodStats', () => {
     await vi.waitFor(() => expect(getStats.mock.calls.some((c) => c[0] === skipToken)).toBe(true));
     const last = getStats.mock.calls.slice(-2);
     expect(last[1][0]).toBe(skipToken);
+  });
+
+  it('a previous period without trades is no comparison: no prev, prevEmpty set (no zeros are compared)', () => {
+    getStats.mockImplementation((args) => ({ data: args === skipToken ? undefined : { totalTrades: (args as { startDate: string }).startDate === '2026-11-01' ? 5 : 0 }, isLoading: false }));
+    function Empty() {
+      const r = usePeriodStats();
+      const [on, setOn] = useCompare();
+      useEffect(() => { if (!on) setOn(true); }, [on, setOn]);
+      return <p data-testid="state">{`${r.prev ? 'has prev' : 'no prev'} ${r.prevEmpty ? 'empty' : 'not empty'} ${r.prevRange?.name}`}</p>;
+    }
+    renderWithProviders(<Empty />, { preloadedState: month as never });
+    expect(screen.getByTestId('state')).toHaveTextContent('no prev empty Oct');
   });
 
   it('requests nothing while skipped (a locked tab never asks for its data)', () => {

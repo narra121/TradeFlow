@@ -62,7 +62,7 @@ export function starterQuestions(insight: Insight | undefined): string[] {
   const clean = (t: string) => t.trim().replace(/[.?!]+$/, '');
   const review = insight.review;
   const fromReport = review
-    ? [review.theOne, ...review.more].filter((f) => f !== null).map((f) => `Which trades make up "${clean(f.title)}"?`)
+    ? [review.theOne, ...review.more].filter((f) => f !== null).map((f) => `Which trades make up "${clean(f.title).replace(/"([^"]*)"/g, '‘$1’')}"?`)
     : [...insight.sections.filter((s) => s.kind === 'leak'), ...insight.sections.filter((s) => s.kind === 'pattern')].map((s) => `What is behind this: ${clean(s.title)}?`);
   const picked = fromReport.slice(0, 2);
   return [...picked, ...CHAT_STARTERS.slice(0, 4 - picked.length)];

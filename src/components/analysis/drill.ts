@@ -20,6 +20,8 @@ export interface AnalyticsContext {
   stats: AggregatedStats;
   prev?: AggregatedStats;
   prevRange: PreviousPeriod | null;
+  /** Compare is on but the previous period has no trades, so no change is shown. */
+  prevEmpty?: boolean;
   /** Currency of every money figure; the scope's currencies are switched, never added. */
   currency?: string;
   /** Several currencies in scope: the drawdown percentage needs one account's starting balance, so it is not shown. */
