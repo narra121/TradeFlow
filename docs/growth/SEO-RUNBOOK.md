@@ -103,7 +103,7 @@ The shape is deliberately small; align it with the in-app incident bar when that
 ## 5b. Fonts, audit and budgets
 
 - Fonts: DM Sans (400-700) and JetBrains Mono (400-500) are self-hosted in `public/fonts/` (woff2, latin plus latin-ext,
-  `font-display: swap`, two preloads in `index.html`). To change a font, download the subset, slim it with
+  `font-display: swap`, except `block` on the preloaded DM Sans latin file, two preloads in `index.html`). To change a font, download the subset, slim it with
   `fontTools.varLib.instancer` (pin `opsz`, limit `wght`), keep the total under 120 kB and 4 files; `public-assets.test.ts` checks it.
 - Audit: `node scripts/seo/audit-public.mjs --out <dir>` after a build checks every public route at 1280 and 375 px for console
   errors, overflow, one `h1`, names and labels, text and target sizes, no blur or gradient, radii in {0, 2, 4, 6}, at most 6

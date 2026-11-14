@@ -15,11 +15,11 @@ describe('self-hosted fonts (E-014)', () => {
     expect(total).toBeLessThanOrEqual(120 * 1024);
   });
 
-  it('declares each file with font-display swap and a unicode-range', () => {
+  it('declares each file with a font-display and a unicode-range (block only for the preloaded DM Sans latin file)', () => {
     const faces = css.match(/@font-face \{[^}]*\}/g) ?? [];
     expect(faces).toHaveLength(files.length);
     for (const face of faces) {
-      expect(face).toContain('font-display: swap');
+      expect(face).toContain(face.includes('/fonts/dm-sans-latin.woff2') ? 'font-display: block' : 'font-display: swap');
       expect(face).toContain('unicode-range:');
       const file = /\/fonts\/([^']+\.woff2)/.exec(face)?.[1];
       expect(files).toContain(file);

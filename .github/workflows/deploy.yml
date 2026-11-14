@@ -59,16 +59,20 @@ jobs:
       - name: Deploy to S3
         run: |
           aws s3 sync ./dist s3://tradequt.com-dev --delete
-          # Set no-cache on ALL HTML files (root + pre-rendered routes)
+          # HTML: CloudFront keeps it at the edge until the "/*" invalidation below; browsers revalidate it (304) on every visit.
           aws s3 cp s3://tradequt.com-dev/ s3://tradequt.com-dev/ \
             --recursive \
             --metadata-directive REPLACE \
-            --cache-control "no-cache, no-store, must-revalidate" \
+            --cache-control "public, max-age=0, s-maxage=86400, must-revalidate" \
             --exclude "*" --include "*.html" \
             --content-type "text/html"
           aws s3 cp ./dist s3://tradequt.com-dev/ --recursive \
             --exclude "*" --include "*.txt" --include "*.xml" \
             --cache-control "public, max-age=3600"
+          # Fonts and images keep their names across deploys, so a week rather than immutable.
+          aws s3 cp ./dist s3://tradequt.com-dev/ --recursive \
+            --exclude "*" --include "*.woff2" --include "fonts/fonts.css" --include "*.png" --include "*.svg" --include "*.ico" --include "*.webp" \
+            --cache-control "public, max-age=604800"
           aws s3 cp s3://tradequt.com-dev/assets/ s3://tradequt.com-dev/assets/ \
             --recursive \
             --metadata-directive REPLACE \
@@ -83,7 +87,6 @@ jobs:
             --content-type "text/css"
 
       - name: Invalidate CloudFront
-        continue-on-error: true
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CF_DISTRIBUTION_ID_DEV }} \

@@ -11,6 +11,14 @@ const SITE = 'https://tradequt.com';
 const CONCURRENCY = 4;
 const distDir = join(process.cwd(), 'dist');
 const { routes } = JSON.parse(readFileSync(join(distDir, '_seo', 'routes.json'), 'utf-8'));
+const MODULEPRELOAD = /<link rel="modulepreload"[^>]*href="([^"]+)"[^>]*>/g;
+
+// Vite adds a modulepreload link for every chunk the rendered route imported (about 33 for /login). Saved into the
+// HTML, they download ahead of the stylesheets and the font and delay the first paint; the app adds them again when
+// it starts. Only the shell's own links stay.
+function dropRuntimePreloads(html, shellPreloads) {
+  return html.replace(MODULEPRELOAD, (tag, href) => (shellPreloads.has(href) ? tag : ''));
+}
 
 async function renderRoute(browser, base, path) {
   const page = await browser.newPage();
@@ -36,6 +44,7 @@ async function renderRoute(browser, base, path) {
 async function prerender() {
   console.log('Starting pre-render...');
   copyFileSync(join(distDir, 'index.html'), join(distDir, '_spa.html'));
+  const shellPreloads = new Set([...readFileSync(join(distDir, '_spa.html'), 'utf-8').matchAll(MODULEPRELOAD)].map((m) => m[1]));
 
   const server = await preview({ preview: { port: 4173, strictPort: false } });
   const base = (server.resolvedUrls?.local?.[0] ?? 'http://localhost:4173').replace(/\/$/, '');
@@ -59,7 +68,8 @@ async function prerender() {
   }
 
   // Written only after every route rendered: the preview server keeps serving the untouched shell meanwhile.
-  for (const [path, html] of results) {
+  for (const [path, rendered] of results) {
+    const html = dropRuntimePreloads(rendered, shellPreloads);
     if (path === '/') {
       writeFileSync(join(distDir, 'index.html'), html, 'utf-8');
       continue;

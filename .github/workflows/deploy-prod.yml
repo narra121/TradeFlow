@@ -71,18 +71,22 @@ jobs:
           for route in about guide contact privacy terms refund login signup; do
             aws s3 cp "s3://tradequt.com-prod/${route}/index.html" "s3://tradequt.com-prod/${route}" \
               --content-type "text/html" \
-              --cache-control "no-cache, no-store, must-revalidate"
+              --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
           done
-          # Set no-cache on ALL HTML files (root + pre-rendered routes)
+          # HTML: CloudFront keeps it at the edge until the "/*" invalidation below; browsers revalidate it (304) on every visit.
           aws s3 cp s3://tradequt.com-prod/ s3://tradequt.com-prod/ \
             --recursive \
             --metadata-directive REPLACE \
-            --cache-control "no-cache, no-store, must-revalidate" \
+            --cache-control "public, max-age=0, s-maxage=86400, must-revalidate" \
             --exclude "*" --include "*.html" \
             --content-type "text/html"
           aws s3 cp ./dist s3://tradequt.com-prod/ --recursive \
             --exclude "*" --include "*.txt" --include "*.xml" \
             --cache-control "public, max-age=3600"
+          # Fonts and images keep their names across deploys, so a week rather than immutable.
+          aws s3 cp ./dist s3://tradequt.com-prod/ --recursive \
+            --exclude "*" --include "*.woff2" --include "fonts/fonts.css" --include "*.png" --include "*.svg" --include "*.ico" --include "*.webp" \
+            --cache-control "public, max-age=604800"
           aws s3 cp s3://tradequt.com-prod/assets/ s3://tradequt.com-prod/assets/ \
             --recursive \
             --metadata-directive REPLACE \
