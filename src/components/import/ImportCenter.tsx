@@ -492,7 +492,7 @@ export function ImportCenter() {
             onRetry={() => void actions.saveRows({ retry: true })}
           />
         ) : (
-          <div className="sticky bottom-14 z-bar -mx-3 md:bottom-0 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background px-3 py-3 md:-mx-6 md:px-6">
+          <div className="sticky bottom-0 z-bar -mx-3 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background px-3 py-3 md:-mx-6 md:px-6">
             <p className="text-sm" role="status" aria-live="polite">
               {flow.phase === 'saving' ? (
                 flow.progress?.label

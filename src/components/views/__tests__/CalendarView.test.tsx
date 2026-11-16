@@ -82,6 +82,12 @@ describe('CalendarView', () => {
     expect(screen.getByRole('grid', { name: 'Calendar, November 2026' })).toBeInTheDocument();
   });
 
+  it('counts a flat day as even, so green, red and even add up to the trading days', () => {
+    monthTrades = [t('1', '2026-11-04T10:00:00', 50), t('2', '2026-11-04T12:00:00', -50), t('3', '2026-11-05T10:00:00', 20)];
+    setup();
+    expect(screen.getByRole('group', { name: 'Summary' })).toHaveTextContent('2 trading days · 1 green / 0 red / 1 even');
+  });
+
   it('names Best and Worst only with two trading days and only when they are a gain and a loss', () => {
     monthTrades = [t('1', '2026-11-04T10:00:00', -48)];
     const { unmount } = setup();

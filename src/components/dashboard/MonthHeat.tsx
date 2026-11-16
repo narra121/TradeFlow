@@ -70,7 +70,7 @@ export function MonthHeat({ accountId, accounts, anchor }: MonthHeatProps) {
                     aria-label={cellName(day, undefined)}
                     title={cellName(day, undefined)}
                     className={cn(
-                      'group flex h-8 items-center justify-center rounded-sm font-mono text-xs tabular-nums text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      'group flex h-8 [@media(pointer:coarse)]:h-11 items-center justify-center rounded-sm font-mono text-xs tabular-nums text-foreground-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       single || day.trades.length === 0 ? tintClass(net, step) : 'bg-muted',
                     )}
                   >

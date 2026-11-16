@@ -66,6 +66,11 @@ describe('TradePane', () => {
     expect(toggle).toBeDisabled();
   });
 
+  it('keeps the header focus rings inside the buttons, so the top of a phone screen never cuts them (R-021)', () => {
+    setup();
+    expect(screen.getByRole('button', { name: 'Close trade' }).parentElement?.className).toMatch(/\[&_button:focus-visible\]:outline-offset-\[-2px\]/);
+  });
+
   it('lets a writable trade be edited in place', () => {
     setup();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeEnabled();

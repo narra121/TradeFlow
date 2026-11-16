@@ -33,7 +33,7 @@ export function UserMenu({ onShowShortcuts, variant = 'full', className }: UserM
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={cn('flex h-10 items-center gap-2 rounded-md px-1.5 text-left text-sm hover:bg-muted [@media(pointer:coarse)]:h-11', variant === 'full' && 'w-full', className)}
+          className={cn('flex h-10 items-center gap-2 rounded-md px-1.5 text-left text-sm hover:bg-muted [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:min-w-11', variant === 'full' && 'w-full', className)}
           aria-label={variant === 'full' ? undefined : `Account menu${name ? `, ${name}` : ''}`}
         >
           <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium">{variant === 'full' ? initials(name, email) : <User className="h-4 w-4" aria-hidden="true" />}</span>

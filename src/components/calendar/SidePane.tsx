@@ -23,7 +23,8 @@ interface PaneFrameProps {
 export const PaneFrame = forwardRef<HTMLHeadingElement, PaneFrameProps>(function PaneFrame({ title, actions, leading, closeLabel, onClose, children, footer }, headingRef) {
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border px-2">
+      {/* Inner focus rings: on phones this header touches the top of the screen and an outer ring is cut. */}
+      <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border px-2 [&_button:focus-visible]:outline-offset-[-2px]">
         {leading}
         <h2 ref={headingRef} tabIndex={-1} className="min-w-0 flex-1 truncate px-1 text-sm font-semibold outline-none">
           {title}

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -41,6 +41,21 @@ describe('TradeForm', () => {
     expect(screen.getByLabelText(/^Symbol/)).toHaveAttribute('placeholder', 'e.g. EURUSD');
     const footer = screen.getByText(/^Net —$/).parentElement as HTMLElement;
     expect(footer.textContent).not.toMatch(/–/);
+  });
+
+  it('calls a win that closed short of its target Partial, and TP hit once the exit reaches it', () => {
+    setup();
+    const set = (label: RegExp, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    set(/^Entry price/, '100');
+    set(/^Take profit/, '120');
+    set(/^Exit price/, '110');
+    set(/^Net P&L/, '50');
+    const outcome = screen.getByRole('radiogroup', { name: 'Outcome' });
+    expect(within(outcome).getByRole('radio', { name: 'Partial' })).toBeChecked();
+    set(/^Exit price/, '120');
+    expect(within(outcome).getByRole('radio', { name: 'TP hit' })).toBeChecked();
+    set(/^Net P&L/, '-5');
+    expect(within(outcome).getByRole('radio', { name: 'SL hit' })).toBeChecked();
   });
 
   it('does not stop the tab from closing while nothing was typed', () => {

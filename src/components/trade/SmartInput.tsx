@@ -109,7 +109,7 @@ export function SmartInput({
           setIsOpen((o) => !o);
           inputRef?.current?.focus();
         }}
-        className="absolute right-0 top-0 flex h-full w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+        className="absolute right-0 top-0 flex h-full w-9 [@media(pointer:coarse)]:w-11 items-center justify-center text-muted-foreground hover:text-foreground"
       >
         <ChevronDown className="h-4 w-4" aria-hidden="true" />
       </button>

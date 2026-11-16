@@ -53,6 +53,7 @@ export function BrokenRulesSelect({ rules, selectedRuleIds, onChange }: BrokenRu
             key={rule.ruleId}
             type="button"
             onClick={() => toggleRule(rule.ruleId)}
+            aria-pressed={isSelected}
             className={cn(
               "w-full flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg text-left transition-all text-xs sm:text-sm",
               isSelected
@@ -80,7 +81,7 @@ export function BrokenRulesSelect({ rules, selectedRuleIds, onChange }: BrokenRu
       <button
         type="button"
         onClick={openGoalsInNewTab}
-        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors pt-1"
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors pt-1"
       >
         <Pencil className="w-3 h-3" />
         Edit rules in Goals & Rules

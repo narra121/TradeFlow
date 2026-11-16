@@ -206,8 +206,9 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
   };
 
   const title = param.mode === 'new' ? 'New trade' : trade ? `${trade.symbol}` : 'Trade';
+  // Focus rings sit inside the buttons: on phones this header touches the top of the screen and an outer ring is cut.
   const chrome = (
-    <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border px-2">
+    <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border px-2 [&_button:focus-visible]:outline-offset-[-2px]">
       {param.mode === 'view' && trade && (
         <>
           <Button type="button" variant="ghost" size="icon-sm" onClick={() => step(-1)} disabled={index <= 0} aria-label="Previous trade">
@@ -269,7 +270,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
           {param.expanded ? <Minimize2 className="h-4 w-4" aria-hidden="true" /> : <Maximize2 className="h-4 w-4" aria-hidden="true" />}
         </Button>
       )}
-      <Button type="button" variant="ghost" size="icon-sm" onClick={requestClose} aria-label="Close trade" className="focus-visible:ring-inset focus-visible:ring-offset-0">
+      <Button type="button" variant="ghost" size="icon-sm" onClick={requestClose} aria-label="Close trade">
         <X className="h-4 w-4" aria-hidden="true" />
       </Button>
     </div>

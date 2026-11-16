@@ -44,12 +44,18 @@ describe('DayPanel', () => {
     expect(rows[0]).toHaveTextContent('XAUUSD');
     expect(rows[1]).toHaveTextContent('EURUSD');
     expect(rows[1]).toHaveTextContent('! rule broken');
-    expect(rows[1]).toHaveAccessibleName('16:15 EURUSD Long ! rule broken +$120.00 +2.00R, Wednesday');
+    // jsdom joins inline spans without spaces; browsers space the flex items.
+    expect(rows[1]).toHaveAccessibleName(/^16:15\s?EURUSD\s?Long\s?! rule broken\s?\+\$120\.00\s?\+2\.00R, Wednesday$/);
   });
 
   it('draws a 24 hour strip with a text alternative', () => {
     setup();
     expect(screen.getByRole('img', { name: /Trades open by hour: 09:00 \(1\), 14:00 \(1\), 15:00 \(1\), 16:00 \(1\)/ })).toBeInTheDocument();
+  });
+
+  it('keeps the header focus rings inside the buttons, so the top of a phone screen never cuts them', () => {
+    setup();
+    expect(screen.getByRole('button', { name: 'Close day' }).parentElement?.className).toMatch(/\[&_button:focus-visible\]:outline-offset-\[-2px\]/);
   });
 
   it('uses 44 px targets on touch screens for the pane buttons', () => {
@@ -61,7 +67,12 @@ describe('DayPanel', () => {
   it('opens a trade, steps the day, adds a trade and opens the day in Trades', async () => {
     const user = userEvent.setup();
     const h = setup();
-    await user.click(screen.getByRole('button', { name: /EURUSD Long/ }));
+    const row = screen.getByRole('button', { name: /EURUSD\s?Long/ });
+    // Named by its own text (WCAG 2.5.3): no aria-label, the arrow is hidden, the weekday is screen-reader text.
+    expect(row).not.toHaveAttribute('aria-label');
+    expect(row).toHaveAccessibleName(expect.not.stringMatching(/[↑↓]/));
+    expect(row).toHaveAccessibleName(expect.stringMatching(/, \w+day$/));
+    await user.click(row);
     expect(h.onOpenTrade).toHaveBeenCalledWith('2');
     await user.click(screen.getByRole('button', { name: 'Next day' }));
     expect(h.onStepDay).toHaveBeenCalledWith(1);
@@ -100,7 +111,7 @@ describe('WeekPanel', () => {
     expect(screen.getByRole('heading', { name: 'Week 45 · 2 Nov – 8 Nov 2026' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Wed 4 Nov' }));
     expect(onOpenDay).toHaveBeenCalledWith('2026-11-04');
-    await user.click(screen.getByRole('button', { name: /XAUUSD Long/ }));
+    await user.click(screen.getByRole('button', { name: /XAUUSD\s?Long/ }));
     expect(onOpenTrade).toHaveBeenCalledWith('1');
   });
 });

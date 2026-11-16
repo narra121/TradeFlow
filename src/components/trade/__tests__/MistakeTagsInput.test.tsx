@@ -25,9 +25,29 @@ describe('MistakeTagsInput', () => {
     expect(screen.getByText('Over-leveraged')).toBeInTheDocument();
   });
 
-  it('renders the "Add New Mistake" button', () => {
+  it('renders the "Add mistake" button', () => {
     render(<MistakeTagsInput {...defaultProps} />);
-    expect(screen.getByText('Add New Mistake')).toBeInTheDocument();
+    expect(screen.getByText('Add mistake')).toBeInTheDocument();
+  });
+
+  it('says which chips are chosen (aria-pressed), with a fault tint for mistakes and a plain mark for tags, no glow', () => {
+    const { unmount } = render(<MistakeTagsInput {...defaultProps} selectedTags={['FOMO']} />);
+    const fomo = screen.getByRole('button', { name: 'FOMO' });
+    expect(fomo).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'No Stop Loss' })).toHaveAttribute('aria-pressed', 'false');
+    expect(fomo.className).toMatch(/bg-destructive\/15/);
+    expect(fomo.className).not.toMatch(/shadow|rounded-full/);
+    unmount();
+    render(<MistakeTagsInput {...defaultProps} noun="tag" availableTags={['swing']} selectedTags={['swing']} />);
+    expect(screen.getByRole('button', { name: 'swing' }).className).toMatch(/bg-primary\/15/);
+    expect(screen.getByRole('button', { name: 'swing' }).className).not.toMatch(/destructive/);
+  });
+
+  it('names the icon-only cancel button of the add row', async () => {
+    render(<MistakeTagsInput {...defaultProps} />);
+    await userEvent.setup().click(screen.getByText('Add mistake'));
+    expect(screen.getByRole('button', { name: 'Cancel new mistake' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'New mistake' })).toBeInTheDocument();
   });
 
   it('adds a tag when an unselected tag is clicked', async () => {
@@ -56,13 +76,13 @@ describe('MistakeTagsInput', () => {
     expect(onChange).toHaveBeenCalledWith(['No Stop Loss']);
   });
 
-  it('shows input field when "Add New Mistake" is clicked', async () => {
+  it('shows input field when "Add mistake" is clicked', async () => {
     const user = userEvent.setup();
     render(<MistakeTagsInput {...defaultProps} />);
 
-    await user.click(screen.getByText('Add New Mistake'));
+    await user.click(screen.getByText('Add mistake'));
 
-    expect(screen.getByPlaceholderText('Enter new mistake...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('New mistake')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
   });
 
@@ -79,9 +99,9 @@ describe('MistakeTagsInput', () => {
       />
     );
 
-    await user.click(screen.getByText('Add New Mistake'));
+    await user.click(screen.getByText('Add mistake'));
 
-    const input = screen.getByPlaceholderText('Enter new mistake...');
+    const input = screen.getByPlaceholderText('New mistake');
     await user.type(input, 'Moved Stop Loss');
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -101,9 +121,9 @@ describe('MistakeTagsInput', () => {
       />
     );
 
-    await user.click(screen.getByText('Add New Mistake'));
+    await user.click(screen.getByText('Add mistake'));
 
-    const input = screen.getByPlaceholderText('Enter new mistake...');
+    const input = screen.getByPlaceholderText('New mistake');
     await user.type(input, 'Early Exit{Enter}');
 
     expect(onAddNew).toHaveBeenCalledWith('Early Exit');
@@ -115,9 +135,9 @@ describe('MistakeTagsInput', () => {
     const onAddNew = vi.fn();
     render(<MistakeTagsInput {...defaultProps} onAddNew={onAddNew} />);
 
-    await user.click(screen.getByText('Add New Mistake'));
+    await user.click(screen.getByText('Add mistake'));
 
-    const input = screen.getByPlaceholderText('Enter new mistake...');
+    const input = screen.getByPlaceholderText('New mistake');
     await user.type(input, 'FOMO{Enter}');
 
     expect(onAddNew).not.toHaveBeenCalled();
@@ -127,21 +147,21 @@ describe('MistakeTagsInput', () => {
     const user = userEvent.setup();
     render(<MistakeTagsInput {...defaultProps} />);
 
-    await user.click(screen.getByText('Add New Mistake'));
-    expect(screen.getByPlaceholderText('Enter new mistake...')).toBeInTheDocument();
+    await user.click(screen.getByText('Add mistake'));
+    expect(screen.getByPlaceholderText('New mistake')).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
 
-    // Should be back to showing the "Add New Mistake" button
-    expect(screen.getByText('Add New Mistake')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Enter new mistake...')).not.toBeInTheDocument();
+    // Should be back to showing the "Add mistake" button
+    expect(screen.getByText('Add mistake')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('New mistake')).not.toBeInTheDocument();
   });
 
   it('disables Add button when input is empty', async () => {
     const user = userEvent.setup();
     render(<MistakeTagsInput {...defaultProps} />);
 
-    await user.click(screen.getByText('Add New Mistake'));
+    await user.click(screen.getByText('Add mistake'));
 
     expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
   });
@@ -167,9 +187,9 @@ describe('MistakeTagsInput – additional coverage', () => {
       />
     );
 
-    // No tag buttons should render, but "Add New Mistake" should still be available
+    // No tag buttons should render, but "Add mistake" should still be available
     expect(screen.queryByText('FOMO')).not.toBeInTheDocument();
-    expect(screen.getByText('Add New Mistake')).toBeInTheDocument();
+    expect(screen.getByText('Add mistake')).toBeInTheDocument();
   });
 
   it('removes a tag on click when it is selected', async () => {
@@ -200,8 +220,8 @@ describe('MistakeTagsInput – additional coverage', () => {
       />
     );
 
-    await user.click(screen.getByText('Add New Mistake'));
-    const input = screen.getByPlaceholderText('Enter new mistake...');
+    await user.click(screen.getByText('Add mistake'));
+    const input = screen.getByPlaceholderText('New mistake');
     await user.type(input, 'Revenge Trading{Enter}');
 
     // "Revenge Trading" already exists in availableTags, so it should not be added
@@ -233,8 +253,8 @@ describe('MistakeTagsInput – additional coverage', () => {
       />
     );
 
-    await user.click(screen.getByText('Add New Mistake'));
-    const input = screen.getByPlaceholderText('Enter new mistake...');
+    await user.click(screen.getByText('Add mistake'));
+    const input = screen.getByPlaceholderText('New mistake');
     await user.type(input, '  Trimmed Tag  {Enter}');
 
     expect(onAddNew).toHaveBeenCalledWith('Trimmed Tag');
@@ -252,8 +272,8 @@ describe('MistakeTagsInput (FE-049)', () => {
   it('selects an existing tag typed in the add row instead of doing nothing', async () => {
     const user = userEvent.setup();
     render(<MistakeTagsInput {...props} />);
-    await user.click(screen.getByText('Add New Mistake'));
-    await user.type(screen.getByPlaceholderText('Enter new mistake...'), 'scalp{Enter}');
+    await user.click(screen.getByText('Add mistake'));
+    await user.type(screen.getByPlaceholderText('New mistake'), 'scalp{Enter}');
     expect(props.onChange).toHaveBeenCalledWith(['scalp']);
     expect(props.onAddNew).not.toHaveBeenCalled();
   });
@@ -261,15 +281,15 @@ describe('MistakeTagsInput (FE-049)', () => {
   it('does not select an already selected tag twice', async () => {
     const user = userEvent.setup();
     render(<MistakeTagsInput {...props} selectedTags={['scalp']} />);
-    await user.click(screen.getByText('Add New Mistake'));
-    await user.type(screen.getByPlaceholderText('Enter new mistake...'), 'scalp{Enter}');
+    await user.click(screen.getByText('Add mistake'));
+    await user.type(screen.getByPlaceholderText('New mistake'), 'scalp{Enter}');
     expect(props.onChange).not.toHaveBeenCalled();
   });
 
   it('words the add row for tags when noun="tag" and limits the length', async () => {
     const user = userEvent.setup();
     render(<MistakeTagsInput {...props} noun="tag" maxLength={24} />);
-    await user.click(screen.getByText('Add New Tag'));
-    expect(screen.getByPlaceholderText('Enter new tag...')).toHaveAttribute('maxlength', '24');
+    await user.click(screen.getByText('Add tag'));
+    expect(screen.getByPlaceholderText('New tag')).toHaveAttribute('maxlength', '24');
   });
 });

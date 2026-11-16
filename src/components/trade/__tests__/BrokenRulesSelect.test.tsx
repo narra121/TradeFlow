@@ -116,6 +116,8 @@ describe('BrokenRulesSelect', () => {
       btn.textContent?.includes('Always use a stop loss')
     );
     expect(selectedButton).toHaveClass('bg-destructive/10');
+    // The chosen state is also spoken, not shown by colour alone.
+    expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
 
     // Unselected rules should not have destructive styling
     const unselectedButton = Array.from(buttons).find((btn) =>

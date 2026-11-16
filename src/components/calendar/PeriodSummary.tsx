@@ -18,12 +18,14 @@ export function PeriodSummary({ summary, days, metric }: PeriodSummaryProps) {
   const dayOf = (key: string) => days.find((d) => d.key === key)?.date;
   const bestDate = best ? dayOf(best.key) : undefined;
   const worstDate = worst ? dayOf(worst.key) : undefined;
+  // Flat days, and mixed-currency days with as many wins as losses, are neither green nor red; naming them keeps the counts adding up.
+  const even = summary.tradingDays - summary.greenDays - summary.redDays;
   return (
     <p role="group" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-13" aria-label="Summary">
       <span className="text-muted-foreground">Net</span>
       {summary.byCurrency.length ? summary.byCurrency.map((c) => <Money key={c.currency} value={c.net} currency={c.currency} />) : <span>—</span>}
       <span className="text-muted-foreground">
-        · {plural(summary.tradingDays, 'trading day')} · {summary.greenDays} green / {summary.redDays} red
+        · {plural(summary.tradingDays, 'trading day')} · {summary.greenDays} green / {summary.redDays} red{even > 0 ? ` / ${even} even` : ''}
         {metric === 'r' && summary.withoutR > 0 ? ` · ${summary.withoutR} without R` : ''}
       </span>
       {best && bestDate && <span className="text-muted-foreground">· Best {format(bestDate, 'EEE d')} <Money value={best.net} currency={currency} /></span>}

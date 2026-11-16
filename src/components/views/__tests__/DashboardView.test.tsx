@@ -76,6 +76,12 @@ describe('DashboardView', () => {
     expect(screen.getByText('up $320.00 versus October')).toBeInTheDocument();
   });
 
+  it('says why there is no comparison when Compare is on and the earlier period has no trades', () => {
+    periodStats.mockReturnValue(period({ prevEmpty: true, prevRange: { startDate: '2026-10-01', endDate: '2026-10-16', name: 'Oct', spokenName: 'October' }, canCompare: true }));
+    renderWithProviders(<DashboardView />);
+    expect(document.body.textContent).toMatch(/No trades in the previous period \(0?1 Oct 2026 – 16 Oct 2026\), so there is nothing to compare with\./);
+  });
+
   it('on a phone shows the Compare switch in the page, where the scope bar has no room for it', () => {
     periodStats.mockReturnValue(period({ canCompare: true }));
     mobile = true;

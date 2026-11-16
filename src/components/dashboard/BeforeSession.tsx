@@ -47,7 +47,7 @@ export function leaksForToday(a: Analysis, now: Date = new Date()): TodayLeak[] 
   return [...behaviours, ...segs];
 }
 
-const SEG = 'flex min-h-9 min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-1.5 text-[13px]';
+const SEG = 'flex min-h-9 [@media(pointer:coarse)]:min-h-11 min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-1.5 text-[13px]';
 
 /**
  * Before the session (report §5.5, no model call): drawdown now and the current streak, proven leaks that apply today,

@@ -72,11 +72,12 @@ export function WeekTimeline({ week, accountMap, openKey, todayKey, isMobile, on
                 type="button"
                 onClick={() => setPicked(d.key)}
                 aria-pressed={d.key === active.key}
-                aria-label={`${format(d.date, 'EEEEE')} ${d.date.getDate()}, ${format(d.date, 'EEEE d MMMM')}`}
                 className={cn('flex h-11 w-full flex-col items-center justify-center rounded-md border border-border text-xs', d.key === active.key ? 'bg-secondary text-foreground' : 'text-muted-foreground')}
               >
+                {/* Named by its own text (WCAG 2.5.3): an aria-label never matches stacked spans read without a space. */}
                 <span>{format(d.date, 'EEEEE')}</span>
                 <span className="font-mono">{d.date.getDate()}</span>
+                <span className="sr-only">{`, ${format(d.date, 'EEEE d MMMM')}`}</span>
               </button>
             </li>
           ))}
@@ -92,7 +93,7 @@ export function WeekTimeline({ week, accountMap, openKey, todayKey, isMobile, on
               type="button"
               onClick={() => onOpenDay(d.key)}
               aria-current={d.key === todayKey ? 'date' : undefined}
-              className={cn('sticky top-0 z-10 h-8 border-b border-l border-border bg-card text-center text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring', openKey === d.key && 'bg-secondary', d.key === todayKey ? 'text-primary' : 'text-foreground-soft')}
+              className={cn('sticky top-0 z-10 h-8 [@media(pointer:coarse)]:h-11 border-b border-l border-border bg-card text-center text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring', openKey === d.key && 'bg-secondary', d.key === todayKey ? 'text-primary' : 'text-foreground-soft')}
             >
               {format(d.date, 'EEE d')}
             </button>
@@ -149,16 +150,15 @@ export function WeekTimeline({ week, accountMap, openKey, todayKey, isMobile, on
       </div>
 
       <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-        {week.count > 0 ? (
+        {/* An empty week is said once, in the page summary above; the "!" key is in the legend below. */}
+        {week.count > 0 && (
           <>
             <span>Week</span>
             {week.byCurrency.map((c) => <Money key={c.currency} value={c.net} currency={c.currency} />)}
-            <span>· {plural(week.count, 'trade')} · {winLoss(week.wins, week.losses)}</span>
+            <span>· {plural(week.count, 'trade')} · {winLoss(week.wins, week.losses)} ·</span>
           </>
-        ) : (
-          <span>No trades this week.</span>
         )}
-        <span>· Block height is the time the trade was open. <span className="font-semibold text-warning">!</span> a rule was broken. ↻ opened within 15 minutes of a losing close.</span>
+        <span>Block height is the time the trade was open. ↻ opened within 15 minutes of a losing close.</span>
       </p>
     </div>
   );

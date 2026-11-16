@@ -54,7 +54,11 @@ function TrackRow({ track, period, live, readOnly, currency, history, historyLoa
   const unitHint = type === 'profit' ? currency ?? '' : type === 'maxTrades' ? 'trades' : '%';
   const strip = history[type] ?? [];
   const streak = streakText(type, period.period, streakOf(strip.map((c) => c.glyph)));
-  const valueText = `${goalValue(type, track.current, currency)} of ${goalValue(type, track.target, currency)}${type === 'winRate' ? ` · ${track.tradeCount} ${track.tradeCount === 1 ? 'trade' : 'trades'}` : ''}`;
+  // A win rate of no trades is unknown, not 0.0% (as on the dashboard).
+  const noWinRate = type === 'winRate' && track.tradeCount === 0;
+  const valueText = noWinRate
+    ? `— of ${goalValue(type, track.target, currency)}`
+    : `${goalValue(type, track.current, currency)} of ${goalValue(type, track.target, currency)}${type === 'winRate' ? ` · ${track.tradeCount} ${track.tradeCount === 1 ? 'trade' : 'trades'}` : ''}`;
 
   const startEdit = () => {
     setValue(String(track.target));

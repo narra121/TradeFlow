@@ -27,7 +27,7 @@ import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { appToday, appTodayKey } from '@/lib/appTimeZone';
 import { equitySeries, needsAttention, todaySummary } from '@/lib/dashboard';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { formatPercent, formatProfitFactor, parseLocalDate } from '@/lib/format';
+import { formatDateShort, formatPercent, formatProfitFactor, parseLocalDate } from '@/lib/format';
 import { getDateRangeFromPreset } from '@/lib/scope';
 
 interface DashboardViewProps {
@@ -190,6 +190,12 @@ export function DashboardView(_props: DashboardViewProps = {}) {
     <div className="space-y-4">
       {compareSlot}
       <TodayStrip today={today} todayLoading={todayScope.isLoading} week={week} todayKey={todayKey} />
+      {/* Compare is on but the equal earlier period is empty: say so, as Analytics does, instead of showing nothing. */}
+      {ps.prevEmpty && prevRange && !quiet && (
+        <p className="text-xs text-muted-foreground">
+          No trades in the previous period ({formatDateShort(prevRange.startDate, true)} – {formatDateShort(prevRange.endDate, true)}), so there is nothing to compare with.
+        </p>
+      )}
       {strip}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12 [&>*]:min-w-0">

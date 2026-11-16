@@ -192,12 +192,17 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
   const displayPnl = manual ? form.manualPnl : preview.net !== null ? preview.net.toFixed(2) : '';
   const [editingPnl, setEditingPnl] = useState(false);
 
-  // The outcome follows the P&L sign until the user picks one.
+  // The outcome follows the P&L sign until the user picks one; a win that closed short of its target is Partial, so the
+  // chip agrees with the debrief's "closed before the target".
+  const exitNum = parseNum(form.exitPrice);
+  const targetNum = parseNum(form.takeProfit);
+  const shortOfTarget = exitNum !== null && targetNum !== null && targetNum > 0 && (form.direction === 'LONG' ? exitNum < targetNum : exitNum > targetNum);
   useEffect(() => {
     if (form.outcomeTouched) return;
-    const next = outcomeForPnl(netPnl);
+    const byPnl = outcomeForPnl(netPnl);
+    const next = byPnl === 'TP' && shortOfTarget ? 'PARTIAL' : byPnl;
     if (next && next !== form.outcome) setForm((f) => ({ ...f, outcome: next }));
-  }, [netPnl, form.outcomeTouched, form.outcome]);
+  }, [netPnl, shortOfTarget, form.outcomeTouched, form.outcome]);
 
   const conflict = pnlConflictsWithOutcome(netPnl, form.outcome);
   const warnings = [...preview.warnings, ...(conflict ? ['P&L sign conflicts with the outcome.'] : [])];

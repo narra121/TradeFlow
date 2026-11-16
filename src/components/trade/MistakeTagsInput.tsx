@@ -56,15 +56,17 @@ export function MistakeTagsInput({
               key={tag}
               type="button"
               onClick={() => toggleTag(tag)}
+              aria-pressed={isSelected}
               className={cn(
-                'px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all max-w-full',
+                'max-w-full rounded-sm border px-2.5 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-sm [@media(pointer:coarse)]:min-h-11',
+                // A chosen mistake reads as a fault, like a broken rule; a chosen tag is only a mark.
                 isSelected
-                  ? 'bg-destructive text-destructive-foreground shadow-lg shadow-destructive/25'
-                  : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+                  ? noun === 'mistake' ? 'border-destructive/40 bg-destructive/15 text-foreground' : 'border-primary/40 bg-primary/15 text-foreground'
+                  : 'border-transparent bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground'
               )}
             >
               <span className="truncate">{tag}</span>
-              {isSelected && <X className="w-3 h-3 ml-1 sm:ml-1.5 inline shrink-0" />}
+              {isSelected && <X className="ml-1 inline h-3 w-3 shrink-0 sm:ml-1.5" aria-hidden="true" />}
             </button>
           );
         })}
@@ -76,7 +78,8 @@ export function MistakeTagsInput({
           <Input
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
-            placeholder={`Enter new ${noun}...`}
+            placeholder={`New ${noun}`}
+            aria-label={`New ${noun}`}
             maxLength={maxLength}
             className="h-8 text-xs sm:text-sm flex-1 min-w-0"
             autoFocus
@@ -109,8 +112,9 @@ export function MistakeTagsInput({
               setNewTag('');
             }}
             className="h-8 px-2"
+            aria-label={`Cancel new ${noun}`}
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </Button>
         </div>
       ) : (
@@ -121,8 +125,8 @@ export function MistakeTagsInput({
           onClick={() => setIsAdding(true)}
           className="text-primary border-dashed"
         >
-          <Plus className="w-4 h-4 mr-1" />
-          Add New {noun.charAt(0).toUpperCase() + noun.slice(1)}
+          <Plus className="w-4 h-4 mr-1" aria-hidden="true" />
+          Add {noun}
         </Button>
       )}
     </div>

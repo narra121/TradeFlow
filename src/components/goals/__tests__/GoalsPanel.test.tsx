@@ -38,6 +38,12 @@ describe('GoalsPanel', () => {
     expect(screen.getByText(/58\.3% of 65\.0% · 12 trades/)).toBeInTheDocument();
   });
 
+  it('shows a win rate of no trades as unknown, never 0.0%', () => {
+    setup({ tracks: tracks.map((t) => ({ ...t, current: t.type === 'winRate' ? 0 : t.current, tradeCount: 0 })) });
+    expect(screen.getByText('— of 65.0%')).toBeInTheDocument();
+    expect(screen.queryByText(/0\.0% of 65\.0%/)).not.toBeInTheDocument();
+  });
+
   it('says a drawdown limit needs a starting balance instead of showing a percentage of nothing (X-016)', () => {
     setup({ tracks: tracks.map((t) => (t.type === 'maxDrawdown' ? { ...t, current: 99.8, unavailable: 'Set a starting balance on the account to track drawdown.' } : t)) });
     expect(screen.getByText('Set a starting balance on the account to track drawdown.')).toBeInTheDocument();

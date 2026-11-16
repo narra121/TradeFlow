@@ -32,7 +32,7 @@ export function SourceGuide({ sources, value, onChange }: SourceGuideProps) {
               aria-expanded={on}
               aria-controls="how-steps"
               onClick={() => setShown(on ? null : s.id)}
-              className={cn('h-7 rounded-sm border px-2 text-xs', on ? 'border-primary bg-muted text-foreground' : 'border-border text-foreground-soft hover:bg-muted')}
+              className={cn('h-7 rounded-sm border px-2 text-xs [@media(pointer:coarse)]:h-11', on ? 'border-primary bg-muted text-foreground' : 'border-border text-foreground-soft hover:bg-muted')}
             >
               {s.id === 'generic_csv' ? 'Other CSV' : sourceLabel(s, sources)}
             </button>
@@ -52,14 +52,14 @@ export function SourceGuide({ sources, value, onChange }: SourceGuideProps) {
           )}
           {value === chosen.id && <p className="text-xs text-muted-foreground">This is the source for your next file. Change it with the Source control above.</p>}
           {chosen.id === 'generic_csv' && (
-            <a href="/import-template.csv" download className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline">
+            <a href="/import-template.csv" download className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11">
               <Download className="h-3 w-3" aria-hidden="true" /> Download a CSV template
             </a>
           )}
         </div>
       )}
       {!chosen && sources.some((s) => s.id === 'generic_csv') && (
-        <a href="/import-template.csv" download className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline">
+        <a href="/import-template.csv" download className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11">
           <Download className="h-3 w-3" aria-hidden="true" /> Download a CSV template for a broker that is not listed
         </a>
       )}

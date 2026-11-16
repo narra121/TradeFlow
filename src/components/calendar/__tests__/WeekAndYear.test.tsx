@@ -57,11 +57,12 @@ describe('WeekTimeline', () => {
     expect(screen.getByText(/· \d+ trades? ·/)).toBeInTheDocument();
   });
 
-  it('says there are no trades instead of zero counts on an empty week', () => {
+  it('shows no zero counts on an empty week and leaves "no trades" to the page summary (said once)', () => {
     const empty = buildMonth([], new Date(2026, 10, 1), accounts).weeks[1];
     week_({ week: empty });
-    expect(screen.getByText('No trades this week.')).toBeInTheDocument();
+    expect(screen.queryByText(/No trades/)).toBeNull();
     expect(screen.queryByText(/· 0 ·/)).toBeNull();
+    expect(screen.getByText(/^Block height is the time the trade was open\./)).toBeInTheDocument();
   });
 
   it('shows one day at a time on a phone, with day chips', async () => {
@@ -69,8 +70,10 @@ describe('WeekTimeline', () => {
     week_({ isMobile: true, todayKey: '2026-11-04' });
     expect(screen.getAllByRole('group')).toHaveLength(1);
     expect(screen.getByRole('group')).toHaveAccessibleName(/Wednesday 4 November/);
-    // The name starts with the visible text (M 2) so voice users can say what they see (WCAG 2.5.3).
-    await user.click(screen.getByRole('button', { name: 'M 2, Monday 2 November' }));
+    // The chip is named by its own text (WCAG 2.5.3), so the name always contains what voice users see.
+    const chip = screen.getByRole('button', { name: /^M\s?2, Monday 2 November$/ });
+    expect(chip).not.toHaveAttribute('aria-label');
+    await user.click(chip);
     expect(screen.getByRole('group')).toHaveAccessibleName(/Monday 2 November/);
     for (const chip of within(screen.getByRole('list', { name: 'Days of the week' })).getAllByRole('button')) expect(chip.className).toMatch(/h-11/);
   });
@@ -105,6 +108,17 @@ describe('YearView', () => {
     expect(squares).toHaveLength(30);
     expect(within(nov).getByRole('button', { name: 'Wednesday 4 November, net +$115.80, 3 trades, 2 wins' })).toBeInTheDocument();
     expect(within(nov).getByRole('button', { name: /November 2026, 5 trades. Open the month/ }).tabIndex).toBe(0);
+  });
+
+  it('keeps the focus outline on the month buttons and makes them 44 px on touch (L24-R2, L24-R4)', () => {
+    const one: YearMonth[] = [{ key: '2026-11', date: new Date(2026, 10, 1), model: buildMonth([trades[0]], new Date(2026, 10, 1), accounts) }];
+    render(<YearView months={one} year={2026} metric="pnl" loading={false} capped={false} onOpenMonth={vi.fn()} onOpenDay={vi.fn()} />);
+    const monthButtons = screen.getAllByRole('button').filter((b) => b.tabIndex === 0);
+    expect(monthButtons.length).toBeGreaterThanOrEqual(2);
+    for (const b of monthButtons) {
+      expect(b.className).not.toMatch(/outline-none/);
+      expect(b.className).toMatch(/pointer:coarse\)\]:min-h-11/);
+    }
   });
 
   it('counts one trade in the singular in the month button name', () => {

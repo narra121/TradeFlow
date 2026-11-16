@@ -64,6 +64,22 @@ interface TradeTableProps {
 const GROUP_OF: Record<string, GroupBy> = { date: 'day', symbol: 'symbol', side: 'side', account: 'account', asset: 'asset', outcome: 'outcome', strategy: 'strategy', session: 'session', market: 'market' };
 const FILTER_OF: Record<string, FilterFieldKey> = { symbol: 'symbols', side: 'sides', account: 'accounts', asset: 'assets', outcome: 'outcomes', strategy: 'strategies', session: 'sessions', mistakes: 'mistakes', tags: 'tags', broken: 'broken', pnl: 'result' };
 
+/** Fixed width of the pinned Symbol column, sized for the longest name shown (≈7 px a character + padding), 96–240 px. */
+export function symbolPinWidth(trades: Trade[]): number {
+  const longest = trades.reduce((n, t) => Math.max(n, optionSymbol(t).length), 0);
+  return Math.min(240, Math.max(PIN_WIDTH.symbol, Math.ceil(longest * 7.2) + 32));
+}
+
+const FREE_TEXT_OF: Record<string, (t: Trade) => string> = { strategy: (t) => t.strategy || t.setup || '', session: (t) => t.session || '', market: (t) => t.marketCondition || '' };
+
+/** Width of a free-text journal column: its default, grown to the longest value shown (≈7 px a character + padding), at most 200 px. */
+export function freeTextWidth(id: string, base: number, trades: Trade[]): number {
+  const of = FREE_TEXT_OF[id];
+  if (!of) return base;
+  const longest = trades.reduce((n, t) => Math.max(n, of(t).length), 0);
+  return Math.min(200, Math.max(base, Math.ceil(longest * 7.2) + 40));
+}
+
 /** `NIFTY 24500 CE · 28 Nov` for options, the plain symbol otherwise. */
 export function optionSymbol(t: Trade): string {
   if (t.assetClass === 'options' && t.strike !== undefined && t.optionType) {
@@ -121,13 +137,14 @@ export function TradeTable({
   virtualize, columnWidths, onResizeColumn, onSortDir, onGroupBy, onFilterBy, onHideColumn,
 }: TradeTableProps) {
   const defs = useMemo(() => resolveColumns(columns, { showAccount, compact }), [columns, showAccount, compact]);
+  const symbolPin = useMemo(() => symbolPinWidth(trades), [trades]);
 
   const cols = useMemo<DataColumn<Trade>[]>(() => {
     const cell = (id: string): DataColumn<Trade>['cell'] => (t) => {
       const acc = t.accountId ? accounts.get(t.accountId) : undefined;
       const pickable = (kind: CellKind, trade: Trade, text: string) =>
         onPickCell && !(trade.accountId && readOnlyAccountIds?.has(trade.accountId)) ? (
-          <button type="button" onClick={(e) => onPickCell(kind, trade, e.currentTarget)} className="-mx-1 block max-w-full truncate rounded px-1 text-left text-foreground-soft hover:bg-muted [@media(pointer:coarse)]:pointer-events-none">
+          <button type="button" onClick={(e) => onPickCell(kind, trade, e.currentTarget)} title={text} className="-mx-1 block max-w-full truncate rounded px-1 text-left text-foreground-soft hover:bg-muted [@media(pointer:coarse)]:pointer-events-none">
             <span className="sr-only">Change {kind}: </span>
             {text}
           </button>
@@ -139,7 +156,7 @@ export function TradeTable({
         case 'date':
           return <span className="whitespace-nowrap font-mono tabular-nums text-foreground-soft">{dateCell(t, groupBy, spansYears)}</span>;
         case 'symbol':
-          return <span className="whitespace-nowrap font-medium">{optionSymbol(t)}</span>;
+          return <span className="block truncate whitespace-nowrap font-medium" title={optionSymbol(t)}>{optionSymbol(t)}</span>;
         case 'side':
           return <DirectionChip direction={t.direction} />;
         case 'account':
@@ -214,7 +231,7 @@ export function TradeTable({
       sortable: !!d.sort,
       align: d.align,
       pinned: d.pinned,
-      pinWidth: d.pinned ? PIN_WIDTH[d.id] : undefined,
+      pinWidth: d.pinned ? (d.id === 'symbol' ? symbolPin : PIN_WIDTH[d.id]) : undefined,
       resizable: !d.pinned,
       cell: cell(d.id),
     }));
@@ -248,7 +265,7 @@ export function TradeTable({
       ),
     });
     return base;
-  }, [defs, accounts, groupBy, spansYears, actions, readOnlyAccountIds, onPickCell]);
+  }, [defs, accounts, groupBy, spansYears, actions, readOnlyAccountIds, onPickCell, symbolPin]);
 
   const sortKeyById = useMemo(() => new Map(defs.map((d) => [d.id, d.sort])), [defs]);
   const dataSort: DataSort | undefined = useMemo(() => {
@@ -256,12 +273,13 @@ export function TradeTable({
     return id ? { id, dir: sort.dir } : undefined;
   }, [defs, sort]);
 
-  // Free-text journal columns keep their default width (the table scrolls sideways instead of cutting the text to a few letters).
+  // Free-text journal columns are at least their default width and grow to the longest value shown (the table scrolls
+  // sideways instead of cutting the text); a width the user set wins.
   const widths = useMemo(() => {
     const out: Record<string, number> = {};
-    for (const d of defs) if (FREE_TEXT.has(d.id) && !d.pinned) out[d.id] = d.width;
+    for (const d of defs) if (FREE_TEXT.has(d.id) && !d.pinned) out[d.id] = freeTextWidth(d.id, d.width ?? 0, trades);
     return { ...out, ...(columnWidths ?? {}) };
-  }, [defs, columnWidths]);
+  }, [defs, columnWidths, trades]);
 
   const renderHeaderMenu = (c: DataColumn<Trade>) => {
     const def = defs.find((d) => d.id === c.id);

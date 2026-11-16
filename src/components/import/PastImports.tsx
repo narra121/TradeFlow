@@ -31,7 +31,7 @@ export function PastImports({ accounts, sources, onView }: PastImportsProps) {
   return (
     <section aria-labelledby="past-h" className="space-y-2 border-t border-border pt-3">
       <h2 id="past-h" className="text-xs font-medium text-foreground-soft">
-        <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="inline-flex items-center gap-1 hover:text-foreground">
+        <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="inline-flex items-center gap-1 hover:text-foreground [@media(pointer:coarse)]:min-h-11">
           <Caret className="h-3.5 w-3.5" aria-hidden="true" /> Past imports
         </button>
       </h2>
