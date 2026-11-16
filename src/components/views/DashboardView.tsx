@@ -36,9 +36,18 @@ interface DashboardViewProps {
 }
 
 const MAX_CURRENCY_LINES = 2;
-// The last tile of an unfilled row spans the gap: the strip's border colour would otherwise show as an empty grey tile.
-const STRIP_GRID =
-  'grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))] max-sm:[&>*:last-child:nth-child(odd)]:col-span-2 sm:max-lg:[&>*:last-child:nth-child(3n+1)]:col-span-3 sm:max-lg:[&>*:last-child:nth-child(3n+2)]:col-span-2';
+const STRIP_GRID = 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))]';
+
+/**
+ * Classes for the strip's last tile, so it fills an unfilled last row: the strip's border colour would otherwise show as
+ * an empty grey tile. `phoneSlots` counts the 2-column phone grid's cells (a tile spanning both counts twice); from 640
+ * to 1023 px the grid has 3 columns and no tile spans.
+ */
+export function lastTileSpan(tiles: number, phoneSlots: number): string {
+  const phone = phoneSlots % 2 === 1 ? 'max-sm:col-span-2' : '';
+  const mid = tiles % 3 === 1 ? 'sm:max-lg:col-span-3' : tiles % 3 === 2 ? 'sm:max-lg:col-span-2' : '';
+  return [phone, mid].filter(Boolean).join(' ');
+}
 
 export function DashboardView(_props: DashboardViewProps = {}) {
   const dispatch = useAppDispatch();
@@ -122,7 +131,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
     <ErrorState title="Couldn't load your statistics." description="Your data is safe." error={ps.error} onRetry={ps.refetch} />
   ) : quiet ? (
     <StatStrip label="Period statistics" className={STRIP_GRID}>
-      {(['netPnl', 'winRate', 'profitFactor', 'plannedRR', 'maxDrawdown'] as const).map((m) => <StatCell key={m} metric={m} value="—" />)}
+      {(['netPnl', 'winRate', 'profitFactor', 'plannedRR', 'maxDrawdown'] as const).map((m) => <StatCell key={m} metric={m} value="—" className={m === 'maxDrawdown' ? lastTileSpan(5, 5) : undefined} />)}
     </StatStrip>
   ) : (
     <StatStrip label="Period statistics" className={STRIP_GRID}>
@@ -181,6 +190,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
       />
       <StatCell
         metric="maxDrawdown"
+        className={lastTileSpan(selectedAccount ? 6 : 5, (selectedAccount ? 6 : 5) + (mixed ? 1 : 0))}
         to={statsLoading ? undefined : '/app/analytics?tab=risk'}
         value={statsLoading ? <Skeleton className="h-5 w-12" /> : mixed || drawdownBasis !== 'ok' ? '—' : formatPercent(s?.maxDrawdown ?? 0)}
         hint={mixed || drawdownBasis === 'mixed' ? 'Per account only' : drawdownBasis === 'balance' ? 'Set a starting balance' : undefined}

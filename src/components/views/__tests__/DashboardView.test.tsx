@@ -28,7 +28,7 @@ vi.mock('@/components/dashboard/LatestInsight', () => ({ LatestInsight: () => nu
 let mobile = false;
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
 
-import { DashboardView } from '../DashboardView';
+import { DashboardView, lastTileSpan } from '../DashboardView';
 
 const usd = { id: 'a', name: 'FTMO', currency: 'USD', balance: 101240, initialBalance: 100000 };
 const inr = { id: 'b', name: 'Zerodha', currency: 'INR', balance: 443000, initialBalance: 400000 };
@@ -48,6 +48,14 @@ beforeEach(() => {
   capital.mockReset().mockReturnValue({ accounts: [usd], selectedAccountId: 'a', totalCapital: 100000, accountsReady: true, accountsLoading: false, accountsError: false });
   periodStats.mockReset().mockReturnValue(period());
   scopeTrades.mockReset().mockReturnValue({ trades: [t('1', 'a', 120)], isLoading: false, isError: false, truncated: false, refetch: vi.fn() });
+});
+
+describe('lastTileSpan', () => {
+  it('fills the last row of the strip so no grey slot shows (L22-021)', () => {
+    expect(lastTileSpan(5, 5)).toBe('max-sm:col-span-2 sm:max-lg:col-span-2'); // all accounts, one currency
+    expect(lastTileSpan(5, 6)).toBe('sm:max-lg:col-span-2'); // mixed: Net P&L already spans the phone row
+    expect(lastTileSpan(6, 6)).toBe(''); // one account: balance first, rows are full
+  });
 });
 
 describe('DashboardView', () => {
