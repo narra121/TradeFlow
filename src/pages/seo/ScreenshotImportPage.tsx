@@ -104,7 +104,7 @@ export default function ScreenshotImportPage() {
         that Pro is {usdMonth} a month ({inrMonth} in India); without Pro the journal is read-only. See{' '}
         <A to="/pricing">pricing</A>, the <A to="/guide#import">import section of the guide</A>, or the pages for{' '}
         <A to="/blog/prop-trading-challenges">prop-firm challenges</A> and{' '}
-        <A to="/blog/mt5-trading-journal">MetaTrader 5</A>.
+        <A to="/mt5-trading-journal">MetaTrader 5</A> imports.
       </P>
 
       <Faq items={FAQ} />

@@ -54,8 +54,11 @@ export default function ImportingTradesFromBroker() {
       <H3>Charges for Indian brokers</H3>
       <P>
         Tradebooks list fills, not the charges on them. For Zerodha, Dhan, Upstox, Angel One and Groww files, TradeQut estimates
-        brokerage, STT, exchange transaction charges, SEBI fee, stamp duty and GST for each trade at the rates in force on the
-        trade date, and records the total as the trade&apos;s fees, so P&amp;L is net. Your contract note is the authoritative
+        brokerage from the broker&apos;s standard plan, and STT, the NSE transaction charge and IPFT contribution, SEBI fee, stamp
+        duty and GST from a dated table of rates, and records the total as the trade&apos;s fees, so P&amp;L is net. For NSE trades
+        from 1 October 2024 those statutory charges use the rates in force on the trade date; for older trades the transaction
+        charge is an approximation, because NSE then charged it by each broker&apos;s monthly volume, and small differences in
+        the SEBI fee and GST are possible. STT on an option exercised at expiry is not included. Your contract note is the authoritative
         figure. Why these charges matter is explained in <A to="/blog/fo-trading-charges-india">F&amp;O charges in India</A>.
       </P>
 

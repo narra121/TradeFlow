@@ -12,26 +12,26 @@ export const SUPPORT_EMAIL = 'support@tradequt.com';
 
 /** One definition sentence, reused verbatim so search and AI engines see a consistent entity. */
 export const PRODUCT_DEFINITION =
-  'TradeQut is an online trading journal for stock, F&O, forex and crypto traders that imports broker trade files, computes net P&L after charges and shows which setups, mistakes and rules cost money.';
+  'TradeQut is an online trading journal for forex, F&O, stock and crypto traders that imports MetaTrader and broker trade files, computes net P&L after charges and shows which setups, mistakes and rules cost money.';
 
 export const PRODUCT_TAGLINE = 'Trading journal with broker import, net P&L after charges and rule tracking';
 
 export const AUDIENCES = [
-  'Indian F&O and intraday traders (Zerodha, Dhan, Upstox, Angel One, Groww)',
   'Forex and prop-firm traders on MetaTrader 4 / MetaTrader 5',
+  'Indian F&O and intraday traders (Zerodha, Dhan, Upstox, Angel One, Groww)',
   'Stock, options, futures and crypto traders who want a journal they control',
 ];
 
-export const MARKETS = ['Stocks', 'Futures', 'Options', 'Forex', 'Crypto', 'Commodities', 'CFDs'];
+export const MARKETS = ['Forex', 'Stocks', 'Futures', 'Options', 'Crypto', 'Commodities', 'CFDs'];
 
 export const IMPORT_SOURCES = [
+  { id: 'mt4', name: 'MetaTrader 4', file: 'Detailed Report from Account History (HTML)' },
+  { id: 'mt5', name: 'MetaTrader 5', file: 'History report, Positions table (HTML or XLSX)' },
   { id: 'zerodha', name: 'Zerodha', file: 'Console tradebook (CSV/XLSX)' },
   { id: 'dhan', name: 'Dhan', file: 'Trade history export' },
   { id: 'upstox', name: 'Upstox', file: 'Trade report export' },
   { id: 'angelone', name: 'Angel One', file: 'Trade history export' },
   { id: 'groww', name: 'Groww', file: 'Order/trade history export' },
-  { id: 'mt4', name: 'MetaTrader 4', file: 'Account history report (HTML)' },
-  { id: 'mt5', name: 'MetaTrader 5', file: 'History report (HTML/XLSX)' },
   { id: 'generic_csv', name: 'Any broker', file: 'Generic CSV with column mapping' },
 ] as const;
 
@@ -144,6 +144,11 @@ export const PRODUCT_FAQ: FaqItem[] = [
     answer: `TradeQut imports trade files from ${IMPORT_SOURCES.filter((s) => s.id !== 'generic_csv')
       .map((s) => s.name)
       .join(', ')}, plus any broker through a generic CSV. Screenshots of broker or prop-firm dashboards can be read with AI extraction.`,
+  },
+  {
+    question: 'Does TradeQut work for forex and MetaTrader?',
+    answer:
+      'Yes. Upload the MetaTrader 4 Detailed Report (HTML) or the MetaTrader 5 history report (HTML or XLSX): each closed trade comes in with its lots, prices, stop and target, with commission and swap in the fees. You tag the session and setup, and Analytics shows results by pair, session, hour and weekday. P&L is in the account currency, not in pips.',
   },
   {
     question: 'Does TradeQut calculate P&L after charges for Indian F&O?',

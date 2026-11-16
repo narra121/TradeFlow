@@ -478,8 +478,8 @@ export function ParticleAssembly() {
           <div className="lp-asm__aside">
             <strong>Less typing between the trade and the lesson.</strong>
             <span className="lp-asm__more">
-              Import the broker file and every trade lands on its day; trades from Indian brokers carry estimated charges, so
-              each day in the calendar is net.
+              Import the MetaTrader or broker file and every trade lands on its day, with commission and swap or estimated
+              Indian charges in its fees, so each day in the calendar is net.
             </span>
             <Eyebrow className="lp-asm__status">{STATUS[phase]}</Eyebrow>
           </div>

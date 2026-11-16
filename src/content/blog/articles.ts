@@ -539,16 +539,26 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'trading-journal-excel-template',
-    title: 'Trading journal Excel template: columns and formulas',
+    title: 'Trading journal Excel template: free NSE F&O download',
     description:
-      'Build a trading journal in Excel or Google Sheets: the columns to keep, net P&L and R formulas, and a summary of win rate, profit factor and expectancy.',
+      'Free NSE F&O trading journal template for Excel and CSV with estimated charges and net P&L, plus the columns and formulas to build your own in Excel or Google Sheets.',
     tags: ['journaling', 'template', 'excel'],
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-14',
-    readingTime: 5,
+    updatedAt: '2026-11-15',
+    readingTime: 6,
     summary:
-      'Use one row per closed trade with date, symbol, setup, direction, entry, exit, quantity, fees and risk. Net P&L is =IF(D2="Long",1,-1)*(F2-E2)*G2-H2 and R is net P&L divided by risk. Add COUNTIF, SUMIF and AVERAGE formulas for the summary.',
+      'Download the free NSE F&O trading journal template (.xlsx or .csv): one row per round trip with estimated brokerage, STT, exchange charge, SEBI fee, stamp duty and GST, net P&L and a summary by setup and weekday. Charges are estimates from rates effective 1 April 2026; your contract note is the authority. To build your own sheet, net P&L is =IF(D2="Long",1,-1)*(F2-E2)*G2-H2 and R is net P&L divided by risk.',
     faq: [
+      {
+        question: 'Is there a free Excel template for NSE F&O trades?',
+        answer:
+          'Yes. The workbook on this page has a Journal sheet that estimates brokerage, STT, exchange charge, SEBI fee, stamp duty and GST for each futures or options round trip, a Rates sheet with effective dates and sources, and a Summary sheet by setup and weekday. A CSV with the same columns is also available.',
+      },
+      {
+        question: 'How accurate are the charges in the F&O template?',
+        answer:
+          'They are estimates from the rates on its Rates sheet (effective 1 April 2026, last checked 15 November 2026). The contract note from your broker is the authority: amounts differ because of rounding, positions built from several orders and other broker plans.',
+      },
       {
         question: 'What columns should a trading journal spreadsheet have?',
         answer:
@@ -559,6 +569,16 @@ export const BLOG_ARTICLES: BlogArticle[] = [
         answer: 'Divide the sum of positive P&L by the absolute value of the sum of negative P&L, using SUMIF on the net P&L column.',
       },
     ],
+    howTo: {
+      name: 'Use the free NSE F&O trading journal template',
+      steps: [
+        { name: 'Download', text: 'Download the .xlsx file (or the CSV for plain values) from this page.' },
+        { name: 'Enter your trades', text: 'Clear the input cells of the shaded sample rows on the Journal sheet and enter one row per closed trade.' },
+        { name: 'Pick your broker plan', text: 'Choose your plan in cell B15 of the Rates sheet so the futures brokerage matches.' },
+        { name: 'Name your setups', text: 'Type the setup names you use on the Summary sheet; the Journal offers them as a drop-down.' },
+        { name: 'Read the summary', text: 'Check the Summary sheet for trades, wins, win rate, gross P&L, charges and net P&L by setup and by weekday.' },
+      ],
+    },
     content: () => import('./trading-journal-excel-template'),
   },
   {
@@ -586,11 +606,12 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'mt5-trading-journal',
-    title: 'MT5 trading journal: export your history and what to track',
+    title: 'How to export MT5 trade history for a journal',
     description:
-      'Export your MetaTrader history report, check time zone, commission and swap, and journal forex and prop-firm trades with the right fields.',
+      'Export the MetaTrader 5 history report, check server time, commission and swap, and journal forex and prop-firm trades with the right fields.',
     tags: ['forex', 'mt5', 'prop-trading', 'import'],
     publishedAt: '2026-11-11',
+    updatedAt: '2026-11-15',
     readingTime: 5,
     summary:
       "In MetaTrader 5 open the Toolbox History tab, choose a period, right-click and pick Report. Report times are in broker server time, and commission and swap are separate columns. Journal pair, stop, risk in money, session and your firm's loss limits.",
@@ -697,6 +718,54 @@ export const BLOG_ARTICLES: BlogArticle[] = [
       },
     ],
     content: () => import('./trading-drawdown-calculation'),
+  },
+  {
+    slug: 'mtm-vs-realised-pnl-futures-options',
+    title: 'MTM vs realised P&L in futures and options',
+    description:
+      'One futures position shown three ways: P&L from entry, daily mark-to-market and realised P&L at exit. A worked example and a calculator whose totals reconcile.',
+    tags: ['india', 'futures', 'options', 'metrics'],
+    publishedAt: '2026-11-15',
+    updatedAt: '2026-11-15',
+    readingTime: 6,
+    summary:
+      'Futures are marked to market every day: each day’s credit or debit is the change from the previous settlement price, so daily figures look nothing like the P&L from your entry price. Their running total matches it, and the last total equals the realised P&L. Option premium settles on the trade instead.',
+    faq: [
+      {
+        question: 'Why is my Kite P&L different from the funds page?',
+        answer:
+          'Zerodha explains that the positions page measures P&L from your entry price, while the ledger behind the funds page records a credit or debit each day for an open futures position, the change from the previous settlement price. Add up the daily entries and you reach the same total; the daily figures differ. Other brokers can measure from the previous settlement, so check your own broker’s wording.',
+      },
+      {
+        question: 'Is futures MTM settled daily?',
+        answer:
+          'At the exchange, yes. NSE Clearing’s settlement page describes daily mark-to-market settlement for futures, with pay-in and pay-out on T+1 (T is the trade day), collected through clearing members. How and when your broker shows it on your ledger and funds page is the broker’s own, so check your contract note.',
+      },
+      {
+        question: 'Why does my P&L change after the market closes?',
+        answer:
+          'During the day a positions page compares the last traded price with your entry price. Daily settlement uses a settlement price instead, which NSE Clearing bases on the volume-weighted average price of the last 30 minutes for futures, so a settlement-based figure can differ from the last price you saw. This page has not verified how each broker’s app updates after the close.',
+      },
+      {
+        question: 'Does an open short option have daily mark-to-market?',
+        answer:
+          'Not as futures do. NSE Clearing describes premium settlement for options, with premium payable and receivable netted each day and settled on T+1, and daily mark-to-market under futures. Zerodha’s reply says short options have no M2M like futures but may need more margin as they move against you. This page does not calculate margin.',
+      },
+    ],
+    howTo: {
+      name: 'Reconcile one futures position by hand',
+      steps: [
+        { name: 'Note the position', text: 'Write down the direction, quantity (lots times lot size), entry price and exit price.' },
+        { name: 'List the settlement prices', text: 'Write the settlement price for each day-end the position was open.' },
+        {
+          name: 'Work out each day’s MTM',
+          text: 'Multiply (settlement minus previous reference) by the quantity. The first reference is the entry price, then each previous settlement.',
+        },
+        { name: 'Add the exit day', text: 'Add (exit price minus last settlement) times the quantity to the daily figures and add them all up.' },
+        { name: 'Compare with realised P&L', text: 'Compute (exit price minus entry price) times the quantity. Before charges the two match.' },
+      ],
+    },
+    content: () => import('./mtm-vs-realised-pnl-futures-options'),
   },
 ];
 

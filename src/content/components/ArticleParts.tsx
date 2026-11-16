@@ -182,7 +182,7 @@ export function Disclaimer({ children }: { children?: ReactNode }) {
   return (
     <p className="mt-10 text-xs text-muted-foreground border-t border-border/50 pt-4 leading-relaxed">
       {children ??
-        'Educational content only. TradeQut is a journaling and analytics tool, not a SEBI-registered investment adviser or research analyst, and nothing here is a recommendation to buy or sell any security. Rates, rules and prices change; check the linked primary sources before relying on a number.'}
+        'Educational content only. TradeQut is a journaling and analytics tool, not an investment adviser or research analyst in any country (in India, not a SEBI-registered investment adviser), and nothing here is a recommendation to buy or sell any currency or security. Rates, rules and prices change; check the linked primary sources before relying on a number.'}
     </p>
   );
 }

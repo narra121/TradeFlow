@@ -85,10 +85,10 @@ describe('derived sample sets', () => {
     const { SAMPLE_INDIA_TRADES, inr } = await import('../sampleJournal');
     const [nifty, bank] = SAMPLE_INDIA_TRADES;
     expect(inr(nifty.gross)).toBe('+₹2,400.00');
-    expect(nifty.charges.map((c) => c.value)).toEqual([40, 17.1, 7.15, 0.02, 0.27, 8.49]);
-    expect(inr(nifty.totalCharges, false)).toBe('₹73.03');
-    expect(inr(nifty.net)).toBe('+₹2,326.97');
-    expect(inr(bank.net)).toBe('−₹885.46');
+    expect(nifty.charges.map((c) => c.value)).toEqual([40, 17.1, 7.25, 0.02, 0.27, 8.51]);
+    expect(inr(nifty.totalCharges, false)).toBe('₹73.15');
+    expect(inr(nifty.net)).toBe('+₹2,326.85');
+    expect(inr(bank.net)).toBe('−₹885.54');
     for (const t of SAMPLE_INDIA_TRADES) expect(Math.round(t.charges.reduce((a, c) => a + c.value, 0) * 100) / 100).toBe(t.totalCharges);
   });
 

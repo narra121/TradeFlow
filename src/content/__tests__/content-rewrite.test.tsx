@@ -72,7 +72,7 @@ describe('India page', () => {
 });
 
 describe('TraderSync comparison', () => {
-  it('labels third-party figures as unverified and lists their source with the date', () => {
+  it('quotes the vendor prices, lists every source with its date and says what was not verified', () => {
     const { container } = renderWithProviders(<TraderSyncAlternativePage />);
     const c = COMPETITORS.find((x) => x.id === 'tradersync')!;
     const sources = screen.getByRole('heading', { name: 'Sources' }).closest('section')!;
@@ -80,7 +80,7 @@ describe('TraderSync comparison', () => {
       expect(sources.querySelector(`a[href="${s.url}"]`)).not.toBeNull();
       expect(sources.textContent).toContain(`checked ${s.checked}`);
     }
-    expect(container.textContent).toMatch(/not confirmed by TraderSync/);
+    expect(container.textContent).toMatch(/read in a web browser on 15 November 2026\. Not verified/);
   });
 });
 

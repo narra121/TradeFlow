@@ -102,7 +102,9 @@ export default function PropTradingChallenges() {
         TradeQut supports this ongoing discipline with{' '}
         <Link to="/blog/trading-analytics-find-edge" className="text-primary underline underline-offset-4 hover:text-primary/80">analytics</Link>{' '}
         that track your equity curve, drawdown levels, and rule compliance over time. You can set goals like
-        "maintain maximum drawdown under 4%" and track your progress in real time. The{' '}
+        "maintain maximum drawdown under 4%" and check each week and month against them; see the{' '}
+        <Link to="/prop-firm-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">prop firm trading journal</Link>{' '}
+        page for what it tracks and what it does not. The{' '}
         <Link to="/blog/day-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">daily review cycle</Link>{' '}
         keeps you accountable, and the data gives you confidence that your approach is sustainable.
       </p>

@@ -84,6 +84,8 @@ test.describe('Public pages', () => {
     ['/changelog', 'Changelog'],
     ['/blog', 'Blog'],
     ['/resources', 'Trading calculators'],
+    ['/forex-trading-journal', 'Forex trading journal: MT4 and MT5 import, sessions and prop accounts'],
+    ['/resources/forex-market-hours', 'Forex market hours and sessions clock'],
     ['/trading-journal-india', 'Trading journal for Indian traders: F&O, intraday and delivery'],
     ['/alternatives', 'Trading journal alternatives compared'],
     ['/status', 'Service status'],

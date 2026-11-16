@@ -5,7 +5,7 @@ export const ANSWERS: FigureCard[] = [
   {
     question: 'What did each trade really make?',
     answer:
-      'Import the Zerodha, Dhan, Upstox, Angel One, Groww or MetaTrader file and review it before saving. Trades from Indian brokers get estimated charges (brokerage, STT, exchange fees, SEBI fee, stamp duty, GST) at the rates in force on the trade date, so P&L is net.',
+      'Import the MetaTrader 4 or 5 report, or the Zerodha, Dhan, Upstox, Angel One or Groww file, and review it before saving. MetaTrader commission and swap go into the fees, and Indian broker trades get estimated charges (the trade date’s rates for NSE trades from 1 October 2024; older exchange charges are approximations), so P&L is net.',
     caption: 'Import review',
     figure: 'import',
   },

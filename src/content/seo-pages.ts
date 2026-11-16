@@ -18,6 +18,7 @@ export interface SeoPageMeta {
   updatedAt: string;
 }
 
+const FOREX = { path: '/forex-trading-journal', label: 'Forex trading journal' };
 const INDIA = { path: '/trading-journal-india', label: 'Trading journal for India' };
 const ALTERNATIVES = { path: '/alternatives', label: 'Alternatives' };
 
@@ -29,7 +30,46 @@ export const SEO_PAGES: SeoPageMeta[] = [
       `A 14-day free trial with every Pro feature and no card, then Pro at ${usdMonth}/month or ${usdYear}/year (${inrMonth}/month or ${inrYear}/year in India). Currency and cancel FAQ.`,
     label: 'Pricing',
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-15',
+  },
+  {
+    path: FOREX.path,
+    title: 'Forex Trading Journal: MT4/MT5 Import, Sessions | TradeQut',
+    description:
+      `A forex trading journal: import MT4 and MT5 reports with commission and swap, tag sessions and setups, track prop accounts. ${usdMonth} a month after a free trial.`,
+    label: FOREX.label,
+    publishedAt: '2026-11-15',
+    updatedAt: '2026-11-15',
+  },
+  {
+    path: '/mt5-trading-journal',
+    title: 'MT5 Trading Journal: Import MetaTrader 5 History | TradeQut',
+    description:
+      'Save the MetaTrader 5 history report as HTML or Excel and import it: every closed position with lots, stop, target, commission and swap, ready for review.',
+    label: 'MT5 trading journal',
+    parent: FOREX,
+    publishedAt: '2026-11-15',
+    updatedAt: '2026-11-15',
+  },
+  {
+    path: '/mt4-trading-journal',
+    title: 'MT4 Trading Journal: Import MetaTrader 4 History | TradeQut',
+    description:
+      'Save the MetaTrader 4 Detailed Report from Account History and import it: every closed trade with lots, stop, target, commission, taxes and swap.',
+    label: 'MT4 trading journal',
+    parent: FOREX,
+    publishedAt: '2026-11-15',
+    updatedAt: '2026-11-15',
+  },
+  {
+    path: '/prop-firm-trading-journal',
+    title: 'Prop Firm Trading Journal for Challenges | TradeQut',
+    description:
+      'Keep prop challenge and funded accounts apart with their status, import MT4/MT5 reports or screenshots, and see which habits take you near the limits.',
+    label: 'Prop firm trading journal',
+    parent: FOREX,
+    publishedAt: '2026-11-15',
+    updatedAt: '2026-11-15',
   },
   {
     path: INDIA.path,
@@ -49,6 +89,16 @@ export const SEO_PAGES: SeoPageMeta[] = [
     parent: INDIA,
     publishedAt: '2026-11-14',
     updatedAt: '2026-11-14',
+  },
+  {
+    path: '/sebi-fo-study',
+    title: 'SEBI F&O Study: How Many Traders Lose Money | TradeQut',
+    description:
+      'SEBI studies of individual F&O traders, FY22 to FY26: share with a net loss, losses, costs and persistence, each figure with its PDF page. Checked 15 Nov 2026.',
+    label: 'SEBI F&O study',
+    parent: INDIA,
+    publishedAt: '2026-11-15',
+    updatedAt: '2026-11-15',
   },
   {
     path: '/zerodha-trading-journal',
@@ -107,16 +157,16 @@ export const SEO_PAGES: SeoPageMeta[] = [
       'No export from your broker or prop firm? Upload screenshots of the trade list: AI extraction reads the trades and you check each row before saving.',
     label: 'Import trades from a screenshot',
     publishedAt: '2026-11-14',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-15',
   },
   {
     path: ALTERNATIVES.path,
     title: 'Trading Journal Alternatives Compared | TradeQut',
     description:
-      'Sourced comparisons of TradeZella, TraderSync, TradesViz, Tradervue and Edgewonk with TradeQut: prices read from vendor pages and where each one is stronger.',
+      'Sourced comparisons of Myfxbook, FX Blue, TradeZella, TraderSync, TradesViz, Tradervue and Edgewonk with TradeQut: vendor prices and where each is stronger.',
     label: ALTERNATIVES.label,
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-15',
   },
   {
     path: '/alternatives/tradezella',
@@ -126,17 +176,17 @@ export const SEO_PAGES: SeoPageMeta[] = [
     label: 'TradeZella alternative',
     parent: ALTERNATIVES,
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-15',
   },
   {
     path: '/alternatives/tradersync',
-    title: 'TraderSync Alternative: Verified Facts Compared | TradeQut',
+    title: 'TraderSync Alternative: Prices and Features | TradeQut',
     description:
-      'TraderSync vs TradeQut: a fair comparison that states which TraderSync facts we verified, where it is stronger, and where TradeQut may fit better.',
+      'TraderSync vs TradeQut: prices read from the vendor page on 15 Nov 2026, forex and MetaTrader support, where TraderSync is stronger, and where TradeQut fits.',
     label: 'TraderSync alternative',
     parent: ALTERNATIVES,
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-15',
   },
   {
     path: '/alternatives/tradesviz',
@@ -146,7 +196,7 @@ export const SEO_PAGES: SeoPageMeta[] = [
     label: 'TradesViz alternative',
     parent: ALTERNATIVES,
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-15',
   },
   {
     path: '/alternatives/tradervue',
@@ -156,7 +206,7 @@ export const SEO_PAGES: SeoPageMeta[] = [
     label: 'Tradervue alternative',
     parent: ALTERNATIVES,
     publishedAt: '2026-11-14',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-15',
   },
   {
     path: '/alternatives/edgewonk',
@@ -166,7 +216,27 @@ export const SEO_PAGES: SeoPageMeta[] = [
     label: 'Edgewonk alternative',
     parent: ALTERNATIVES,
     publishedAt: '2026-11-14',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-15',
+  },
+  {
+    path: '/alternatives/myfxbook',
+    title: 'Myfxbook Alternative: A Private Forex Journal | TradeQut',
+    description:
+      'Myfxbook vs TradeQut: what Myfxbook offers for free (read 15 Nov 2026), where it is stronger, and when an upload-based journal with notes and rules fits better.',
+    label: 'Myfxbook alternative',
+    parent: ALTERNATIVES,
+    publishedAt: '2026-11-15',
+    updatedAt: '2026-11-15',
+  },
+  {
+    path: '/alternatives/fxblue',
+    title: 'FX Blue Alternative: Journal vs Statistics | TradeQut',
+    description:
+      'FX Blue vs TradeQut: a free MetaTrader statistics site against a private journal with notes, rules and MT4/MT5 report import. Facts read 15 Nov 2026.',
+    label: 'FX Blue alternative',
+    parent: ALTERNATIVES,
+    publishedAt: '2026-11-15',
+    updatedAt: '2026-11-15',
   },
 ];
 

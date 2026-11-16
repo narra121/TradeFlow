@@ -95,10 +95,10 @@ export const DASHBOARD_ALT = dashboardAlt();
 
 /**
  * NSE index options on Zerodha with the rates in force on 10 Nov 2026 — the 2026-04-01 row of the import's rate table
- * (JournalAWSSetup src/features/import/charges/india.ts): ₹20 per order, STT 0.15 % of sell value, exchange 0.03503 %,
+ * (JournalAWSSetup src/features/import/charges/india.ts): ₹20 per order, STT 0.15 % of sell value, exchange 0.0355299 %,
  * SEBI 0.0001 %, stamp duty 0.003 % of buy value, GST 18 % on brokerage + exchange + SEBI.
  */
-const NSE_OPTIONS_2026 = { perOrder: 20, sttSell: 0.0015, exchange: 0.0003503, sebi: 0.000001, stampBuy: 0.00003, gst: 0.18 };
+const NSE_OPTIONS_2026 = { perOrder: 20, sttSell: 0.0015, exchange: 0.000355299, sebi: 0.000001, stampBuy: 0.00003, gst: 0.18 };
 
 export interface SampleIndiaTrade {
   symbol: string;
@@ -127,7 +127,7 @@ function indiaOptionTrade(symbol: string, quantity: number, buy: number, sell: n
     { label: 'Stamp duty', value: round2(raw.stamp) },
     { label: 'GST', value: round2(raw.gst) },
   ];
-  const totalCharges = round2(Object.values(raw).reduce((a, b) => a + b, 0));
+  const totalCharges = round2(charges.reduce((a, c) => a + c.value, 0));
   const gross = round2(sellValue - buyValue);
   return { symbol, quantity, buy, sell, gross, charges, totalCharges, net: round2(gross - totalCharges) };
 }

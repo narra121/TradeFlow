@@ -71,7 +71,8 @@ describe('TaxReport', () => {
 
   it('states the F&O turnover against the audit threshold, the charges, the uncovered trades and the caveat', () => {
     renderWithProviders(<TaxReport />);
-    expect(screen.getByText(/the threshold is not exceeded/)).toBeInTheDocument();
+    expect(screen.getByText(/this report uses: not above it/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'F&O turnover calculator' })).toHaveAttribute('href', '/resources/fo-turnover-calculator');
     expect(screen.getByText('Securities transaction tax')).toBeInTheDocument();
     expect(screen.getByText(/3 forex, crypto or CFD trades are not covered/)).toBeInTheDocument();
     expect(screen.getByText(/confirm figures with your chartered accountant/)).toBeInTheDocument();

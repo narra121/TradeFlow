@@ -42,7 +42,8 @@ export default function Mt5TradingJournal() {
         consistency rules differ and change. Write your firm&apos;s current rules into your journal from its own page.
       </Callout>
       <P>
-        TradeQut imports MetaTrader 4 and 5 reports. Read{' '}
+        TradeQut imports MetaTrader 4 and 5 reports; the <A to="/mt5-trading-journal">MT5 trading journal</A> page lists every column it
+        reads. Read{' '}
         <A to="/blog/prop-trading-challenges">prop trading challenges</A> and{' '}
         <A to="/blog/forex-trading-journal">what forex traders should track</A> next.
       </P>

@@ -86,7 +86,7 @@ export const BROKER_PAGES: BrokerPage[] = [
       {
         question: 'Does the Zerodha tradebook include charges?',
         answer:
-          'No. The tradebook lists executions: symbol, date, buy or sell, quantity, price, and order and trade IDs. Charges are on your contract notes and in the Console P&L report. TradeQut estimates brokerage, STT, exchange transaction charges, SEBI fee, stamp duty and GST for each imported trade at the rates in force on the trade date.',
+          "No. The tradebook lists executions: symbol, date, buy or sell, quantity, price, and order and trade IDs. Charges are on your contract notes and in the Console P&L report. For each imported trade TradeQut estimates brokerage from the broker's standard plan, and STT, the NSE transaction charge and IPFT contribution, SEBI fee, stamp duty and GST from a dated table of rates. For NSE trades from 1 October 2024 those statutory charges use the rates in force on the trade date; for older trades the transaction charge is an approximation, because NSE then charged it by each broker's monthly volume, and small differences in the SEBI fee and GST are possible. STT on an option exercised at expiry is not included.",
       },
       {
         question: 'How do I analyse more than one year of Zerodha trades?',
@@ -137,7 +137,7 @@ export const BROKER_PAGES: BrokerPage[] = [
       {
         question: 'Are Upstox charges included in the P&L?',
         answer:
-          'The trade report lists executions, not charges. TradeQut estimates brokerage, STT, exchange transaction charges, SEBI fee, stamp duty and GST for each trade at the rates in force on the trade date and records them as the fees of that trade. Your contract note is the authoritative figure.',
+          "The trade report lists executions, not charges. For each trade TradeQut estimates brokerage from the broker's standard plan, and STT, the NSE transaction charge and IPFT contribution, SEBI fee, stamp duty and GST from a dated table of rates. For NSE trades from 1 October 2024 those statutory charges use the rates in force on the trade date; for older trades the transaction charge is an approximation, because NSE then charged it by each broker's monthly volume, and small differences in the SEBI fee and GST are possible. STT on an option exercised at expiry is not included. The total is recorded as the fees of that trade. Your contract note is the authoritative figure.",
       },
       noPassword('Upstox', 'your Upstox account'),
     ],
@@ -204,7 +204,7 @@ export const BROKER_PAGES: BrokerPage[] = [
       {
         question: 'Are Angel One brokerage and taxes included?',
         answer:
-          'The report lists executions, not charges. TradeQut estimates brokerage, STT, exchange transaction charges, SEBI fee, stamp duty and GST for each trade at the rates in force on the trade date. Your contract note is the authoritative figure.',
+          "The report lists executions, not charges. For each trade TradeQut estimates brokerage from the broker's standard plan, and STT, the NSE transaction charge and IPFT contribution, SEBI fee, stamp duty and GST from a dated table of rates. For NSE trades from 1 October 2024 those statutory charges use the rates in force on the trade date; for older trades the transaction charge is an approximation, because NSE then charged it by each broker's monthly volume, and small differences in the SEBI fee and GST are possible. STT on an option exercised at expiry is not included. Your contract note is the authoritative figure.",
       },
       noPassword('Angel One', 'your Angel One account'),
     ],

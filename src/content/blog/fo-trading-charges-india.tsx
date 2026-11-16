@@ -50,6 +50,11 @@ export default function FoTradingChargesIndia() {
         2026). Trades before that date were charged at the old rates. Brokerage differs between
         brokers; check your own broker&apos;s charges page and your contract notes.
       </Callout>
+      <P>
+        The NSE transaction charges in that table apply to trades from 1 March 2026; earlier trades paid 0.03503% on options premium plus a separate 0.0005% IPFT
+        contribution, and every rate by trade date, with its circular, is in{' '}
+        <A to="/resources/fo-charges-rates">the F&amp;O charges and STT rate history</A>.
+      </P>
 
       <H2>Worked example: one options round trip</H2>
       <P>
@@ -73,7 +78,8 @@ export default function FoTradingChargesIndia() {
       <P>
         Here charges took about 7% of the gross profit. On a ₹5 gain instead of ₹10 they would take about 15%. That is why
         scalpers and high-frequency option sellers should look at net numbers per setup in{' '}
-        <A to="/trading-journal-india">their journal</A>.
+        <A to="/trading-journal-india">their journal</A>. SEBI measures losses after transaction costs for all individual
+        F&amp;O traders; its figures are in <A to="/sebi-fo-study">the SEBI F&amp;O study, with sources</A>.
       </P>
 
       <H2>What to record</H2>
@@ -94,6 +100,11 @@ export default function FoTradingChargesIndia() {
             label: 'NSE circular 02/2026 (NSE/FATAX/73524): changes in rates of Securities Transaction Tax, 31 March 2026',
             url: 'https://nsearchives.nseindia.com/content/circulars/FATAX73524.pdf',
             checked: '2026-11-12',
+          },
+          {
+            label: 'NSE circular NSE/FA/73061: revision in transaction charges, 27 February 2026',
+            url: 'https://nsearchives.nseindia.com/content/circulars/FA73061.pdf',
+            checked: '2026-11-15',
           },
           {
             label: 'Business Today: STT hike on F&O from April 1',

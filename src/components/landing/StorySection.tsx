@@ -9,7 +9,7 @@ const STEPS = [
   {
     tag: 'Import',
     title: 'Import the file',
-    body: 'Upload the Zerodha, Dhan, Upstox, Angel One, Groww or MetaTrader file, check the rows in the review step and save. Duplicates are skipped.',
+    body: 'Upload the MetaTrader report or the Zerodha, Dhan, Upstox, Angel One or Groww file, check the rows in the review step and save. Duplicates are skipped.',
     focus: 'net',
   },
   {

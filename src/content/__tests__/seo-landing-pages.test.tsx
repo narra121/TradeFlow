@@ -14,6 +14,10 @@ const ADVICE = [/guaranteed/i, /can'?t lose/i, /risk[- ]free/i, /you will (make|
 const UNSUPPORTED = [/(hundreds|thousands|millions) of (trading )?(journals|traders|users)/i, /studies (show|have shown|find)|research (shows|has shown|finds)/i, /\b(#1|number one|top[- ]rated|unbeatable)\b/i];
 
 const LANDING = [
+  '/forex-trading-journal',
+  '/mt4-trading-journal',
+  '/mt5-trading-journal',
+  '/prop-firm-trading-journal',
   '/trading-journal-india',
   '/fo-trading-journal',
   '/import-trades-from-screenshot',

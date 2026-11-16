@@ -11,7 +11,7 @@ import {
   parseDecimal,
 } from '@/components/content/calculator';
 import { calculatorSchema } from '@/config/seo';
-import { ACCOUNT_CURRENCIES, FOREX_PAIRS, pipValue, type AccountCurrency } from '@/content/forexPairs';
+import { ACCOUNT_CURRENCIES, FOREX_PAIRS, contractSizeOf, pipValue, type AccountCurrency } from '@/content/forexPairs';
 import { formatMoney } from '@/lib/format';
 
 export function PositionSizeCalculatorPage() {
@@ -26,7 +26,7 @@ export function PositionSizeCalculatorPage() {
 
   const pair = FOREX_PAIRS[pairIndex];
   const results = useMemo(() => {
-    const perLot = pipValue(pair, 100000, accountCurrency).inAccount;
+    const perLot = pipValue(pair, contractSizeOf(pair), accountCurrency).inAccount;
     if (accountBalance <= 0 || riskPercent <= 0 || stopLossPips <= 0) {
       return { risk: 0, positionSize: 0, perLot };
     }
@@ -140,6 +140,7 @@ export function PositionSizeCalculatorPage() {
               <p>Amount at risk = balance × risk %.</p>
               <p>Position size (lots) = amount at risk ÷ (stop pips × pip value per standard lot).</p>
               <p>Pip value uses approximate rates for {pair.label}; use your broker&apos;s live value for real trades.</p>
+              <p>For gold one lot is 100 oz and one pip is 0.10, so a pip is worth $10 a lot; if your broker counts 0.01 as a pip, enter ten times the pips.</p>
             </FormulaDisclosure>
             <Link to="/signup" className="mt-4 inline-flex min-h-6 max-md:min-h-11 items-center text-sm font-medium text-primary hover:underline">
               Log this trade in your journal &rarr;

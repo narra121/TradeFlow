@@ -7,9 +7,10 @@ interface CalculatorCardProps {
   description: string;
   href: string;
   icon: LucideIcon;
+  cta?: string;
 }
 
-export function CalculatorCard({ title, description, href, icon: Icon }: CalculatorCardProps) {
+export function CalculatorCard({ title, description, href, icon: Icon, cta = 'Open calculator' }: CalculatorCardProps) {
   return (
     <Link to={href} className="group bg-card rounded-lg border border-border/50 p-6 sm:p-8 hover:border-primary/30 transition-colors">
       <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
@@ -18,7 +19,7 @@ export function CalculatorCard({ title, description, href, icon: Icon }: Calcula
       <h3 className="text-xl font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">{title}</h3>
       <p className="text-muted-foreground leading-relaxed mb-4">{description}</p>
       <span className="text-sm text-primary flex items-center gap-1">
-        Open calculator <ArrowRight className="w-3.5 h-3.5" />
+        {cta} <ArrowRight className="w-3.5 h-3.5" />
       </span>
     </Link>
   );

@@ -10,7 +10,8 @@ const brokers = IMPORT_SOURCES.filter((s) => s.id !== 'generic_csv')
 
 const DOES = [
   `Imports trade files from ${brokers}, or any CSV or Excel file, and shows every trade for review before it is saved. Trades already imported are skipped.`,
-  'Estimates brokerage, STT, exchange charges, SEBI fee, stamp duty and GST for trades imported from Indian brokers, at the rates in force on the trade date.',
+  'Reads MetaTrader 4 and 5 reports with each trade’s lots, stop, target, commission and swap, and keeps every account in its own currency.',
+  'Estimates brokerage, STT, exchange charges, SEBI fee, stamp duty and GST for trades imported from Indian brokers: the trade date’s rates for NSE trades from 1 October 2024, approximate exchange charges before that, and no STT on options exercised at expiry.',
   'Shows win rate against break-even and expectancy in R, each with a range and a sample label (early, provisional, established), and results by strategy, session, weekday and hour.',
   'Checks every trade against a fixed list of behaviours, such as a new trade within 15 minutes of a loss or a loss that ran past the stop, and totals what each mistake and each broken rule cost.',
   'Replays a period without the trades a rule would have blocked, so you can test a rule on your own trades before you adopt it.',
@@ -18,7 +19,7 @@ const DOES = [
 ];
 
 const DOES_NOT = [
-  'Give trading tips, signals or recommendations. TradeQut is not a SEBI-registered investment adviser or research analyst.',
+  'Give trading tips, signals or recommendations. TradeQut is not an investment adviser or research analyst in any country, and in India not a SEBI-registered investment adviser.',
   'Place or change orders, or connect to your broker account. You upload the files your broker gives you; automatic sync is planned, not available.',
   'Show ads inside the app, or sell your data.',
   'Promise results. We have found no peer-reviewed study showing that a journal or an AI coach improves trading results, so we do not claim it.',
@@ -27,7 +28,7 @@ const DOES_NOT = [
 export function AboutPage() {
   return (
     <ContentPageShell
-      title="About TradeQut: a Trading Journal for F&O and Forex Traders"
+      title="About TradeQut: a Trading Journal for Forex and F&O Traders"
       description="What TradeQut does and does not do, who it is built for, how your trading data is handled, and how to reach the team behind it."
       path="/about"
       jsonLd={breadcrumbSchema([
@@ -43,9 +44,9 @@ export function AboutPage() {
           Who it is for
         </h2>
         <ul className="list-disc space-y-2 pl-6 text-foreground-soft">
-          <li>Indian F&amp;O and intraday traders who want P&amp;L after charges and to see which habits lose money.</li>
+          <li>Forex traders on MetaTrader 4 and 5 who want each trade with its commission and swap, results by pair and session, and totals kept per account currency.</li>
           <li>Prop-firm challengers who trade on MetaTrader and need to stay inside trade-count and drawdown limits.</li>
-          <li>Forex and multi-account traders who want one journal with totals kept per currency.</li>
+          <li>Indian F&amp;O and intraday traders who want P&amp;L after charges and to see which habits lose money.</li>
         </ul>
       </section>
 

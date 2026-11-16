@@ -57,7 +57,15 @@ describe('CloudFront router function', () => {
   });
 
   it('leaves files with an extension untouched', () => {
-    for (const uri of ['/assets/index-abc.js', '/robots.txt', '/llms.txt', '/sitemap.xml', '/favicon.ico']) {
+    for (const uri of [
+      '/assets/index-abc.js',
+      '/robots.txt',
+      '/llms.txt',
+      '/sitemap.xml',
+      '/favicon.ico',
+      '/templates/tradequt-fo-trading-journal.xlsx',
+      '/templates/tradequt-fo-trading-journal.csv',
+    ]) {
       expect(handler(req(uri)).uri).toBe(uri);
     }
   });

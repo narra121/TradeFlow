@@ -18,6 +18,14 @@ const ResourcesPage = lazy(() => import('./pages/resources/ResourcesPage').then(
 const PositionSizeCalculatorPage = lazy(() => import('./pages/resources/PositionSizeCalculatorPage').then(m => ({ default: m.PositionSizeCalculatorPage })));
 const RiskRewardCalculatorPage = lazy(() => import('./pages/resources/RiskRewardCalculatorPage').then(m => ({ default: m.RiskRewardCalculatorPage })));
 const PipCalculatorPage = lazy(() => import('./pages/resources/PipCalculatorPage').then(m => ({ default: m.PipCalculatorPage })));
+const ForexMarketHoursPage = lazy(() => import('./pages/resources/ForexMarketHoursPage').then(m => ({ default: m.ForexMarketHoursPage })));
+const PropFirmDrawdownCalculatorPage = lazy(() => import('./pages/resources/PropFirmDrawdownCalculatorPage').then(m => ({ default: m.PropFirmDrawdownCalculatorPage })));
+const MarginCalculatorPage = lazy(() => import('./pages/resources/MarginCalculatorPage').then(m => ({ default: m.MarginCalculatorPage })));
+const RiskOfRuinCalculatorPage = lazy(() => import('./pages/resources/RiskOfRuinCalculatorPage').then(m => ({ default: m.RiskOfRuinCalculatorPage })));
+const CompoundingCalculatorPage = lazy(() => import('./pages/resources/CompoundingCalculatorPage').then(m => ({ default: m.CompoundingCalculatorPage })));
+const ExpectancyCalculatorPage = lazy(() => import('./pages/resources/ExpectancyCalculatorPage').then(m => ({ default: m.ExpectancyCalculatorPage })));
+const FoTurnoverCalculatorPage = lazy(() => import('./pages/resources/FoTurnoverCalculatorPage').then(m => ({ default: m.FoTurnoverCalculatorPage })));
+const FoChargesRatesPage = lazy(() => import('./pages/resources/FoChargesRatesPage').then(m => ({ default: m.FoChargesRatesPage })));
 const CaseStudiesIndexPage = lazy(() => import('./pages/case-studies/CaseStudiesIndexPage').then(m => ({ default: m.CaseStudiesIndexPage })));
 const CaseStudyPage = lazy(() => import('./pages/case-studies/CaseStudyPage').then(m => ({ default: m.CaseStudyPage })));
 const ChangelogPage = lazy(() => import('./pages/changelog/ChangelogPage').then(m => ({ default: m.ChangelogPage })));
@@ -37,6 +45,14 @@ export const PublicRoutes = (
         <Route path="/resources/position-size" element={<PositionSizeCalculatorPage />} />
         <Route path="/resources/risk-reward" element={<RiskRewardCalculatorPage />} />
         <Route path="/resources/pip-calculator" element={<PipCalculatorPage />} />
+        <Route path="/resources/forex-market-hours" element={<ForexMarketHoursPage />} />
+        <Route path="/resources/prop-firm-drawdown-calculator" element={<PropFirmDrawdownCalculatorPage />} />
+        <Route path="/resources/margin-calculator" element={<MarginCalculatorPage />} />
+        <Route path="/resources/risk-of-ruin-calculator" element={<RiskOfRuinCalculatorPage />} />
+        <Route path="/resources/compounding-calculator" element={<CompoundingCalculatorPage />} />
+        <Route path="/resources/expectancy-calculator" element={<ExpectancyCalculatorPage />} />
+        <Route path="/resources/fo-turnover-calculator" element={<FoTurnoverCalculatorPage />} />
+        <Route path="/resources/fo-charges-rates" element={<FoChargesRatesPage />} />
         <Route path="/case-studies" element={<CaseStudiesIndexPage />} />
         <Route path="/case-studies/:slug" element={<CaseStudyPage />} />
         <Route path="/changelog" element={<ChangelogPage />} />

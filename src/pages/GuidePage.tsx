@@ -240,6 +240,7 @@ function Content() {
         />
         <Bullets
           items={[
+            'MetaTrader: from MT4 save the Detailed Report (HTML) from Account History; from MT5 the History report (HTML or XLSX). Commission and swap go into the fees. Report times are the broker server time and are read as UTC, with a warning.',
             'Broker not listed? Download the CSV template on the page, fill in your trades and import it as Other CSV.',
             'The bar under the title shows how many broker imports your plan has left this month.',
             'Automatic broker sync is planned for Pro and is not available yet.',

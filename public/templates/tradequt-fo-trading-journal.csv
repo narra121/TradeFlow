@@ -1,0 +1,6 @@
+Date,Underlying,Expiry,Strike,CE/PE/FUT,Side,Lots,Lot size,Quantity,Entry price,Exit price,Setup,Mistake / notes,Gross P&L,Turnover,Brokerage,STT,Exchange charge,SEBI fee,Stamp duty,GST,Total charges,Net P&L,Weekday
+2026-11-02,NIFTY,2026-11-10,24500,CE,Buy,2,65,130,120.50,148.25,Breakout,"SAMPLE: bought a call, made-up prices",3607.50,34937.50,40.00,28.91,12.41,0.03,0.47,9.44,91.26,3516.24,Mon
+2026-11-03,BANKNIFTY,2026-11-24,52000,PE,Buy,1,30,30,310.00,255.75,Pullback,SAMPLE: held past the planned stop (mistake tag),-1627.50,16972.50,40.00,11.51,6.03,0.02,0.28,8.29,66.13,-1693.63,Tue
+2026-11-04,NIFTY,2026-11-24,,FUT,Buy,1,65,65,24510.00,24575.50,Breakout,"SAMPLE: long future, made-up prices",4257.50,3190557.50,40.00,798.70,58.38,3.19,31.86,18.28,950.41,3307.09,Wed
+2026-11-05,NIFTY,2026-11-10,25000,CE,Sell,2,65,130,45.00,30.25,Range fade,"SAMPLE: sold a call, bought it back",1917.50,9782.50,40.00,8.78,3.48,0.01,0.12,7.83,60.22,1857.28,Thu
+2026-11-06,BANKNIFTY,2026-11-24,,FUT,Sell,1,30,30,52310.00,52405.00,Pullback,"SAMPLE: short future, chased entry (mistake tag)",-2850.00,3141450.00,40.00,784.65,57.49,3.14,31.44,18.11,934.83,-3784.83,Fri

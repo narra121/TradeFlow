@@ -102,6 +102,11 @@ export default function WinRateVsProfitFactor() {
         If your win rate drops but your profit factor stays the same, you may be taking fewer but better
         trades. If your win rate rises but your profit factor drops, you might be cutting winners too early.
       </p>
+      <p className="text-muted-foreground leading-relaxed mb-4">
+        To see where the two meet, put your win rate, average win and average loss into the{' '}
+        <Link to="/resources/expectancy-calculator" className="text-primary underline underline-offset-4 hover:text-primary/80">expectancy and
+        break-even win rate calculator</Link>: it shows the result per trade after charges and the win rate your payoff needs to break even.
+      </p>
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">How to Track Both in Your Journal</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">

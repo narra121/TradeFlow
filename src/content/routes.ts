@@ -5,8 +5,13 @@ type Loader = () => Promise<{ default: ComponentType }>;
 /** Loaders for the stand-alone SEO pages; shared by the router (below) and the first-paint preloader. */
 export const SEO_PAGE_LOADERS: Record<string, Loader> = {
   '/pricing': () => import('@/pages/seo/PricingPage'),
+  '/forex-trading-journal': () => import('@/pages/seo/ForexTradingJournalPage'),
+  '/mt5-trading-journal': () => import('@/pages/seo/Mt5TradingJournalPage'),
+  '/mt4-trading-journal': () => import('@/pages/seo/Mt4TradingJournalPage'),
+  '/prop-firm-trading-journal': () => import('@/pages/seo/PropFirmTradingJournalPage'),
   '/trading-journal-india': () => import('@/pages/seo/TradingJournalIndiaPage'),
   '/fo-trading-journal': () => import('@/pages/seo/FoTradingJournalPage'),
+  '/sebi-fo-study': () => import('@/pages/seo/SebiFoStudyPage'),
   '/zerodha-trading-journal': () => import('@/pages/seo/ZerodhaTradingJournalPage'),
   '/upstox-trading-journal': () => import('@/pages/seo/UpstoxTradingJournalPage'),
   '/groww-trading-journal': () => import('@/pages/seo/GrowwTradingJournalPage'),
@@ -19,6 +24,8 @@ export const SEO_PAGE_LOADERS: Record<string, Loader> = {
   '/alternatives/tradesviz': () => import('@/pages/seo/TradesVizAlternativePage'),
   '/alternatives/tradervue': () => import('@/pages/seo/TradervueAlternativePage'),
   '/alternatives/edgewonk': () => import('@/pages/seo/EdgewonkAlternativePage'),
+  '/alternatives/myfxbook': () => import('@/pages/seo/MyfxbookAlternativePage'),
+  '/alternatives/fxblue': () => import('@/pages/seo/FxBlueAlternativePage'),
 };
 
 /** Utility pages: in the route registry (prerendered) but never in SEO_PAGES or the sitemap. */

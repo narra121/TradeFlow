@@ -30,9 +30,9 @@ const COMPARISON = [
 ] as const;
 
 const SEGMENTS = [
-  { who: 'Indian F&O and intraday traders', what: 'Tradebook import, charges per trade, options on expiry day set against other days, INR pricing.', Visual: IndiaChargesStill, alt: 'Sample data: one NIFTY option trade with gross P&L, each estimated charge and net P&L in rupees.' },
+  { who: 'Forex traders with several accounts', what: 'MT4 and MT5 reports with commission and swap, results by the session you tag, totals kept per account currency.', Visual: AccountsStill, alt: 'Sample data: three accounts in USD, INR and EUR, each with its own total.' },
   { who: 'Prop-firm challengers', what: 'MT4 and MT5 reports, trade-count and drawdown limits as weekly or monthly goals.', Visual: PropLimitsStill, alt: 'Sample data: a weekly trade-count goal and a monthly drawdown goal with their progress.' },
-  { who: 'Forex traders with several accounts', what: 'One row per account, totals kept per currency.', Visual: AccountsStill, alt: 'Sample data: three accounts in USD, INR and EUR, each with its own total.' },
+  { who: 'Indian F&O and intraday traders', what: 'Tradebook import, charges per trade, options on expiry day set against other days, INR pricing.', Visual: IndiaChargesStill, alt: 'Sample data: one NIFTY option trade with gross P&L, each estimated charge and net P&L in rupees.' },
 ] as const;
 
 const SERVICES = [
@@ -79,7 +79,7 @@ function LandingBody() {
         <div className="lp-hero__top">
           <a href="#import" className="lp-announce" onClick={glideTo('import', still)}>
             <span className="lp-announce__tag">Import</span>
-            Zerodha, Dhan, Upstox, Angel One, Groww, MetaTrader and any CSV
+            MetaTrader 4 and 5, Zerodha, Dhan, Upstox, Angel One, Groww and any CSV
             <ArrowRight aria-hidden="true" />
           </a>
           <h1 id="hero-heading" className="lp-h1">
@@ -295,7 +295,7 @@ export function LandingPage() {
     <>
       <SEO
         title="TradeQut - Trading Journal With Import and Rule Tracking"
-        description={`Trading journal with Zerodha, Dhan, Upstox and MT5 import, net P&L after charges and the cost of every broken rule. ${TRIAL_DAYS}-day free trial, every feature, no card.`}
+        description={`Trading journal for forex and Indian markets: MT4/MT5, Zerodha, Dhan and Upstox import, net P&L after charges and what each broken rule cost. ${TRIAL_DAYS}-day free trial.`}
         path="/"
         jsonLd={JSON_LD}
       />

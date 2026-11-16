@@ -16,8 +16,8 @@ export function BlogIndexPage() {
 
   return (
     <ContentPageShell
-      title="TradeQut Blog - Trading Journal, Risk and F&O Guides"
-      description="Guides on trading journaling, analytics, charges, risk and discipline: Zerodha tradebook, F&O charges, R multiples, drawdown and more."
+      title="TradeQut Blog - Trading Journal, Forex, Risk and F&O Guides"
+      description="Guides on journaling, analytics, charges, risk and discipline: MT5 history, forex sessions, prop challenges, Zerodha tradebook, F&O charges, R multiples."
       path="/blog"
       jsonLd={BLOG_INDEX_SCHEMA}
       maxWidth="max-w-5xl"

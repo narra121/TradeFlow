@@ -18,7 +18,21 @@ describe('ResourcesPage', () => {
   it('has links to calculator pages', () => {
     renderWithProviders(<ResourcesPage />);
     const links = screen.getAllByText('Open calculator');
-    expect(links.length).toBe(3);
+    expect(links.length).toBe(10);
+  });
+
+  it('links the India F&O tools, the Excel template and the SEBI study', () => {
+    renderWithProviders(<ResourcesPage />);
+    for (const href of ['/resources/expectancy-calculator', '/resources/fo-turnover-calculator', '/resources/fo-charges-rates', '/blog/trading-journal-excel-template', '/sebi-fo-study']) {
+      expect(document.querySelector(`a[href="${href}"]`), href).not.toBeNull();
+    }
+  });
+
+  it('links the forex and prop-firm tools', () => {
+    renderWithProviders(<ResourcesPage />);
+    for (const href of ['/resources/forex-market-hours', '/resources/prop-firm-drawdown-calculator', '/resources/margin-calculator', '/resources/risk-of-ruin-calculator', '/resources/compounding-calculator']) {
+      expect(document.querySelector(`a[href="${href}"]`), href).not.toBeNull();
+    }
   });
 
   it('renders calculator descriptions', () => {

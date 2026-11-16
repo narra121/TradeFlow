@@ -103,7 +103,9 @@ export default function ForexTradingJournal() {
         With these fields filled in, a weekly review can answer forex-specific questions: which sessions produce your
         best trades, which pairs keep underperforming, and how much commission and swap take from your results. In
         TradeQut, MetaTrader 4 and 5 reports import with their commission and swap columns, and Analytics breaks results
-        down by symbol, session and hour. Import your history through a{' '}
+        down by symbol, by the session you tag and by hour (see the{' '}
+        <Link to="/forex-trading-journal" className="text-primary underline underline-offset-4 hover:text-primary/80">forex trading journal</Link>{' '}
+        page). Import your history through a{' '}
         <Link to="/blog/importing-trades-from-broker" className="text-primary underline underline-offset-4 hover:text-primary/80">MetaTrader report, a CSV or screenshots</Link>{' '}
         and the review starts from real numbers.
       </p>

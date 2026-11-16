@@ -27,7 +27,7 @@ const FAQ = [
   {
     question: 'Does TradeQut include brokerage, STT and other charges?',
     answer:
-      'For files from Zerodha, Dhan, Upstox, Angel One and Groww, TradeQut estimates brokerage, STT, exchange transaction charges, SEBI fee, stamp duty and GST for each trade at the rates in force on the trade date, and records them as the fees of that trade. Your contract note is the authoritative figure.',
+      "For files from Zerodha, Dhan, Upstox, Angel One and Groww, TradeQut estimates brokerage from the broker's standard plan, and STT, the NSE transaction charge and IPFT contribution, SEBI fee, stamp duty and GST from a dated table of rates. For NSE trades from 1 October 2024 those statutory charges use the rates in force on the trade date; for older trades the transaction charge is an approximation, because NSE then charged it by each broker's monthly volume, and small differences in the SEBI fee and GST are possible. STT on an option exercised at expiry is not included. The total is recorded as the fees of that trade. Your contract note is the authoritative figure.",
   },
   {
     question: 'Can I journal intraday equity trades as well as F&O?',
@@ -82,15 +82,17 @@ export default function TradingJournalIndiaPage() {
         download as CSV or XLSX. Zerodha allows at most 365 days per download. A step-by-step version is in{' '}
         <A to="/blog/zerodha-tradebook-pnl">the Zerodha tradebook guide</A>. Any other broker works through a CSV or Excel
         file where you match the columns, and when there is no export at all you can{' '}
-        <A to="/import-trades-from-screenshot">import trades from a screenshot</A>.
+        <A to="/import-trades-from-screenshot">import trades from a screenshot</A>. Trading forex as well? See the{' '}
+        <A to="/forex-trading-journal">forex trading journal</A> (MT4 and MT5 report import).
       </P>
 
       <H2>See what trading really cost</H2>
       <OL>
         <li>
           Tradebooks list fills, not charges, so TradeQut estimates brokerage, STT, exchange charges, SEBI fee, stamp duty and
-          GST for each trade at the rates in force on its date. P&amp;L is shown net of them; your contract note stays the
-          final word.
+          GST for each trade from a dated table of rates: exact to the trade date for NSE trades from 1 October 2024, an
+          approximation of the transaction charge before that, and without STT on options exercised at expiry. P&amp;L is
+          shown net of them; your contract note stays the final word.
         </li>
         <li>
           Analytics shows results by strategy, session, weekday and hour, and what each mistake and broken rule cost. For

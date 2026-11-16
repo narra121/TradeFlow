@@ -46,13 +46,14 @@ export default function AlternativesIndexPage() {
       <H2>Where TradeQut sits</H2>
       <P>
         TradeQut is the smaller and newer product in every comparison here. It has one plan: a {TRIAL_DAYS}-day free trial
-        with every feature and no card, then Pro at {usdMonth} a month ({inrMonth} in India). Trades come in through broker
-        files, a generic CSV or <A to="/import-trades-from-screenshot">screenshots</A>; automatic broker sync is planned, not
+        with every feature and no card, then Pro at {usdMonth} a month ({inrMonth} in India). Trades come in through MetaTrader
+        4/5 reports, Indian broker files, a generic CSV or <A to="/import-trades-from-screenshot">screenshots</A>; automatic broker sync is planned, not
         available. Its focus is the cost of your own habits: what each mistake and broken rule cost, net of charges.
       </P>
       <P>
-        If you trade Indian markets, start with the <A to="/trading-journal-india">journal for Indian traders</A> or the{' '}
-        <A to="/fo-trading-journal">F&amp;O journal</A>. Full plan details are on the <A to="/pricing">pricing page</A>.
+        If you trade forex, start with the <A to="/forex-trading-journal">forex trading journal</A> (MT4 and MT5 report import) or the{' '}
+        <A to="/prop-firm-trading-journal">prop firm journal</A>; for Indian markets, the <A to="/trading-journal-india">journal for Indian traders</A>{' '}
+        or the <A to="/fo-trading-journal">F&amp;O journal</A>. Full plan details are on the <A to="/pricing">pricing page</A>.
       </P>
 
       <H2>How we compare</H2>

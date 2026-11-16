@@ -42,7 +42,8 @@ export default function OptionsTradingJournalIndia() {
       <P>
         Get the data in without retyping: import your <A to="/blog/zerodha-tradebook-pnl">Zerodha tradebook</A> or the file
         from another broker, then add setups and mistakes. See the{' '}
-        <A to="/trading-journal-india">journal for Indian F&amp;O traders</A>.
+        <A to="/trading-journal-india">journal for Indian F&amp;O traders</A>. SEBI&apos;s own numbers on how many individual F&amp;O
+        traders lose money are in <A to="/sebi-fo-study">the SEBI F&amp;O study, with sources</A>.
       </P>
       <Disclaimer />
     </>

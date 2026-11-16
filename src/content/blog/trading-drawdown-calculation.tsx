@@ -36,6 +36,11 @@ export default function TradingDrawdownCalculation() {
           that resets the day. Use your firm&apos;s current rules, not a general formula.
         </li>
         <li>Journals usually compute drawdown from closed-trade equity; open-position swings are not in the history.</li>
+        <li>
+          Open futures add a wrinkle: a broker&apos;s ledger can record a daily mark-to-market entry while the position is
+          open, which is not the realised P&amp;L booked at exit; see{' '}
+          <A to="/blog/mtm-vs-realised-pnl-futures-options">MTM vs realised P&amp;L in futures and options</A>.
+        </li>
       </UL>
 
       <H2>How to use it in a journal</H2>

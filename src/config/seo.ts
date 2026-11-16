@@ -141,7 +141,7 @@ export const GUIDE_ARTICLE_SCHEMA = {
         description:
           'How to use TradeQut: add trading accounts, log or import trades, read the dashboard, calendar and analytics, use AI reports and chat, set goals and rules.',
         publishedAt: '2026-04-18',
-        updatedAt: '2026-11-12',
+        updatedAt: '2026-11-15',
       },
       `${SITE_URL}/guide`,
     ),
@@ -206,7 +206,7 @@ export const BLOG_INDEX_SCHEMA = {
   '@context': CONTEXT,
   '@type': 'CollectionPage',
   name: 'TradeQut Blog - Trading Journal Guides',
-  description: 'Guides on trading journaling, analytics, charges, risk and discipline for Indian and global traders.',
+  description: 'Guides on trading journaling, analytics, charges, risk and discipline for forex, Indian F&O and stock traders.',
   url: `${SITE_URL}/blog`,
   isPartOf: { '@type': 'WebSite', name: 'TradeQut', url: SITE_URL },
 };
@@ -222,7 +222,8 @@ export function glossarySchema(terms: { term: string; definition: string }[]) {
   };
 }
 
-export function calculatorSchema(name: string, description: string, path: string) {
+/** `faq` adds a FAQPage node; pass the same items the page renders. */
+export function calculatorSchema(name: string, description: string, path: string, faq?: FaqItem[]) {
   return {
     '@context': CONTEXT,
     '@graph': [
@@ -240,6 +241,7 @@ export function calculatorSchema(name: string, description: string, path: string
         { name: 'Calculators', url: `${SITE_URL}/resources` },
         { name, url: `${SITE_URL}${path}` },
       ]),
+      ...(faq?.length ? [faqSchema(faq)] : []),
     ],
   };
 }
@@ -291,7 +293,7 @@ export const RESOURCES_SCHEMA = {
   '@context': CONTEXT,
   '@type': 'CollectionPage',
   name: 'Trading Tools & Calculators - TradeQut',
-  description: 'Free trading calculators: position size, risk-reward ratio, and pip value.',
+  description: 'Free trading calculators for forex, gold and Indian F&O: position size, pip value, margin, prop-firm drawdown, market hours, risk of ruin, F&O charges.',
   url: `${SITE_URL}/resources`,
 };
 

@@ -54,8 +54,11 @@ export function BrokerJournalPage({ id }: { id: BrokerPage['id'] }) {
         </li>
         <li>Buys and sells of the same instrument are paired into trades, each with an entry, an exit and a quantity.</li>
         <li>
-          Brokerage on {b.name}&apos;s plan, STT, exchange transaction charges, SEBI fee, stamp duty and GST are estimated
-          for each trade at the rates in force on the trade date and saved as its fees, so P&amp;L is net. The charges are
+          Brokerage on {b.name}&apos;s standard plan, STT, exchange transaction charges and the NSE IPFT contribution, SEBI fee,
+          stamp duty and GST are estimated for each trade from a dated table of rates and saved as its fees, so P&amp;L is net.
+          For NSE trades from 1 October 2024 the statutory charges use the rates in force on the trade date; before that the
+          transaction charge is an approximation, because NSE charged it by each broker&apos;s monthly volume, and STT on an
+          option exercised at expiry is not included. The charges are
           explained in <A to="/blog/fo-trading-charges-india">F&amp;O charges in India</A>.
         </li>
         <li>

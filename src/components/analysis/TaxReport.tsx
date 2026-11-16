@@ -154,9 +154,17 @@ export function TaxReport() {
         <Panel title="Futures and options turnover">
           <p className="text-[13px]">
             <span className="font-mono tabular-nums">{formatMoney(data.fno.turnover, CURRENCY, { decimals: 2 })}</span>
-            <span className="text-muted-foreground"> against an audit threshold of </span>
+            <span className="text-muted-foreground"> compared with the fixed </span>
             <span className="font-mono tabular-nums">{formatMoney(data.fno.auditThreshold, CURRENCY, { decimals: 0 })}</span>
-            <span className="text-muted-foreground">: {data.fno.auditThresholdExceeded ? 'the threshold is exceeded.' : 'the threshold is not exceeded.'}</span>
+            <span className="text-muted-foreground"> this report uses: {data.fno.auditThresholdExceeded ? 'above it.' : 'not above it.'}</span>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            The total adds the absolute profit or loss of each closed futures and options trade and the premium on the sale leg of every options trade.
+            For the ICAI Guidance Note readings and the ₹1 crore limit, see the{' '}
+            <a href="/resources/fo-turnover-calculator" target="_blank" rel="noopener" className="text-primary underline underline-offset-4">
+              F&amp;O turnover calculator
+            </a>
+            .
           </p>
         </Panel>
       )}

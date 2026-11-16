@@ -98,7 +98,7 @@ describe('comparison pages', () => {
     }
     const sync = COMPETITORS.find((c) => c.id === 'tradersync')!;
     expect(sync.unverified?.join(' ')).toMatch(/not verified/i);
-    expect(sync.facts.join(' ')).not.toMatch(/\$\d/);
+    expect(sync.facts.join(' ')).toMatch(/Pro \$29\.95/);
   });
 });
 

@@ -106,6 +106,6 @@ export function buildLlmsFullTxt(): string {
     for (const f of a.faq ?? []) lines.push(`- Q: ${f.question} A: ${f.answer}`);
     lines.push('');
   }
-  lines.push(`${PRODUCT_NAME} is a journaling and analytics tool, not a SEBI-registered investment adviser; it gives no trading signals or recommendations.`, '');
+  lines.push(`${PRODUCT_NAME} is a journaling and analytics tool, not an investment adviser in any country (in India, not a SEBI-registered investment adviser); it gives no trading signals or recommendations.`, '');
   return lines.join('\n');
 }

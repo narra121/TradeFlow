@@ -17,7 +17,7 @@ const FAQ = [
   {
     question: 'Does TradeQut calculate STT and other charges on options?',
     answer:
-      'It estimates them. For files imported from Zerodha, Dhan, Upstox, Angel One and Groww, TradeQut estimates brokerage, STT, exchange transaction charges, SEBI fee, stamp duty and GST for each trade at the rates in force on the trade date, including the higher STT on futures and options from 1 April 2026. Your contract note is the authoritative figure.',
+      "It estimates them. For files imported from Zerodha, Dhan, Upstox, Angel One and Groww, TradeQut estimates brokerage from the broker's standard plan, and STT, the NSE transaction charge and IPFT contribution, SEBI fee, stamp duty and GST from a dated table of rates, so each trade gets the rates of its own date, including the STT changes of 1 April 2023, 1 October 2024 and 1 April 2026. For NSE trades from 1 October 2024 those statutory charges use the rates in force on the trade date. For older trades the transaction charge is an approximation, because NSE then charged it by each broker's monthly volume, and small differences in the SEBI fee and GST are possible. STT on an option exercised at expiry is not included. Your contract note is the authoritative figure.",
   },
   {
     question: 'Can I see my expiry-day trades separately?',
@@ -54,7 +54,8 @@ export default function FoTradingJournalPage() {
       <P>
         A share trade is a symbol, a price and a quantity. An option trade is also a strike, an expiry, a call or a put and
         a premium that decays, and a round trip can lose money after charges even when the premium moved your way. A
-        journal that only stores a symbol and a profit cannot show any of that.
+        journal that only stores a symbol and a profit cannot show any of that. The quantity of an F&amp;O trade is a number
+        of lots × the lot size, and NSE revises lot sizes from time to time.
       </P>
       <Table
         caption="Fields on an F&O trade and where they come from"
@@ -74,8 +75,10 @@ export default function FoTradingJournalPage() {
         On 1 April 2026 STT on the sell side rose from 0.02% to 0.05% for futures and from 0.10% to 0.15% of premium for
         options. For a trader taking many small option trades, charges can turn a gross profit into a net loss. Broker
         tradebooks list fills, not charges, so TradeQut estimates brokerage, STT, exchange transaction charges, SEBI fee,
-        stamp duty and GST for each imported trade at the rates in force on its date. The arithmetic, with a worked
-        example, is in <A to="/blog/fo-trading-charges-india">F&amp;O charges in India</A>.
+        stamp duty and GST for each imported trade from a dated rate table (see the FAQ below for how exact that is for older
+        trades). The arithmetic, with a worked
+        example, is in <A to="/blog/fo-trading-charges-india">F&amp;O charges in India</A>. SEBI&apos;s figures on how many
+        individual F&amp;O traders lose money after costs are in <A to="/sebi-fo-study">the SEBI F&amp;O study, with sources</A>.
       </P>
       <Callout title="Estimates, not your contract note">
         The figures come from published rates. Your contract note is the authoritative record of what you were charged.
@@ -119,7 +122,8 @@ export default function FoTradingJournalPage() {
         broke. Goals &amp; rules shows each rule week by week with what the breaks cost. For each Indian financial year the
         tax report splits charges into STT, exchange charges, SEBI fee and stamp duty, with brokerage, GST and other
         charges as the remainder, and shows P&amp;L by tax category including F&amp;O. TradeQut does not file taxes and this
-        is not tax advice.
+        is not tax advice. For how the ICAI Guidance Note adds up F&amp;O turnover for tax-audit purposes, see the{' '}
+        <A to="/resources/fo-turnover-calculator">F&amp;O turnover calculator</A>.
       </P>
 
       <H2>What it costs</H2>

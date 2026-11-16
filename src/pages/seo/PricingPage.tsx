@@ -76,7 +76,8 @@ export default function PricingPage() {
             {i < COMPETITORS.length - 1 ? ', ' : '. '}
           </span>
         ))}
-        Trading in India? See the <A to="/trading-journal-india">journal for Indian traders</A>.
+        Trading forex? See the <A to="/forex-trading-journal">forex trading journal</A>; in India, the{' '}
+        <A to="/trading-journal-india">journal for Indian traders</A>.
       </P>
       <Faq items={[...PRODUCT_FAQ, ...BILLING_FAQ]} />
       <p className="mt-6 text-sm text-muted-foreground">

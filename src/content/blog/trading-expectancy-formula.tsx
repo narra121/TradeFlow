@@ -12,7 +12,8 @@ export default function TradingExpectancyFormula() {
       </div>
       <P>
         You get the same number by averaging the R of every trade, which is how a journal computes it. The formula above
-        shows what drives it.
+        shows what drives it. To run your own numbers, with charges and the break-even win rate, use the{' '}
+        <A to="/resources/expectancy-calculator">expectancy calculator</A>.
       </P>
 
       <H2>Worked examples</H2>

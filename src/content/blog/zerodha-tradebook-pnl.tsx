@@ -40,6 +40,11 @@ export default function ZerodhaTradebookPnl() {
         TradeQut reads the Zerodha tradebook CSV or XLSX and skips trades you already imported, so overlapping date ranges
         are safe. See <A to="/trading-journal-india">the journal for Indian traders</A>.
       </P>
+      <P>
+        A futures position held over several days appears in the tradebook only as its entry and exit fills. The daily
+        mark-to-market entries on your ledger are different figures that add up to the same realised P&amp;L before
+        charges: see <A to="/blog/mtm-vs-realised-pnl-futures-options">MTM vs realised P&amp;L in futures and options</A>.
+      </P>
 
       <Sources
         items={[

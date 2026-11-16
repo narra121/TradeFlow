@@ -14,19 +14,22 @@ import {
   ACCOUNT_CURRENCIES,
   FOREX_PAIRS,
   LOT_SIZES,
+  contractSizeOf,
   pipValue,
   type AccountCurrency,
 } from '@/content/forexPairs';
 
 export function PipCalculatorPage() {
   const [pairIndex, setPairIndex] = useState(0);
-  const [lotSize, setLotSize] = useState(100000);
+  const [lots, setLots] = useState<number>(1);
   const [accountCurrency, setAccountCurrency] = useState<AccountCurrency>('USD');
 
   const selectedPair = FOREX_PAIRS[pairIndex];
-  const results = useMemo(() => pipValue(selectedPair, lotSize, accountCurrency), [selectedPair, lotSize, accountCurrency]);
+  const contract = contractSizeOf(selectedPair);
+  const unitName = contract === 100000 ? 'units' : 'oz';
+  const results = useMemo(() => pipValue(selectedPair, lots * contract, accountCurrency), [selectedPair, lots, contract, accountCurrency]);
   const decimals = results.inAccount < 1 ? 4 : 2;
-  const summary = `Pip value ${formatMoney(results.inAccount, accountCurrency, { decimals })} for ${selectedPair.label}, lot size ${lotSize}.`;
+  const summary = `Pip value ${formatMoney(results.inAccount, accountCurrency, { decimals })} for ${selectedPair.label}, ${lots} lot.`;
 
   return (
     <ContentPageShell
@@ -76,10 +79,10 @@ export function PipCalculatorPage() {
               <label htmlFor="lot-size" className={calcLabelClass}>
                 Lot size
               </label>
-              <select id="lot-size" value={lotSize} onChange={(e) => setLotSize(Number(e.target.value))} className={calcInputClass}>
+              <select id="lot-size" value={lots} onChange={(e) => setLots(Number(e.target.value))} className={calcInputClass}>
                 {LOT_SIZES.map((ls) => (
                   <option key={ls.value} value={ls.value}>
-                    {ls.label}
+                    {ls.label} ({ls.value} lot = {(ls.value * contract).toLocaleString('en-US')} {unitName})
                   </option>
                 ))}
               </select>
@@ -124,8 +127,8 @@ export function PipCalculatorPage() {
               {selectedPair.label} &middot; Pip size {selectedPair.pipSize} &middot; Rate {selectedPair.rate}
             </p>
             <FormulaDisclosure>
-              <p>Pip value in the quote currency = pip size × lot size.</p>
-              <p>Converted to USD with the pair rate (or the GBP/USD rate for EUR/GBP), then to your account currency.</p>
+              <p>Pip value in the quote currency = pip size × lots × contract size (100,000 units a lot; 100 oz for gold).</p>
+              <p>Converted to USD with the pair rate when USD is the base, at a reference rate for crosses, then to your account currency.</p>
             </FormulaDisclosure>
             <p className="mt-4 rounded border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
               Exchange rates are approximate and for education only. Use live rates from your broker for real trades.

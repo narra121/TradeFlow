@@ -6,6 +6,8 @@ import TraderSyncAlternativePage from '../seo/TraderSyncAlternativePage';
 import TradesVizAlternativePage from '../seo/TradesVizAlternativePage';
 import TradervueAlternativePage from '../seo/TradervueAlternativePage';
 import EdgewonkAlternativePage from '../seo/EdgewonkAlternativePage';
+import MyfxbookAlternativePage from '../seo/MyfxbookAlternativePage';
+import FxBlueAlternativePage from '../seo/FxBlueAlternativePage';
 import { COMPETITORS } from '@/content/alternatives';
 
 const SUPERLATIVES = /\b(best|better than|#1|leading|top[- ]rated|worst|superior|unbeatable|number one|the only)\b/i;
@@ -16,6 +18,8 @@ const PAGES = [
   ['tradesviz', TradesVizAlternativePage],
   ['tradervue', TradervueAlternativePage],
   ['edgewonk', EdgewonkAlternativePage],
+  ['myfxbook', MyfxbookAlternativePage],
+  ['fxblue', FxBlueAlternativePage],
 ] as const;
 
 describe('comparison pages (E-084)', () => {
