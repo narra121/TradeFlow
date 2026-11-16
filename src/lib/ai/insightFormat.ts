@@ -63,7 +63,7 @@ export function tradesInMessage(message: string | undefined): number | null {
 /** The model and the API print negatives with a hyphen; a minus sign in front of a figure is the true minus (D.3). */
 export function trueMinus(text: string): string {
   // A word joiner keeps a sign on the line of the currency symbol after it (a line may break between the two).
-  return text.replace(/(^|[\s(:])-(?=[\d₹$€£¥])/g, '$1−').replace(/([−+])(?=[₹$€£¥])/g, '$1⁠');
+  return text.replace(/(^|[\s(:*])-(?=[\d₹$€£¥])/g, '$1−').replace(/([−+])(?=[₹$€£¥])/g, '$1⁠');
 }
 
 /** Several currencies are in scope: no account chosen and the accounts do not share one currency. */

@@ -61,7 +61,7 @@ function DetectorRow({ d, currency, pro }: { d: Detector; currency?: string; pro
       <td className="px-4 py-2">
         <span className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end">
           {pro && d.tradeIds.length > 0 && (
-            <Button type="button" variant="ghost" size="sm" className="h-7 px-2" aria-label={`Open ${plural(d.tradeIds.length, 'trade')}: ${d.title}`} onClick={() => open(d.tradeIds)}>
+            <Button type="button" variant="ghost" size="sm" className="h-7 px-2" aria-label={`Trades for ${d.title} (${plural(d.tradeIds.length, 'trade')})`} onClick={() => open(d.tradeIds)}>
               Trades
             </Button>
           )}

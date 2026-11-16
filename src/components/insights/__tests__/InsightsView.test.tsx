@@ -280,6 +280,30 @@ describe('InsightsView opened by a link', () => {
   });
 });
 
+describe('InsightsView opened by a link before the accounts load', () => {
+  it('applies the report’s account once the account list arrives (R-047 on dev: accounts answered after the reports)', () => {
+    accountsState = { accounts: [], selectedAccountId: null };
+    insights = [insight(), insight({ id: 'i2', accountId: 'a2' })];
+    const store = configureStore({ reducer: { trades: tradesReducer } });
+    const tree = () => (
+      <Provider store={store}>
+        <ChromeProvider>
+          <MemoryRouter initialEntries={['/app/insights?id=i2']}>
+            <ScopeBarHost />
+            <InsightsView />
+          </MemoryRouter>
+        </ChromeProvider>
+      </Provider>
+    );
+    const view = render(tree());
+    expect(setSelectedAccountId).not.toHaveBeenCalled();
+    accountsState = { accounts: [{ id: 'a1', name: 'FTMO 100K', currency: 'USD' }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR' }], selectedAccountId: null };
+    view.rerender(tree());
+    expect(setSelectedAccountId).toHaveBeenCalledTimes(1);
+    expect(setSelectedAccountId).toHaveBeenCalledWith('a2');
+  });
+});
+
 describe('InsightsView with too few trades', () => {
   it('disables every Generate button and says why when the scope has under 5 trades (the request could only fail)', () => {
     insights = [];

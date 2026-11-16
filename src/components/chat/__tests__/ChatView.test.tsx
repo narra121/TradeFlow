@@ -102,6 +102,19 @@ describe('ChatView opened by a link', () => {
     expect(setSelectedAccountId).toHaveBeenCalledWith('a1');
   });
 
+  it('applies the chat’s account once the account list arrives after the chats (R-047 on dev)', () => {
+    accounts = [];
+    sessions = [{ ...session('s1', 'Old question'), accountId: 'a2' }];
+    messages = [msg('m1', 'user', 'Old question'), msg('m2', 'assistant', 'Old answer')];
+    const tree = () => <MemoryRouter initialEntries={['/app/chat?s=s1']} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><ChatView /></MemoryRouter>;
+    const view = render(tree());
+    expect(setSelectedAccountId).not.toHaveBeenCalled();
+    accounts = [{ id: 'a1', name: 'FTMO 100K', currency: 'USD', status: 'active', balance: 1 }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR', status: 'active', balance: 1 }];
+    view.rerender(tree());
+    expect(setSelectedAccountId).toHaveBeenCalledTimes(1);
+    expect(setSelectedAccountId).toHaveBeenCalledWith('a2');
+  });
+
   it('leaves the scope alone for an older chat without an account', () => {
     sessions = [session('s1', 'Old question')];
     renderChat('/app/chat?s=s1');

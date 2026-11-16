@@ -116,6 +116,13 @@ describe('Weekly review (QA INR shape)', () => {
     expect(screen.getByText(/1 finding you marked not useful is left out of this review/)).toBeInTheDocument();
   });
 
+  it('a focus broken only by trades that lost nothing shows no "The breaks cost $0.00" (L23-003)', () => {
+    renderReport(reviewInsight({}, { lastFocus: { rule: { kind: 'pauseAfterLoss', minutes: 15 }, ruleText: 'If a trade closes at a loss, I wait 15 minutes before the next entry.', startedAt: '2026-10-12T00:00:00.000Z', checked: 6, kept: 5, broken: 1, brokenTradeIds: ['x1'], brokenNet: 386, cost: 0, text: 'kept on 5 of 6 trades, broken on 1.' } }));
+    const last = screen.getByRole('region', { name: 'Last week’s focus' });
+    expect(last).toHaveTextContent('Broken1');
+    expect(last).not.toHaveTextContent('The breaks cost');
+  });
+
   it('outside a 7-day period it says "Your focus" and no week history', () => {
     renderReport(reviewInsight({ period: { from: '2026-10-01', to: '2026-10-31' } }, { lastFocus: { rule: { kind: 'setStop' }, ruleText: 'If I open a trade, I set a stop first.', startedAt: '2026-10-01T00:00:00.000Z', checked: 0, kept: 0, broken: 0, brokenTradeIds: [], brokenNet: 0, cost: 0, text: 'No trade was checked.' } }));
     expect(screen.getByRole('heading', { name: 'Your focus' })).toBeInTheDocument();

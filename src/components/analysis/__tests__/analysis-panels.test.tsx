@@ -193,7 +193,8 @@ describe('figures from the QA fixture (report §4 examples)', () => {
     const row = within(table).getByRole('rowheader', { name: /Losses beyond the stop/ }).closest('tr')!;
     expect(within(row).getAllByText('−₹67,182.89').length).toBeGreaterThan(0);
     expect(within(row).getAllByText('Too early to tell').length).toBeGreaterThan(0);
-    expect(within(row).getByRole('button', { name: 'Open 11 trades: Losses beyond the stop' })).toBeInTheDocument();
+    // The name starts with the visible "Trades" (WCAG 2.5.3), also for a single trade.
+    expect(within(row).getByRole('button', { name: 'Trades for Losses beyond the stop (11 trades)' })).toBeInTheDocument();
     expect(within(row).getByRole('link', { name: /Make this a rule/ })).toHaveAttribute('href', `/app/goals?addRule=${encodeURIComponent(RULE_TEXT.beyondStop).replace(/%20/g, '+')}`);
     expect(screen.getByText(/Not seen in this period: re-entry after a loss/)).toBeInTheDocument();
   });
@@ -204,7 +205,7 @@ describe('figures from the QA fixture (report §4 examples)', () => {
     expect(within(table).queryByText('−₹67,182.89')).not.toBeInTheDocument();
     expect(within(table).queryByRole('columnheader', { name: /Net P&L/ })).not.toBeInTheDocument();
     expect(screen.getByText(/R against your normal, evidence and the trades behind each row are part of/)).toBeInTheDocument();
-    expect(within(table).queryByRole('button', { name: /^Open/ })).not.toBeInTheDocument();
+    expect(within(table).queryByRole('button', { name: /^Trades for/ })).not.toBeInTheDocument();
     expect(within(table).getAllByRole('link', { name: /Make this a rule/ }).length).toBeGreaterThan(0);
   });
 

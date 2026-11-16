@@ -236,7 +236,8 @@ export function WeeklyReview({ insight, review: r, isWeek, onOpenTrades }: Weekl
             <dl className="flex flex-wrap gap-x-6 gap-y-1 text-13">
               <div className="flex gap-1.5"><dt className="text-muted-foreground">Kept</dt><dd className="font-mono tabular-nums">{r.lastFocus.kept} of {r.lastFocus.checked}</dd></div>
               <div className="flex gap-1.5"><dt className="text-muted-foreground">Broken</dt><dd className="font-mono tabular-nums">{r.lastFocus.broken}</dd></div>
-              <div className="flex gap-1.5"><dt className="text-muted-foreground">The breaks cost</dt><dd><Money value={r.lastFocus.cost} currency={currency} sign={false} neutral /></dd></div>
+              {/* Breaks that lost nothing (a winning re-entry, say) have no cost to show; the server sentence leaves it out too. */}
+              {r.lastFocus.cost > 0 && <div className="flex gap-1.5"><dt className="text-muted-foreground">The breaks cost</dt><dd><Money value={r.lastFocus.cost} currency={currency} sign={false} neutral /></dd></div>}
             </dl>
           )}
           <p className="max-w-prose text-13 text-foreground-soft">{trueMinus(r.lastFocus.text)}</p>

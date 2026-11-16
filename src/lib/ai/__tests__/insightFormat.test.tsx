@@ -88,6 +88,12 @@ describe('answer rendering', () => {
       { type: 'ol', items: ['one', 'two'] },
     ]);
   });
+  it('prints a model’s negative amounts with the true minus, also inside bold (L23-002: "**-1,321 USD**", "-$1,009.57")', () => {
+    const { container } = render(<div>{renderAnswer('Tuesday: **-1,321 USD** across 4 trades; others -$1,009.57.', { onTrade: vi.fn() })}</div>);
+    expect(container.querySelector('strong')?.textContent).toBe('−1,321 USD');
+    expect(container.textContent).toContain('others −⁠$1,009.57.');
+    expect(container.textContent).not.toMatch(/-\$|-1,321/);
+  });
   it('lists cited trades once, in order', () => expect(citedTradeIds('a [#t1] b [#t2] c [#t1]')).toEqual(['t1', 't2']));
 
   it('renders bold, code and trade chips, and never interprets HTML', async () => {

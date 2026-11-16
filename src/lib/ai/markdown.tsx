@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { splitTradeRefs } from './chatStream';
+import { trueMinus } from './insightFormat';
 
 export type Block = { type: 'p'; text: string } | { type: 'ul' | 'ol'; items: string[] };
 
@@ -71,7 +72,7 @@ function withChips(text: string, keyPrefix: string, ids: string[], opts: RenderO
   const out: ReactNode[] = [];
   splitTradeRefs(text).forEach((p, i) => {
     if (p.type === 'text') {
-      out.push(...inline(p.text, `${keyPrefix}-${i}`));
+      out.push(...inline(trueMinus(p.text), `${keyPrefix}-${i}`));
       return;
     }
     const n = ids.indexOf(p.id) + 1;

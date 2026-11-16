@@ -70,7 +70,8 @@ export function InsightsView() {
   useEffect(() => {
     const id = linkedReport.current;
     const r = id ? insights.find((i) => i.id === id) : undefined;
-    if (!r) return;
+    // The account list can arrive after the reports: wait for it, or the one alignment is spent on nothing.
+    if (!r || accounts.length === 0) return;
     linkedReport.current = null;
     if (r.accountId && r.accountId !== selectedAccountId && accounts.some((a) => a.id === r.accountId)) setSelectedAccountId(r.accountId);
   }, [insights, selectedAccountId, accounts, setSelectedAccountId]);

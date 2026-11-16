@@ -162,7 +162,8 @@ export function ChatView() {
   useEffect(() => {
     const id = linkedSession.current;
     const s = id ? sessions.find((x) => x.id === id) : undefined;
-    if (!s || linkedId) return;
+    // The account list can arrive after the chats: wait for it, or the one alignment is spent on nothing.
+    if (!s || linkedId || accounts.length === 0) return;
     linkedSession.current = null;
     if (s.accountId && s.accountId !== selectedAccountId && accounts.some((a) => a.id === s.accountId)) setSelectedAccountId(s.accountId);
   }, [sessions, linkedId, selectedAccountId, accounts, setSelectedAccountId]);
