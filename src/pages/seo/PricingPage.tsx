@@ -47,7 +47,9 @@ export default function PricingPage() {
         or {usdYear}/year ({inrMonth}/month or {inrYear}/year in India).
       </ShortAnswer>
       <H2>Free trial vs Pro</H2>
-      <PricingTable />
+      <div className="mb-8">
+        <PricingTable />
+      </div>
       <P>
         After the trial, or when Pro ends, your journal is read-only: you can view and export every trade, but adding,
         editing and deleting need Pro. Nothing is deleted, and upgrading makes everything work again at once.
