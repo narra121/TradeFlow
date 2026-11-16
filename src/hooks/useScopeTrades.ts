@@ -36,15 +36,18 @@ export function useScopeTrades(override?: ScopeParams, options?: { skip?: boolea
   const all = useGetScopeTradesQuery(params, { skip: options?.skip || options?.newestOnly });
   const newest = useGetNewestTradeQuery(params, { skip: options?.skip || !options?.newestOnly });
   const query = options?.newestOnly ? newest : all;
-  const trades = useMemo(() => sortNewestFirst(query.data ?? []), [query.data]);
+  // `currentData`, not `data`: RTK keeps `data` from the last scope while a new account or range loads, which would show
+  // that scope's trades under the new one. A new scope is loading until its own answer arrives.
+  const current = query.currentData;
+  const trades = useMemo(() => sortNewestFirst(current ?? []), [current]);
   return {
     trades,
-    isLoading: query.isLoading,
+    isLoading: query.isLoading || (query.isFetching && current === undefined),
     isFetching: query.isFetching,
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,
-    truncated: (query.data?.length ?? 0) >= SCOPE_TRADE_CEILING,
+    truncated: (current?.length ?? 0) >= SCOPE_TRADE_CEILING,
     params,
   };
 }
