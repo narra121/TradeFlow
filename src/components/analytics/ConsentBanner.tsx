@@ -23,6 +23,7 @@ export function ConsentBanner({ onClose }: ConsentBannerProps) {
 
   // The panel stays non-blocking, so the page must keep its own focused control out from under it (WCAG 2.4.11):
   // scroll-padding makes focus scroll stop above the panel, and body padding lets the last content scroll clear of it.
+  // landing/motion.tsx useConsentReserve() reads this inline scroll-padding-bottom to lift the sticky hero controls.
   const panel = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = panel.current;
