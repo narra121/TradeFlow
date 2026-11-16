@@ -268,6 +268,8 @@
   height: calc(100vh - 56px);
   height: calc(100svh - 56px);
   min-height: 600px;
+  /* --lp-reserve: the open consent panel's height (useConsentReserve); the chapter buttons stay above it. */
+  padding-bottom: var(--lp-reserve, 0px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -503,7 +505,7 @@
   position: sticky;
   top: 56px;
   min-height: calc(100vh - 56px);
-  padding: 72px 0 32px;
+  padding: 72px 0 calc(32px + var(--lp-reserve, 0px));
   overflow: hidden;
 }
 .lp-story__head {
@@ -803,7 +805,7 @@
 .lp-motion {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  bottom: calc(20px + var(--lp-reserve, 0px));
   /* Under the public header (z-40), so the open phone menu covers it like the rest of the page. */
   z-index: 30;
   display: grid;

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowRight } from 'lucide-react';
 import { SEO } from '@/components/SEO';
@@ -11,7 +12,7 @@ import { Eyebrow } from '@/components/showcase/Eyebrow';
 import { SampleDataChip } from '@/components/showcase/SampleDataChip';
 import { TradeReviewDemo } from '@/components/showcase/TradeReviewDemo';
 import { AccountsStill, IndiaChargesStill, PhoneDashboard, PropLimitsStill } from '@/components/showcase/SegmentStills';
-import { LandingMotionProvider, MotionToggle, PageProgress, glideTo, useLandingMotion } from '@/components/landing/motion';
+import { LandingMotionProvider, MotionToggle, PageProgress, glideTo, useConsentReserve, useLandingMotion } from '@/components/landing/motion';
 import { ParticleAssembly } from '@/components/landing/ParticleAssembly';
 import { Manifesto } from '@/components/landing/Manifesto';
 import { StorySection } from '@/components/landing/StorySection';
@@ -71,8 +72,9 @@ const TRIAL = `${TRIAL_DAYS}-day free trial. No card.`;
 
 function LandingBody() {
   const { still } = useLandingMotion();
+  const reserve = useConsentReserve();
   return (
-    <div className="lp" data-still={still}>
+    <div className="lp" data-still={still} style={reserve ? ({ '--lp-reserve': reserve } as CSSProperties) : undefined}>
       <PageProgress />
 
       <section className="lp-hero" aria-labelledby="hero-heading">

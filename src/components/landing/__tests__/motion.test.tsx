@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { LandingMotionProvider, MotionToggle, useLandingMotion } from '../motion';
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { LandingMotionProvider, MotionToggle, useConsentReserve, useLandingMotion } from '../motion';
 
 const mockMedia = (matches: boolean) =>
   vi.stubGlobal('matchMedia', (query: string) => ({ matches, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
@@ -32,5 +32,20 @@ describe('LandingMotionProvider (FE-080)', () => {
       </LandingMotionProvider>,
     );
     expect(screen.getByRole('button', { name: 'Pause animations' })).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
+describe('useConsentReserve (L23-R1: landing controls stay above the consent panel)', () => {
+  it('follows the height the consent panel reserves on the root element, and clears when it closes', async () => {
+    const { result } = renderHook(() => useConsentReserve());
+    expect(result.current).toBe('');
+    act(() => {
+      document.documentElement.style.scrollPaddingBottom = '318px';
+    });
+    await waitFor(() => expect(result.current).toBe('318px'));
+    act(() => {
+      document.documentElement.style.scrollPaddingBottom = '';
+    });
+    await waitFor(() => expect(result.current).toBe(''));
   });
 });

@@ -98,6 +98,24 @@ export function PageProgress() {
   return <div className="lp-progress" aria-hidden="true" style={{ ['--p' as string]: p }} />;
 }
 
+/**
+ * Height the consent panel keeps clear at the bottom of the screen ('' when it is closed). components/analytics/ConsentBanner.tsx
+ * writes it to the root element's inline scroll-padding-bottom while open; the landing's fixed and sticky bottom controls
+ * sit above it, because scrolling cannot move them out from under the panel (WCAG 2.4.11).
+ */
+export function useConsentReserve(): string {
+  const [reserve, setReserve] = useState('');
+  useEffect(() => {
+    const root = document.documentElement;
+    const read = () => setReserve(root.style.scrollPaddingBottom);
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(root, { attributes: true, attributeFilter: ['style'] });
+    return () => mo.disconnect();
+  }, []);
+  return reserve;
+}
+
 export function useInView(ref: RefObject<Element>, rootMargin = '80px'): boolean {
   const [inView, setInView] = useState(false);
   useEffect(() => {
