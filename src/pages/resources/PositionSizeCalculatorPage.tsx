@@ -33,8 +33,16 @@ export function PositionSizeCalculatorPage() {
     const risk = (accountBalance * riskPercent) / 100;
     return { risk, positionSize: risk / (stopLossPips * perLot), perLot };
   }, [accountBalance, riskPercent, stopLossPips, pair, accountCurrency]);
+  const inputError =
+    accountBalance <= 0
+      ? 'Enter an account balance above 0.'
+      : riskPercent <= 0
+        ? 'Enter a risk per trade above 0%.'
+        : stopLossPips <= 0
+          ? 'Enter a stop loss above 0 pips.'
+          : null;
 
-  const summary = `Position size ${results.positionSize.toFixed(2)} lots, risk ${formatMoney(results.risk, accountCurrency)}.`;
+  const summary = inputError ?? `Position size ${results.positionSize.toFixed(2)} lots, risk ${formatMoney(results.risk, accountCurrency)}.`;
 
   return (
     <ContentPageShell
@@ -120,22 +128,28 @@ export function PositionSizeCalculatorPage() {
         result={
           <>
             <h2 className="mb-4 text-base font-semibold text-foreground">Result</h2>
-            <p className="text-sm text-muted-foreground">Position size</p>
-            <p className="num mb-4 text-2xl font-semibold text-foreground">{results.positionSize.toFixed(2)} lots</p>
-            <dl className="grid grid-cols-2 gap-4">
-              <div>
-                <dt className="text-sm text-muted-foreground">Amount at risk</dt>
-                <dd className="num text-base font-semibold text-foreground">
-                  {formatMoney(results.risk, accountCurrency)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Pip value per standard lot</dt>
-                <dd className="num text-base font-semibold text-foreground">
-                  {formatMoney(results.perLot, accountCurrency)}
-                </dd>
-              </div>
-            </dl>
+            {inputError ? (
+              <p className="text-sm text-foreground-soft">{inputError}</p>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">Position size</p>
+                <p className="num mb-4 text-2xl font-semibold text-foreground">{results.positionSize.toFixed(2)} lots</p>
+                <dl className="grid grid-cols-2 gap-4">
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Amount at risk</dt>
+                    <dd className="num text-base font-semibold text-foreground">
+                      {formatMoney(results.risk, accountCurrency)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Pip value per standard lot</dt>
+                    <dd className="num text-base font-semibold text-foreground">
+                      {formatMoney(results.perLot, accountCurrency)}
+                    </dd>
+                  </div>
+                </dl>
+              </>
+            )}
             <FormulaDisclosure>
               <p>Amount at risk = balance × risk %.</p>
               <p>Position size (lots) = amount at risk ÷ (stop pips × pip value per standard lot).</p>

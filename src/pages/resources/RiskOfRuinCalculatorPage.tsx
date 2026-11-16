@@ -74,7 +74,9 @@ export function RiskOfRuinCalculatorPage() {
   );
   const r = useMemo(() => riskOfRuin(input), [input]);
   const trades = Math.min(2000, Math.max(1, Math.round(parseDecimal(tradesText))));
-  const within = useMemo(() => (r.status === 'ok' ? simulateRuin(input, trades, RUNS) : null), [input, trades, r.status]);
+  const simulated = useMemo(() => (r.status === 'ok' ? simulateRuin(input, trades, RUNS) : null), [input, trades, r.status]);
+  // Ruin within N trades is a subset of ruin ever, so a simulated share above the solved figure is sampling noise.
+  const within = simulated === null || r.status !== 'ok' ? simulated : Math.min(simulated, r.probability);
 
   const pct = (x: number) => (x > 0 && x < 0.0001 ? 'below 0.01%' : formatPercent(x * 100, x < 0.1 ? 2 : 1));
   const summary = r.status === 'error' ? ERRORS[r.error] : `Risk of ruin ${pct(r.probability)}; within ${trades} trades ${within === null ? 'n/a' : pct(within)}.`;

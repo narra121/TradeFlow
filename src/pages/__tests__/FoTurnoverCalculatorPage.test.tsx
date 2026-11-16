@@ -86,6 +86,15 @@ describe('F&O turnover calculator page', () => {
     expect(added.getByText('Your answer: the premium is not in the figures above')).toBeInTheDocument();
   });
 
+  it('gives the total in crore only from one lakh, never "0.00 crore"', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await typeInto(user, 'Options: total of profits', '7500.50');
+    expect(within(reading('Turnover')).queryByText(/crore/)).not.toBeInTheDocument();
+    await typeInto(user, 'Options: total of profits', '30,00,000');
+    expect(within(reading('Turnover')).getByText('0.30 crore')).toBeInTheDocument();
+  });
+
   it('shows a single total when no premium is entered', async () => {
     const user = userEvent.setup();
     renderPage();

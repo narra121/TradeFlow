@@ -50,6 +50,9 @@ const PAGE_TITLES: Record<AuthView, string> = {
 };
 
 const IDS = { email: 'auth-email', password: 'auth-password', code: 'auth-code' } as const;
+// scripts/prerender-routes.js saves this page as static HTML, which has no submit handler until the app replaces it: a
+// native submit would reload /login and clear the fields. The saved button is a plain button; the app renders the real one.
+const PRERENDER = typeof window !== 'undefined' && Boolean((window as { __PRERENDER__?: boolean }).__PRERENDER__);
 const CALL_OF: Record<AuthView, AuthCall> = { login: 'login', signup: 'signup', forgot: 'forgot', otp: 'confirm', reset: 'reset' };
 
 type Errors = { email?: string; password?: string; code?: string };
@@ -479,7 +482,7 @@ export const AuthPage = ({ onLogin, initialView = 'login' }: AuthPageProps) => {
   );
 
   const submit = (label: string, runningLabel: string, running: boolean, off = false) => (
-    <button type="submit" className="btn btn-primary btn-block" aria-disabled={busy || off || undefined} data-busy={running || undefined}>
+    <button type={PRERENDER ? 'button' : 'submit'} className="btn btn-primary btn-block" aria-disabled={busy || off || undefined} data-busy={running || undefined}>
       {running && <LoaderCircle className="ico spin" aria-hidden="true" />}
       {running ? runningLabel : label}
     </button>

@@ -1,6 +1,6 @@
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { A, Crumbs, Disclaimer, Faq, H2, P, ShortAnswer, SignupCta, Sources, Table, UL } from '@/content/components/ArticleParts';
-import { COMPETITORS, getCompetitor, type Competitor } from '@/content/alternatives';
+import { COMPETITORS, checkedOn, getCompetitor, type Competitor } from '@/content/alternatives';
 import { BROKER_PAGES } from '@/content/brokers';
 import { METATRADER_PAGES } from '@/content/forex-platforms';
 import { getSeoPage } from '@/content/seo-pages';
@@ -28,7 +28,7 @@ export function AlternativePage({ id }: { id: Competitor['id'] }) {
       <ShortAnswer>
         {c.name} is {c.summary.charAt(0).toLowerCase() + c.summary.slice(1)} TradeQut is a smaller journal with a
         14-day free trial, Pro at {usd}/month ({inr}/month in India), file import for MetaTrader 4/5 and Indian brokers, and rule tracking. Where{' '}
-        {c.name} is stronger is listed below. Prices were checked on {c.checked}.
+        {c.name} is stronger is listed below. Prices were checked on {checkedOn(c.checked)}.
       </ShortAnswer>
 
       <H2>What we verified about {c.name}</H2>
@@ -59,7 +59,7 @@ export function AlternativePage({ id }: { id: Competitor['id'] }) {
 
       <H2>Side by side</H2>
       <Table
-        caption={`Checked ${c.checked}`}
+        caption={`Checked ${checkedOn(c.checked)}`}
         head={['Feature', c.name, 'TradeQut']}
         rows={[
           ['Free plan or trial', c.table.free, `${TRIAL_DAYS}-day free trial with every Pro feature, then read-only`],

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ScrollRegion } from '@/components/content/ScrollRegion';
 
 export default function TradingJournalTemplate() {
   return (
@@ -15,7 +16,7 @@ export default function TradingJournalTemplate() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         Here are the non-negotiable fields that every trade entry must include:
       </p>
-      <div className="overflow-x-auto mb-6">
+      <ScrollRegion label="Required fields for every trade" className="mb-6">
         <table className="w-full text-sm text-muted-foreground border border-border/50 rounded-lg">
           <thead>
             <tr className="bg-card">
@@ -78,7 +79,7 @@ export default function TradingJournalTemplate() {
             </tr>
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       <p className="text-muted-foreground leading-relaxed mb-4">
         These eight fields are the skeleton of your journal. They enable every quantitative
         analysis you will ever want to run — win rate by symbol, average P&L by time of day,

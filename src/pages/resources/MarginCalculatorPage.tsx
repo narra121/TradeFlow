@@ -76,7 +76,8 @@ export function MarginCalculatorPage() {
   );
   const money = (n: number) => formatMoney(n, currency);
   const unitName = contractSizeOf(pair) === 100000 ? `units of ${pair.value.slice(0, 3)}` : 'oz';
-  const summary = r.status === 'error' ? ERRORS[r.error] : `Margin ${money(r.margin)} for ${parseDecimal(lotsText)} lots of ${pair.value} at 1:${leverage}.`;
+  const lots = parseDecimal(lotsText);
+  const summary = r.status === 'error' ? ERRORS[r.error] : `Margin ${money(r.margin)} for ${lots} ${lots === 1 ? 'lot' : 'lots'} of ${pair.value} at 1:${leverage}.`;
 
   return (
     <ContentPageShell title={TITLE} description={DESCRIPTION} path={PATH} jsonLd={calculatorSchema(NAME, DESCRIPTION, PATH, FAQ)} maxWidth="max-w-5xl">

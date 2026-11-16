@@ -804,7 +804,8 @@
   position: fixed;
   right: 20px;
   bottom: 20px;
-  z-index: 40;
+  /* Under the public header (z-40), so the open phone menu covers it like the rest of the page. */
+  z-index: 30;
   display: grid;
   place-items: center;
   width: 40px;

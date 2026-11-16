@@ -222,7 +222,7 @@ function Reading({ view, showTotalLabel }: { view: ReadingView; showTotalLabel: 
           <dd className="num text-right">{rupees(view.total)}</dd>
         </div>
       </dl>
-      <p className="mt-1 text-right text-xs text-muted-foreground">{crore(view.total)}</p>
+      {view.total >= 100_000 && <p className="mt-1 text-right text-xs text-muted-foreground">{crore(view.total)}</p>}
     </section>
   );
 }

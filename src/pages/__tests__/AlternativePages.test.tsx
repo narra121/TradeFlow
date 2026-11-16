@@ -8,7 +8,7 @@ import TradervueAlternativePage from '../seo/TradervueAlternativePage';
 import EdgewonkAlternativePage from '../seo/EdgewonkAlternativePage';
 import MyfxbookAlternativePage from '../seo/MyfxbookAlternativePage';
 import FxBlueAlternativePage from '../seo/FxBlueAlternativePage';
-import { COMPETITORS } from '@/content/alternatives';
+import { COMPETITORS, checkedOn } from '@/content/alternatives';
 
 const SUPERLATIVES = /\b(best|better than|#1|leading|top[- ]rated|worst|superior|unbeatable|number one|the only)\b/i;
 
@@ -31,7 +31,8 @@ describe('comparison pages (E-084)', () => {
       const sources = screen.getByRole('heading', { name: 'Sources' }).closest('section')!;
       expect(sources.textContent).toContain(`checked ${competitor.checked}`);
       expect(sources.querySelector(`a[href="${competitor.pricingUrl}"]`)).not.toBeNull();
-      expect(container.textContent).toContain(`Prices were checked on ${competitor.checked}`);
+      // Running text writes the day first (D.3); the Sources list above keeps the ISO citation date.
+      expect(container.textContent).toContain(`Prices were checked on ${checkedOn(competitor.checked)}.`);
     });
 
     it(`${id}: uses no superlatives and names where the competitor is stronger`, () => {

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { FaqItem } from '../product-facts';
+import { ScrollRegion } from '@/components/content/ScrollRegion';
 
 /** Building blocks for articles and SEO pages; class names match the existing article styling. */
 
@@ -97,7 +98,7 @@ export function A({ to, children }: { to: string; children: ReactNode }) {
 
 export function Table({ head, rows, caption }: { head: ReactNode[]; rows: ReactNode[][]; caption?: string }) {
   return (
-    <div className="overflow-x-auto mb-6 rounded-lg border border-border/60">
+    <ScrollRegion label={caption ?? `Table: ${head.filter((h) => typeof h === 'string').join(', ')}`} className="mb-6 rounded-lg border border-border/60">
       <table className="w-full text-sm">
         {caption && <caption className="text-left text-xs text-muted-foreground px-3 py-2">{caption}</caption>}
         <thead className="bg-muted/40">
@@ -121,7 +122,7 @@ export function Table({ head, rows, caption }: { head: ReactNode[]; rows: ReactN
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   );
 }
 

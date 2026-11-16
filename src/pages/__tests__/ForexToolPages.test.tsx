@@ -98,7 +98,8 @@ describe('margin calculator', () => {
 describe('risk of ruin calculator', () => {
   it('defaults: 45% at 1:2, 1% risk, 10% ruin level = 3.41%, 10 losses in a row', () => {
     renderWithProviders(<RiskOfRuinCalculatorPage />);
-    expect(screen.getByText('3.41%')).toBeInTheDocument();
+    // Ever and within 100 trades: the simulated 3.67% is capped at the solved 3.41%.
+    expect(screen.getAllByText('3.41%')).toHaveLength(2);
     expect(screen.getAllByText('10').length).toBeGreaterThan(0);
     expect(screen.getByText('+0.35R')).toBeInTheDocument();
   });
@@ -133,5 +134,42 @@ describe('gold in the existing calculators', () => {
     renderWithProviders(<PositionSizeCalculatorPage />);
     await user.selectOptions(screen.getByLabelText('Pair'), 'XAU/USD (gold)');
     expect(screen.getByText('0.20 lots')).toBeInTheDocument();
+  });
+});
+
+describe('calculator results a trader can trust', () => {
+  it('position size: a zero stop asks for a stop instead of showing 0.00 lots and $0.00 at risk', async () => {
+    renderWithProviders(<PositionSizeCalculatorPage />);
+    await fill('Stop loss distance (pips)', '0');
+    expect(screen.getByText('Enter a stop loss above 0 pips.')).toBeInTheDocument();
+    expect(screen.queryByText('0.00 lots')).toBeNull();
+    await fill('Risk per trade (%)', '0');
+    expect(screen.getByText('Enter a risk per trade above 0%.')).toBeInTheDocument();
+  });
+
+  it('pip value: each currency once (EUR/USD in a USD account is one $10.00, not three)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<PipCalculatorPage />);
+    expect(screen.getAllByText('$10.00')).toHaveLength(1);
+    await user.selectOptions(screen.getByLabelText('Currency pair'), 'USD/JPY');
+    await user.selectOptions(screen.getByLabelText('Account currency'), 'EUR');
+    expect(screen.getByText('Pip value (JPY)')).toBeInTheDocument();
+    expect(screen.getByText('Pip value (USD)')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Currency pair'), 'EUR/USD');
+    await user.selectOptions(screen.getByLabelText('Account currency'), 'INR');
+    expect(screen.getAllByText('Pip value (USD)')).toHaveLength(1);
+  });
+
+  it('margin: the screen-reader summary says "1 lot"', async () => {
+    renderWithProviders(<MarginCalculatorPage />);
+    expect(await screen.findByText(/^Margin \$3,616\.67 for 1 lot of EUR\/USD at 1:30\.$/, {}, { timeout: 2000 })).toBeInTheDocument();
+  });
+
+  it('risk of ruin: within 100 trades is never shown above the chance of ever reaching ruin', () => {
+    renderWithProviders(<RiskOfRuinCalculatorPage />);
+    const ever = Number(screen.getByText('Risk of ruin (ever)').nextElementSibling!.textContent!.replace('%', ''));
+    expect(ever).toBe(3.41);
+    const within = Number(screen.getByText('Within 100 trades').nextElementSibling!.textContent!.replace('%', ''));
+    expect(within).toBeLessThanOrEqual(ever);
   });
 });

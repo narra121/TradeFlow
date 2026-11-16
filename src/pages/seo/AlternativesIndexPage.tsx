@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { A, Disclaimer, H2, P, ShortAnswer } from '@/content/components/ArticleParts';
-import { COMPETITORS } from '@/content/alternatives';
+import { COMPETITORS, checkedOn } from '@/content/alternatives';
 import { TRIAL_DAYS, proPrice } from '@/content/product-facts';
 import { getSeoPage } from '@/content/seo-pages';
 import { seoPageSchema } from '@/config/seo';
@@ -37,7 +37,7 @@ export default function AlternativesIndexPage() {
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">{c.summary}</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Paid price: {c.table.price}. Checked {c.checked}.
+              Paid price: {c.table.price}. Checked {checkedOn(c.checked)}.
             </p>
           </li>
         ))}

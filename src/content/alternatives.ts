@@ -350,3 +350,11 @@ export function getCompetitor(id: Competitor['id']): Competitor {
   if (!c) throw new Error(`unknown competitor ${id}`);
   return c;
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** `2026-11-15` → `15 Nov 2026`, for dates shown in running text (D.3); read as a calendar day, never through a time zone. */
+export function checkedOn(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+}

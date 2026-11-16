@@ -29,6 +29,9 @@ export function PipCalculatorPage() {
   const unitName = contract === 100000 ? 'units' : 'oz';
   const results = useMemo(() => pipValue(selectedPair, lots * contract, accountCurrency), [selectedPair, lots, contract, accountCurrency]);
   const decimals = results.inAccount < 1 ? 4 : 2;
+  // Each currency is shown once: the headline is the account currency.
+  const showQuote = results.quoteCurrency !== accountCurrency;
+  const showUsd = accountCurrency !== 'USD' && results.quoteCurrency !== 'USD';
   const summary = `Pip value ${formatMoney(results.inAccount, accountCurrency, { decimals })} for ${selectedPair.label}, ${lots} lot.`;
 
   return (
@@ -113,16 +116,22 @@ export function PipCalculatorPage() {
             <p className="num mb-4 text-2xl font-semibold text-foreground">
               {formatMoney(results.inAccount, accountCurrency, { decimals })}
             </p>
-            <dl className="grid grid-cols-2 gap-4">
-              <div>
-                <dt className="text-sm text-muted-foreground">Pip value ({results.quoteCurrency})</dt>
-                <dd className="num text-base font-semibold text-foreground">{formatMoney(results.inQuote, results.quoteCurrency, { decimals: results.inQuote < 1 ? 4 : 2 })}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-muted-foreground">Pip value (USD)</dt>
-                <dd className="num text-base font-semibold text-foreground">{formatMoney(results.inUsd, 'USD', { decimals: results.inUsd < 1 ? 4 : 2 })}</dd>
-              </div>
-            </dl>
+            {(showQuote || showUsd) && (
+              <dl className="grid grid-cols-2 gap-4">
+                {showQuote && (
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Pip value ({results.quoteCurrency})</dt>
+                    <dd className="num text-base font-semibold text-foreground">{formatMoney(results.inQuote, results.quoteCurrency, { decimals: results.inQuote < 1 ? 4 : 2 })}</dd>
+                  </div>
+                )}
+                {showUsd && (
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Pip value (USD)</dt>
+                    <dd className="num text-base font-semibold text-foreground">{formatMoney(results.inUsd, 'USD', { decimals: results.inUsd < 1 ? 4 : 2 })}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
             <p className="mt-3 text-xs text-muted-foreground">
               {selectedPair.label} &middot; Pip size {selectedPair.pipSize} &middot; Rate {selectedPair.rate}
             </p>
