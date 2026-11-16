@@ -82,5 +82,8 @@ describe('Compare preference', () => {
     fireEvent.click(sw);
     expect(sw).toHaveAttribute('aria-checked', 'false');
     fireEvent.click(sw);
+    // 44x44 on touch around the 36x20 track (36x20 measured on dev at 390).
+    expect(sw.className).toContain('[@media(pointer:coarse)]:min-h-11');
+    expect(sw.className).toContain('[@media(pointer:coarse)]:min-w-11');
   });
 });

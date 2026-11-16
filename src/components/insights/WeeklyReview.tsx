@@ -185,7 +185,8 @@ export function WeeklyReview({ insight, review: r, isWeek, onOpenTrades }: Weekl
       <section aria-labelledby="review-verdict" className="space-y-2">
         <h3 id="review-verdict" className="text-xs font-semibold text-foreground-soft">Verdict</h3>
         <p className="max-w-prose text-base font-semibold">{trueMinus(v.headline)}</p>
-        <p className="max-w-prose text-sm text-foreground-soft">{trueMinus(v.text)}</p>
+        {/* The server falls back to the headline when the model's wording is rejected: never print it twice. */}
+        {v.text.trim().replace(/[.!]+$/, '') !== v.headline.trim().replace(/[.!]+$/, '') && <p className="max-w-prose text-sm text-foreground-soft">{trueMinus(v.text)}</p>}
         <dl className="grid gap-x-6 gap-y-2 pt-1 text-13 sm:grid-cols-2">
           <div>
             <dt className="text-xs text-muted-foreground">Result</dt>

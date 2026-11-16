@@ -85,6 +85,16 @@ describe('ChatView chat list', () => {
     expect(within(list).getByRole('button', { name: long })).toHaveAttribute('title', long);
   });
 
+  it('names the account under each chat, so the same question asked of two accounts is told apart (L23-004)', () => {
+    accounts = [{ id: 'a1', name: 'FTMO 100K', currency: 'USD', status: 'active', balance: 1 }, { id: 'a2', name: 'Zerodha F&O', currency: 'INR', status: 'active', balance: 1 }];
+    const q = 'Which setup has made me the most money?';
+    sessions = [{ ...session('s1', q), accountId: 'a1' }, { ...session('s2', q), accountId: 'a2' }];
+    renderChat();
+    const list = screen.getByRole('complementary', { name: 'Chats' });
+    expect(within(list).getByRole('button', { name: `${q} FTMO 100K` })).toHaveAttribute('title', q);
+    expect(within(list).getByRole('button', { name: `${q} Zerodha F&O` })).toBeInTheDocument();
+  });
+
   it('keeps the open chat in the list even before its first answer', () => {
     sessions = [{ ...session('e1', ''), messageCount: 0 }];
     renderChat('/app/chat?s=e1');
@@ -246,6 +256,8 @@ describe('ChatView conversation', () => {
     send.mockReturnValue(call({ content: 'ok', done: { messageId: 'm' } }));
     renderChat('/app/chat?s=s1');
     expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled();
+    // The textarea beside it may not squeeze the 44 px touch target (38 px measured on dev at 390).
+    expect(screen.getByRole('button', { name: 'Send message' }).className).toContain('shrink-0');
     await userEvent.type(box(), 'line one{Shift>}{Enter}{/Shift}line two');
     expect(box()).toHaveValue('line one\nline two');
     await userEvent.keyboard('{Enter}');
@@ -426,6 +438,8 @@ describe('ChatView calculations, tables and accounts', () => {
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Setup', 'Trades', 'Win rate', 'Net P&L', 'Avg R', 'Evidence']);
     expect(within(table).getByRole('rowheader', { name: 'Reversal' }).closest('tr')).toHaveTextContent('Reversal683.3%+$844.79+1.10RToo early to tell');
     expect(screen.getByRole('region', { name: /Table 1/ })).toHaveAttribute('tabindex', '0');
+    // 44 px tall on touch, like Copy beside the answer (24 px measured on dev at 390).
+    expect(screen.getByRole('button', { name: 'View 3 trades →' }).className).toContain('[@media(pointer:coarse)]:h-11');
     await userEvent.click(screen.getByRole('button', { name: 'View 3 trades →' }));
     expect(openTrade).toHaveBeenCalledWith('r1', { ids: ['r1', 'r2', 'p1'] });
   });
@@ -437,6 +451,7 @@ describe('ChatView calculations, tables and accounts', () => {
     await userEvent.click(screen.getByRole('button', { name: '03 Nov 2026' }));
     expect(openTrade).toHaveBeenCalledWith('t7', { ids: ['t7'] });
     expect(screen.getByRole('table')).toHaveTextContent('−₹994.42');
+    expect(screen.getByRole('button', { name: 'Copy' }).className).toContain('[@media(pointer:coarse)]:min-w-11');
   });
 
   it('all accounts in two currencies: the answer asks for an account (nothing charged) and resends the same question with it', async () => {

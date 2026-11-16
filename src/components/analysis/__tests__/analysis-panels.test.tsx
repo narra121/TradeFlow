@@ -108,6 +108,8 @@ describe('too few trades', () => {
     expect(link).not.toHaveAttribute('aria-label');
     const visible = link.querySelector('.font-medium')!.textContent!;
     expect(link).toHaveAccessibleName(new RegExp(`^${visible.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} · .*\\. Open its trades in Trades$`));
+    // 44 px tall on touch screens (40 px measured on dev at 390).
+    expect(link.className).toContain('[@media(pointer:coarse)]:min-h-11');
   });
 
   it('Detectors: none seen', () => {

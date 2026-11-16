@@ -37,7 +37,18 @@ export function ConsentBanner({ onClose }: ConsentBannerProps) {
     reserve();
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(reserve);
     ro?.observe(el);
+    // Chrome does not scroll a focused control that is already inside the viewport, even when it sits under the
+    // panel (scroll-padding is ignored then; seen at 390 px, where the panel covers the lower 40%): move it up here.
+    const reveal = (e: FocusEvent) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement) || el.contains(t)) return;
+      const r = t.getBoundingClientRect();
+      const top = el.getBoundingClientRect().top;
+      if (r.bottom > top) window.scrollBy({ top: Math.min(r.bottom - top + 8, Math.max(0, r.top - 8)) });
+    };
+    document.addEventListener('focusin', reveal);
     return () => {
+      document.removeEventListener('focusin', reveal);
       ro?.disconnect();
       root.style.scrollPaddingBottom = before.scroll;
       document.body.style.paddingBottom = before.pad;
@@ -83,13 +94,14 @@ export function ConsentBanner({ onClose }: ConsentBannerProps) {
           </div>
         )}
 
-        <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {/* Phones: Reject and Accept side by side (equal weight), Customize below, so the panel covers less of the page. */}
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
           {customize ? (
-            <Button variant="outline" onClick={() => decide({ analytics, ads })}>
+            <Button variant="outline" className="order-last col-span-2 sm:order-none" onClick={() => decide({ analytics, ads })}>
               Save choices
             </Button>
           ) : (
-            <Button variant="ghost" onClick={() => setCustomize(true)}>
+            <Button variant="ghost" className="order-last col-span-2 sm:order-none" onClick={() => setCustomize(true)}>
               Customize
             </Button>
           )}

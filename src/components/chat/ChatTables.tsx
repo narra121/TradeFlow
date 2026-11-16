@@ -77,7 +77,7 @@ function ChatTable({ table, n, currency, onTrade }: ChatTableProps) {
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {v.note && <p className="max-w-prose">{v.note}</p>}
           {ids.length > 0 && !v.perTrade && (
-            <button type="button" onClick={() => onTrade(ids[0], ids)} className="inline-flex h-6 items-center text-primary underline-offset-2 hover:underline">
+            <button type="button" onClick={() => onTrade(ids[0], ids)} className="inline-flex h-6 items-center text-primary underline-offset-2 hover:underline [@media(pointer:coarse)]:h-11">
               {removes ? `View the ${plural(ids.length, 'trade')} the rule removes` : `View ${plural(ids.length, 'trade')}`} →
             </button>
           )}

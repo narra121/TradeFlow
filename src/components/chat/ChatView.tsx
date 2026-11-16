@@ -73,7 +73,7 @@ function Message({ role, content, onTrade, actions, note, pending, working, tabl
         </>
       )}
       {cited.length > 1 && (
-        <button type="button" onClick={() => onTrade(cited[0], cited)} className="inline-flex h-6 items-center text-xs text-primary underline-offset-2 hover:underline">
+        <button type="button" onClick={() => onTrade(cited[0], cited)} className="inline-flex h-6 items-center text-xs text-primary underline-offset-2 hover:underline [@media(pointer:coarse)]:h-11">
           View all {cited.length} trades →
         </button>
       )}
@@ -283,14 +283,14 @@ export function ChatView() {
   const sessionsPane = sessionsError ? (
     <ErrorState title="Couldn’t load your chats." error={sessionsErrorDetail} onRetry={refetchSessions} />
   ) : (
-    <ChatSessions sessions={sessions} loading={sessionsLoading} activeId={sessionId} onSelect={select} onDelete={setConfirmDelete} />
+    <ChatSessions sessions={sessions} loading={sessionsLoading} activeId={sessionId} onSelect={select} onDelete={setConfirmDelete} accountName={(id) => accounts.find((a) => a.id === id)?.name} />
   );
 
   const empty = messages.length === 0 && !turn && !messagesFetching;
   const stored: ChatMessage[] = messages;
   const userShown = turn && turn.status !== 'done' ? stored.length < turn.baseCount + 1 : false;
   const copyButton = (text: string) => (
-    <button type="button" className="inline-flex h-6 items-center px-1 text-muted-foreground underline-offset-2 hover:underline" onClick={() => void copy(text)}>Copy</button>
+    <button type="button" className="inline-flex h-6 items-center px-1 text-muted-foreground underline-offset-2 hover:underline [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:min-w-11" onClick={() => void copy(text)}>Copy</button>
   );
 
   const accountChoice = turn?.status === 'account' && (
@@ -396,7 +396,7 @@ export function ChatView() {
                           note={turn.status === 'stopped' ? 'Stopped' : undefined}
                           actions={
                             turn.status === 'stopped' || turn.status === 'error' ? (
-                              <button type="button" className="inline-flex h-6 items-center px-1 text-primary underline-offset-2 hover:underline" onClick={() => void submit(turn.user)}>Retry</button>
+                              <button type="button" className="inline-flex h-6 items-center px-1 text-primary underline-offset-2 hover:underline [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:min-w-11" onClick={() => void submit(turn.user)}>Retry</button>
                             ) : turn.text && turn.status === 'done' ? (
                               copyButton(answerText(turn.text, turn.tables, turn.currency))
                             ) : undefined
@@ -448,9 +448,9 @@ export function ChatView() {
               className="min-h-[3.25rem] resize-none"
             />
             {turn?.status === 'streaming' ? (
-              <Button type="button" variant="outline" onClick={stop} aria-label="Stop answer (Esc)"><Square className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Stop</Button>
+              <Button type="button" variant="outline" onClick={stop} aria-label="Stop answer (Esc)" className="shrink-0"><Square className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Stop</Button>
             ) : (
-              <Button type="submit" size="icon" aria-label="Send message" disabled={!draft.trim() || atLimit}><ArrowUp className="h-4 w-4" aria-hidden="true" /></Button>
+              <Button type="submit" size="icon" aria-label="Send message" className="shrink-0" disabled={!draft.trim() || atLimit}><ArrowUp className="h-4 w-4" aria-hidden="true" /></Button>
             )}
           </div>
           <div className="mt-2"><AiNote /></div>

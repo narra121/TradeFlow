@@ -123,6 +123,12 @@ describe('Weekly review (QA INR shape)', () => {
     expect(last).not.toHaveTextContent('The breaks cost');
   });
 
+  it('prints the verdict once when its sentence is the headline (L23-005: the server falls back to the headline)', () => {
+    const base = reviewInsight();
+    renderReport(reviewInsight({}, { verdict: { ...base.review!.verdict, headline: 'A winning period, with process breaks.', text: 'A winning period, with process breaks.' } }));
+    expect(screen.getAllByText('A winning period, with process breaks.')).toHaveLength(1);
+  });
+
   it('outside a 7-day period it says "Your focus" and no week history', () => {
     renderReport(reviewInsight({ period: { from: '2026-10-01', to: '2026-10-31' } }, { lastFocus: { rule: { kind: 'setStop' }, ruleText: 'If I open a trade, I set a stop first.', startedAt: '2026-10-01T00:00:00.000Z', checked: 0, kept: 0, broken: 0, brokenTradeIds: [], brokenNet: 0, cost: 0, text: 'No trade was checked.' } }));
     expect(screen.getByRole('heading', { name: 'Your focus' })).toBeInTheDocument();

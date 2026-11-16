@@ -45,7 +45,7 @@ export function TimingGrid({ grid, currency, zone }: { grid: Grid; currency?: st
               <th scope="row" className="pr-2 text-left font-normal text-muted-foreground">{row.day.slice(0, 3)}</th>
               {grid.hours.map((h, c) => {
                 const cell = row.cells[h];
-                if (!cell) return <td key={h} className="h-8 rounded-sm bg-muted/20" aria-label={`${row.day} ${h}:00, no trades`} />;
+                if (!cell) return <td key={h} className="h-8 rounded-sm bg-muted/20 [@media(pointer:coarse)]:h-11" aria-label={`${row.day} ${h}:00, no trades`} />;
                 const grey = cell.trades < MIN_VERDICT_TRADES;
                 const shown = formatCompactMoney(cell.net, { currency, sign: true });
                 const name = `${row.day} ${String(h).padStart(2, '0')}:00, net ${formatMoney(cell.net, currency, { sign: true })}, ${cell.trades} ${cell.trades === 1 ? 'trade' : 'trades'}, win rate ${formatPercent(cell.winRate, 0)}${grey ? ', too few trades to tell' : ''}`;
@@ -60,7 +60,7 @@ export function TimingGrid({ grid, currency, zone }: { grid: Grid; currency?: st
                       onFocus={() => setActive([r, c])}
                       onKeyDown={(e) => move(e, r, c)}
                       title={name}
-                      className={cn('flex h-8 w-11 items-center justify-center rounded-sm font-mono tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', grey ? 'bg-muted/50 text-muted-foreground' : cn('text-foreground-soft', tintClass(cell.net, tintStep(cell.net, maxAbs))))}
+                      className={cn('flex h-8 w-11 items-center [@media(pointer:coarse)]:h-11 justify-center rounded-sm font-mono tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', grey ? 'bg-muted/50 text-muted-foreground' : cn('text-foreground-soft', tintClass(cell.net, tintStep(cell.net, maxAbs))))}
                     >
                       {/* The name starts with the printed figure (WCAG 2.5.3, label in name); the rest is read out only. */}
                       {shown}

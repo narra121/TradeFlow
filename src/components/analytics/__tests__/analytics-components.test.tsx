@@ -24,6 +24,10 @@ describe('ConsentBanner', () => {
     const accept = screen.getByRole('button', { name: 'Accept all' });
     const reject = screen.getByRole('button', { name: 'Reject non-essential' });
     expect(accept.className).toBe(reject.className);
+    // Phones: the two choices share one row, Customize goes below them (L21-R2: the panel covered 44% of a 390 x 844 screen).
+    expect(accept.parentElement!.className).toContain('grid-cols-2');
+    expect(screen.getByRole('button', { name: 'Customize' }).className).toContain('col-span-2');
+    expect(screen.getByRole('button', { name: 'Customize' }).className).toContain('order-last');
     await user.click(reject);
     expect(readConsent()).toMatchObject({ analytics: false, ads: false });
     expect(onClose).toHaveBeenCalled();
@@ -44,6 +48,37 @@ describe('ConsentBanner', () => {
       expect(document.body.style.paddingBottom).toBe('');
     } finally {
       height.mockRestore();
+    }
+  });
+
+  it('scrolls a focused page control out from under the panel (R-048: Chrome leaves a control inside the viewport where it is)', () => {
+    const scrollBy = vi.fn();
+    const orig = window.scrollBy;
+    window.scrollBy = scrollBy as unknown as typeof window.scrollBy;
+    const rect = (top: number, bottom: number) => ({ top, bottom, left: 0, right: 390, width: 390, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+    try {
+      render(
+        <MemoryRouter>
+          <a href="/x">Page link</a>
+          <a href="/y">Upper link</a>
+          <ConsentBanner onClose={vi.fn()} />
+        </MemoryRouter>,
+      );
+      const panel = screen.getByRole('dialog', { name: 'Cookies and privacy' });
+      vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(rect(486, 844));
+      const below = screen.getByRole('link', { name: 'Page link' });
+      vi.spyOn(below, 'getBoundingClientRect').mockReturnValue(rect(734, 778));
+      act(() => below.focus());
+      expect(scrollBy).toHaveBeenCalledWith({ top: 778 - 486 + 8 });
+      const above = screen.getByRole('link', { name: 'Upper link' });
+      vi.spyOn(above, 'getBoundingClientRect').mockReturnValue(rect(100, 140));
+      scrollBy.mockClear();
+      act(() => above.focus());
+      expect(scrollBy).not.toHaveBeenCalled();
+      act(() => screen.getByRole('button', { name: 'Accept all' }).focus());
+      expect(scrollBy).not.toHaveBeenCalled();
+    } finally {
+      window.scrollBy = orig;
     }
   });
 

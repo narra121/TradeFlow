@@ -104,6 +104,8 @@ describe('TimingGrid', () => {
     expect(screen.getByRole('link', { name: '+$50, Monday 09:00, net +$50.00, 4 trades, win rate 75%, too few trades to tell' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^−\$20, Monday 10:00/ })).toHaveTextContent(/^−\$20/);
     expect(screen.getByText(/^Times in UTC\./)).toBeInTheDocument();
+    // 44 px tall on touch screens (DESIGN-SHARED S10; 32 px measured on dev at 390).
+    expect(screen.getByRole('link', { name: /Monday 09:00/ }).className).toContain('[@media(pointer:coarse)]:h-11');
   });
 
   it('greys every cell under 30 trades, never tints it, and says the grid is mostly noise (report §3.3 rule 4)', () => {
@@ -151,6 +153,8 @@ describe('StatementPanel', () => {
     expect(screen.getByText('−$121.40')).toBeInTheDocument();
     // Statement labels are 44 px tall on touch screens.
     expect(screen.getByRole('button', { name: 'Planned R:R' }).className).toContain('[@media(pointer:coarse)]:min-h-11');
+    // Short labels ("payoff", "Trades") still get a 44 px wide target on touch.
+    expect(screen.getByRole('button', { name: 'Planned R:R' }).className).toContain('[@media(pointer:coarse)]:min-w-11');
   });
 
   it('says there is nothing to compare with when the previous period has no trades, and prints no change', () => {
