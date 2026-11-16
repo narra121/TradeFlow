@@ -33,7 +33,7 @@ afterEach(() => {
 
 describe('usePeriodStats', () => {
   it('requests the period and the equal previous period with the same account and capital', () => {
-    getStats.mockImplementation((args) => ({ data: args === skipToken ? undefined : { totalTrades: 1, startDate: (args as { startDate: string }).startDate }, isLoading: false }));
+    getStats.mockImplementation((args) => { const d = args === skipToken ? undefined : { totalTrades: 1, startDate: (args as { startDate: string }).startDate }; return { data: d, currentData: d, isLoading: false }; });
     renderWithProviders(<Probe />, { preloadedState: month as never });
     const calls = getStats.mock.calls.map((c) => c[0] as Record<string, unknown>);
     expect(calls).toEqual([
@@ -62,7 +62,7 @@ describe('usePeriodStats', () => {
   });
 
   it('a previous period without trades is no comparison: no prev, prevEmpty set (no zeros are compared)', () => {
-    getStats.mockImplementation((args) => ({ data: args === skipToken ? undefined : { totalTrades: (args as { startDate: string }).startDate === '2026-11-01' ? 5 : 0 }, isLoading: false }));
+    getStats.mockImplementation((args) => { const d = args === skipToken ? undefined : { totalTrades: (args as { startDate: string }).startDate === '2026-11-01' ? 5 : 0 }; return { data: d, currentData: d, isLoading: false }; });
     function Empty() {
       const r = usePeriodStats();
       const [on, setOn] = useCompare();
@@ -71,6 +71,17 @@ describe('usePeriodStats', () => {
     }
     renderWithProviders(<Empty />, { preloadedState: month as never });
     expect(screen.getByTestId('state')).toHaveTextContent('no prev empty Oct');
+  });
+
+  it('a new scope shows no figures from the last one: it is loading until its own answer arrives (L22-R2)', () => {
+    // RTK while the arguments change: `data` still holds the last scope's answer, `currentData` is empty.
+    getStats.mockReturnValue({ data: { totalTrades: 7 }, currentData: undefined, isLoading: false, isFetching: true });
+    function Scope() {
+      const r = usePeriodStats();
+      return <p data-testid="scope">{`${r.stats ? `trades ${r.stats.totalTrades}` : 'no stats'} ${r.isLoading ? 'loading' : 'ready'}`}</p>;
+    }
+    renderWithProviders(<Scope />, { preloadedState: month as never });
+    expect(screen.getByTestId('scope')).toHaveTextContent('no stats loading');
   });
 
   it('requests nothing while skipped (a locked tab never asks for its data)', () => {
