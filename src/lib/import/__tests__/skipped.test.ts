@@ -52,6 +52,16 @@ describe('findSkippedLines', () => {
     expect(line.trade?.closeDate).toBe('2026-11-03T10:20:00.000Z');
   });
 
+  it('reads a recovered line with the offset of its own date in a zone with summer time', () => {
+    patchUiState({ timeZone: 'Europe/London' });
+    // 3 Nov is GMT (UTC+0); a summer date is BST (UTC+1) whatever today's offset is.
+    const summer = text.replace(/2026-11-0(\d)/g, '2026-07-0$1');
+    const [line] = findSkippedLines(summer, parsed, 1);
+    expect(line.trade?.openDate).toBe('2026-07-03T09:05:00.000Z');
+    const [winter] = findSkippedLines(text, parsed, 1);
+    expect(winter.trade?.openDate).toBe('2026-11-03T10:05:00.000Z');
+  });
+
   it('a line whose direction cannot be read is listed without a row to edit', () => {
     const t = csv('EURUSD,Buy,10000,1.0850,1.0884,2026-11-02 09:15,2026-11-02 11:40,3.5,T1', 'XAUUSD,??,1,2400,2390,2026-11-03 10:05,2026-11-03 14:20,0,T9');
     const [line] = findSkippedLines(t, [parsedTrade({})], 1);

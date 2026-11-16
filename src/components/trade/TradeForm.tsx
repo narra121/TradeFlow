@@ -227,9 +227,14 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
 
   const blur = (key: keyof TradeFormState) => {
     setTouched((t) => ({ ...t, [key]: true }));
-    setErrors(validate(form));
+    // Validate the latest form: a date field commits its text in the same blur, after this render's `form` was read.
+    setForm((f) => {
+      setErrors(validate(f));
+      return f;
+    });
   };
-  const err = (key: keyof TradeFormState) => (touched[key] || errors[key] ? errors[key] : undefined);
+  // A field shows its error once the user has left it or tried to save; one blur does not flag the untouched fields.
+  const err = (key: keyof TradeFormState) => (touched[key] ? errors[key] : undefined);
 
   const buildPayload = (): CreateTradePayload => {
     const entry = parseNum(form.entryPrice) ?? 0;
@@ -366,7 +371,7 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
   }
 
   const qtyLabel = quantityLabel(form.assetClass);
-  const errorCount = Object.keys(errors).length;
+  const errorCount = (Object.keys(errors) as (keyof TradeFormState)[]).filter((k) => touched[k]).length;
   const inputMode = { inputMode: 'decimal' as const, autoComplete: 'off' };
   const symbolOptions = options.symbols ?? [];
   const unknownTags = form.tags.filter((m) => !(options.tags ?? []).includes(m));
@@ -495,10 +500,11 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Opened" required error={err('entryTime')}>
+          {/* Full rows: "16 Nov 2026, 11:30" plus the calendar and Now buttons do not fit half the pane. */}
+          <Field label="Opened" required error={err('entryTime')} className="sm:col-span-2">
             {(a) => <DateTimeField {...a} value={form.entryTime} onChange={(v) => set('entryTime', v)} onBlur={() => blur('entryTime')} />}
           </Field>
-          <Field label="Closed" required error={err('exitTime')}>
+          <Field label="Closed" required error={err('exitTime')} className="sm:col-span-2">
             {(a) => <DateTimeField {...a} value={form.exitTime} onChange={(v) => set('exitTime', v)} onBlur={() => blur('exitTime')} showNow />}
           </Field>
           <Field label={`Fees${accountCurrency ? ` (${accountCurrency})` : ''}`} error={err('fees')}>

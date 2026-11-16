@@ -43,8 +43,7 @@ import { bulkUpdateBody, cachePatch } from '@/components/tradelog/bulkUpdate';
 import { readApiError } from '@/lib/apiError';
 import { downloadCsv, exportFileName, tradesToCsv } from '@/lib/exportCsv';
 import { formatDateShort, formatDateTime, formatMoney, formatPercent } from '@/lib/format';
-import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { appTimeZone } from '@/lib/appTimeZone';
+import { appTimeZone, appTodayKey } from '@/lib/appTimeZone';
 import { patchTradePayload } from '@/lib/patchTrade';
 import { BUILT_IN_VIEWS, isModified, loadCustomViews, matchesSpecial, needsJournal, newViewId, saveCustomViews, type TradeView } from '@/lib/savedViews';
 import { loadColumnConfig, presetColumns, saveColumnConfig, type ColumnConfig } from '@/lib/tradeColumns';
@@ -695,7 +694,7 @@ export function TradeLogView() {
             title={copy.trades.emptyScope.title}
             description={copy.trades.emptyScope.description}
             action={
-              <Button size="sm" variant="outline" onClick={() => { dispatch(setDateRangeFilter({ startDate: '2000-01-01', endDate: formatLocalDateOnly(new Date()), datePreset: 'all' })); dispatch(setSelectedAccount(null)); }}>
+              <Button size="sm" variant="outline" onClick={() => { dispatch(setDateRangeFilter({ startDate: '2000-01-01', endDate: appTodayKey(), datePreset: 'all' })); dispatch(setSelectedAccount(null)); }}>
                 {copy.trades.emptyScope.action}
               </Button>
             }

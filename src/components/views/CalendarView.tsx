@@ -107,7 +107,7 @@ export function CalendarView() {
   const monthParam = params.get('month');
   useEffect(() => {
     if (monthParam || everything.isLoading || !newestMonth) return;
-    const hasCurrent = everything.trades.some((t) => tradeDayKey(t).startsWith(monthKey(new Date())));
+    const hasCurrent = everything.trades.some((t) => tradeDayKey(t).startsWith(monthKey(appToday())));
     if (!hasCurrent) setQuery({ month: monthKey(newestMonth) }, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monthParam, everything.isLoading, newestMonth?.getTime()]);
@@ -126,7 +126,7 @@ export function CalendarView() {
 
   const goMonth = (d: Date, extra: Record<string, string | null> = {}) => setQuery({ month: monthKey(d), day: null, wk: null, ...extra }, true);
   const anchorParam = params.get('week');
-  const anchor = anchorParam ? parseLocalDate(anchorParam) : monthKey(new Date()) === monthKey(month) ? new Date() : month;
+  const anchor = anchorParam ? parseLocalDate(anchorParam) : monthKey(appToday()) === monthKey(month) ? appToday() : month;
   const anchorWeekIndex = Math.max(0, model.weeks.findIndex((w) => w.days.some((d) => d.key === formatLocalDateOnly(anchor))));
   const weekRow = model.weeks[anchorWeekIndex];
   const goWeek = (delta: number) => {

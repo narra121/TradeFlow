@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DateRangeFilter, getDateRangeFromPreset } from '../DateRangeFilter';
+import { DateRangeFilter, getDateRangeFromPreset, rangeLabel } from '../DateRangeFilter';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 
 describe('DateRangeFilter', () => {
   it('shows the active range on the trigger', () => {
@@ -34,6 +35,34 @@ describe('DateRangeFilter', () => {
     expect(screen.getByRole('option', { name: /Custom/ })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('button', { name: /Start date 1 Oct 2026/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /End date 31 Oct 2026/ })).toBeInTheDocument();
+  });
+
+  it('lets the custom range end on today in the Settings time zone, not the browser clock', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 12:00 UTC on 16 Nov is already 02:00 on 17 Nov in Kiritimati (UTC+14), while every browser zone up to UTC+11 is still on 16 Nov.
+    vi.setSystemTime(new Date('2026-11-16T12:00:00Z'));
+    patchUiState({ timeZone: 'Pacific/Kiritimati' });
+    try {
+      render(<DateRangeFilter selectedPreset="custom" onPresetChange={vi.fn()} customRange={{ from: new Date(2026, 10, 2), to: new Date(2026, 10, 10) }} showCustomPicker />);
+      fireEvent.click(screen.getByRole('button', { name: /Date range/ }));
+      fireEvent.click(screen.getByRole('button', { name: /End date/ }));
+      const day = (n: string) => screen.getAllByRole('gridcell').find((c) => c.textContent === n)!;
+      const button = (n: string) => (day(n).tagName === 'BUTTON' ? day(n) : day(n).querySelector('button') ?? day(n));
+      expect(button('17')).not.toBeDisabled();
+      expect(button('18')).toBeDisabled();
+    } finally {
+      patchUiState({ timeZone: undefined });
+      resetUiStateCache();
+      vi.useRealTimers();
+    }
+  });
+
+  it('labels a custom range compactly, so it fits the phone scope bar (L23-R2)', () => {
+    expect(rangeLabel(new Date(2026, 9, 19), new Date(2026, 9, 25))).toBe('19 – 25 Oct 2026');
+    expect(rangeLabel(new Date(2026, 9, 1), new Date(2026, 10, 16))).toBe('1 Oct – 16 Nov 2026');
+    expect(rangeLabel(new Date(2025, 11, 29), new Date(2026, 0, 4))).toBe('29 Dec 2025 – 4 Jan 2026');
+    render(<DateRangeFilter selectedPreset="custom" onPresetChange={vi.fn()} customRange={{ from: new Date(2026, 9, 19), to: new Date(2026, 9, 25) }} />);
+    expect(screen.getByRole('button', { name: 'Date range: 19 – 25 Oct 2026' })).toBeInTheDocument();
   });
 });
 

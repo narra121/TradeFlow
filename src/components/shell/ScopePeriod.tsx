@@ -47,7 +47,7 @@ export function ScopePeriod() {
   const custom = f.datePreset === 'custom' ? { from: parseLocalDate(f.startDate), to: parseLocalDate(f.endDate) } : undefined;
 
   return (
-    <div className="flex shrink-0 items-center gap-0.5">
+    <div className="flex min-w-0 items-center gap-0.5">
       <Button type="button" variant="ghost" size="icon-sm" className="hidden md:inline-flex" onClick={() => step(-1)} disabled={disabled} aria-label="Previous period">
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
       </Button>

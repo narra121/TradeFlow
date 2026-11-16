@@ -38,7 +38,7 @@ function MiniMonth({ m, metric, scale, onOpenMonth, onOpenDay }: { m: YearMonth;
   return (
     <section aria-label={name} className="rounded-lg border border-border bg-card p-3">
       <div className="mb-2 flex items-baseline justify-between gap-2">
-        <button type="button" onClick={() => onOpenMonth(m.key)} className="text-13 font-medium hover:underline focus-visible:underline [@media(pointer:coarse)]:min-h-11" aria-label={`${name}, ${plural(m.model.tradeCount, 'trade')}. Open the month`}>
+        <button type="button" onClick={() => onOpenMonth(m.key)} className="text-13 font-medium hover:underline focus-visible:underline [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11" aria-label={`${name}, ${plural(m.model.tradeCount, 'trade')}. Open the month`}>
           {format(m.date, 'MMMM')}
         </button>
         <span className="flex gap-1.5 font-mono text-2xs tabular-nums">
@@ -75,7 +75,7 @@ export function YearView({ months, year, metric, loading, capped, onOpenMonth, o
   if (loading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
 
   const columns: DataColumn<YearMonth>[] = [
-    { id: 'month', header: 'Month', cell: (m) => <button type="button" onClick={() => onOpenMonth(m.key)} className="hover:underline focus-visible:underline [@media(pointer:coarse)]:min-h-11">{format(m.date, 'MMMM')}</button> },
+    { id: 'month', header: 'Month', cell: (m) => <button type="button" onClick={() => onOpenMonth(m.key)} className="hover:underline focus-visible:underline [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11">{format(m.date, 'MMMM')}</button> },
     { id: 'net', header: 'Net', align: 'right', cell: (m) => (m.model.byCurrency.length ? <span className="flex flex-col items-end">{m.model.byCurrency.map((c) => <Money key={c.currency} value={c.net} currency={c.currency} />)}</span> : <span className="text-muted-foreground">—</span>) },
     { id: 'days', header: 'Days', align: 'right', hideBelow: 'sm', cell: (m) => <span className="font-mono tabular-nums">{m.model.tradingDays || '—'}</span> },
     {

@@ -45,8 +45,10 @@ function readDate(value: string): string {
   if (!v) return '';
   const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/.exec(v);
   if (m) {
-    const ms = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)) - zoneOffsetMinutes(new Date()) * 60_000;
-    return new Date(ms).toISOString();
+    const wall = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0));
+    // The offset of that date, not of today: summer and winter time differ.
+    const guess = wall - zoneOffsetMinutes(new Date(wall)) * 60_000;
+    return new Date(wall - zoneOffsetMinutes(new Date(guess)) * 60_000).toISOString();
   }
   const d = new Date(v);
   return Number.isNaN(d.getTime()) ? '' : d.toISOString();

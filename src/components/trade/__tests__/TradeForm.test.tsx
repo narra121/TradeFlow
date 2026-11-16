@@ -58,6 +58,19 @@ describe('TradeForm', () => {
     expect(within(outcome).getByRole('radio', { name: 'SL hit' })).toBeChecked();
   });
 
+  it('leaving one field empty flags only that field, not every untouched one', () => {
+    setup();
+    const closed = screen.getByLabelText(/^Closed/);
+    fireEvent.change(closed, { target: { value: '' } });
+    fireEvent.blur(closed);
+    expect(screen.getByLabelText(/^Symbol/)).not.toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText(/^Entry price/)).not.toHaveAttribute('aria-invalid', 'true');
+    expect(screen.queryByText(/fields need attention/)).toBeNull();
+    // The cleared date itself is flagged on that same blur (its text is committed in the blur).
+    expect(closed).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('1 field needs attention')).toBeInTheDocument();
+  });
+
   it('does not stop the tab from closing while nothing was typed', () => {
     setup();
     expect(unload().defaultPrevented).toBe(false);

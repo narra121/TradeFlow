@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { popupOption } from '@/components/ui/popup';
+import { appToday } from '@/lib/appTimeZone';
 import { cn } from '@/lib/utils';
 import { DatePreset, PRESET_OPTIONS, getDateRangeFromPreset, presetLabel } from '@/lib/scope';
 
@@ -18,6 +19,13 @@ interface DateRangeFilterProps {
   onCustomRangeChange?: (range: { from: Date; to: Date }) => void;
   showCustomPicker?: boolean;
   className?: string;
+}
+
+/** `19 – 25 Oct 2026`, `19 Oct – 25 Nov 2026`, or both dates in full across years (DESIGN-SCREENS §1.4 label). */
+export function rangeLabel(from: Date, to: Date): string {
+  if (from.getFullYear() !== to.getFullYear()) return `${format(from, 'd MMM yyyy')} – ${format(to, 'd MMM yyyy')}`;
+  if (from.getMonth() !== to.getMonth()) return `${format(from, 'd MMM')} – ${format(to, 'd MMM yyyy')}`;
+  return `${format(from, 'd')} – ${format(to, 'd MMM yyyy')}`;
 }
 
 /** One trigger showing the active range; the popover lists presets and, when enabled, a custom range. */
@@ -34,7 +42,7 @@ export function DateRangeFilter({
 
   const label =
     selectedPreset === 'custom' && customRange
-      ? `${format(customRange.from, 'd MMM yyyy')} – ${format(customRange.to, 'd MMM yyyy')}`
+      ? rangeLabel(customRange.from, customRange.to)
       : presetLabel(selectedPreset);
 
   const choose = (preset: DatePreset) => {
@@ -55,7 +63,7 @@ export function DateRangeFilter({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className={cn('justify-between gap-2 font-normal', className)} aria-label={`Date range: ${label}`}>
+        <Button variant="outline" size="sm" className={cn('min-w-0 max-w-full justify-between gap-2 font-normal', className)} aria-label={`Date range: ${label}`}>
           <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span className="truncate">{label}</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -115,7 +123,7 @@ export function DateRangeFilter({
                 weekStartsOn={1}
                 selected={customRange[picking]}
                 onSelect={(d) => pick(picking, d)}
-                disabled={(d) => d > new Date()}
+                disabled={(d) => d > appToday()}
                 initialFocus
                 className="pointer-events-auto p-0 pt-2"
               />

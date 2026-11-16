@@ -7,7 +7,7 @@ export function LatestInsight({ accountId }: { accountId?: string }) {
   if (isLoading || isError) return null;
   const latest = data?.insights?.[0];
   return (
-    <Link to="/app/insights" className="flex min-h-9 items-center justify-between gap-2 rounded-sm text-[13px] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <Link to="/app/insights" className="flex min-h-9 [@media(pointer:coarse)]:min-h-11 items-center justify-between gap-2 rounded-sm text-[13px] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
       {latest ? (
         <span className="line-clamp-2 min-w-0" title={latest.summary}>
           <span className="text-muted-foreground">Latest insight · </span>

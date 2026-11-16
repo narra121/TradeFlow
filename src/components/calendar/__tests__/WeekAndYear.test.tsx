@@ -118,6 +118,8 @@ describe('YearView', () => {
     for (const b of monthButtons) {
       expect(b.className).not.toMatch(/outline-none/);
       expect(b.className).toMatch(/pointer:coarse\)\]:min-h-11/);
+      // Short names ("May") are narrower than 44 px without it (L24-R7).
+      expect(b.className).toMatch(/pointer:coarse\)\]:min-w-11/);
     }
   });
 

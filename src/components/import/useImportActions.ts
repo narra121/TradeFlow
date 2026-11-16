@@ -83,7 +83,8 @@ export function useImportActions() {
       const flow = importFlow.get();
       const chosen = source ?? flow.source;
       // A generic CSV has no broker clock: its times are read in the app time zone, not the parser's IST default. A mapping only exists for a generic CSV.
-      const zone = chosen === 'generic_csv' || mapping ? { utcOffsetMinutes: zoneOffsetMinutes(new Date()) } : {};
+      // timeZone lets the server use each row's own offset (summer and winter time); utcOffsetMinutes stays for older servers.
+      const zone = chosen === 'generic_csv' || mapping ? { utcOffsetMinutes: zoneOffsetMinutes(new Date()), timeZone: appTimeZone() } : {};
       const req = parse({ source: chosen, fileName: name, contentBase64, accountId: flow.accountId ?? undefined, ...(mapping ? { mapping } : {}), ...zone });
       abort.current = req;
       try {
