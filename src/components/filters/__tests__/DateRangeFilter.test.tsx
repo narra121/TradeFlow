@@ -57,6 +57,22 @@ describe('DateRangeFilter', () => {
     }
   });
 
+  it('on phones (compact) leaves out the current year and the icon, but keeps the full range as name and title (R-001)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 17, 12));
+    try {
+      expect(rangeLabel(new Date(2026, 9, 1), new Date(2026, 10, 17), 2026)).toBe('1 Oct – 17 Nov');
+      expect(rangeLabel(new Date(2025, 9, 1), new Date(2025, 10, 17), 2026)).toBe('1 Oct – 17 Nov 2025');
+      render(<DateRangeFilter selectedPreset="custom" onPresetChange={vi.fn()} customRange={{ from: new Date(2026, 9, 1), to: new Date(2026, 10, 17) }} compact />);
+      const btn = screen.getByRole('button', { name: 'Date range: 1 Oct – 17 Nov 2026' });
+      expect(btn).toHaveTextContent(/^1 Oct – 17 Nov$/);
+      expect(btn).toHaveAttribute('title', '1 Oct – 17 Nov 2026');
+      expect(btn.querySelectorAll('svg')).toHaveLength(1); // the chevron only
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('labels a custom range compactly, so it fits the phone scope bar (L23-R2)', () => {
     expect(rangeLabel(new Date(2026, 9, 19), new Date(2026, 9, 25))).toBe('19 – 25 Oct 2026');
     expect(rangeLabel(new Date(2026, 9, 1), new Date(2026, 10, 16))).toBe('1 Oct – 16 Nov 2026');

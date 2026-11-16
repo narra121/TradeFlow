@@ -18,14 +18,20 @@ interface DateRangeFilterProps {
   customRange?: { from: Date; to: Date };
   onCustomRangeChange?: (range: { from: Date; to: Date }) => void;
   showCustomPicker?: boolean;
+  /** Phones: no icon, tighter padding, and no year when both ends are in the current year; the name keeps the full range. */
+  compact?: boolean;
   className?: string;
 }
 
-/** `19 – 25 Oct 2026`, `19 Oct – 25 Nov 2026`, or both dates in full across years (DESIGN-SCREENS §1.4 label). */
-export function rangeLabel(from: Date, to: Date): string {
+/**
+ * `19 – 25 Oct 2026`, `19 Oct – 25 Nov 2026`, or both dates in full across years (DESIGN-SCREENS §1.4 label). With
+ * `currentYear` set and both ends in it, the year is left out (`1 Oct – 17 Nov`).
+ */
+export function rangeLabel(from: Date, to: Date, currentYear?: number): string {
   if (from.getFullYear() !== to.getFullYear()) return `${format(from, 'd MMM yyyy')} – ${format(to, 'd MMM yyyy')}`;
-  if (from.getMonth() !== to.getMonth()) return `${format(from, 'd MMM')} – ${format(to, 'd MMM yyyy')}`;
-  return `${format(from, 'd')} – ${format(to, 'd MMM yyyy')}`;
+  const year = from.getFullYear() === currentYear ? '' : ` ${from.getFullYear()}`;
+  if (from.getMonth() !== to.getMonth()) return `${format(from, 'd MMM')} – ${format(to, 'd MMM')}${year}`;
+  return `${format(from, 'd')} – ${format(to, 'd MMM')}${year}`;
 }
 
 /** One trigger showing the active range; the popover lists presets and, when enabled, a custom range. */
@@ -35,6 +41,7 @@ export function DateRangeFilter({
   customRange,
   onCustomRangeChange,
   showCustomPicker = false,
+  compact = false,
   className,
 }: DateRangeFilterProps) {
   const [open, setOpen] = useState(false);
@@ -44,6 +51,7 @@ export function DateRangeFilter({
     selectedPreset === 'custom' && customRange
       ? rangeLabel(customRange.from, customRange.to)
       : presetLabel(selectedPreset);
+  const shown = compact && selectedPreset === 'custom' && customRange ? rangeLabel(customRange.from, customRange.to, appToday().getFullYear()) : label;
 
   const choose = (preset: DatePreset) => {
     onPresetChange(preset);
@@ -63,9 +71,9 @@ export function DateRangeFilter({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className={cn('min-w-0 max-w-full justify-between gap-2 font-normal', className)} aria-label={`Date range: ${label}`}>
-          <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span className="truncate">{label}</span>
+        <Button variant="outline" size="sm" className={cn('min-w-0 max-w-full justify-between gap-2 font-normal', compact && 'gap-1 px-2', className)} aria-label={`Date range: ${label}`} title={label}>
+          {!compact && <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
+          <span className="truncate">{shown}</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Button>
       </PopoverTrigger>

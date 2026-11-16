@@ -78,7 +78,7 @@ export function ScopeBar({ scoped, isMobile }: ScopeBarProps) {
       <div className={cn('flex min-w-0 flex-1 items-center gap-2 overflow-hidden', selecting && 'hidden')}>
         {scoped ? (
           <>
-            <AccountSwitcher className="h-7 [@media(pointer:coarse)]:h-11 max-w-[100px] shrink-0 md:max-w-[220px]" />
+            <AccountSwitcher className="h-7 [@media(pointer:coarse)]:h-11 min-w-0 max-w-[52%] md:max-w-[220px] md:shrink-0" />
             {!chrome.ownPeriod && <ScopePeriod />}
           </>
         ) : (

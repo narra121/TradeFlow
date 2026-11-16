@@ -2,6 +2,7 @@ import { addDays, addMonths, addYears, differenceInCalendarDays } from 'date-fns
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DateRangeFilter, type DatePreset } from '@/components/filters/DateRangeFilter';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { parseLocalDate } from '@/lib/format';
 import { getDateRangeFromPreset } from '@/lib/scope';
@@ -44,6 +45,7 @@ export function ScopePeriod() {
     if (next) dispatch(setDateRangeFilter({ ...next, datePreset: 'custom' }));
   };
   const disabled = f.datePreset === 'all';
+  const isMobile = useIsMobile();
   const custom = f.datePreset === 'custom' ? { from: parseLocalDate(f.startDate), to: parseLocalDate(f.endDate) } : undefined;
 
   return (
@@ -57,6 +59,7 @@ export function ScopePeriod() {
         customRange={custom}
         onCustomRangeChange={(r) => dispatch(setDateRangeFilter({ startDate: formatLocalDateOnly(r.from), endDate: formatLocalDateOnly(r.to), datePreset: 'custom' }))}
         showCustomPicker
+        compact={isMobile}
         className="h-7"
       />
       <Button type="button" variant="ghost" size="icon-sm" className="hidden md:inline-flex" onClick={() => step(1)} disabled={disabled} aria-label="Next period">

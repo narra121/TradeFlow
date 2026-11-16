@@ -33,7 +33,7 @@ export function AccountSwitcher({ className }: { className?: string }) {
 
   const isMobile = useIsMobile();
   const label = selectedAccount ? `${selectedAccount.name} · ${selectedAccount.currency || 'USD'}` : 'All accounts';
-  // Phones have about 70 px for the label: the short form keeps it readable; the button's name stays in full.
+  // Phones show the name alone (about half the scope bar, ~16 characters); the button's name and title stay in full.
   const shown = isMobile ? (selectedAccount ? selectedAccount.name : 'All') : label;
 
   const choose = (id: string | null) => {
@@ -63,8 +63,9 @@ export function AccountSwitcher({ className }: { className?: string }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className={cn('max-w-[220px] justify-between gap-2 font-normal', className)} aria-label={`Account: ${label}`}>
-          <Wallet className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <Button variant="outline" size="sm" className={cn('max-w-[220px] justify-between gap-2 font-normal', isMobile && 'gap-1 px-2', className)} aria-label={`Account: ${label}`} title={label}>
+          {/* Phones drop the icon: the name is what the user needs to read there (R-001). */}
+          {!isMobile && <Wallet className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
           <span className="truncate">{shown}</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Button>
