@@ -36,8 +36,8 @@ export function userSetItems(items: Stamped[]): boolean {
 
 /**
  * Progress of the three first-run steps, derived from data and never stored (A.11): an account exists, a trade exists,
- * the user set a goal or rule. `tradeCount` is the whole-journal count the caller already knows; null while it is loading
- * or failed to load.
+ * the user set a goal or rule. `tradeCount` counts trades in the whole journal, never the current scope (only whether it
+ * is above 0 is used); null while it is loading or failed to load.
  */
 export function useGettingStarted(tradeCount: number | null): GettingStarted {
   const accounts = useGetAccountsQuery();

@@ -32,8 +32,18 @@ const gettingStarted = vi.fn((_n: number | null) => ({ isLoading: false, unknown
 vi.mock('@/components/onboarding/useGettingStarted', () => ({ useGettingStarted: (n: number | null) => gettingStarted(n) }));
 vi.mock('@/components/settings/usePreferences', () => ({ useSyncServerPreferences: () => undefined }));
 vi.mock('@/hooks/useTradesSync', () => ({ useTradesSync: () => undefined }));
-let scopeTrades: { trades: unknown[]; isLoading?: boolean; isError?: boolean } = { trades: [] };
-vi.mock('@/hooks/useScopeTrades', () => ({ useScopeTrades: () => scopeTrades }));
+type TradesResult = { trades: unknown[]; isLoading?: boolean; isError?: boolean };
+let scopeTrades: TradesResult = { trades: [] };
+/** The whole-journal newest-trade query AppPage uses for Getting started. */
+let journalTrades: TradesResult = { trades: [] };
+const journalArgs = vi.fn();
+vi.mock('@/hooks/useScopeTrades', () => ({
+  useScopeTrades: (override?: unknown, options?: { newestOnly?: boolean }) => {
+    if (!options?.newestOnly) return scopeTrades;
+    journalArgs(override);
+    return journalTrades;
+  },
+}));
 const isMobile = vi.fn(() => false);
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => isMobile() }));
 
@@ -59,13 +69,26 @@ function renderAt(path: string) {
 
 describe('AppPage', () => {
   it('gives Getting started no trade count while the trades failed to load, so it never says 0 of 3 (R-040)', async () => {
-    scopeTrades = { trades: [], isError: true };
+    journalTrades = { trades: [], isError: true };
     gettingStarted.mockClear();
     renderAt('/app/dashboard');
     await screen.findByTestId('dashboard-view');
     expect(gettingStarted).toHaveBeenCalledWith(null);
     expect(gettingStarted).not.toHaveBeenCalledWith(0);
+    journalTrades = { trades: [] };
+  });
+
+  it('counts the trade step from the whole journal, not the scope (L22-R1: an empty week in one account still has trades)', async () => {
     scopeTrades = { trades: [] };
+    journalTrades = { trades: [{ id: 't1' }] };
+    gettingStarted.mockClear();
+    journalArgs.mockClear();
+    renderAt('/app/dashboard');
+    await screen.findByTestId('dashboard-view');
+    expect(journalArgs).toHaveBeenCalledWith({ accountId: 'ALL', startDate: '2000-01-01', endDate: '2099-12-31' });
+    expect(gettingStarted).toHaveBeenCalledWith(1);
+    expect(gettingStarted).not.toHaveBeenCalledWith(0);
+    journalTrades = { trades: [] };
   });
 
   it.each([

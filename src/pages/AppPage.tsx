@@ -34,6 +34,7 @@ import { useUiState } from '@/hooks/useUiState';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGetSavedOptionsQuery } from '@/store/api';
 import { cn } from '@/lib/utils';
+import { ALL_TIME_START } from '@/lib/scope';
 
 const DashboardView = lazy(() => import('@/components/views/DashboardView').then((m) => ({ default: m.DashboardView })));
 const TradeLogView = lazy(() => import('@/components/views/TradeLogView').then((m) => ({ default: m.TradeLogView })));
@@ -45,6 +46,8 @@ const AccountsView = lazy(() => import('@/components/views/AccountsView').then((
 const ImportView = lazy(() => import('@/components/views/ImportView').then((m) => ({ default: m.ImportView })));
 const InsightsView = lazy(() => import('@/components/insights/InsightsView').then((m) => ({ default: m.InsightsView })));
 const ChatView = lazy(() => import('@/components/chat/ChatView').then((m) => ({ default: m.ChatView })));
+
+const WHOLE_JOURNAL = { accountId: 'ALL', startDate: ALL_TIME_START, endDate: '2099-12-31' };
 
 function RouteFallback() {
   return (
@@ -110,10 +113,12 @@ function AppFrame() {
 
   useGetSavedOptionsQuery();
   useTradesSync();
-  const { trades, isLoading: tradesLoading, isError: tradesFailed } = useScopeTrades(undefined, { skip: false });
+  const { trades } = useScopeTrades(undefined, { skip: false });
   const tradesWithoutAccount = useMemo(() => trades.filter((t) => !t.accountId).length, [trades]);
-  // A failed or unfinished load is not "no trades": the notice waits for real counts (R-040).
-  const started = useGettingStarted(tradesLoading || tradesFailed ? null : trades.length);
+  // Getting started describes the user, not the scope: the newest trade of the whole journal, one request.
+  // A failed or unfinished load is not "no trades": the notice waits for a real answer (R-040).
+  const journal = useScopeTrades(WHOLE_JOURNAL, { newestOnly: true });
+  const started = useGettingStarted(journal.isLoading || journal.isError ? null : journal.trades.length);
   const gettingStarted = started.isLoading || started.unknown || started.complete ? null : { done: started.done, total: started.total };
   const importInReview = useImportPending();
   useSyncServerPreferences();
