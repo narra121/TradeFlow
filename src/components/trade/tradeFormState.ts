@@ -70,8 +70,6 @@ export interface NewFormDefaults {
 
 export function emptyForm(d: NewFormDefaults): TradeFormState {
   const assetClass: AssetClass = d.from?.assetClass ?? d.assetClass ?? 'forex';
-  const day = d.date ? new Date(`${d.date}T00:00`) : new Date();
-  const entry = new Date(day);
   const base: TradeFormState = {
     accountIds: d.accountIds,
     assetClass,
@@ -86,7 +84,8 @@ export function emptyForm(d: NewFormDefaults): TradeFormState {
     takeProfit: '',
     exitPrice: '',
     quantity: '',
-    entryTime: d.date ? toLocalInput(entry) : '',
+    // Form values are wall-clock text on the app zone's clock, so the prefilled day's midnight is written as is.
+    entryTime: d.date ? `${d.date}T00:00` : '',
     exitTime: d.date ? '' : toLocalInput(new Date()),
     fees: '',
     manualPnl: '',

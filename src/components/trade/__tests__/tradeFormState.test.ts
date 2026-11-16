@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { emptyForm, formFromTrade, fromLocalInput, imagesKey, LIMITS, parseNum, serverFieldErrors, toLocalInput, validateForm, type TradeFormState } from '../tradeFormState';
 import type { Trade } from '@/types/trade';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
+import { browserZone } from '@/components/settings/timeZones';
 
 const valid = (over: Partial<TradeFormState> = {}): TradeFormState => ({
   ...emptyForm({ accountIds: ['a1'] }),
@@ -91,6 +93,17 @@ describe('form <-> trade', () => {
     const f = emptyForm({ accountIds: [], date: '2026-10-02' });
     expect(f.entryTime.startsWith('2026-10-02')).toBe(true);
     expect(f.exitTime).toBe('');
+  });
+
+  it('prefills that day at midnight in the Settings time zone, whatever the browser zone', () => {
+    // A Settings zone other than the browser's: the browser's midnight of the 2nd falls on another clock time there.
+    patchUiState({ timeZone: browserZone() === 'Pacific/Pago_Pago' ? 'Pacific/Kiritimati' : 'Pacific/Pago_Pago' });
+    try {
+      expect(emptyForm({ accountIds: [], date: '2026-10-02' }).entryTime).toBe('2026-10-02T00:00');
+    } finally {
+      localStorage.clear();
+      resetUiStateCache();
+    }
   });
 });
 

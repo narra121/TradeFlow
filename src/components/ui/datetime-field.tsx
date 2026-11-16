@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { appToday, toZonedInput } from '@/lib/appTimeZone';
 import { formatField, parseField, toLocalValue } from '@/lib/dateTimeField';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +52,8 @@ export function DateTimeField({ id, value, onChange, onBlur, showNow, className,
 
   const date = value ? new Date(value) : undefined;
   const time = value ? value.slice(11, 16) : '';
+  // `value` is wall-clock text on the app zone's clock (Settings); "now" must be read on that clock too, not the browser's.
+  const nowValue = () => toZonedInput(new Date());
 
   return (
     <div className={cn('flex gap-2', className)}>
@@ -81,10 +84,11 @@ export function DateTimeField({ id, value, onChange, onBlur, showNow, className,
               mode="single"
               className="p-1"
               selected={date}
-              defaultMonth={date}
+              defaultMonth={date ?? appToday()}
+              today={appToday()}
               onSelect={(d) => {
                 if (!d) return;
-                const keep = date ?? new Date();
+                const keep = date ?? new Date(nowValue());
                 d.setHours(keep.getHours(), keep.getMinutes(), 0, 0);
                 onChange(toLocalValue(d));
               }}
@@ -106,7 +110,7 @@ export function DateTimeField({ id, value, onChange, onBlur, showNow, className,
         </Popover>
       </div>
       {showNow && (
-        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => onChange(toLocalValue(new Date()))}>
+        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => onChange(nowValue())}>
           Now
         </Button>
       )}
