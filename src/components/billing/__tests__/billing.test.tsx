@@ -211,8 +211,15 @@ describe('BillingView', () => {
     const table = screen.getByRole('table', { name: 'Free trial and Pro compared' });
     const head = within(table).getByRole('columnheader', { name: /Free trial/ });
     expect(head).toHaveTextContent(`Yours ends ${formatDay(end.toISOString(), false)}`);
+    expect(head.textContent).toBe(`Free trial Yours ends ${formatDay(end.toISOString(), false)}`);
     expect(head).not.toHaveTextContent('Your plan');
     expect(within(table).getByRole('row', { name: /^Price/ })).toHaveTextContent('$0 for 14 days');
+  });
+
+  it('the phone Pro card states the yearly price with its monthly equivalent, as the desktop table does', () => {
+    wrap();
+    const card = screen.getByRole('region', { name: 'Pro plan' });
+    expect(within(card).getByRole('heading', { level: 4 }).textContent).toBe('Pro $49.99 a year ($4.17 a month)');
   });
 
   it('shows INR prices for an INR billing currency', () => {
@@ -378,7 +385,8 @@ describe('UsageMeter', () => {
 
   it('says the limit is reached and when it resets', () => {
     render(<UsageMeter row={row(5, 5)} resetsAt="2026-12-01T00:00:00Z" />);
-    expect(screen.getByText('Limit reached — resets 01 Dec')).toBeInTheDocument();
+    expect(screen.getByText('Limit reached — resets 01 Dec')).toHaveClass('text-error');
+    expect(screen.getByText('Limit reached — resets 01 Dec')).not.toHaveClass('text-loss');
   });
 
   it('unlimited shows the count and the word, no bar', () => {

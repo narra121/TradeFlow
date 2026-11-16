@@ -45,7 +45,11 @@ describe('touch targets: every shared control is 44 px on a coarse pointer, desk
   it('SegmentedControl: both sizes', () => {
     for (const size of ['sm', 'md'] as const) {
       const { unmount } = render(<SegmentedControl label={size} size={size} value="a" onChange={() => undefined} options={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]} />);
-      for (const r of screen.getAllByRole('radio')) expect(r.className, size).toMatch(COARSE_44);
+      for (const r of screen.getAllByRole('radio')) {
+        expect(r.className, size).toMatch(COARSE_44);
+        // A short label ("Year", "All") would otherwise give a segment narrower than 44 px.
+        expect(r.className, size).toContain('[@media(pointer:coarse)]:min-w-11');
+      }
       unmount();
     }
   });

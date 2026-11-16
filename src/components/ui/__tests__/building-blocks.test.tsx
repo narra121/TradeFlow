@@ -20,6 +20,9 @@ describe('Field', () => {
     expect(input).toHaveAttribute('aria-required', 'true');
     expect(input.getAttribute('aria-describedby')).toContain('error');
     expect(screen.getByText('Required')).toBeInTheDocument();
+    // D.1: an error is not a trading result, so it keeps --error when the P&L palette switches.
+    expect(screen.getByText('Required')).toHaveClass('text-error');
+    expect(screen.getByText('*')).toHaveClass('text-error');
     expect(screen.queryByText('Decimal')).toBeNull();
   });
 });

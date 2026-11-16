@@ -42,7 +42,6 @@ const ERROR_TOASTS: Record<string, string> = {
   deleteTrade: "Couldn't delete the trade. Try again.",
   bulkDeleteTrades: "Couldn't delete the trades. Try again.",
   deleteAccount: "Couldn't delete the account. Try again.",
-  deleteUserAccount: "Couldn't delete the account. Try again.",
   deleteRule: "Couldn't delete the rule. Try again.",
   updateAccountStatus: "Couldn't change the account status. Try again.",
   createSubscription: "Couldn't start the subscription. Try again.",

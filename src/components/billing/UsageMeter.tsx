@@ -12,7 +12,7 @@ interface UsageMeterProps {
 export function UsageMeter({ row, resetsAt, className }: UsageMeterProps) {
   const unlimited = row.limit === null;
   const atLimit = row.ratio !== null && row.ratio >= 1;
-  const tone = atLimit ? 'bg-loss' : row.ratio !== null && row.ratio >= 0.8 ? 'bg-warning' : 'bg-muted-foreground';
+  const tone = atLimit ? 'bg-error' : row.ratio !== null && row.ratio >= 0.8 ? 'bg-warning' : 'bg-muted-foreground';
   const label = QUOTA_LABEL[row.feature];
   const reset = resetsAt ? formatDay(resetsAt, false) : '';
   const valueText = unlimited ? `${row.used} used, unlimited` : `${row.used} of ${row.limit}`;
@@ -37,7 +37,7 @@ export function UsageMeter({ row, resetsAt, className }: UsageMeterProps) {
           )}
         </span>
       </div>
-      {atLimit && <p className="text-xs text-loss">Limit reached{reset ? ` — resets ${reset}` : ''}</p>}
+      {atLimit && <p className="text-xs text-error">Limit reached{reset ? ` — resets ${reset}` : ''}</p>}
     </div>
   );
 }

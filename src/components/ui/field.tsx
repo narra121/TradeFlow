@@ -29,7 +29,7 @@ export function Field({ label, hint, error, required, className, children }: Fie
       <Label htmlFor={id} className="block text-xs font-medium text-foreground-soft">
         {label}
         {required && (
-          <span aria-hidden="true" className="ml-0.5 text-loss">
+          <span aria-hidden="true" className="ml-0.5 text-error">
             *
           </span>
         )}
@@ -46,7 +46,7 @@ export function Field({ label, hint, error, required, className, children }: Fie
         </p>
       )}
       {error && (
-        <p id={errorId} className="text-xs text-loss">
+        <p id={errorId} className="text-xs text-error">
           {error}
         </p>
       )}

@@ -123,6 +123,39 @@ function firstAtOrAfter<T>(items: Item<T>[], heights: (it: Item<T>) => number, y
   return lo;
 }
 
+const REVEAL_GAP_PX = 8;
+
+/**
+ * Scrolls a focused control out from under the pinned (sticky) cells of its row: the browser's focus scrolling ignores
+ * sticky cells, so a control in a scrolled column could be focused while a pinned column covers it (WCAG 2.4.11).
+ */
+export function revealFromPinned(target: HTMLElement): void {
+  const cell = target.closest('th, td') as HTMLElement | null;
+  const row = cell?.parentElement;
+  if (!cell || !row || getComputedStyle(cell).position === 'sticky') return;
+  let scroller: HTMLElement | null = null;
+  for (let p = row.parentElement; p; p = p.parentElement) {
+    const o = getComputedStyle(p).overflowX;
+    if ((o === 'auto' || o === 'scroll') && p.scrollWidth > p.clientWidth) {
+      scroller = p;
+      break;
+    }
+  }
+  if (!scroller) return;
+  const r = target.getBoundingClientRect();
+  const own = cell.getBoundingClientRect();
+  let coverLeft = Infinity;
+  let coverRight = -Infinity;
+  for (const c of Array.from(row.children) as HTMLElement[]) {
+    if (c === cell || getComputedStyle(c).position !== 'sticky') continue;
+    const b = c.getBoundingClientRect();
+    if (b.left >= own.left) coverLeft = Math.min(coverLeft, b.left);
+    else coverRight = Math.max(coverRight, b.right);
+  }
+  if (r.right > coverLeft) scroller.scrollLeft += r.right - coverLeft + REVEAL_GAP_PX;
+  else if (r.left < coverRight) scroller.scrollLeft -= coverRight - r.left + REVEAL_GAP_PX;
+}
+
 /**
  * The one table of the app (E-027): sticky 32 px header, 36 / 28 px rows, one tab stop with a roving row cursor,
  * `aria-sort`, optional selection column, grouping with sticky group headers, pinned columns, header menus, column
@@ -410,7 +443,7 @@ export function DataTable<T>({
   };
 
   return (
-    <table ref={tableRef} className={cn('w-full text-13', className)} aria-rowcount={virtualize ? items.length + 1 : undefined}>
+    <table ref={tableRef} className={cn('w-full text-13', className)} aria-rowcount={virtualize ? items.length + 1 : undefined} onFocus={(e) => revealFromPinned(e.target as HTMLElement)}>
       <caption className="sr-only">{caption}</caption>
       <thead className="sticky top-0 z-sticky bg-background">
         <tr className="h-8 border-b border-border [@media(pointer:coarse)]:h-11" aria-rowindex={virtualize ? 1 : undefined}>

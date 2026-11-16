@@ -14,6 +14,14 @@ describe('Toaster (FE-074)', () => {
     expect(props.last?.theme).toBe('dark');
   });
 
+  it('draws toasts on the popover surface with the overlay shadow (D.1 level 1)', () => {
+    render(<Toaster />);
+    const toast = (props.last?.toastOptions as { classNames: { toast: string } }).classNames.toast;
+    expect(toast).toContain('group-[.toaster]:bg-popover');
+    expect(toast).toContain('group-[.toaster]:shadow-overlay');
+    expect(toast).not.toMatch(/bg-background|shadow-lg/);
+  });
+
   it('follows the window size instead of the width at the first render', () => {
     mobile.value = false;
     const { rerender } = render(<Toaster />);

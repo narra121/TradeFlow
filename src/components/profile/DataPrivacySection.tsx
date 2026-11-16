@@ -44,7 +44,7 @@ export function DataPrivacySection() {
           ) : (
             <Button type="button" variant="outline" onClick={exporter.start}>Export my data</Button>
           )}
-          <Link to="/app/tradelog" className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">
+          <Link to="/app/tradelog" className="inline-flex items-center text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground [@media(pointer:coarse)]:min-h-11">
             Trades only as CSV: Trades › Export
           </Link>
         </div>
@@ -64,8 +64,8 @@ export function DataPrivacySection() {
           what you submit to Google Gemini.
         </p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-sm">
-          <Link to="/privacy" className="text-primary underline underline-offset-2">Privacy policy</Link>
-          <button type="button" className="text-primary underline underline-offset-2" onClick={() => openConsentSettings()}>Cookie settings</button>
+          <Link to="/privacy" className="inline-flex items-center text-primary underline underline-offset-2 [@media(pointer:coarse)]:min-h-11">Privacy policy</Link>
+          <button type="button" className="inline-flex items-center text-primary underline underline-offset-2 [@media(pointer:coarse)]:min-h-11" onClick={() => openConsentSettings()}>Cookie settings</button>
         </div>
       </SettingRow>
 

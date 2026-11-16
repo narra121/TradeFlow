@@ -176,7 +176,7 @@ export function BillingView() {
         </section>
       ) : (
         <details className="rounded-lg border border-border bg-card p-4">
-          <summary className="cursor-pointer text-sm font-semibold">Compare plans</summary>
+          <summary className="cursor-pointer text-sm font-semibold [@media(pointer:coarse)]:-my-3 [@media(pointer:coarse)]:py-3">Compare plans</summary>
           <div className="mt-3">
             <PlansTable currency={ent.currency} interval={interval} onInterval={changeInterval} trialCaption="" canUpgrade={false} busy={false} onUpgrade={up.upgrade} />
           </div>

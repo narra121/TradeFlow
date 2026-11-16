@@ -16,7 +16,7 @@ export function ErrorState({ title = 'Could not load this', description, error, 
   const shown = error ? readApiError(error, description ?? '').message || description : description;
   return (
     <div role="alert" className={cn('flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4', className)}>
-      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-loss" aria-hidden="true" />
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-error" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-foreground">{title}</p>
         {shown && <p className="mt-0.5 text-sm text-muted-foreground">{shown}</p>}

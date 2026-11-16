@@ -18,7 +18,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-9 w-full items-center justify-between rounded-md [@media(pointer:coarse)]:min-h-11 border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground aria-[invalid=true]:border-destructive disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-9 w-full items-center justify-between rounded-md [@media(pointer:coarse)]:min-h-11 border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground aria-[invalid=true]:border-error disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className,
     )}
     {...props}
@@ -59,6 +59,28 @@ const SelectScrollDownButton = React.forwardRef<
 ));
 SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName;
 
+/**
+ * While the list is open Radix marks the rest of the page `aria-hidden` (attribute `data-aria-hidden`) but leaves it
+ * focusable (axe aria-hidden-focus); `inert` matches the two. Radix sets the marks in an effect of an ancestor, which
+ * runs after this one, hence the microtask.
+ */
+function InertOutside() {
+  React.useEffect(() => {
+    let made: HTMLElement[] = [];
+    let live = true;
+    queueMicrotask(() => {
+      if (!live) return;
+      made = Array.from(document.querySelectorAll<HTMLElement>('[data-aria-hidden="true"]')).filter((el) => !el.inert);
+      for (const el of made) el.inert = true;
+    });
+    return () => {
+      live = false;
+      for (const el of made) el.inert = false;
+    };
+  }, []);
+  return null;
+}
+
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
@@ -76,6 +98,7 @@ const SelectContent = React.forwardRef<
       collisionPadding={collisionPadding}
       {...props}
     >
+      <InertOutside />
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
         className={cn(

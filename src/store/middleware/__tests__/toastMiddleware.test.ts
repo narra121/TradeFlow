@@ -63,6 +63,11 @@ describe('toastMiddleware (D.6)', () => {
     expect(error).toHaveBeenCalledWith("Couldn't delete the trade. Try again.", undefined);
   });
 
+  it('leaves a failed account deletion to the delete dialog, which shows it inline', () => {
+    run(rejected('deleteUserAccount'));
+    expect(error).not.toHaveBeenCalled();
+  });
+
   it('leaves failures of in-place saves to the control that made them', () => {
     for (const e of ['updatePreferences', 'updateTrade', 'createTrade', 'login', 'signup']) run(rejected(e));
     expect(error).not.toHaveBeenCalled();

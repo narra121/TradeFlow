@@ -26,7 +26,7 @@ export function TimeZonePicker({ id, value, onChange }: TimeZonePickerProps) {
         role="combobox"
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="flex h-8 w-full max-w-xs items-center justify-between rounded-md border border-input bg-background px-3 text-left text-sm hover:border-muted-foreground/60 max-md:h-11"
+        className="flex h-9 w-full max-w-xs items-center justify-between rounded-md border border-input bg-background px-3 text-left text-sm hover:border-muted-foreground/60 max-md:h-11"
       >
         <span className="truncate">{label}</span>
         <ChevronDown className="h-4 w-4 shrink-0 opacity-60" aria-hidden="true" />

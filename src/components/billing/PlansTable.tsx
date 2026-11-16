@@ -55,7 +55,7 @@ export function PlansTable({ currency, interval, onInterval, trialCaption, canUp
               <th scope="col" className="h-8 w-[40%] font-normal"><span className="sr-only">Feature</span></th>
               <th scope="col" className="font-medium text-foreground">
                 Free trial
-                {trialCaption && <span className="ml-2 font-normal text-muted-foreground">{trialCaption}</span>}
+                {trialCaption && <>{' '}<span className="ml-2 font-normal text-muted-foreground">{trialCaption}</span></>}
               </th>
               <th scope="col" className="font-medium text-accent-text">Pro</th>
             </tr>
@@ -66,7 +66,7 @@ export function PlansTable({ currency, interval, onInterval, trialCaption, canUp
               <td className="py-2 pr-3 font-mono tabular-nums">{trialPrice}</td>
               <td className="py-2 font-mono tabular-nums">
                 {price.main}
-                {price.sub && <span className="ml-1 text-muted-foreground">({price.sub})</span>}
+                {price.sub && <>{' '}<span className="whitespace-nowrap text-muted-foreground">({price.sub})</span></>}
               </td>
             </tr>
             {APP_PLAN_ROWS.map((r) => (
@@ -87,7 +87,7 @@ export function PlansTable({ currency, interval, onInterval, trialCaption, canUp
         </table>
 
         <section aria-label="Pro plan" className="order-2 rounded-lg border border-border p-3 md:hidden">
-          <h4 className="text-sm font-semibold">Pro <span className="font-mono font-normal text-muted-foreground">{price.main}</span></h4>
+          <h4 className="text-sm font-semibold">Pro{' '}<span className="font-mono font-normal text-muted-foreground">{price.main}{price.sub && <> <span className="whitespace-nowrap">({price.sub})</span></>}</span></h4>
           <ul className="mt-2 space-y-1 text-13">
             {APP_PLAN_ROWS.map((r) => (
               <li key={r.feature}><span className="text-muted-foreground">{r.feature}: </span>{r.pro}</li>
@@ -97,7 +97,7 @@ export function PlansTable({ currency, interval, onInterval, trialCaption, canUp
         </section>
         {error && <div className="order-3">{error}</div>}
         <section aria-label="Free trial" className="order-4 rounded-lg border border-border p-3 md:hidden">
-          <h4 className="text-sm font-semibold">Free trial <span className="font-mono font-normal text-muted-foreground">{trialPrice}</span>{trialCaption && <span className="ml-2 font-normal text-muted-foreground">{trialCaption}</span>}</h4>
+          <h4 className="text-sm font-semibold">Free trial{' '}<span className="font-mono font-normal text-muted-foreground">{trialPrice}</span>{trialCaption && <>{' '}<span className="ml-2 font-normal text-muted-foreground">{trialCaption}</span></>}</h4>
           <ul className="mt-2 space-y-1 text-13">
             {APP_PLAN_ROWS.map((r) => (
               <li key={r.feature}><span className="text-muted-foreground">{r.feature}: </span>{r.trial}</li>
