@@ -47,6 +47,7 @@ describe('ratios', () => {
   it('formats percent and R', () => {
     expect(formatPercent(44.117)).toBe('44.1%');
     expect(formatPercent(-3.2, 1, { sign: true })).toBe('−3.2%');
+    expect(formatPercent(1229.08, 1, { sign: true })).toBe('+1,229.1%');
     expect(formatR(2)).toBe('+2.00R');
     expect(formatR(-0.5)).toBe('−0.50R');
     expect(formatR(0)).toBe('0.00R');

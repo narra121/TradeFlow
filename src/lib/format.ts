@@ -75,7 +75,7 @@ export function formatPercent(value: number | null | undefined, decimals = 1, op
   if (!isNum(value)) return '—';
   const rounded = Number(value.toFixed(decimals));
   const prefix = rounded < 0 ? MINUS : opts.sign && rounded > 0 ? '+' : '';
-  return `${prefix}${Math.abs(rounded).toFixed(decimals)}%`;
+  return `${prefix}${Math.abs(rounded).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}%`;
 }
 
 /** A missing R (no stop loss or exit price) is a dash; zero is a real result (e.g. +2R and −2R) and has no sign. */
