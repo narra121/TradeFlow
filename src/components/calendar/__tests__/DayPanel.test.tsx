@@ -7,6 +7,7 @@ import { DayPanel, WeekPanel } from '../DayPanel';
 import { hoursOpen, netText, plural, winLoss } from '../dayText';
 import { buildMonth } from '@/lib/calendar';
 import type { Trade, TradingAccount } from '@/types/trade';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 
 const accounts = new Map([['usd', { id: 'usd', currency: 'USD', name: 'U' } as TradingAccount]]);
 const t = (id: string, symbol: string, entry: string, exit: string, pnl: number, over: Partial<Trade> = {}): Trade =>
@@ -113,6 +114,24 @@ describe('WeekPanel', () => {
     expect(onOpenDay).toHaveBeenCalledWith('2026-11-04');
     await user.click(screen.getByRole('button', { name: /XAUUSD\s?Long/ }));
     expect(onOpenTrade).toHaveBeenCalledWith('1');
+  });
+
+  it('dates a row on the Settings time zone calendar, not the browser one', () => {
+    patchUiState({ timeZone: 'America/Los_Angeles' }); // 02:00Z on 5 Nov is still Wednesday 4 Nov 18:00 there, Thursday in Asia and Europe
+    try {
+      const late = [t('9', 'EURUSD', '2026-11-05T01:00:00Z', '2026-11-05T02:00:00Z', 10)];
+      const m = buildMonth(late, new Date(2026, 10, 1), accounts);
+      const week = m.weeks.find((w) => w.days.some((d) => d.trades.length))!;
+      render(
+        <Provider store={store}>
+          <WeekPanel week={week} weekNumber={45} accountMap={accounts} onClose={vi.fn()} onOpenTrade={vi.fn()} onOpenDay={vi.fn()} />
+        </Provider>,
+      );
+      expect(screen.getByRole('button', { name: /EURUSD\s?Long/ })).toHaveAccessibleName(/, Wednesday$/);
+    } finally {
+      patchUiState({ timeZone: undefined });
+      resetUiStateCache();
+    }
   });
 });
 

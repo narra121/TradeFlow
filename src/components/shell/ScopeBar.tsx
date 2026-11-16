@@ -70,7 +70,8 @@ export function ScopeBar({ scoped, isMobile }: ScopeBarProps) {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [lastOk, dispatch]);
 
-  const label = !online ? 'Offline' : failed ? "Couldn't refresh · Retry" : lastOk ? `Updated ${formatTime(new Date(lastOk))}` : 'Updating…';
+  // An ISO instant is shown on the Settings zone's clock; a Date object would print the browser's.
+  const label = !online ? 'Offline' : failed ? "Couldn't refresh · Retry" : lastOk ? `Updated ${formatTime(new Date(lastOk).toISOString())}` : 'Updating…';
 
   return (
     <div role="toolbar" aria-label="Data shown" className="sticky top-12 z-bar flex h-11 shrink-0 items-center gap-2 border-b border-border bg-background px-3 md:px-6">

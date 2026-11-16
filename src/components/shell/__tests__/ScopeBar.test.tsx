@@ -15,6 +15,7 @@ vi.mock('@/hooks/useOnline', () => ({ useOnline: () => true }));
 
 import { ScopeBar } from '../ScopeBar';
 import { ChromeProvider } from '@/components/shell/chrome';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 
 const query = (endpointName: string, extra: Record<string, unknown> = {}) => ({ endpointName, status: 'fulfilled', fulfilledTimeStamp: Date.now() - 120_000, ...extra });
 const render_ = () =>
@@ -59,6 +60,19 @@ describe('ScopeBar', () => {
     render_();
     expect(screen.getByRole('button', { name: /Refresh data/ })).toHaveTextContent(/Updated/);
     expect(screen.queryByText(/Couldn't refresh/)).toBeNull();
+  });
+
+  it('prints Updated on the Settings time zone clock, not the browser clock', () => {
+    patchUiState({ timeZone: 'Pacific/Kiritimati' }); // UTC+14
+    try {
+      const at = Date.UTC(2026, 10, 16, 12, 5);
+      queries = { 'getStats(a)': query('getStats', { fulfilledTimeStamp: at }) };
+      render_();
+      expect(screen.getByRole('button', { name: /Refresh data/ })).toHaveTextContent('Updated 02:05');
+    } finally {
+      patchUiState({ timeZone: undefined });
+      resetUiStateCache();
+    }
   });
 
   it('a failed query the screen subscribes to still does', () => {

@@ -8,7 +8,8 @@ import { PaneFrame } from '@/components/calendar/SidePane';
 import { DayNote } from '@/components/calendar/DayNote';
 import { hoursOpen, netText, plural, winLoss } from '@/components/calendar/dayText';
 import { realisedR } from '@/lib/tradeFilters';
-import { formatPercent, formatTime } from '@/lib/format';
+import { formatPercent, formatTime, parseLocalDate } from '@/lib/format';
+import { dayKeyIn } from '@/lib/appTimeZone';
 import type { DayCell, WeekRow } from '@/lib/calendar';
 import { cn } from '@/lib/utils';
 import type { DayNote as DayNoteData, DayNotesArgs } from '@/store/api/journalApi';
@@ -45,7 +46,9 @@ function TradeRow({ t, currency, onOpen, showDate }: { t: Trade; currency?: stri
   const r = realisedR(t);
   const when = t.exitDate || t.entryDate;
   const broken = (t.brokenRuleIds?.length ?? 0) > 0;
-  const shown = showDate ? format(new Date(when), 'd MMM') : formatTime(when);
+  // The trade's day on the Settings zone's calendar (date-fns on a Date would use the browser's).
+  const day = parseLocalDate(dayKeyIn(new Date(when)));
+  const shown = showDate ? format(day, 'd MMM') : formatTime(when);
   // Named by its own text (WCAG 2.5.3): an aria-label never matches the row's spans, which are read without spaces.
   return (
     <li>
@@ -60,7 +63,7 @@ function TradeRow({ t, currency, onOpen, showDate }: { t: Trade; currency?: stri
         {broken && <span className="shrink-0 text-xs text-warning" title="A rule was broken">! rule broken</span>}
         <span className="ml-auto shrink-0 text-right"><Money value={t.pnl} currency={currency} /></span>
         <span className="w-14 shrink-0 text-right"><RMultiple value={r} /></span>
-        <span className="sr-only">{`, ${format(new Date(when), 'EEEE')}`}</span>
+        <span className="sr-only">{`, ${format(day, 'EEEE')}`}</span>
         <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       </button>
     </li>
