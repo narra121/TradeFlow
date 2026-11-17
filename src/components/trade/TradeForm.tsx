@@ -14,6 +14,7 @@ import { DynamicSelect } from '@/components/trade/DynamicSelect';
 import { SmartInput } from '@/components/trade/SmartInput';
 import { copy } from '@/copy';
 import { DateTimeField } from '@/components/ui/datetime-field';
+import { ExpiryField } from './ExpiryField';
 import { useOnline } from '@/hooks/useOnline';
 import { MistakeTagsInput } from '@/components/trade/MistakeTagsInput';
 import { BrokenRulesSelect } from '@/components/trade/BrokenRulesSelect';
@@ -132,7 +133,12 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
   // One key per create request body: a repeat of the same body returns the trade already created instead of a second one.
   const attempt = useRef<{ key: string; body: string } | null>(null);
 
-  const set = useCallback(<K extends keyof TradeFormState>(key: K, value: TradeFormState[K]) => setForm((f) => ({ ...f, [key]: value })), []);
+  // Fields the user changed: leaving a field only flags it once it was edited (the one focused at open is not).
+  const edited = useRef(new Set<keyof TradeFormState>());
+  const set = useCallback(<K extends keyof TradeFormState>(key: K, value: TradeFormState[K]) => {
+    edited.current.add(key);
+    setForm((f) => ({ ...f, [key]: value }));
+  }, []);
 
   const dirty = formKey(form) !== baseline.current;
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
@@ -226,13 +232,22 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
   );
 
   const blur = (key: keyof TradeFormState) => {
-    setTouched((t) => ({ ...t, [key]: true }));
+    if (edited.current.has(key)) setTouched((t) => ({ ...t, [key]: true }));
     // Validate the latest form: a date field commits its text in the same blur, after this render's `form` was read.
     setForm((f) => {
       setErrors(validate(f));
       return f;
     });
   };
+  // A flagged field clears (or changes its message) as soon as the form changes, e.g. Now refilling a cleared Closed.
+  // Only on form changes: errors the server returned stay until the user edits something.
+  const anyTouched = useRef(false);
+  anyTouched.current = Object.keys(touched).length > 0;
+  const validateRef = useRef(validate);
+  validateRef.current = validate;
+  useEffect(() => {
+    if (anyTouched.current) setErrors(validateRef.current(form));
+  }, [form]);
   // A field shows its error once the user has left it or tried to save; one blur does not flag the untouched fields.
   const err = (key: keyof TradeFormState) => (touched[key] ? errors[key] : undefined);
 
@@ -322,6 +337,7 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
         baseline.current = formKey({ ...fresh, strategy: keep.strategy, session: keep.session, entryTime: keep.entryTime });
         setTouched({});
         setErrors({});
+        edited.current.clear();
         symbolRef.current?.focus();
       }
       onSaved(saved, { addAnother: !!opts.addAnother });
@@ -379,7 +395,7 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
 
   return (
     <form ref={formRef} onSubmit={(e) => { e.preventDefault(); void submit(); }} onKeyDown={onKeyDown} noValidate className="flex min-h-0 flex-1 flex-col">
-      <div className="flex-1 space-y-5 overflow-y-auto p-4">
+      <div className="flex-1 space-y-5 overflow-y-auto scroll-py-6 p-4">
         {restoredAt && (
           <div role="status" className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm">
             Restored your unsaved changes.
@@ -471,7 +487,7 @@ export const TradeForm = forwardRef<TradeFormHandle, TradeFormProps>(function Tr
               {(a) => <Input {...a} {...inputMode} value={form.strike} onChange={(e) => set('strike', e.target.value)} onBlur={() => blur('strike')} />}
             </Field>
             <Field label="Expiry" required error={err('expiry')}>
-              {(a) => <Input {...a} type="date" value={form.expiry} onChange={(e) => set('expiry', e.target.value)} onBlur={() => blur('expiry')} />}
+              {(a) => <ExpiryField {...a} value={form.expiry} onChange={(v) => set('expiry', v)} onBlur={() => blur('expiry')} />}
             </Field>
           </div>
         )}

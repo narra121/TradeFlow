@@ -81,4 +81,17 @@ describe('ScopeBar', () => {
     render_();
     expect(screen.getByText(/Couldn't refresh/)).toBeInTheDocument();
   });
+
+  it("on a phone the page's control (Filters) keeps its width instead of being clipped (L22-033)", () => {
+    render(
+      <MemoryRouter>
+        <ChromeProvider>
+          <ScopeBar scoped isMobile />
+        </ChromeProvider>
+      </MemoryRouter>,
+    );
+    const slot = screen.getByRole('toolbar', { name: 'Data shown' }).firstElementChild?.lastElementChild;
+    expect(slot?.className).toMatch(/\bmin-w-fit\b/);
+    expect(slot?.className).not.toMatch(/\bmin-w-0\b/);
+  });
 });

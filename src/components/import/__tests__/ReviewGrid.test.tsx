@@ -4,6 +4,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { NormalizedTrade } from '@/types/import';
 import { editRow, makeRows, setIncluded, type ReviewRow } from '@/lib/import/rows';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 import { ColumnMapping } from '../ColumnMapping';
 import { ResultRow } from '../ResultRow';
 import { ReviewGrid } from '../ReviewGrid';
@@ -73,6 +74,30 @@ describe('ReviewGrid', () => {
     await user.type(screen.getByRole('textbox', { name: 'Quantity, row 1' }), '9{Escape}');
     expect(spy).toHaveBeenCalledTimes(1);
     expect(cell(0, 7)).toHaveTextContent('10');
+  });
+
+  it('edits Opened as 24-hour text on the Settings clock, not the browser date control (L22-035)', async () => {
+    patchUiState({ timeZone: 'Asia/Kolkata' });
+    try {
+      const user = userEvent.setup();
+      const spy = vi.fn();
+      render(<Harness initial={makeRows([trade({ externalId: '1', openDate: '2026-10-02T03:45:09.075Z' })], 'f.csv')} onEditSpy={spy} />);
+      focusCell(0, 3);
+      await user.keyboard('{Enter}');
+      const input = screen.getByRole('textbox', { name: 'Opened, row 1' });
+      expect(input).toHaveAttribute('type', 'text');
+      expect(input).toHaveValue('02 Oct 2026, 09:15:09');
+      await user.keyboard('{Enter}');
+      expect(spy).not.toHaveBeenCalled();
+      focusCell(0, 3);
+      await user.keyboard('{Enter}');
+      await user.clear(screen.getByRole('textbox', { name: 'Opened, row 1' }));
+      await user.type(screen.getByRole('textbox', { name: 'Opened, row 1' }), '2 Oct 2026, 09:00{Enter}');
+      expect(spy).toHaveBeenCalledWith(expect.any(String), 'openDate', '2026-10-02T03:30:00.000Z');
+    } finally {
+      localStorage.clear();
+      resetUiStateCache();
+    }
   });
 
   it('fixing the cell clears the error and turns the row Ready', async () => {

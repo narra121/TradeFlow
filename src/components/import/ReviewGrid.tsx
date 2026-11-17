@@ -4,10 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Money } from '@/components/ui/money';
 import { DirectionChip } from '@/components/ui/chips';
-import { formatCount, formatDateTime, formatPrice, formatQuantity } from '@/lib/format';
+import { formatCount, formatPrice, formatQuantity } from '@/lib/format';
 import { PAGE_SIZE, STATUS_LABEL } from '@/lib/import/labels';
-import { fromZonedInput, toZonedInput } from '@/lib/appTimeZone';
-import { missingTimeNote, parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow, type RowErrors, type RowStatus } from '@/lib/import/rows';
+import { formatEditDate, missingTimeNote, parseEditDate, parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow, type RowErrors, type RowStatus, rowDateTime, spansYears } from '@/lib/import/rows';
 import { cn } from '@/lib/utils';
 
 const FIELD_LABEL: Record<EditableField, string> = {
@@ -45,19 +44,17 @@ const COLS: Col[] = [
   { id: 'pnl', header: 'Net P&L', field: 'pnl', align: 'right', width: 'w-28' },
 ];
 
-const fromLocalInput = (v: string) => fromZonedInput(v)?.toISOString() ?? '';
-
 function rawValue(row: ReviewRow, field: EditableField): string {
   const t = row.trade;
-  if (field === 'openDate' || field === 'closeDate') return toZonedInput(t[field], { seconds: true });
+  if (field === 'openDate' || field === 'closeDate') return formatEditDate(t[field]);
   return String(t[field] ?? '');
 }
 
 /** Number-like fields accept a comma as the thousands separator. */
-function parseInput(field: EditableField, raw: string): string | number {
+function parseInput(row: ReviewRow, field: EditableField, raw: string): string | number {
   if (field === 'symbol') return raw.trim().toUpperCase();
   if (field === 'side') return raw;
-  if (field === 'openDate' || field === 'closeDate') return fromLocalInput(raw);
+  if (field === 'openDate' || field === 'closeDate') return parseEditDate(raw, row.trade[field]);
   return parseNumberCell(raw);
 }
 
@@ -102,6 +99,7 @@ export function ReviewGrid({
   const cols = useMemo(() => (showSource ? [...COLS, { id: 'source', header: 'Source', width: 'w-36' }] : COLS), [showSource]);
   const start = (page - 1) * PAGE_SIZE;
   const pageRows = rows.slice(start, start + PAGE_SIZE);
+  const withYear = useMemo(() => spansYears(rows), [rows]);
   const [active, setActive] = useState({ r: 0, c: 5 });
   const [editing, setEditing] = useState<{ key: string; field: EditableField; draft: string } | null>(null);
   const gridRef = useRef<HTMLTableElement>(null);
@@ -152,8 +150,8 @@ export function ReviewGrid({
     (then?: { r: number; c: number }) => {
       if (!editing) return;
       const row = rows.find((x) => x.key === editing.key);
-      if (row && !Object.is(parseInput(editing.field, editing.draft), parseInput(editing.field, rawValue(row, editing.field)))) {
-        onEdit(editing.key, editing.field, parseInput(editing.field, editing.draft));
+      if (row && !Object.is(parseInput(row, editing.field, editing.draft), parseInput(row, editing.field, rawValue(row, editing.field)))) {
+        onEdit(editing.key, editing.field, parseInput(row, editing.field, editing.draft));
       }
       setEditing(null);
       if (then) moveTo(then.r, then.c);
@@ -259,6 +257,7 @@ export function ReviewGrid({
                 <GridRow
                   key={row.key}
                   row={row}
+                  withYear={withYear}
                   ri={ri}
                   n={n}
                   cols={cols}
@@ -318,6 +317,8 @@ export function ReviewGrid({
 
 interface GridRowProps {
   row: ReviewRow;
+  /** Dates carry the year: the rows span more than one. */
+  withYear: boolean;
   ri: number;
   n: number;
   cols: Col[];
@@ -342,7 +343,7 @@ interface GridRowProps {
   onCancel: () => void;
 }
 
-function GridRow({ row, ri, n, cols, status, errors, errorFields, errId, dim, active, editing, currency, selected, readOnly, colCount, onKey, onActivate, onSelect, onInclude, onBeginEdit, onDraft, onCommit, onCancel }: GridRowProps) {
+function GridRow({ row, withYear, ri, n, cols, status, errors, errorFields, errId, dim, active, editing, currency, selected, readOnly, colCount, onKey, onActivate, onSelect, onInclude, onBeginEdit, onDraft, onCommit, onCancel }: GridRowProps) {
   const t = row.trade;
   const timeNote = missingTimeNote(row);
   return (
@@ -414,7 +415,7 @@ function GridRow({ row, ri, n, cols, status, errors, errorFields, errId, dim, ac
               const copied = c.field === 'openDate' ? row.dates?.openMissing : row.dates?.closeMissing;
               return (
                 <td key={c.id} {...common} data-missing={copied || undefined} className={cn(common.className, 'whitespace-nowrap font-mono tabular-nums', copied && !dim && 'text-warning')}>
-                  {v && !Number.isNaN(new Date(v).getTime()) ? formatDateTime(v) : '—'}
+                  {v && !Number.isNaN(new Date(v).getTime()) ? rowDateTime(v, withYear) : '—'}
                   {copied && <span className="sr-only"> (not in the screenshot)</span>}
                 </td>
               );
@@ -504,15 +505,15 @@ function CellEditor({ field, draft, label, ri, ci, onDraft, onCommit, onCancel }
     <input
       aria-label={label}
       autoFocus
-      type={isDate ? 'datetime-local' : 'text'}
-      step={isDate ? 1 : undefined}
+      type="text"
+      placeholder={isDate ? 'e.g. 3 Dec 2025, 08:41' : undefined}
       inputMode={field === 'symbol' || isDate ? undefined : 'decimal'}
       className={cls}
       value={draft}
       onChange={(e) => onDraft(e.target.value)}
       onKeyDown={keys}
       onBlur={() => finish()}
-      onFocus={(e) => !isDate && e.currentTarget.select()}
+      onFocus={(e) => e.currentTarget.select()}
     />
   );
 }

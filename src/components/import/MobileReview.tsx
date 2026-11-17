@@ -7,10 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Money } from '@/components/ui/money';
 import { DirectionChip } from '@/components/ui/chips';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { formatDateTime, formatQuantity } from '@/lib/format';
+import { formatQuantity } from '@/lib/format';
 import { STATUS_LABEL } from '@/lib/import/labels';
-import { fromZonedInput, toZonedInput } from '@/lib/appTimeZone';
-import { missingTimeNote, parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow } from '@/lib/import/rows';
+import { formatEditDate, missingTimeNote, parseEditDate, parseNumberCell, rowStatus, validateTrade, type EditableField, type ReviewRow, rowDateTime, spansYears } from '@/lib/import/rows';
 import { cn } from '@/lib/utils';
 
 interface MobileReviewProps {
@@ -23,6 +22,7 @@ interface MobileReviewProps {
 
 /** Phone layout of the review: one card per row; the pencil opens the row in a sheet with labelled inputs. */
 export function MobileReview({ rows, currency, readOnly, onInclude, onEdit }: MobileReviewProps) {
+  const withYear = spansYears(rows);
   const [editKey, setEditKey] = useState<string | null>(null);
   const editing = rows.find((r) => r.key === editKey) ?? null;
   return (
@@ -49,7 +49,7 @@ export function MobileReview({ rows, currency, readOnly, onInclude, onEdit }: Mo
                   {Number.isFinite(t.pnl) && <Money value={t.pnl} currency={currency} />}
                 </div>
                 <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
-                  {t.closeDate && !Number.isNaN(new Date(t.closeDate).getTime()) ? formatDateTime(t.closeDate) : 'No close date'} · {t.quantity > 0 ? formatQuantity(t.quantity) : '—'} qty
+                  {t.closeDate && !Number.isNaN(new Date(t.closeDate).getTime()) ? rowDateTime(t.closeDate, withYear) : 'No close date'} · {t.quantity > 0 ? formatQuantity(t.quantity) : '—'} qty
                 </p>
                 <p className={cn('mt-0.5 flex items-center gap-1 text-xs', status === 'fix' ? 'text-loss' : 'text-muted-foreground')}>
                   {status === 'fix' && <AlertTriangle className="h-3 w-3" aria-hidden="true" />}
@@ -71,26 +71,24 @@ export function MobileReview({ rows, currency, readOnly, onInclude, onEdit }: Mo
   );
 }
 
-const FIELDS: { field: EditableField; label: string; type: 'text' | 'number' | 'datetime-local' }[] = [
+const FIELDS: { field: EditableField; label: string; type: 'text' | 'number' | 'date' }[] = [
   { field: 'symbol', label: 'Symbol', type: 'text' },
   { field: 'quantity', label: 'Quantity', type: 'number' },
   { field: 'entryPrice', label: 'Entry price', type: 'number' },
   { field: 'exitPrice', label: 'Exit price', type: 'number' },
-  { field: 'openDate', label: 'Opened', type: 'datetime-local' },
-  { field: 'closeDate', label: 'Closed', type: 'datetime-local' },
+  { field: 'openDate', label: 'Opened', type: 'date' },
+  { field: 'closeDate', label: 'Closed', type: 'date' },
   { field: 'fees', label: 'Fees', type: 'number' },
   { field: 'pnl', label: 'Net P&L', type: 'number' },
 ];
-
-const toIso = (v: string) => fromZonedInput(v)?.toISOString() ?? '';
 
 const draftOf = (t: ReviewRow['trade']): Record<string, string> => ({
   symbol: t.symbol,
   quantity: String(t.quantity || ''),
   entryPrice: String(t.entryPrice || ''),
   exitPrice: String(t.exitPrice || ''),
-  openDate: toZonedInput(t.openDate, { seconds: true }),
-  closeDate: toZonedInput(t.closeDate, { seconds: true }),
+  openDate: formatEditDate(t.openDate),
+  closeDate: formatEditDate(t.closeDate),
   fees: String(t.fees ?? 0),
   pnl: String(t.pnl ?? 0),
   side: t.side,
@@ -102,15 +100,14 @@ function RowSheet({ row, onClose, onEdit }: { row: ReviewRow | null; onClose: ()
     if (row) setDraft(draftOf(row.trade));
   }, [row]);
   if (!row) return <Sheet open={false} />;
-  const preview = { ...row.trade, symbol: draft.symbol ?? '', quantity: parseNumberCell(draft.quantity ?? ''), entryPrice: parseNumberCell(draft.entryPrice ?? ''), exitPrice: parseNumberCell(draft.exitPrice ?? ''), openDate: toIso(draft.openDate ?? ''), closeDate: toIso(draft.closeDate ?? ''), fees: parseNumberCell(draft.fees ?? ''), pnl: parseNumberCell(draft.pnl ?? '') };
+  const preview = { ...row.trade, symbol: draft.symbol ?? '', quantity: parseNumberCell(draft.quantity ?? ''), entryPrice: parseNumberCell(draft.entryPrice ?? ''), exitPrice: parseNumberCell(draft.exitPrice ?? ''), openDate: parseEditDate(draft.openDate ?? '', row.trade.openDate), closeDate: parseEditDate(draft.closeDate ?? '', row.trade.closeDate), fees: parseNumberCell(draft.fees ?? ''), pnl: parseNumberCell(draft.pnl ?? '') };
   const errors = validateTrade(preview);
   const apply = () => {
     for (const f of FIELDS) {
       const v = draft[f.field] ?? '';
-      // An untouched cell: a datetime-local value has no milliseconds, so re-applying it would cut them off.
-      if (f.type !== 'text' && v === draftOf(row.trade)[f.field]) continue;
-      const next = f.type === 'number' ? parseNumberCell(v) : f.type === 'datetime-local' ? toIso(v) : v.trim().toUpperCase();
-      const was = f.type === 'datetime-local' ? row.trade[f.field as 'openDate' | 'closeDate'] : row.trade[f.field as keyof typeof row.trade];
+      if (f.type === 'number' && v === draftOf(row.trade)[f.field]) continue;
+      const next = f.type === 'number' ? parseNumberCell(v) : f.type === 'date' ? parseEditDate(v, row.trade[f.field as 'openDate' | 'closeDate']) : v.trim().toUpperCase();
+      const was = row.trade[f.field as keyof typeof row.trade];
       if (!Object.is(next, was)) onEdit(row.key, f.field, next);
     }
     if (draft.side && draft.side !== row.trade.side) onEdit(row.key, 'side', draft.side);
@@ -133,12 +130,13 @@ function RowSheet({ row, onClose, onEdit }: { row: ReviewRow | null; onClose: ()
             )}
           </Field>
           {FIELDS.map((f) => (
-            <Field key={f.field} label={f.label} error={errors[f.field]} className={f.type === 'datetime-local' || f.field === 'symbol' ? 'col-span-2' : undefined}>
+            <Field key={f.field} label={f.label} error={errors[f.field]} className={f.type === 'date' || f.field === 'symbol' ? 'col-span-2' : undefined}>
               {(a) => (
                 <Input
                   {...a}
-                  type={f.type}
-                  step={f.type === 'number' ? 'any' : f.type === 'datetime-local' ? 1 : undefined}
+                  type={f.type === 'number' ? 'number' : 'text'}
+                  step={f.type === 'number' ? 'any' : undefined}
+                  placeholder={f.type === 'date' ? 'e.g. 3 Dec 2025, 08:41' : undefined}
                   inputMode={f.type === 'number' ? 'decimal' : undefined}
                   className="h-11"
                   value={draft[f.field] ?? ''}

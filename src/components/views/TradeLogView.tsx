@@ -42,7 +42,7 @@ import { BULK_EDIT_CAP, fanOut, inverseOf, patchFor, type BulkOp, type FanOutRes
 import { bulkUpdateBody, cachePatch } from '@/components/tradelog/bulkUpdate';
 import { readApiError } from '@/lib/apiError';
 import { downloadCsv, exportFileName, tradesToCsv } from '@/lib/exportCsv';
-import { formatDateShort, formatDateTime, formatMoney, formatPercent } from '@/lib/format';
+import { formatDateShort, formatDateTime, formatMoney, formatPercent, formatTime } from '@/lib/format';
 import { appTimeZone, appTodayKey } from '@/lib/appTimeZone';
 import { patchTradePayload } from '@/lib/patchTrade';
 import { BUILT_IN_VIEWS, isModified, loadCustomViews, matchesSpecial, needsJournal, newViewId, saveCustomViews, type TradeView } from '@/lib/savedViews';
@@ -633,7 +633,6 @@ export function TradeLogView() {
             </div>
           )}
         />
-        {!isMobile && drillControls}
         {activeFilters && !isMobile && (
           <Button type="button" variant="ghost" size="sm" className="h-7 shrink-0" onClick={() => setFilters(EMPTY_FILTERS)}>
             Clear
@@ -674,8 +673,8 @@ export function TradeLogView() {
         </>)}
       </ScopeBarSlot>
 
-      {/* Phones: the scope bar has no room left for the drill chip and its way back, so they sit above the list. */}
-      {isMobile && (drill || importBatch) && <div className="flex min-w-0 flex-wrap items-center gap-2">{drillControls}</div>}
+      {/* The scope bar has no room for the drill chip and its way back at any width (the chip would shrink to its ×), so they sit above the list. */}
+      {(drill || importBatch) && <div className="flex min-w-0 flex-wrap items-center gap-2">{drillControls}</div>}
       {truncated && <p role="status" className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">{copy.trades.ceiling}</p>}
 
       {isError ? (
@@ -776,7 +775,7 @@ export function TradeLogView() {
                       <Money value={it.t.pnl} currency={it.t.accountId ? accountMap.get(it.t.accountId)?.currency : undefined} />
                     </span>
                     <span className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                      {formatDateTime(it.t.exitDate || it.t.entryDate)} · <RMultiple value={realisedR(it.t)} /> · {OUTCOME_LABEL[it.t.outcome] ?? it.t.outcome}
+                      {spansYears ? `${formatDateShort(it.t.exitDate || it.t.entryDate, true)} ${formatTime(it.t.exitDate || it.t.entryDate)}` : formatDateTime(it.t.exitDate || it.t.entryDate)} · <RMultiple value={realisedR(it.t)} /> · {OUTCOME_LABEL[it.t.outcome] ?? it.t.outcome}
                       <span className="ml-auto flex items-center gap-1.5" aria-hidden="true">
                         {(it.t.images?.length ?? 0) > 0 && <ImageIcon className="h-3.5 w-3.5" />}
                         {(it.t.keyLesson || it.t.notes) && <NotebookPen className="h-3.5 w-3.5" />}

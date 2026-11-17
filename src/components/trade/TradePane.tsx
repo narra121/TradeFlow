@@ -217,9 +217,12 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
           <Button type="button" variant="ghost" size="icon-sm" onClick={() => step(1)} disabled={index < 0 || index >= walk.length - 1} aria-label="Next trade">
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </Button>
-          <span className="hidden px-1 text-xs tabular-nums text-muted-foreground sm:inline">
-            {index + 1} of {walk.length}
-          </span>
+          {/* A trade outside the list it was opened from (just saved, or out of scope) has no place to count from. */}
+          {index >= 0 && (
+            <span className="hidden px-1 text-xs tabular-nums text-muted-foreground sm:inline">
+              {index + 1} of {walk.length}
+            </span>
+          )}
         </>
       )}
       <h2 ref={headingRef} tabIndex={-1} className="min-w-0 flex-1 truncate px-1 text-sm font-semibold outline-none">
@@ -346,7 +349,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
             <span className="inline-flex items-center gap-1.5 self-center sm:hidden">
               <DirectionChip direction={trade.direction} />
               <OutcomeChip outcome={trade.outcome} />
-              <span className="text-xs tabular-nums text-muted-foreground">{index + 1} of {walk.length}</span>
+              {index >= 0 && <span className="text-xs tabular-nums text-muted-foreground">{index + 1} of {walk.length}</span>}
             </span>
             <Money value={trade.pnl} currency={currency} className="text-2xl font-medium" />
             <RMultiple value={realisedR(trade)} />

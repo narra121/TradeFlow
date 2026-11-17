@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { NormalizedTrade } from '@/types/import';
@@ -46,5 +47,26 @@ describe('MobileReview edit sheet', () => {
     await user.click(screen.getByRole('button', { name: 'Done' }));
     expect(onEdit).toHaveBeenCalledTimes(1);
     expect(onEdit).toHaveBeenCalledWith(key, 'pnl', 1200.5);
+  });
+
+  it('shows Opened and Closed as 24-hour text on the Settings clock, keeps an untouched time to the millisecond and saves a typed one (L22-035)', async () => {
+    patchUiState({ timeZone: 'Asia/Kolkata' });
+    try {
+      const rows = makeRows([trade({ openDate: '2025-12-03T03:11:09.075Z' })], 'f.csv');
+      const onEdit = vi.fn();
+      const user = userEvent.setup();
+      render(<MobileReview rows={rows} onInclude={vi.fn()} onEdit={onEdit} />);
+      await user.click(screen.getByRole('button', { name: 'Edit EURUSD' }));
+      expect(screen.getByLabelText('Opened')).toHaveAttribute('type', 'text');
+      expect(screen.getByLabelText('Opened')).toHaveValue('03 Dec 2025, 08:41:09');
+      await user.clear(screen.getByLabelText('Closed'));
+      await user.type(screen.getByLabelText('Closed'), '3 Dec 2025, 14:30');
+      await user.click(screen.getByRole('button', { name: 'Done' }));
+      expect(onEdit).toHaveBeenCalledTimes(1);
+      expect(onEdit).toHaveBeenCalledWith(rows[0].key, 'closeDate', '2025-12-03T09:00:00.000Z');
+    } finally {
+      localStorage.clear();
+      resetUiStateCache();
+    }
   });
 });

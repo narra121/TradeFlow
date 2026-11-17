@@ -23,6 +23,9 @@ const waitOnline = () => new Promise<void>((resolve) => window.addEventListener(
 /** Pages of 100 scanned per account when looking for past imports. */
 const BATCH_SCAN_PAGES = 10;
 
+/** A save's result plus the externalIds of the trades the server already had (skipped as duplicates). */
+export type SavedImport = SaveImportedResult & { skippedExternalIds: string[] };
+
 export const importApi = apiWithTags.injectEndpoints({
   overrideExisting: 'throw',
   endpoints: (builder) => ({
@@ -86,11 +89,11 @@ export const importApi = apiWithTags.injectEndpoints({
     }),
 
     /** Saves in chunks of 50 through POST /trades. Safe to repeat: every item has an idempotency key. */
-    saveImportedTrades: builder.mutation<SaveImportedResult, SaveImportedArgs>({
+    saveImportedTrades: builder.mutation<SavedImport, SaveImportedArgs>({
       async queryFn({ trades, accountId, only, batchId, onProgress }, _api, _extra, baseQuery) {
         const batch = batchId ?? crypto.randomUUID();
         const items: ImportCreateItem[] = toCreateItems(trades, accountId, { only, batchId: batch });
-        const result: SaveImportedResult = { created: 0, skipped: 0, errors: 0, failed: 0, batchId: batch, createdIds: [], failedExternalIds: [] };
+        const result: SavedImport = { created: 0, skipped: 0, errors: 0, failed: 0, batchId: batch, createdIds: [], failedExternalIds: [], skippedExternalIds: [] };
         let lastError: unknown;
         let sent = 0;
         for (const part of chunk(items, SAVE_CHUNK_SIZE)) {
@@ -107,10 +110,12 @@ export const importApi = apiWithTags.injectEndpoints({
             result.failedExternalIds.push(...part.map((i) => i.externalId));
             continue;
           }
-          const d = (r.data ?? {}) as { created?: number | unknown[]; skipped?: unknown[]; errors?: unknown[]; items?: { tradeId?: string }[] };
+          const d = (r.data ?? {}) as { created?: number | unknown[]; skipped?: { index?: number }[]; errors?: unknown[]; items?: { tradeId?: string }[] };
           for (const it of d.items ?? []) if (it.tradeId) result.createdIds.push(it.tradeId);
           result.created += typeof d.created === 'number' ? d.created : Array.isArray(d.created) ? d.created.length : 0;
           result.skipped += Array.isArray(d.skipped) ? d.skipped.length : 0;
+          // `index` points into this chunk: the rows the server already had, so the review can say so per row.
+          for (const s of d.skipped ?? []) if (typeof s.index === 'number' && part[s.index]) result.skippedExternalIds.push(part[s.index].externalId);
           result.errors += Array.isArray(d.errors) ? d.errors.length : 0;
         }
         if (items.length > 0 && result.failed === items.length) return { error: lastError as never };

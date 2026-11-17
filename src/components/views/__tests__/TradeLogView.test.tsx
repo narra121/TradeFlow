@@ -114,6 +114,14 @@ describe('TradeLogView', () => {
     expect(screen.getByTestId('search').textContent).toBe('?trade=t1');
   });
 
+  it('on a desktop too, the drill chip and the way back sit above the list, where the chip keeps its label (L22-032)', () => {
+    scope = { trades: [mk(1, { strategy: 'Breakout' }), mk(2, { strategy: 'Reversal' })], isLoading: false, isError: false };
+    setup('/app/tradelog?src=analytics&strategy=Breakout');
+    const bar = screen.getByRole('toolbar', { name: 'Data shown' });
+    expect(bar).not.toContainElement(screen.getByRole('button', { name: 'Remove filter: From Analytics: Strategy = Breakout' }));
+    expect(bar).not.toContainElement(screen.getByRole('button', { name: 'Back to Analytics' }));
+  });
+
   it('on a phone shows the drill chip and the way back above the list, not in the full scope bar', async () => {
     const width = window.innerWidth;
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });

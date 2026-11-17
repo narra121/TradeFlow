@@ -76,7 +76,11 @@ describe('CalendarView', () => {
     setup();
     const line = screen.getByRole('group', { name: 'Summary' });
     expect(line).toHaveTextContent('Net+$387.80');
-    expect(line).toHaveTextContent('3 trading days · 2 green / 1 red');
+    // The "·" separators are drawn by CSS before each item (never starting a wrapped line), so they are not text.
+    expect(line).toHaveTextContent('3 trading days');
+    expect(line).toHaveTextContent('2 green / 1 red');
+    expect(line.textContent).not.toMatch(/·/);
+    expect(line.parentElement?.className).toMatch(/overflow-hidden/);
     expect(line).toHaveTextContent('Best Fri 6 +$310.00');
     expect(line).toHaveTextContent('Worst Mon 2 −$48.00');
     expect(screen.getByRole('grid', { name: 'Calendar, November 2026' })).toBeInTheDocument();
@@ -85,7 +89,15 @@ describe('CalendarView', () => {
   it('counts a flat day as even, so green, red and even add up to the trading days', () => {
     monthTrades = [t('1', '2026-11-04T10:00:00', 50), t('2', '2026-11-04T12:00:00', -50), t('3', '2026-11-05T10:00:00', 20)];
     setup();
-    expect(screen.getByRole('group', { name: 'Summary' })).toHaveTextContent('2 trading days · 1 green / 0 red / 1 even');
+    expect(screen.getByRole('group', { name: 'Summary' })).toHaveTextContent('2 trading days');
+    expect(screen.getByRole('group', { name: 'Summary' })).toHaveTextContent('1 green / 0 red / 1 even');
+  });
+
+  it('coloured by R, counts a day by the sign of its R, as the tint does (L22-026)', () => {
+    // 4 Nov: a USD win of +1R and an INR loss of −0.5R (mixed currencies): net cannot be summed, R can (+0.5R), so green.
+    monthTrades = [t('1', '2026-11-04T10:00:00', 100), t('2', '2026-11-04T12:00:00', -20, 'inr', { exitPrice: 99.5 }), t('3', '2026-11-05T10:00:00', 30)];
+    setup('/app/calendar?month=2026-11&metric=r');
+    expect(screen.getByLabelText('Summary')).toHaveTextContent('2 green / 0 red');
   });
 
   it('names Best and Worst only with two trading days and only when they are a gain and a loss', () => {
@@ -99,6 +111,13 @@ describe('CalendarView', () => {
     expect(screen.getByLabelText('Summary')).toHaveTextContent('Worst Wed 4 −$48.00');
     expect(screen.getByLabelText('Summary')).not.toHaveTextContent('Best');
     second.unmount();
+  });
+
+  it('names the month of Best and Worst when the trading days span months (L22-027)', () => {
+    monthTrades = [t('1', '2026-10-20T10:00:00', -1000), t('2', '2026-11-10T10:00:00', 533)];
+    setup('/app/calendar?month=2026-11&view=year');
+    expect(screen.getByLabelText('Summary')).toHaveTextContent('Best Tue 10 Nov');
+    expect(screen.getByLabelText('Summary')).toHaveTextContent('Worst Tue 20 Oct');
   });
 
   it('counts the days without R when colouring by R', () => {

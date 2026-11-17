@@ -87,7 +87,8 @@ describe('DashboardView', () => {
   it('says why there is no comparison when Compare is on and the earlier period has no trades', () => {
     periodStats.mockReturnValue(period({ prevEmpty: true, prevRange: { startDate: '2026-10-01', endDate: '2026-10-16', name: 'Oct', spokenName: 'October' }, canCompare: true }));
     renderWithProviders(<DashboardView />);
-    expect(document.body.textContent).toMatch(/No trades in the previous period \(0?1 Oct 2026 – 16 Oct 2026\), so there is nothing to compare with\./);
+    // Prose dates are unpadded (DESIGN-ENTERPRISE D.3), L22-038.
+    expect(document.body.textContent).toMatch(/No trades in the previous period \(1 Oct 2026 – 16 Oct 2026\), so there is nothing to compare with\./);
   });
 
   it('on a phone shows the Compare switch in the page, where the scope bar has no room for it', () => {
@@ -199,11 +200,22 @@ describe('DashboardView', () => {
     expect(screen.getByRole('region', { name: 'Today' })).toBeInTheDocument();
     expect(screen.getByLabelText('Period statistics').querySelectorAll('dd')).toHaveLength(5);
     expect(screen.getByLabelText('Period statistics')).toHaveTextContent('—');
+    // The same five labels as with trades, Avg R included (R-043's stable label), L22-039.
+    expect(Array.from(screen.getByLabelText('Period statistics').querySelectorAll('dt')).map((d) => d.textContent)).toEqual(['Net P&L', 'Win rate', 'Profit factor', 'Avg R', 'Max drawdown']);
     expect(screen.getByText('Recent trades')).toBeInTheDocument();
     expect(screen.getByText('Needs attention')).toBeInTheDocument();
     expect(screen.getAllByText('No trades in this period.').length).toBe(3);
     expect(screen.queryByLabelText('First run')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Show all time' }).length).toBe(2);
+  });
+
+  it('when the trades fail to load, Today and Needs attention show a dash, never "No trades yet" or "Journal is complete" (L21-R3)', () => {
+    scopeTrades.mockReturnValue({ trades: [], isLoading: false, isError: true, error: { status: 500, data: null }, truncated: false, refetch: vi.fn() });
+    renderWithProviders(<DashboardView />);
+    expect(screen.getByText("Couldn't load your trades.")).toBeInTheDocument();
+    expect(screen.queryByText('No trades yet')).toBeNull();
+    expect(screen.queryByText(/Journal is complete/)).toBeNull();
+    expect(screen.getByRole('region', { name: 'Today' })).toHaveTextContent(/Today · \w{3} \d{1,2} \w{3}—/);
   });
 
   it('shows the ceiling note on Needs attention when the loaded scope is capped', () => {

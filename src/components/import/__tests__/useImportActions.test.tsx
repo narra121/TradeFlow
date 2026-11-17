@@ -5,7 +5,8 @@ import { patchUiState, resetUiStateCache } from '@/hooks/useUiState';
 import { zoneOffsetMinutes } from '@/lib/appTimeZone';
 import { makeRows } from '@/lib/import/rows';
 import { PLAN_SIGNAL_EVENT } from '@/lib/planErrors';
-import type { NormalizedTrade, ParseImportResponse, SaveImportedResult } from '@/types/import';
+import type { NormalizedTrade, ParseImportResponse } from '@/types/import';
+import type { SavedImport } from '@/store/api/importApi';
 import { useImportActions } from '../useImportActions';
 
 const call = (value: unknown, fail = false) => ({ unwrap: () => (fail ? Promise.reject(value) : Promise.resolve(value)), abort: vi.fn() });
@@ -41,7 +42,7 @@ const trade = (p: Partial<NormalizedTrade> = {}): NormalizedTrade => ({
 const parsed = (p: Partial<ParseImportResponse> = {}): ParseImportResponse => ({ detectedSource: 'zerodha', trades: [trade({ externalId: '1' }), trade({ externalId: '2', duplicate: true })], warnings: [], skipped: 0, ...p });
 const csv = (name = 'tradebook.csv') => new File(['symbol,side\nA,buy'], name, { type: 'text/csv' });
 const png = (name = 's.png', size = 100) => new File([new Uint8Array(size)], name, { type: 'image/png' });
-const saved = (p: Partial<SaveImportedResult> = {}): SaveImportedResult => ({ created: 1, skipped: 0, errors: 0, failed: 0, batchId: 'b1', createdIds: ['t1'], failedExternalIds: [], ...p });
+const saved = (p: Partial<SavedImport> = {}): SavedImport => ({ created: 1, skipped: 0, errors: 0, failed: 0, batchId: 'b1', createdIds: ['t1'], failedExternalIds: [], skippedExternalIds: [], ...p });
 
 beforeEach(() => {
   [parse, extract, save, bulkDelete, navigate, dispatch, fit].forEach((f) => f.mockReset());
@@ -332,6 +333,19 @@ describe('saveRows', () => {
     expect(s.phase).toBe('done');
     expect(s.result?.createdIds).toEqual(['t1', 't2']);
     expect(s.rows.filter((r) => r.saved)).toHaveLength(2);
+  });
+
+  it('marks rows the server already had as "Already imported", not "Imported" (L22-030)', async () => {
+    seed();
+    const a = setup();
+    act(() => a.toggle([importFlow.get().rows[3].key], false));
+    save.mockReturnValue(call(saved({ created: 1, skipped: 1, createdIds: ['t1'], skippedExternalIds: ['2'] })));
+    await act(() => a.saveRows());
+    const rows = importFlow.get().rows;
+    expect(rows.find((r) => r.trade.externalId === '1')?.saved).toBe(true);
+    const dup = rows.find((r) => r.trade.externalId === '2')!;
+    expect(dup.saved).toBeFalsy();
+    expect(dup.trade.duplicate).toBe(true);
   });
 
   it('groups rows moved to another account into their own save under the same batch', async () => {

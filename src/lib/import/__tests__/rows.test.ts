@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { NormalizedTrade } from '@/types/import';
-import { applyEdit, canMerge, editRow, filterRows, makeRows, mergeRows, mergeTrades, moveRows, rowStatus, setIncluded, summarise, validateTrade } from '../rows';
+import { applyEdit, canMerge, editRow, filterRows, makeRows, mergeRows, mergeTrades, moveRows, rowDateTime, rowStatus, setIncluded, spansYears, summarise, validateTrade } from '../rows';
 
 const trade = (p: Partial<NormalizedTrade> = {}): NormalizedTrade => ({
   symbol: 'EURUSD', side: 'BUY', quantity: 10, entryPrice: 100, exitPrice: 105, openDate: '2026-10-02T03:45:00.000Z', closeDate: '2026-10-02T06:10:00.000Z',
@@ -153,5 +153,15 @@ describe('parseTruncation', () => {
     const { parseTruncation } = await import('../rows');
     expect(parseTruncation('The file has 7412 trades; only the first 5000 are returned. Import a shorter date range for the rest.')).toEqual({ total: 7412, shown: 5000 });
     expect(parseTruncation('3 rows skipped')).toBeNull();
+  });
+});
+
+describe('dates across years (L22-031)', () => {
+  it('adds the year when the rows span years, so a held trade never reads closed before opened', () => {
+    const held = { trade: trade({ openDate: '2025-04-01T03:30:00.000Z', closeDate: '2026-03-31T03:30:00.000Z' }) };
+    expect(spansYears([held])).toBe(true);
+    expect(spansYears([{ trade: trade() }])).toBe(false);
+    expect(rowDateTime('2025-04-01T03:30:00.000Z', true)).toMatch(/^01 Apr 2025 \d{2}:\d{2}$/);
+    expect(rowDateTime('2026-10-02T03:45:00.000Z', false)).toMatch(/^02 Oct \d{2}:\d{2}$/);
   });
 });

@@ -9,6 +9,7 @@ import { formatDateShort, formatR } from '@/lib/format';
 import { plural } from '@/lib/evidence';
 import type { Analysis } from '@/types/analysis';
 import type { Trade } from '@/types/trade';
+import { DOT_ITEM, DOT_LINE, DOT_WRAP } from '@/components/calendar/PeriodSummary';
 
 /** The run of wins or losses that the newest trades end on; a break-even trade ends it. */
 export function currentStreak(newestFirst: Pick<Trade, 'pnl'>[]): { kind: 'win' | 'loss'; count: number } | null {
@@ -64,26 +65,32 @@ export function BeforeSession() {
   return (
     <section aria-label="Before the session" className="flex flex-wrap divide-border border-t border-border sm:divide-x [&>*]:flex-1 [&>*]:basis-56">
       <div className={SEG}>
-        <span className="text-muted-foreground">Drawdown now</span>
-        {state.isLoading ? (
-          <Skeleton className="h-4 w-20" />
-        ) : state.mixed ? (
-          <span className="text-muted-foreground">pick one account</span>
-        ) : !a || state.isError ? (
-          <button type="button" className="text-primary hover:underline" onClick={state.refetch}>Couldn't load · Retry</button>
-        ) : a.risk.drawdown.current > 0 ? (
-          <span>
-            <Money value={-a.risk.drawdown.current} currency={a.currency ?? undefined} />
-            {a.risk.drawdown.since && <span className="text-muted-foreground"> since {formatDateShort(a.risk.drawdown.since)}</span>}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">none, at the period high</span>
-        )}
-        <span aria-hidden="true" className="text-muted-foreground">·</span>
-        <span className="flex items-center gap-x-2 whitespace-nowrap">
-          <span className="text-muted-foreground">Streak</span>
-          {tradesLoading ? <Skeleton className="h-4 w-12" /> : <span>{streak ? plural(streak.count, streak.kind === 'win' ? 'win' : 'loss', streak.kind === 'win' ? 'wins' : 'losses') : '—'}</span>}
-        </span>
+        {/* "·" between the two facts never starts or ends a wrapped line (DOT_* in PeriodSummary). */}
+        <div className={DOT_WRAP}>
+          <div className={`${DOT_LINE} py-0.5`}>
+            <span className={`${DOT_ITEM} inline-flex items-baseline gap-x-2 pl-0.5`}>
+              <span className="text-muted-foreground">Drawdown now</span>
+              {state.isLoading ? (
+                <Skeleton className="h-4 w-20" />
+              ) : state.mixed ? (
+                <span className="text-muted-foreground">pick one account</span>
+              ) : !a || state.isError ? (
+                <button type="button" className="text-primary hover:underline" onClick={state.refetch}>Couldn't load · Retry</button>
+              ) : a.risk.drawdown.current > 0 ? (
+                <span>
+                  <Money value={-a.risk.drawdown.current} currency={a.currency ?? undefined} />
+                  {a.risk.drawdown.since && <span className="text-muted-foreground"> since {formatDateShort(a.risk.drawdown.since).replace(/^0/, '')}</span>}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">none, at the period high</span>
+              )}
+            </span>
+            <span className={`${DOT_ITEM} inline-flex items-baseline gap-x-2`}>
+              <span className="text-muted-foreground">Streak</span>
+              {tradesLoading ? <Skeleton className="h-4 w-12" /> : <span>{streak ? plural(streak.count, streak.kind === 'win' ? 'win' : 'loss', streak.kind === 'win' ? 'wins' : 'losses') : '—'}</span>}
+            </span>
+          </div>
+        </div>
       </div>
       <Link to="/app/analytics?tab=behaviour" className={`${SEG} hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring`}>
         <span className="text-muted-foreground">Proven leaks today</span>

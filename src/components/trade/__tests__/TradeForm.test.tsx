@@ -71,6 +71,26 @@ describe('TradeForm', () => {
     expect(screen.getByText('1 field needs attention')).toBeInTheDocument();
   });
 
+  it('passing through the Symbol field without typing does not flag it (L22-041)', () => {
+    setup();
+    const symbol = screen.getByLabelText(/^Symbol/);
+    fireEvent.focus(symbol);
+    fireEvent.blur(symbol);
+    expect(symbol).not.toHaveAttribute('aria-invalid', 'true');
+    expect(screen.queryByText(/needs? attention/)).toBeNull();
+  });
+
+  it('a cleared Closed loses its error as soon as Now refills it (L22-025)', async () => {
+    setup();
+    const closed = screen.getByLabelText(/^Closed/);
+    fireEvent.change(closed, { target: { value: '' } });
+    fireEvent.blur(closed);
+    expect(closed).toHaveAttribute('aria-invalid', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Now' }));
+    expect(closed).not.toHaveAttribute('aria-invalid', 'true');
+    expect(screen.queryByText(/needs? attention/)).toBeNull();
+  });
+
   it('does not stop the tab from closing while nothing was typed', () => {
     setup();
     expect(unload().defaultPrevented).toBe(false);

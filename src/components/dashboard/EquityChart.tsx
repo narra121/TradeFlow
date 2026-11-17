@@ -27,6 +27,19 @@ function ChartTooltip({ active, payload, currency, bucket }: { active?: boolean;
   );
 }
 
+/** Axis ticks in round steps (1, 2, 2.5 or 5 × 10ⁿ) that cover the values and zero; recharts' own ticks keep zero by stretching the step (550). */
+export function equityTicks(values: number[], steps = 4): number[] {
+  const lo = Math.min(0, ...values);
+  const hi = Math.max(0, ...values);
+  if (lo === hi) return [0];
+  const raw = (hi - lo) / steps;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((x) => x >= raw - 1e-9) as number;
+  const ticks: number[] = [];
+  for (let i = Math.floor(lo / step); i <= Math.ceil(hi / step); i++) ticks.push(Number((i * step).toPrecision(12)));
+  return ticks;
+}
+
 /**
  * Cumulative net P&L with the drawdown shaded below its running peak and the daily (weekly beyond 92 days) net as
  * bars on the same x axis. Line colour follows the sign of the last value. Arrow keys move a cursor, Enter opens
@@ -41,6 +54,7 @@ export function EquityChart({ points: raw, currency, title = 'Equity', fill = fa
   const labelOf = useMemo(() => (d: string) => (longRange ? `${formatDateShort(d)} ${d.slice(2, 4)}` : formatDateShort(d)), [longRange]);
   const { points, bucket } = useMemo(() => chartSeries(raw.map((p) => ({ ...p, label: labelOf(p.date) })), labelOf), [raw, labelOf]);
   const labels = useMemo(() => new Map(points.map((p) => [p.date, p.label])), [points]);
+  const ticks = useMemo(() => equityTicks(points.flatMap((p) => [p.cumulative, p.peak])), [points]);
 
   const last = points[points.length - 1]?.cumulative ?? 0;
   const lineColor = last >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))';
@@ -106,7 +120,7 @@ export function EquityChart({ points: raw, currency, title = 'Equity', fill = fa
                 <ComposedChart data={points} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
                   <CartesianGrid stroke="hsl(var(--chart-grid))" vertical={false} />
                   <XAxis dataKey="date" hide />
-                  <YAxis tick={AXIS} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => formatCompactMoney(v, { currency, symbol: false })} />
+                  <YAxis tick={AXIS} tickLine={false} axisLine={false} width={52} ticks={ticks} domain={[ticks[0], ticks[ticks.length - 1]]} interval={0} tickFormatter={(v: number) => formatCompactMoney(v, { currency })} />
                   <ReferenceLine y={0} stroke="hsl(var(--border-strong))" />
                   <Area dataKey={(p: ChartPoint) => [p.cumulative, p.peak]} stroke="none" fill="hsl(var(--loss))" fillOpacity={0.16} isAnimationActive={false} activeDot={false} legendType="none" tooltipType="none" />
                   <Line type="monotone" dataKey="cumulative" stroke={lineColor} strokeWidth={2} dot={false} isAnimationActive={false} />

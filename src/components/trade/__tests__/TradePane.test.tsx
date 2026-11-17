@@ -86,6 +86,13 @@ describe('TradePane', () => {
     expect(screen.queryByRole('button', { name: /^Edit strategy/ })).toBeNull();
   });
 
+  it('shows no "0 of N" counter for a trade outside the list it walks (L22-029)', () => {
+    param.ids = ['t1', 't3'];
+    setup();
+    expect(screen.queryByText(/^\d+ of \d+$/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Next trade' })).toBeDisabled();
+  });
+
   it('walks the cited list instead of the list on screen', async () => {
     param.ids = ['t2', 't3'];
     setup();

@@ -63,7 +63,7 @@ export function AccountsView() {
   const readOnlyIds = useMemo(() => readOnlyAccountIds(accounts, ent.writableAccountIds), [accounts, ent.writableAccountIds]);
 
   usePageChrome({
-    statement: `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} · ${activeCount} active${ent.readOnly ? ' · read-only' : ''}`,
+    statement: `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} · ${activeCount} active${ent.readOnly ? ' · read\u2011only' : ''}`,
   });
 
   // `?account=new` or `?account=<id>`; `?new=1` is the link the activation panel uses.

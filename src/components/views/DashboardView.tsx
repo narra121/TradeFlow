@@ -36,6 +36,9 @@ interface DashboardViewProps {
 }
 
 const MAX_CURRENCY_LINES = 2;
+/** `1 Oct 2026` in running text (DESIGN-ENTERPRISE D.3: no leading zero outside tables). */
+const proseDate = (value: string) => formatDateShort(value, true).replace(/^0/, '');
+
 const STRIP_GRID = 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))]';
 
 /**
@@ -131,7 +134,8 @@ export function DashboardView(_props: DashboardViewProps = {}) {
     <ErrorState title="Couldn't load your statistics." description="Your data is safe." error={ps.error} onRetry={ps.refetch} />
   ) : quiet ? (
     <StatStrip label="Period statistics" className={STRIP_GRID}>
-      {(['netPnl', 'winRate', 'profitFactor', 'plannedRR', 'maxDrawdown'] as const).map((m) => <StatCell key={m} metric={m} value="—" className={m === 'maxDrawdown' ? lastTileSpan(5, 5) : undefined} />)}
+      {/* The label it has once trades exist (Avg R), so it never changes with the data (R-043). */}
+      {(['netPnl', 'winRate', 'profitFactor', 'avgR', 'maxDrawdown'] as const).map((m) => <StatCell key={m} metric={m} value="—" className={m === 'maxDrawdown' ? lastTileSpan(5, 5) : undefined} />)}
     </StatStrip>
   ) : (
     <StatStrip label="Period statistics" className={STRIP_GRID}>
@@ -202,11 +206,11 @@ export function DashboardView(_props: DashboardViewProps = {}) {
   return (
     <div className="space-y-4">
       {compareSlot}
-      <TodayStrip today={today} todayLoading={todayScope.isLoading} week={week} todayKey={todayKey} />
+      <TodayStrip today={today} todayLoading={todayScope.isLoading} todayError={todayScope.isError} week={week} todayKey={todayKey} />
       {/* Compare is on but the equal earlier period is empty: say so, as Analytics does, instead of showing nothing. */}
       {ps.prevEmpty && prevRange && !quiet && (
         <p className="text-xs text-muted-foreground">
-          No trades in the previous period ({formatDateShort(prevRange.startDate, true)} – {formatDateShort(prevRange.endDate, true)}), so there is nothing to compare with.
+          No trades in the previous period ({proseDate(prevRange.startDate)} – {proseDate(prevRange.endDate)}), so there is nothing to compare with.
         </p>
       )}
       {strip}
@@ -253,7 +257,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
         </div>
 
         <div className="max-md:order-2 xl:col-span-5">
-          {scope.isLoading ? <Skeleton className="h-64" /> : <NeedsAttention rows={attention} truncated={scope.truncated} accountId={filters.accountId} noTrades={quiet} />}
+          {scope.isLoading ? <Skeleton className="h-64" /> : <NeedsAttention rows={attention} truncated={scope.truncated} accountId={filters.accountId} noTrades={quiet} failed={scope.isError} />}
         </div>
       </div>
 

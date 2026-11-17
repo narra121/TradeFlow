@@ -166,6 +166,17 @@ describe('clearing an optional field removes it on the server (H5)', () => {
     expect(await save(ref)).toMatchObject({ expiry: '2026-12-18', optionType: null, strike: null, underlying: null });
   });
 
+  it('shows Expiry as text like the other date fields, and saves the typed day (L22-036)', async () => {
+    const { ref } = mountEdit(option);
+    const expiry = screen.getByLabelText(/^Expiry/);
+    expect(expiry).not.toHaveAttribute('type', 'date');
+    expect(expiry).toHaveValue('27 Nov 2026');
+    await userEvent.clear(expiry);
+    await userEvent.type(expiry, '4 Dec 2026');
+    await userEvent.tab();
+    expect(await save(ref)).toMatchObject({ expiry: '2026-12-04' });
+  });
+
   it('sends null for every option field when the trade is no longer an option', async () => {
     const { ref } = mountEdit(option);
     await userEvent.click(screen.getByRole('combobox', { name: /Asset class/ }));

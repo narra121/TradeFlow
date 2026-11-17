@@ -36,7 +36,9 @@ export function DropZone({ disabled, onFiles, compact }: DropZoneProps) {
       )}
     >
       <p className="text-sm text-foreground">
-        Drop a broker export or screenshots here, paste (Ctrl+V), or{' '}
+        {/* A touch screen can neither drop nor press Ctrl+V. */}
+        <span className="[@media(pointer:coarse)]:hidden">Drop a broker export or screenshots here, paste (Ctrl+V), or</span>
+        <span className="hidden [@media(pointer:coarse)]:inline">Add a broker export or screenshots:</span>{' '}
         <Button type="button" variant="outline" size="sm" onClick={pick} disabled={disabled} className="ml-1 align-middle">
           Choose files
         </Button>

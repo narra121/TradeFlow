@@ -230,7 +230,8 @@ describe('AccountsView', () => {
     ent = { plan: 'free', readOnly: true, can: (f) => f !== 'auto_sync', writableAccountIds: [] };
     query = { data: { accounts: [ftmo, zerodha, acc('Third', { id: 'a4' })] }, isLoading: false, isError: false };
     setup();
-    expect(screen.getByRole('toolbar', { name: 'Data shown' })).toHaveTextContent('read-only');
+    // A non-breaking hyphen: a phone never wraps it as "read-" / "only" (L22-037).
+    expect(screen.getByRole('toolbar', { name: 'Data shown' })).toHaveTextContent('read\u2011only');
     await userEvent.setup().click(screen.getByRole('button', { name: 'Add account' }));
     expect(emitPlanSignal).toHaveBeenCalledWith(expect.objectContaining({ code: 'TRIAL_EXPIRED', kind: 'mutation' }));
     expect(screen.getByTestId('where')).not.toHaveTextContent('account=new');

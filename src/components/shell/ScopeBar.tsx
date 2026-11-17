@@ -84,7 +84,8 @@ export function ScopeBar({ scoped, isMobile }: ScopeBarProps) {
         ) : (
           <p className="line-clamp-2 text-13 leading-tight text-muted-foreground md:truncate">{chrome.statement}</p>
         )}
-        <div ref={targets.left} className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden" />
+        {/* Phones: a page's control here (Filters, the currency) keeps its width; the account and period labels truncate instead. */}
+        <div ref={targets.left} className={cn('flex flex-1 items-center gap-2 overflow-hidden', isMobile ? 'min-w-fit' : 'min-w-0')} />
       </div>
       <div className={cn('flex shrink-0 items-center gap-2', selecting && 'hidden')}>
         <div ref={targets.right} className="flex items-center gap-2" />

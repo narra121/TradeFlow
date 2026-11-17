@@ -54,7 +54,9 @@ describe('WeekTimeline', () => {
     expect(group).toBeInTheDocument();
     expect(screen.getByText('+$115.80')).toBeInTheDocument();
     expect(screen.getByText(/Week/)).toBeInTheDocument();
-    expect(screen.getByText(/· \d+ trades? ·/)).toBeInTheDocument();
+    // Items are split by CSS dots that never start or end a wrapped line, not by "·" text.
+    expect(screen.getByText(/^\d+ trades?$/)).toBeInTheDocument();
+    expect(screen.getByText(/^\d+ trades?$/).parentElement?.textContent).not.toMatch(/·/);
   });
 
   it('shows no zero counts on an empty week and leaves "no trades" to the page summary (said once)', () => {

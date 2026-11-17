@@ -6,6 +6,11 @@ import { formatDateShort } from '@/lib/format';
 import { importFlow, useImportFlow } from '@/lib/importFlowStore';
 import { SCREENSHOT_SOURCE } from '@/types/import';
 
+/** `1 Dec`: a date in running text (DESIGN-ENTERPRISE D.3: no leading zero outside tables), never split across lines. */
+function proseDate(value: string): string {
+  return formatDateShort(value).replace(/^0/, '').replace(' ', '\u00a0');
+}
+
 /** Import page: one progressive screen for broker files and screenshots; its state outlives the route. */
 export function ImportView() {
   const flow = useImportFlow();
@@ -17,7 +22,7 @@ export function ImportView() {
     ? 'Import trades from a broker file or screenshots'
     : quota.limit === null
       ? `${noun} this month: ${quota.used} used`
-      : `${noun} this month: ${quota.used} of ${quota.limit}${ent.periodResetsAt ? ` · resets ${formatDateShort(ent.periodResetsAt)}` : ''}`;
+      : `${noun} this month: ${quota.used} of ${quota.limit}${ent.periodResetsAt ? ` · resets ${proseDate(ent.periodResetsAt)}` : ''}`;
   usePageChrome({ statement });
 
   // Reviewed rows live in memory only, so closing the tab with rows in review asks first.

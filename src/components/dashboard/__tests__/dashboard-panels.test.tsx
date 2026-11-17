@@ -6,7 +6,7 @@ import { TodayStrip } from '../TodayStrip';
 import { GoalsSummary } from '../GoalsSummary';
 import { NeedsAttention } from '../NeedsAttention';
 import { RecentTrades } from '../RecentTrades';
-import { EquityChart } from '../EquityChart';
+import { EquityChart, equityTicks } from '../EquityChart';
 import type { WeekGoal } from '@/lib/dashboard';
 import type { WeekGoalsState } from '../useWeekGoals';
 import type { Trade, TradingAccount } from '@/types/trade';
@@ -156,6 +156,13 @@ describe('RecentTrades', () => {
 });
 
 describe('EquityChart', () => {
+  it('steps the money axis in round numbers through zero, never 550 (L23-R4)', () => {
+    expect(equityTicks([-550, 1100])).toEqual([-1000, -500, 0, 500, 1000, 1500]);
+    expect(equityTicks([0, 192, 710])).toEqual([0, 200, 400, 600, 800]);
+    expect(equityTicks([-12.5, 3])).toEqual([-15, -10, -5, 0, 5]);
+    expect(equityTicks([0])).toEqual([0]);
+  });
+
   const points = [
     { date: '2026-11-02', label: '2 Nov', day: -10, cumulative: -10 },
     { date: '2026-11-03', label: '3 Nov', day: 30, cumulative: 20 },

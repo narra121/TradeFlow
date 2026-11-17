@@ -1,5 +1,45 @@
 import type { NormalizedTrade } from '@/types/import';
 import type { RowDates } from './dates';
+import { dayKeyIn, fromZonedInput, toZonedInput } from '@/lib/appTimeZone';
+import { parseField } from '@/lib/dateTimeField';
+import { formatDateShort, formatDateTime, formatTime, MONTHS_SHORT } from '@/lib/format';
+
+/** True when the rows' open and close dates fall in more than one year (on the Settings clock). */
+export function spansYears(rows: { trade: Pick<NormalizedTrade, 'openDate' | 'closeDate'> }[]): boolean {
+  const years = new Set<string>();
+  for (const r of rows) {
+    for (const v of [r.trade.openDate, r.trade.closeDate]) {
+      const d = v ? new Date(v) : null;
+      if (d && !Number.isNaN(d.getTime())) years.add(dayKeyIn(d).slice(0, 4));
+    }
+  }
+  return years.size > 1;
+}
+
+/** `03 Dec 08:41`, with the year when the list spans years (DESIGN-ENTERPRISE D.3), so a trade never reads closed before opened. */
+export function rowDateTime(value: string, withYear: boolean): string {
+  return withYear ? `${formatDateShort(value, true)} ${formatTime(value)}` : formatDateTime(value);
+}
+
+/** An edited Opened / Closed as text: `03 Dec 2025, 08:41:09` on the Settings clock, 24-hour like `DateTimeField`, seconds only when the time has them. */
+export function formatEditDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})(:\d{2})?$/.exec(toZonedInput(iso, { seconds: true }));
+  return m ? `${m[3]} ${MONTHS_SHORT[Number(m[2]) - 1]} ${m[1]}, ${m[4]}${m[5] ?? ''}` : '';
+}
+
+/**
+ * The instant typed Opened / Closed text means: what `DateTimeField` reads (`3 Dec 2025, 08:41`, `03/12/2025 08:41` day
+ * first, …) plus optional seconds. Text unchanged from `formatEditDate(iso)` returns `iso`, so its milliseconds stay.
+ * `''` when empty or not a date (the row then asks for the date).
+ */
+export function parseEditDate(text: string, iso: string): string {
+  const t = text.trim();
+  if (t === formatEditDate(iso)) return iso;
+  const sec = /^(.*\d:\d{2}):(\d{2})$/.exec(t);
+  if (sec && Number(sec[2]) > 59) return '';
+  const wall = parseField(sec ? sec[1] : t, toZonedInput(iso));
+  return wall ? (fromZonedInput(sec ? `${wall}:${sec[2]}` : wall)?.toISOString() ?? '') : '';
+}
 
 /** Everything above this many rows is cut off with a warning (the review grid and the save are built for it). */
 export const MAX_REVIEW_ROWS = 5000;

@@ -7,6 +7,7 @@ import { formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { DayCell, WeekRow } from '@/lib/calendar';
 import type { TradingAccount } from '@/types/trade';
+import { DOT_ITEM, DOT_LINE, DOT_WRAP } from '@/components/calendar/PeriodSummary';
 
 const PX_PER_MIN = 0.7;
 const MIN_BLOCK = 24;
@@ -149,17 +150,22 @@ export function WeekTimeline({ week, accountMap, openKey, todayKey, isMobile, on
         </div>
       </div>
 
-      <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-        {/* An empty week is said once, in the page summary above; the "!" key is in the legend below. */}
-        {week.count > 0 && (
-          <>
-            <span>Week</span>
-            {week.byCurrency.map((c) => <Money key={c.currency} value={c.net} currency={c.currency} />)}
-            <span>· {plural(week.count, 'trade')} · {winLoss(week.wins, week.losses)} ·</span>
-          </>
-        )}
-        <span>Block height is the time the trade was open. ↻ opened within 15 minutes of a losing close.</span>
-      </p>
+      <div className={DOT_WRAP}>
+        <p className={`${DOT_LINE} text-xs text-muted-foreground`}>
+          {/* An empty week is said once, in the page summary above; the "!" key is in the legend below. */}
+          {week.count > 0 && (
+            <>
+              <span className={`${DOT_ITEM} flex items-baseline gap-x-2`}>
+                <span>Week</span>
+                {week.byCurrency.map((c) => <Money key={c.currency} value={c.net} currency={c.currency} />)}
+              </span>
+              <span className={DOT_ITEM}>{plural(week.count, 'trade')}</span>
+              <span className={DOT_ITEM}>{winLoss(week.wins, week.losses)}</span>
+            </>
+          )}
+          <span className={`${DOT_ITEM} whitespace-normal`}>Block height is the time the trade was open. ↻ opened within 15 minutes of a losing close.</span>
+        </p>
+      </div>
     </div>
   );
 }

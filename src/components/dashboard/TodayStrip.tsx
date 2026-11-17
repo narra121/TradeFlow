@@ -12,6 +12,8 @@ import { BeforeSession } from './BeforeSession';
 interface TodayStripProps {
   today: TodaySummary;
   todayLoading: boolean;
+  /** Today's trades failed to load: the count is unknown, never "No trades yet". */
+  todayError?: boolean;
   week: WeekGoalsState;
   /** `YYYY-MM-DD` of today, for the Trades link. */
   todayKey: string;
@@ -37,7 +39,7 @@ function GoalSegment({ goal, label }: { goal: WeekGoal; label: string }) {
  * whatever the period control says (E-021). Each segment links to where its figure comes from. Under it, the
  * before-the-session facts, which follow the page's scope.
  */
-export function TodayStrip({ today, todayLoading, week, todayKey, now = appToday() }: TodayStripProps) {
+export function TodayStrip({ today, todayLoading, todayError = false, week, todayKey, now = appToday() }: TodayStripProps) {
   const tradesGoal = week.goals.find((g) => g.type === 'tradeCount');
   const drawdownGoal = week.goals.find((g) => g.type === 'maxDrawdown');
   const limitsSet = !!tradesGoal || !!drawdownGoal;
@@ -50,6 +52,8 @@ export function TodayStrip({ today, todayLoading, week, todayKey, now = appToday
           <span className="font-medium">Today · {format(now, 'EEE')} {formatDateShort(now)}</span>
           {todayLoading ? (
             <Skeleton className="h-4 w-24" />
+          ) : todayError ? (
+            <span className="text-muted-foreground">—</span>
           ) : today.count === 0 ? (
             <span className="text-muted-foreground">No trades yet</span>
           ) : (

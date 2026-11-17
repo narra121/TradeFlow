@@ -377,6 +377,7 @@ export function useImportActions() {
         failedExternalIds: [],
       };
       let batchId = before?.batchId;
+      const skippedIds: string[] = [];
       let offset = 0;
       let blocked = false;
       let message: string | null = null;
@@ -397,6 +398,7 @@ export function useImportActions() {
           sum.failed += res.failed;
           sum.createdIds.push(...res.createdIds);
           sum.failedExternalIds.push(...res.failedExternalIds);
+          skippedIds.push(...res.skippedExternalIds);
         } catch (e) {
           const info = importErrorMessage(e);
           if (info.upgrade) blocked = true;
@@ -410,7 +412,11 @@ export function useImportActions() {
       sum.batchId = sum.batchId || batchId || '';
       const failedIds = new Set(sum.failedExternalIds);
       const targetKeys = new Set(targets.map((t) => t.key));
-      const rows = flow.rows.map((r) => (targetKeys.has(r.key) && !failedIds.has(r.trade.externalId) ? { ...r, saved: true } : r));
+      const skippedSet = new Set(skippedIds);
+      // A row the server already had reads "Already imported", like the duplicates found before saving, not "Imported".
+      const rows = flow.rows.map((r) =>
+        !targetKeys.has(r.key) || failedIds.has(r.trade.externalId) ? r : skippedSet.has(r.trade.externalId) ? { ...r, included: false, trade: { ...r.trade, duplicate: true } } : { ...r, saved: true },
+      );
       const nothingSaved = sum.createdIds.length === 0 && sum.skipped === (before?.skipped ?? 0) && sum.failed === total;
       importFlow.set({
         rows,
