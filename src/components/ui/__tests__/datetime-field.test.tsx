@@ -25,4 +25,17 @@ describe('DateTimeField reads "now" on the Settings time zone clock', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Now' }));
     expect(onChange).toHaveBeenCalledWith(EXPECTED);
   });
+
+  it('an empty field opens the calendar on the Settings zone\'s month, with its today marked', () => {
+    // 2026-12-01 05:30 UTC: still 30 November in Pago Pago, already 1 December in Kiritimati and in the browser zones east of UTC−5.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-12-01T05:30:00.000Z'));
+    patchUiState({ timeZone: ZONE });
+    const [month, day] = ZONE === 'Pacific/Pago_Pago' ? ['November 2026', '30'] : ['December 2026', '1'];
+    render(<DateTimeField value="" onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Pick a date' }));
+    expect(screen.getByText(month)).toBeInTheDocument();
+    const today = screen.getAllByRole('gridcell', { name: day }).find((el) => !el.className.includes('day-outside'));
+    expect(today?.className).toContain('font-semibold');
+  });
 });
