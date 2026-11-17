@@ -27,7 +27,7 @@ import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { appToday, appTodayKey } from '@/lib/appTimeZone';
 import { equitySeries, needsAttention, todaySummary } from '@/lib/dashboard';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { formatDateShort, formatPercent, formatProfitFactor, parseLocalDate } from '@/lib/format';
+import { formatPercent, formatProfitFactor, parseLocalDate, formatDayText } from '@/lib/format';
 import { getDateRangeFromPreset } from '@/lib/scope';
 
 interface DashboardViewProps {
@@ -37,7 +37,7 @@ interface DashboardViewProps {
 
 const MAX_CURRENCY_LINES = 2;
 /** `1 Oct 2026` in running text (DESIGN-ENTERPRISE D.3: no leading zero outside tables). */
-const proseDate = (value: string) => formatDateShort(value, true).replace(/^0/, '');
+const proseDate = (value: string) => formatDayText(value, true);
 
 const STRIP_GRID = 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))]';
 
@@ -173,7 +173,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
       />
       <StatCell
         metric="profitFactor"
-        to={statsLoading ? undefined : '/app/analytics'}
+        to={statsLoading || (!mixed && formatProfitFactor(s?.profitFactor, wins, total) === '—') ? undefined : '/app/analytics'}
         value={
           statsLoading ? <Skeleton className="h-5 w-12" /> : mixed ? (
             <span className="flex flex-col text-sm leading-5">
@@ -187,7 +187,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
       <StatCell
         // While loading, the label the figure usually ends as (Avg R): no flip from Planned R:R when the stats arrive.
         metric={statsLoading || hasRealisedR ? 'avgR' : 'plannedRR'}
-        to={statsLoading ? undefined : '/app/analytics?tab=risk'}
+        to={statsLoading || (!hasRealisedR && !s?.avgRiskReward) ? undefined : '/app/analytics?tab=risk'}
         value={statsLoading ? <Skeleton className="h-5 w-12" /> : hasRealisedR ? <RMultiple value={avgR} /> : s?.avgRiskReward ? s.avgRiskReward.toFixed(2) : '—'}
         hint={statsLoading || hasRealisedR ? undefined : 'Planned, not realised'}
         delta={prev ? (hasRealisedR ? <Delta kind="r" current={avgR} previous={prevAvgR} {...deltaProps} /> : <Delta kind="ratio" current={s?.avgRiskReward} previous={prev.avgRiskReward} {...deltaProps} />) : undefined}
@@ -195,7 +195,8 @@ export function DashboardView(_props: DashboardViewProps = {}) {
       <StatCell
         metric="maxDrawdown"
         className={lastTileSpan(selectedAccount ? 6 : 5, (selectedAccount ? 6 : 5) + (mixed ? 1 : 0))}
-        to={statsLoading ? undefined : '/app/analytics?tab=risk'}
+        // A bare "—" is no link: there is nothing to open, and its 10 px target fails WCAG 2.5.8.
+        to={statsLoading || mixed || drawdownBasis !== 'ok' ? undefined : '/app/analytics?tab=risk'}
         value={statsLoading ? <Skeleton className="h-5 w-12" /> : mixed || drawdownBasis !== 'ok' ? '—' : formatPercent(s?.maxDrawdown ?? 0)}
         hint={mixed || drawdownBasis === 'mixed' ? 'Per account only' : drawdownBasis === 'balance' ? 'Set a starting balance' : undefined}
         delta={!mixed && drawdownBasis === 'ok' && prev ? <Delta kind="pts" current={s?.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...deltaProps} /> : undefined}

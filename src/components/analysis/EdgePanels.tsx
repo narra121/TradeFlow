@@ -9,7 +9,7 @@ import { Money } from '@/components/ui/money';
 import { MetricInfo } from '@/components/stats/MetricInfo';
 import { useAnalysisQueryQuery, type AnalysisScope } from '@/store/api/analysisApi';
 import { MIN_VERDICT_TRADES, plural } from '@/lib/evidence';
-import { formatDateShort, formatPercent, formatR } from '@/lib/format';
+import { formatPercent, formatR, formatDayText } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { Dimension, QueryResult, SampleLabel, Verdict } from '@/types/analysis';
 import { EvidenceText } from './EvidenceText';
@@ -131,7 +131,7 @@ export function TwoWayPanel({ scope, by, then, currency, zone }: { scope: Analys
   );
 }
 
-const periodName = (p: { from: string; to: string }) => `${formatDateShort(p.from, true)} – ${formatDateShort(p.to, true)}`;
+const periodName = (p: { from: string; to: string }) => `${formatDayText(p.from, true)} – ${formatDayText(p.to, true)}`;
 
 /** The compare verdict in words: better or worse in R only when the server judged it so. */
 function compareVerdict(v: string | number | null, label: SampleLabel): string {

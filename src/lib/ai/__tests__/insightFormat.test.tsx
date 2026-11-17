@@ -18,7 +18,7 @@ describe('periodLabel', () => {
     expect(periodLabel('2026-10-05', '2026-11-20')).toContain('–');
     // A range across a year boundary names both years; "14 Nov – 14 Nov 2026" read as one day.
     expect(periodLabel('2025-11-14', '2026-11-14')).toBe('14 Nov 2025 – 14 Nov 2026');
-    expect(periodLabel('2026-10-05', '2026-11-20')).toBe('05 Oct – 20 Nov 2026');
+    expect(periodLabel('2026-10-05', '2026-11-20')).toBe('5 Oct – 20 Nov 2026');
   });
   it('calls the open-ended All time period by name', () => expect(periodLabel('1990-01-01', '2026-11-11')).toBe('All time'));
 });

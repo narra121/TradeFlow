@@ -101,7 +101,7 @@ describe('Weekly review (QA INR shape)', () => {
     expect(within(one).getAllByRole('button', { name: 'Make this my focus' })).toHaveLength(1);
     expect(one).toHaveTextContent('Resolved since last week: Re-entry after a loss (4 trades last week, none this week).');
     const last = screen.getByRole('region', { name: 'Last week’s focus' });
-    expect(last).toHaveTextContent('“If price reaches my stop, I exit.” since 01 Nov 2026');
+    expect(last).toHaveTextContent('“If price reaches my stop, I exit.” since 1 Nov 2026');
     expect(last).toHaveTextContent('Kept8 of 11');
     expect(last).toHaveTextContent('Broken3');
     expect(last).toHaveTextContent('The breaks cost₹4,200.00');

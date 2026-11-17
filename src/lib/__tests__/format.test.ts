@@ -5,6 +5,7 @@ import {
   formatCount,
   formatTime,
   formatDateShort,
+  formatDayText,
   formatDateTime,
   formatDurationMinutes,
   formatMoney,
@@ -84,6 +85,25 @@ describe('duration and dates', () => {
     expect([d.getFullYear(), d.getMonth(), d.getDate()]).toEqual([2026, 10, 4]);
     expect(formatDateShort('2026-11-04')).toBe('04 Nov');
     expect(formatDateShort('2026-11-04', true)).toBe('04 Nov 2026');
+  });
+});
+
+describe('formatDayText (D.3 header and sentence form)', () => {
+  afterEach(() => {
+    localStorage.clear();
+    resetUiStateCache();
+  });
+  it('writes the day unpadded, unlike the table form', () => {
+    expect(formatDayText('2026-11-04')).toBe('4 Nov');
+    expect(formatDayText('2026-11-04', true)).toBe('4 Nov 2026');
+    expect(formatDayText('2026-11-24', true)).toBe('24 Nov 2026');
+    expect(formatDayText(null)).toBe('—');
+  });
+  it('reads an instant on the saved zone, like formatDateShort', () => {
+    patchUiState({ timeZone: 'America/New_York' });
+    expect(formatDayText('2026-11-03T20:30:00.000Z')).toBe('3 Nov');
+    patchUiState({ timeZone: 'Asia/Kolkata' });
+    expect(formatDayText('2026-11-03T20:30:00.000Z')).toBe('4 Nov');
   });
 });
 

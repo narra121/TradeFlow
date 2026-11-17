@@ -36,7 +36,7 @@ describe('useUndoableDelete (E-055)', () => {
       expect(await result.current([t('a')])).toBe(true);
     });
     expect(deleteOne).toHaveBeenCalledWith('a');
-    expect(toastFn).toHaveBeenCalledWith('EURUSD long, 04 Nov deleted', expect.objectContaining({ duration: UNDO_MS, action: expect.objectContaining({ label: 'Undo' }) }));
+    expect(toastFn).toHaveBeenCalledWith('EURUSD long, 4 Nov deleted', expect.objectContaining({ duration: UNDO_MS, action: expect.objectContaining({ label: 'Undo' }) }));
   });
 
   it('Undo restores the same trades', async () => {

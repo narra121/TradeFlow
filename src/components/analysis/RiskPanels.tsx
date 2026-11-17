@@ -3,7 +3,7 @@ import { Money } from '@/components/ui/money';
 import { MetricInfo } from '@/components/stats/MetricInfo';
 import type { MetricKey } from '@/components/stats/metricDefs';
 import { plural } from '@/lib/evidence';
-import { formatDateShort, formatMoney, formatPercent, formatR } from '@/lib/format';
+import { formatMoney, formatPercent, formatR, formatDayText } from '@/lib/format';
 import { AnalysisPanel } from './AnalysisGate';
 import { useOpenTrades, type AnalysisState } from './useAnalysis';
 
@@ -108,7 +108,7 @@ export function DrawdownFactsPanel({ state, currency }: Props) {
         const d = a.risk.drawdown;
         return (
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <Figure metric="drawdownNow" value={<Money value={-d.current} currency={currency} />} note={d.current > 0 && d.since ? `since ${formatDateShort(d.since, true)}` : 'At the high'} />
+            <Figure metric="drawdownNow" value={<Money value={-d.current} currency={currency} />} note={d.current > 0 && d.since ? `since ${formatDayText(d.since, true)}` : 'At the high'} />
             <Figure metric="maxDrawdown" label="Deepest" value={<Money value={-d.deepest} currency={currency} />} note="in money" />
             <Figure metric="longestUnderwater" value={plural(d.longestDays, 'day')} note="calendar days" />
           </dl>

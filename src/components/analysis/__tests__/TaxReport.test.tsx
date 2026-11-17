@@ -48,7 +48,7 @@ describe('TaxReport', () => {
     expect(within(table).queryByText('Commodity derivatives')).not.toBeInTheDocument();
     const total = within(table).getByRole('row', { name: /Total/ });
     expect(within(total).getByText('+₹800.00')).toBeInTheDocument();
-    expect(screen.getByText('01 Apr 2026 – 31 Mar 2027')).toBeInTheDocument();
+    expect(screen.getByText('1 Apr 2026 – 31 Mar 2027')).toBeInTheDocument();
   });
 
   it('the financial year picker sits in the scope bar on a desktop and in the page on a phone (no room beside the period)', () => {
@@ -158,6 +158,6 @@ describe('financial year helpers', () => {
   });
 
   it('writes the range with day, short month and year', () => {
-    expect(formatFyRange('2026-04-01', '2027-03-31')).toBe('01 Apr 2026 – 31 Mar 2027');
+    expect(formatFyRange('2026-04-01', '2027-03-31')).toBe('1 Apr 2026 – 31 Mar 2027');
   });
 });

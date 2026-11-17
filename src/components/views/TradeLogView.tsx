@@ -42,7 +42,7 @@ import { BULK_EDIT_CAP, fanOut, inverseOf, patchFor, type BulkOp, type FanOutRes
 import { bulkUpdateBody, cachePatch } from '@/components/tradelog/bulkUpdate';
 import { readApiError } from '@/lib/apiError';
 import { downloadCsv, exportFileName, tradesToCsv } from '@/lib/exportCsv';
-import { formatDateShort, formatDateTime, formatMoney, formatPercent, formatTime } from '@/lib/format';
+import { formatDateShort, formatDateTime, formatMoney, formatPercent, formatTime, formatDayText } from '@/lib/format';
 import { appTimeZone, appTodayKey } from '@/lib/appTimeZone';
 import { patchTradePayload } from '@/lib/patchTrade';
 import { BUILT_IN_VIEWS, isModified, loadCustomViews, matchesSpecial, needsJournal, newViewId, saveCustomViews, type TradeView } from '@/lib/savedViews';
@@ -753,7 +753,7 @@ export function TradeLogView() {
                 </li>
               ) : (
                 <li key={it.t.id} className="flex h-[60px] items-center gap-2 border-b border-border px-1">
-                  {selectMode && <Checkbox checked={selected.has(it.t.id)} onCheckedChange={() => toggle(it.t.id, { shiftKey: false })} aria-label={`Select ${it.t.symbol} ${formatDateShort(it.t.exitDate || it.t.entryDate)}`} className="h-6 w-6 shrink-0" />}
+                  {selectMode && <Checkbox checked={selected.has(it.t.id)} onCheckedChange={() => toggle(it.t.id, { shiftKey: false })} aria-label={`Select ${it.t.symbol} ${formatDayText(it.t.exitDate || it.t.entryDate)}`} className="h-6 w-6 shrink-0" />}
                   <button
                     type="button"
                     onClick={() => (selectMode ? toggle(it.t.id, { shiftKey: false }) : param.openTrade(it.t.id))}

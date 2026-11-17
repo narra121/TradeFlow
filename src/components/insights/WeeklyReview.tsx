@@ -7,7 +7,7 @@ import { readApiError } from '@/lib/apiError';
 import { trueMinus } from '@/lib/ai/insightFormat';
 import { NOTE_SIDE, MEASURE_LABEL, PROCESS_WORD, RESULT_WORD, checkAgainText, historyText, measureValue, pct, processFacts, rText } from '@/lib/ai/reviewFormat';
 import { plural } from '@/lib/evidence';
-import { formatDateShort } from '@/lib/format';
+import { formatDayText } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { openTrialExpired } from '@/components/billing/readOnly';
 import { useEntitlements } from '@/hooks/useEntitlements';
@@ -124,7 +124,7 @@ function FocusAction({ finding }: { finding: ReviewFinding }) {
     <div className="space-y-1">
       {isCurrent ? (
         <p className="text-xs text-foreground-soft">
-          This is your focus{focus.startedAt ? ` since ${formatDateShort(focus.startedAt, true)}` : ''}. Each weekly review checks whether you kept it.
+          This is your focus{focus.startedAt ? ` since ${formatDayText(focus.startedAt, true)}` : ''}. Each weekly review checks whether you kept it.
         </p>
       ) : (
         <>
@@ -229,7 +229,7 @@ export function WeeklyReview({ insight, review: r, isWeek, onOpenTrades }: Weekl
       {r.lastFocus && (
         <Block title={isWeek ? 'Last week’s focus' : 'Your focus'}>
           <p className="max-w-prose text-13">
-            “{r.lastFocus.ruleText}” <span className="text-xs text-muted-foreground">since {formatDateShort(r.lastFocus.startedAt, true)}</span>
+            “{r.lastFocus.ruleText}” <span className="text-xs text-muted-foreground">since {formatDayText(r.lastFocus.startedAt, true)}</span>
           </p>
           {r.lastFocus.checked === 0 ? (
             <p className="text-13 text-foreground-soft">No trade in this period could be checked against it.</p>

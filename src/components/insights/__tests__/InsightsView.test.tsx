@@ -115,7 +115,7 @@ describe('InsightsView report', () => {
   it('shows the newest report: title with account, basis line, summary and findings by money impact with actions last', () => {
     renderView();
     expect(screen.getByRole('heading', { name: 'October 2026 · FTMO 100K' })).toBeInTheDocument();
-    expect(screen.getByText(/68 trades · 01 Oct 2026 – 31 Oct 2026/)).toBeInTheDocument();
+    expect(screen.getByText(/68 trades · 1 Oct 2026 – 31 Oct 2026/)).toBeInTheDocument();
     const titles = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
     expect(titles).toEqual(['Breakouts in London', 'Trades after 20:00 lose', 'Pause after a loss']);
     expect(screen.getByText('Leak')).toBeInTheDocument();

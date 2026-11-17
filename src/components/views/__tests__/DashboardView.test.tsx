@@ -218,6 +218,16 @@ describe('DashboardView', () => {
     expect(screen.getByRole('region', { name: 'Today' })).toHaveTextContent(/Today · \w{3} \d{1,2} \w{3}—/);
   });
 
+  it('a stat shown as a bare "—" is not a link: nothing to open, and a 10 px target (axe target-size, L22-055)', () => {
+    renderWithProviders(<DashboardView />);
+    const cell = (label: string) => Array.from(screen.getByLabelText('Period statistics').querySelectorAll('dt')).find((d) => d.textContent === label)!.nextElementSibling!;
+    expect(cell('Max drawdown')).toHaveTextContent('—');
+    expect(cell('Max drawdown').querySelector('a')).toBeNull();
+    capital.mockReturnValue({ accounts: [usd], selectedAccountId: 'a', totalCapital: 100000, accountsReady: true, accountsLoading: false, accountsError: false, drawdownBasis: 'ok' });
+    renderWithProviders(<DashboardView />);
+    expect(screen.getAllByRole('link', { name: /%$/ }).some((a) => a.getAttribute('href') === '/app/analytics?tab=risk')).toBe(true);
+  });
+
   it('shows the ceiling note on Needs attention when the loaded scope is capped', () => {
     scopeTrades.mockReturnValue({ trades: [t('1', 'a', 5)], isLoading: false, isError: false, truncated: true, refetch: vi.fn() });
     renderWithProviders(<DashboardView />);

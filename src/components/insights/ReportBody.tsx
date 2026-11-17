@@ -3,7 +3,7 @@ import { Money } from '@/components/ui/money';
 import { KIND_LABEL, orderSections, ruleTextFrom, trueMinus } from '@/lib/ai/insightFormat';
 import { isWeekPeriod } from '@/lib/ai/reviewFormat';
 import { ACCOUNT_SAMPLE_TEXT, sampleLabel } from '@/lib/evidence';
-import { formatDateShort } from '@/lib/format';
+import { formatDateShort, formatDayText } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { Insight, InsightSection } from '@/types/insights';
 import { WeeklyReview } from './WeeklyReview';
@@ -68,7 +68,7 @@ export function ReportBody({ insight, title, currency, onOpenTrades, onMakeRule,
         </div>
         <p className="text-xs text-muted-foreground">
           {insight.tradeCount} trades{review && label !== 'established' ? ` (${ACCOUNT_SAMPLE_TEXT[label].charAt(0).toLowerCase()}${ACCOUNT_SAMPLE_TEXT[label].slice(1)})` : ''}
-          {review && <> · net <Money value={review.verdict.net} currency={currency} /></>} · {formatDateShort(insight.period.from, true)} – {formatDateShort(insight.period.to, true)} · generated {formatDateShort(insight.createdAt, true)}
+          {review && <> · net <Money value={review.verdict.net} currency={currency} /></>} · {formatDayText(insight.period.from, true)} – {formatDayText(insight.period.to, true)} · generated {formatDateShort(insight.createdAt, true)}
         </p>
         {insight.truncated && <p className="text-xs text-warning">Based on the oldest {insight.tradeCount} trades of the period. The period held more than could be analysed.</p>}
         <details className="text-xs text-muted-foreground">

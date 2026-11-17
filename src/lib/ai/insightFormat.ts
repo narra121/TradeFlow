@@ -1,4 +1,4 @@
-import { formatDateShort, parseLocalDate } from '@/lib/format';
+import { parseLocalDate, formatDayText } from '@/lib/format';
 import type { Insight, InsightSection } from '@/types/insights';
 import { reviewAsLines } from './reviewFormat';
 
@@ -14,8 +14,8 @@ export function periodLabel(from: string, to: string): string {
   if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === 1 && b.getDate() === lastOfMonth) return MONTH.format(a);
   if (a.getMonth() === 0 && a.getDate() === 1 && b.getMonth() === 11 && b.getDate() === 31 && a.getFullYear() === b.getFullYear()) return String(a.getFullYear());
   const days = Math.round((b.getTime() - a.getTime()) / 86_400_000) + 1;
-  const range = `${formatDateShort(from, a.getFullYear() !== b.getFullYear())} – ${formatDateShort(to, true)}`;
-  return days === 7 ? `Week of ${formatDateShort(from)}` : range;
+  const range = `${formatDayText(from, a.getFullYear() !== b.getFullYear())} – ${formatDayText(to, true)}`;
+  return days === 7 ? `Week of ${formatDayText(from)}` : range;
 }
 
 export const KIND_LABEL: Record<InsightSection['kind'], string> = {
@@ -42,7 +42,7 @@ export function ruleTextFrom(section: InsightSection): string {
 
 /** Plain-text copy of a report for `Copy summary`. */
 export function reportAsText(insight: Insight, title: string): string {
-  const lines = [title, `${insight.tradeCount} trades · generated ${formatDateShort(insight.createdAt, true)}`, '', trueMinus(insight.summary), ''];
+  const lines = [title, `${insight.tradeCount} trades · generated ${formatDayText(insight.createdAt, true)}`, '', trueMinus(insight.summary), ''];
   if (insight.review) lines.push(...reviewAsLines(insight.review).map(trueMinus));
   else {
     for (const s of orderSections(insight.sections)) {
@@ -97,5 +97,5 @@ export function reportRange(preset: string | number, startDate: string, endDate:
 
 /** `the last 12 months` for a period ending today, else `the 12 months to 31 Oct 2026`. */
 export function clampedLabel(to: string, today: Date = new Date()): string {
-  return to === iso(today) ? 'the last 12 months' : `the 12 months to ${formatDateShort(to, true)}`;
+  return to === iso(today) ? 'the last 12 months' : `the 12 months to ${formatDayText(to, true)}`;
 }

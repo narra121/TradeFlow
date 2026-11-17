@@ -53,6 +53,11 @@ describe('TodayStrip', () => {
     expect(screen.getByRole('link', { name: /Today · Wed 11 Nov/ })).toHaveAttribute('href', '/app/tradelog?on=2026-11-11&src=dashboard');
   });
 
+  it('heads the strip with an unpadded day, as D.3 writes headers (L22-056)', () => {
+    wrap(<TodayStrip today={{ count: 0, byCurrency: [] }} todayLoading={false} week={week()} todayKey="2026-11-03" now={new Date(2026, 10, 3, 12, 0)} />);
+    expect(screen.getByRole('link', { name: /^Today · Tue 3 Nov/ })).toBeInTheDocument();
+  });
+
   it('shows the limits as meters when goals are set', () => {
     wrap(<TodayStrip today={{ count: 0, byCurrency: [] }} todayLoading={false} week={week({ goals: [goal({}), goal({ type: 'maxDrawdown', label: 'Drawdown', current: 1.2, target: 3 })] })} todayKey="2026-11-11" now={now} />);
     expect(screen.getByText('No trades yet')).toBeInTheDocument();

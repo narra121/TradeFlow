@@ -1,4 +1,4 @@
-import { formatDateShort } from '@/lib/format';
+import { formatDayText } from '@/lib/format';
 
 /** Indian financial year of a date, `2026-27` (1 April to 31 March). */
 export function financialYear(now: Date = new Date()): string {
@@ -13,5 +13,5 @@ export function financialYears(now: Date = new Date(), count = 4): string[] {
 }
 
 export function formatFyRange(from: string, to: string): string {
-  return `${formatDateShort(from, true)} – ${formatDateShort(to, true)}`;
+  return `${formatDayText(from, true)} – ${formatDayText(to, true)}`;
 }

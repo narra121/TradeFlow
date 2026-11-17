@@ -5,7 +5,7 @@ import { useAnalysis } from '@/components/analysis/useAnalysis';
 import { DIMENSION_LABEL } from '@/components/analysis/OverviewPanels';
 import { useScopeTrades } from '@/hooks/useScopeTrades';
 import { useGetFocusRuleQuery } from '@/store/api/analysisApi';
-import { formatDateShort, formatR } from '@/lib/format';
+import { formatR, formatDayText } from '@/lib/format';
 import { plural } from '@/lib/evidence';
 import type { Analysis } from '@/types/analysis';
 import type { Trade } from '@/types/trade';
@@ -79,7 +79,7 @@ export function BeforeSession() {
               ) : a.risk.drawdown.current > 0 ? (
                 <span>
                   <Money value={-a.risk.drawdown.current} currency={a.currency ?? undefined} />
-                  {a.risk.drawdown.since && <span className="text-muted-foreground"> since {formatDateShort(a.risk.drawdown.since).replace(/^0/, '')}</span>}
+                  {a.risk.drawdown.since && <span className="text-muted-foreground"> since {formatDayText(a.risk.drawdown.since)}</span>}
                 </span>
               ) : (
                 <span className="text-muted-foreground">none, at the period high</span>

@@ -96,27 +96,27 @@ describe('planState — one sentence and one action per state', () => {
   it('read-only after the trial, and after Pro ended; no "Free plan" anywhere', () => {
     expect(planState({ plan: 'free', status: 'free', trialEndedAt: '2026-11-05T00:00:00Z' })).toMatchObject({
       kind: 'read_only',
-      sentence: 'Your free trial ended on 05 Nov 2026. Your journal is read-only: you can view and export, but not add, edit or delete.',
+      sentence: 'Your free trial ended on 5 Nov 2026. Your journal is read-only: you can view and export, but not add, edit or delete.',
       action: 'upgrade',
       showWhatChanged: true,
     });
     expect(planState({ plan: 'free', trialEndedAt: '2026-01-01T00:00:00Z', proEndedAt: '2026-11-01T00:00:00Z' }).sentence).toBe(
-      'Pro ended on 01 Nov 2026. Your journal is read-only: you can view and export, but not add, edit or delete.',
+      'Pro ended on 1 Nov 2026. Your journal is read-only: you can view and export, but not add, edit or delete.',
     );
     expect(planState({ plan: 'free' }).sentence).not.toMatch(/Free plan|on Free/);
   });
   it('pro renewing with price and date, and dropping clauses the API did not return', () => {
-    expect(planState({ plan: 'pro', status: 'active', interval: 'year', amount: 79, currency: 'USD', renewsAt: '2027-01-03T00:00:00Z' }).sentence).toBe('Pro — $79.00 a year. Renews on 03 Jan 2027.');
-    expect(planState({ plan: 'pro', status: 'active', renewsAt: '2027-01-03T00:00:00Z' }).sentence).toBe('Pro — renews on 03 Jan 2027.');
+    expect(planState({ plan: 'pro', status: 'active', interval: 'year', amount: 79, currency: 'USD', renewsAt: '2027-01-03T00:00:00Z' }).sentence).toBe('Pro — $79.00 a year. Renews on 3 Jan 2027.');
+    expect(planState({ plan: 'pro', status: 'active', renewsAt: '2027-01-03T00:00:00Z' }).sentence).toBe('Pro — renews on 3 Jan 2027.');
     expect(planState({ plan: 'pro', status: 'active' })).toMatchObject({ sentence: 'Pro — active.', action: 'manage' });
   });
   it('legacy price is stated', () => {
-    expect(planState({ plan: 'pro', status: 'active', legacyPrice: true, renewsAt: '2027-01-03T00:00:00Z' }).sentence).toBe('Pro (legacy price) — renews on 03 Jan 2027.');
+    expect(planState({ plan: 'pro', status: 'active', legacyPrice: true, renewsAt: '2027-01-03T00:00:00Z' }).sentence).toBe('Pro (legacy price) — renews on 3 Jan 2027.');
   });
   it('cancelled at period end', () => {
     expect(planState({ plan: 'pro', status: 'canceling', endsAt: '2027-01-03T00:00:00Z' })).toMatchObject({
       kind: 'pro_canceling',
-      sentence: 'Pro — ends on 03 Jan 2027. After that your journal is read-only; your trades stay.',
+      sentence: 'Pro — ends on 3 Jan 2027. After that your journal is read-only; your trades stay.',
       action: 'manage',
     });
   });
@@ -130,7 +130,7 @@ describe('plan row (sidebar footer)', () => {
     expect(planRowText({ plan: 'trial', trialDaysLeft: 9 })).toEqual({ text: 'Free trial · 9 days left', action: undefined, tone: 'neutral' });
     expect(planRowText({ plan: 'trial', trialDaysLeft: 2 })).toMatchObject({ text: 'Free trial · 2 days left', action: 'Upgrade', tone: 'warning' });
     expect(planRowText({ plan: 'free' })).toMatchObject({ text: 'Read-only', action: 'Upgrade' });
-    expect(planRowText({ plan: 'pro', status: 'canceling', endsAt: '2027-01-03T00:00:00Z' })).toMatchObject({ text: 'Pro ends 03 Jan' });
+    expect(planRowText({ plan: 'pro', status: 'canceling', endsAt: '2027-01-03T00:00:00Z' })).toMatchObject({ text: 'Pro ends 3 Jan' });
     expect(planRowText({ plan: 'pro', status: 'past_due' })).toMatchObject({ text: 'Payment failed', action: 'Update card', tone: 'error' });
     expect(planRowText({ plan: 'pro', status: 'active' })).toBeNull();
   });
@@ -181,7 +181,7 @@ describe('BillingView', () => {
     response = readOnly();
     wrap();
     // 'read-only' sits in its own nowrap span, so the sentence is read from the paragraph's whole text.
-    const sentence = screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Your free trial ended on 05 Nov 2026. Your journal is read-only: you can view and export, but not add, edit or delete.');
+    const sentence = screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Your free trial ended on 5 Nov 2026. Your journal is read-only: you can view and export, but not add, edit or delete.');
     expect(within(sentence).getByText('read-only')).toHaveClass('whitespace-nowrap');
     expect(within(screen.getByRole('heading', { name: 'Your journal is read-only' })).getByText('read-only')).toHaveClass('whitespace-nowrap');
     expect(screen.getByRole('region', { name: 'Your journal is read-only' })).toHaveTextContent('export your data');
@@ -297,7 +297,7 @@ describe('BillingView', () => {
     response = pro({ interval: 'year', amount: 79, currency: 'USD', renewsAt: '2027-01-03T00:00:00Z' });
     portal.mockResolvedValue({ url: 'https://billing.stripe.test/p/1' });
     wrap();
-    expect(screen.getByText('Pro — $79.00 a year. Renews on 03 Jan 2027.')).toBeInTheDocument();
+    expect(screen.getByText('Pro — $79.00 a year. Renews on 3 Jan 2027.')).toBeInTheDocument();
     expect(screen.getByText(/Invoices and payment method open in Stripe's secure portal\. Billed in USD\./)).toBeInTheDocument();
     expect(screen.getByText('Compare plans')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Manage billing' }));
@@ -389,8 +389,8 @@ describe('UsageMeter', () => {
 
   it('says the limit is reached and when it resets', () => {
     render(<UsageMeter row={row(5, 5)} resetsAt="2026-12-01T00:00:00Z" />);
-    expect(screen.getByText('Limit reached — resets 01 Dec')).toHaveClass('text-error');
-    expect(screen.getByText('Limit reached — resets 01 Dec')).not.toHaveClass('text-loss');
+    expect(screen.getByText('Limit reached — resets 1 Dec')).toHaveClass('text-error');
+    expect(screen.getByText('Limit reached — resets 1 Dec')).not.toHaveClass('text-loss');
   });
 
   it('unlimited shows the count and the word, no bar', () => {

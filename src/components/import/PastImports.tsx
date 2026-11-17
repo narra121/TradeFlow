@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { batchFile, type ImportBatch } from '@/lib/import/batches';
 import { sourceLabel } from '@/lib/import/labels';
 import { readApiError } from '@/lib/apiError';
-import { formatCount, formatDateShort } from '@/lib/format';
+import { formatCount, formatDateShort, formatDayText } from '@/lib/format';
 import { useGetImportBatchesQuery } from '@/store/api/importApi';
 import { SCREENSHOT_SOURCE, type ImportSource } from '@/types/import';
 
@@ -70,7 +70,7 @@ export function PastImports({ accounts, sources, onView }: PastImportsProps) {
                       <td className="pr-3">{accountName(b.accountId)}</td>
                       <td className="pr-3 text-right font-mono tabular-nums">{formatCount(b.count)}</td>
                       <td className="text-right">
-                        <Button type="button" variant="ghost" size="sm" onClick={() => onView(b)} aria-label={`View trades from the import of ${formatDateShort(b.importedAt, true)}, ${b.count} ${b.count === 1 ? 'trade' : 'trades'}`}>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => onView(b)} aria-label={`View trades from the import of ${formatDayText(b.importedAt, true)}, ${b.count} ${b.count === 1 ? 'trade' : 'trades'}`}>
                           View trades →
                         </Button>
                       </td>

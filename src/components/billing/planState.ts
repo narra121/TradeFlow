@@ -1,9 +1,9 @@
-import { formatDateShort, formatMoney } from '@/lib/format';
+import { formatMoney, formatDayText } from '@/lib/format';
 import type { EntitlementsView } from '@/hooks/useEntitlements';
 
 /** `04 Nov 2026`, or `04 Nov` when `withYear` is false (D.3). Empty for a missing or invalid date. */
 export function formatDay(iso: string | undefined | null, withYear = true): string {
-  const text = formatDateShort(iso, withYear);
+  const text = formatDayText(iso, withYear);
   return text === '—' ? '' : text;
 }
 

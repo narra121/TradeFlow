@@ -2,13 +2,13 @@ import { useEffect } from 'react';
 import { ImportCenter } from '@/components/import/ImportCenter';
 import { usePageChrome } from '@/components/shell/chrome';
 import { useEntitlements } from '@/hooks/useEntitlements';
-import { formatDateShort } from '@/lib/format';
+import { formatDayText } from '@/lib/format';
 import { importFlow, useImportFlow } from '@/lib/importFlowStore';
 import { SCREENSHOT_SOURCE } from '@/types/import';
 
 /** `1 Dec`: a date in running text (DESIGN-ENTERPRISE D.3: no leading zero outside tables), never split across lines. */
 function proseDate(value: string): string {
-  return formatDateShort(value).replace(/^0/, '').replace(' ', '\u00a0');
+  return formatDayText(value).replace(' ', '\u00a0');
 }
 
 /** Import page: one progressive screen for broker files and screenshots; its state outlives the route. */

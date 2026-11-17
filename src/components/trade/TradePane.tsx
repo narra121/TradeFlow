@@ -32,7 +32,7 @@ import { useTradingRules } from '@/hooks/useTradingRules';
 import { useUiState } from '@/hooks/useUiState';
 import { useTradeParam } from '@/hooks/useTradeParam';
 import { useGetTradeQuery, useUpdateTradeMutation } from '@/store/api';
-import { formatDateShort, formatDateTime, formatDurationMinutes, formatMoney, formatPrice, formatQuantity } from '@/lib/format';
+import { formatDateTime, formatDurationMinutes, formatMoney, formatPrice, formatQuantity, formatDayText } from '@/lib/format';
 import { realisedR } from '@/lib/tradeFilters';
 import { patchTradePayload } from '@/lib/patchTrade';
 import { cn } from '@/lib/utils';
@@ -226,7 +226,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
         </>
       )}
       <h2 ref={headingRef} tabIndex={-1} className="min-w-0 flex-1 truncate px-1 text-sm font-semibold outline-none">
-        {param.mode === 'edit' && trade ? `Edit ${trade.symbol} · ${formatDateShort(trade.exitDate || trade.entryDate)}` : title}
+        {param.mode === 'edit' && trade ? `Edit ${trade.symbol} · ${formatDayText(trade.exitDate || trade.entryDate)}` : title}
         {param.mode === 'view' && trade && (
           <span className="ml-2 hidden items-center gap-1.5 align-middle sm:inline-flex">
             <DirectionChip direction={trade.direction} />
@@ -369,7 +369,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
             <Row label="Planned R:R">{trade.riskRewardRatio ? trade.riskRewardRatio.toFixed(2) : '—'}</Row>
             {trade.optionType && <Row label="Type">{trade.optionType === 'call' ? 'Call' : 'Put'}</Row>}
             {trade.strike !== undefined && <Row label="Strike">{formatPrice(trade.strike)}</Row>}
-            {trade.expiry && <Row label="Expiry">{formatDateShort(trade.expiry, true)}</Row>}
+            {trade.expiry && <Row label="Expiry">{formatDayText(trade.expiry, true)}</Row>}
           </dl>
 
           <ReviewedSwitch

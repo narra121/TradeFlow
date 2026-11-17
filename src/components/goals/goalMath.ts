@@ -1,7 +1,7 @@
 import { addDays, addMonths, addWeeks, endOfMonth, format, startOfMonth, startOfWeek } from 'date-fns';
 import { appToday } from '@/lib/appTimeZone';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { formatDateShort, formatMoney, formatPercent } from '@/lib/format';
+import { formatMoney, formatPercent, formatDayText } from '@/lib/format';
 
 export type GoalPeriod = 'weekly' | 'monthly';
 export type GoalType = 'profit' | 'winRate' | 'maxDrawdown' | 'maxTrades';
@@ -75,7 +75,8 @@ export function isPastPeriod(ref: PeriodRef, now: Date = appToday()): boolean {
 export function periodLabel(ref: PeriodRef): string {
   if (ref.period === 'monthly') return format(ref.start, 'MMMM yyyy');
   const sameMonth = ref.start.getMonth() === ref.end.getMonth();
-  return sameMonth ? `${format(ref.start, 'dd')} – ${formatDateShort(ref.end, true)}` : `${formatDateShort(ref.start)} – ${formatDateShort(ref.end, true)}`;
+  // A header (D.3 range): `9 – 15 Nov 2026`, `26 Oct – 1 Nov 2026`.
+  return sameMonth ? `${format(ref.start, 'd')} – ${formatDayText(ref.end, true)}` : `${formatDayText(ref.start)} – ${formatDayText(ref.end, true)}`;
 }
 
 export const periodNoun = (p: GoalPeriod): 'week' | 'month' => (p === 'weekly' ? 'week' : 'month');
@@ -195,7 +196,7 @@ export function streakText(type: GoalType, period: GoalPeriod, s: { kind: 'met' 
 }
 
 export function glyphName(type: GoalType, g: Glyph, period: PeriodRef): string {
-  const label = period.period === 'weekly' ? `Week of ${formatDateShort(period.start)}` : format(period.start, 'MMMM yyyy');
+  const label = period.period === 'weekly' ? `Week of ${formatDayText(period.start)}` : format(period.start, 'MMMM yyyy');
   const word = g === 'none' ? 'no trades or no goal' : g === 'met' ? (isLimit(type) ? 'within the limit' : 'met') : isLimit(type) ? 'over the limit' : 'missed';
   return `${label}: ${word}`;
 }

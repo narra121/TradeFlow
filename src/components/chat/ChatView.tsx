@@ -23,7 +23,7 @@ import { starterQuestions, toolsLine } from '@/lib/ai/chatFormat';
 import { chatTableText, chatTableView } from '@/lib/ai/chatTable';
 import { isMixedCurrency } from '@/lib/ai/insightFormat';
 import { citedTradeIds, renderAnswer } from '@/lib/ai/markdown';
-import { formatDateShort } from '@/lib/format';
+import { formatDayText } from '@/lib/format';
 import { emitPlanSignal } from '@/lib/planErrors';
 import { openTrialExpired } from '@/components/billing/readOnly';
 import type { ChatMessage, QueryResult } from '@/types/chat';
@@ -344,7 +344,7 @@ export function ChatView() {
         )}
         {linkedInsight && (
           <p className="mb-2 text-xs text-muted-foreground">
-            Discussing the report for {formatDateShort(linkedInsight.period.from, true)} – {formatDateShort(linkedInsight.period.to, true)}.{' '}
+            Discussing the report for {formatDayText(linkedInsight.period.from, true)} – {formatDayText(linkedInsight.period.to, true)}.{' '}
             <Link to={`/app/insights?id=${encodeURIComponent(linkedInsight.id)}`} className="underline underline-offset-2">Open report</Link>
           </p>
         )}
@@ -427,7 +427,7 @@ export function ChatView() {
         >
           {atLimit && row ? (
             <p role="status" className="mb-2 text-sm text-foreground-soft">
-              You have used {row.used} of {row.limit} messages this month.{ent.periodResetsAt ? ` Resets ${formatDateShort(ent.periodResetsAt)}.` : ''}{' '}
+              You have used {row.used} of {row.limit} messages this month.{ent.periodResetsAt ? ` Resets ${formatDayText(ent.periodResetsAt)}.` : ''}{' '}
               <Link to="/app/settings/billing" className="text-primary underline underline-offset-2">Upgrade to Pro</Link>
             </p>
           ) : null}

@@ -30,8 +30,8 @@ describe('goal periods', () => {
   });
 
   it('labels a week across months and a month', () => {
-    expect(periodLabel(periodOf('weekly', new Date(2026, 10, 11)))).toBe('09 – 15 Nov 2026');
-    expect(periodLabel(periodOf('weekly', new Date(2026, 9, 28)))).toBe('26 Oct – 01 Nov 2026');
+    expect(periodLabel(periodOf('weekly', new Date(2026, 10, 11)))).toBe('9 – 15 Nov 2026');
+    expect(periodLabel(periodOf('weekly', new Date(2026, 9, 28)))).toBe('26 Oct – 1 Nov 2026');
     expect(periodLabel(periodOf('monthly', new Date(2026, 10, 11)))).toBe('November 2026');
   });
 });

@@ -7,7 +7,7 @@ import type { MetricKey } from '@/components/stats/metricDefs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { realisedRStat, rNoteLine } from '@/lib/analyticsRows';
 import { plural } from '@/lib/evidence';
-import { formatDateShort, formatPercent, formatProfitFactor } from '@/lib/format';
+import { formatPercent, formatProfitFactor, formatDayText } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AnalyticsContext } from './drill';
 
@@ -73,7 +73,7 @@ export function StatementPanel({ ctx }: { ctx: AnalyticsContext }) {
     <div className="space-y-2">
       {ctx.prevEmpty && prevRange && (
         <p className="text-xs text-muted-foreground">
-          No trades in the previous period ({formatDateShort(prevRange.startDate, true)} – {formatDateShort(prevRange.endDate, true)}), so there is nothing to compare with.
+          No trades in the previous period ({formatDayText(prevRange.startDate, true)} – {formatDayText(prevRange.endDate, true)}), so there is nothing to compare with.
         </p>
       )}
       <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-3">

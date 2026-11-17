@@ -4,7 +4,7 @@ import { AlertCircle, Info, TriangleAlert, X } from 'lucide-react';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { copy } from '@/copy';
 import { useOnline } from '@/hooks/useOnline';
-import { formatDateShort } from '@/lib/format';
+import { formatDayText } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export type NoticeLevel = 'info' | 'warning' | 'error';
@@ -43,7 +43,7 @@ export function pickNotice(i: NoticeInput): Notice | null {
     candidates.push({
       id: `trial-${i.trialDaysLeft <= 1 ? 1 : 3}`,
       level: 'warning',
-      text: copy.notices.trial(i.trialDaysLeft, i.trialEndsAt ? formatDateShort(i.trialEndsAt) : 'the last day'),
+      text: copy.notices.trial(i.trialDaysLeft, i.trialEndsAt ? formatDayText(i.trialEndsAt) : 'the last day'),
       action: { label: copy.notices.seePlans, to: '/app/settings/billing' },
       dismissible: true,
     });

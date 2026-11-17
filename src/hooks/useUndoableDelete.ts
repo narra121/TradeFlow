@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { useBulkDeleteTradesMutation, useDeleteTradeMutation, useRestoreTradesMutation } from '@/store/api';
 import { chunk } from '@/lib/tradeFilters';
 import { readApiError } from '@/lib/apiError';
-import { formatDateShort } from '@/lib/format';
+import { formatDayText } from '@/lib/format';
 import type { Trade } from '@/types/trade';
 
 const BULK_DELETE_CHUNK = 50;
@@ -47,7 +47,7 @@ export function useUndoableDelete() {
         toast.error("Couldn't delete.", { description: reason ?? 'Try again.' });
         return false;
       }
-      const label = deleted.length === 1 ? `${deleted[0].symbol} ${deleted[0].direction === 'LONG' ? 'long' : 'short'}, ${formatDateShort(deleted[0].exitDate || deleted[0].entryDate)} deleted` : `${deleted.length} trades deleted`;
+      const label = deleted.length === 1 ? `${deleted[0].symbol} ${deleted[0].direction === 'LONG' ? 'long' : 'short'}, ${formatDayText(deleted[0].exitDate || deleted[0].entryDate)} deleted` : `${deleted.length} trades deleted`;
       const complete = deleted.length === trades.length;
       toast(complete ? label : `${deleted.length} of ${trades.length} trades deleted`, {
         duration: UNDO_MS,

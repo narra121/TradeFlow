@@ -4,7 +4,7 @@ import { Money } from '@/components/ui/money';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Meter } from '@/components/stats/Meter';
 import { appToday } from '@/lib/appTimeZone';
-import { formatDateShort, formatMoney, formatPercent } from '@/lib/format';
+import { formatMoney, formatPercent, formatDayText } from '@/lib/format';
 import type { TodaySummary, WeekGoal } from '@/lib/dashboard';
 import type { WeekGoalsState } from './useWeekGoals';
 import { BeforeSession } from './BeforeSession';
@@ -49,7 +49,7 @@ export function TodayStrip({ today, todayLoading, todayError = false, week, toda
       <h2 id="today-h" className="sr-only">Today</h2>
       <div className="flex flex-wrap divide-border sm:divide-x [&>*]:flex-1 [&>*]:basis-48">
         <Link to={`/app/tradelog?on=${todayKey}&src=dashboard`} className={SEGMENT}>
-          <span className="font-medium">Today · {format(now, 'EEE')} {formatDateShort(now)}</span>
+          <span className="font-medium">Today · {format(now, 'EEE')} {formatDayText(now)}</span>
           {todayLoading ? (
             <Skeleton className="h-4 w-24" />
           ) : todayError ? (

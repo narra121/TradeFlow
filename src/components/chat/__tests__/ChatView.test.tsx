@@ -355,7 +355,7 @@ describe('ChatView limits', () => {
     usage = { used: 10, limit: 10 };
     renderChat();
     expect(box()).toBeDisabled();
-    expect(screen.getByText(/You have used 10 of 10 messages this month\. Resets 01 Dec/)).toBeInTheDocument();
+    expect(screen.getByText(/You have used 10 of 10 messages this month\. Resets 1 Dec/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Upgrade to Pro' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled();
   });
