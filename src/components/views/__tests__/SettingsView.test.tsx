@@ -13,6 +13,8 @@ vi.mock('@/components/settings/PreferencesSection', () => ({ PreferencesSection:
 vi.mock('@/components/settings/OptionsSection', () => ({ OptionsSection: () => <p>options-section</p> }));
 vi.mock('@/components/settings/NotificationsSection', () => ({ NotificationsSection: () => <p>notifications-section</p> }));
 vi.mock('@/components/billing/BillingView', () => ({ BillingView: () => <p>billing-section</p> }));
+const chrome = vi.hoisted(() => ({ statement: '' }));
+vi.mock('@/components/shell/chrome', () => ({ usePageChrome: (c: { statement: string }) => void (chrome.statement = c.statement) }));
 
 import { SettingsView } from '../SettingsView';
 
@@ -75,6 +77,8 @@ describe('SettingsView', () => {
     const { unmount } = at('/app/settings');
     expect(screen.getByRole('navigation', { name: 'Settings' })).toBeInTheDocument();
     expect(screen.queryByText('profile-section')).toBeNull();
+    // The sub-header under the page title says what the list holds, not "Settings" a second time.
+    expect(chrome.statement).toBe('Settings — account, journal, data and billing');
     unmount();
     at('/app/settings/preferences');
     expect(screen.getByRole('link', { name: /Settings/ })).toHaveAttribute('href', '/app/settings');

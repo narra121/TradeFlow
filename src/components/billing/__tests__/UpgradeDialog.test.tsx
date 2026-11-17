@@ -122,3 +122,31 @@ describe('UpgradeDialog', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
+
+describe('UpgradeDialog while it closes', () => {
+  it('keeps its title and body during the exit animation instead of fading out empty', async () => {
+    // jsdom runs no CSS animation; report one on exit so Radix keeps the closing dialog mounted, as a browser does.
+    const real = window.getComputedStyle.bind(window);
+    const spy = vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) => {
+      const style = real(el, pseudo);
+      const state = (el as HTMLElement).dataset?.state;
+      if (el instanceof HTMLElement && el.getAttribute('role') === 'dialog' && state) {
+        return { ...style, animationName: state === 'closed' ? 'exit' : 'enter', display: 'grid', getPropertyValue: style.getPropertyValue.bind(style) } as CSSStyleDeclaration;
+      }
+      return style;
+    });
+    try {
+      const user = userEvent.setup();
+      setup();
+      act(() => emitPlanSignal({ code: 'TRIAL_EXPIRED', message: 'x', kind: 'mutation' }));
+      await screen.findByText('Your free trial has ended');
+      await user.click(screen.getByRole('button', { name: 'Not now' }));
+      const closing = document.querySelector('[role="dialog"][data-state="closed"]');
+      expect(closing).not.toBeNull();
+      expect(closing).toHaveTextContent('Your free trial has ended');
+      expect(closing).toHaveTextContent('Your trades are safe');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});

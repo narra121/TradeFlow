@@ -312,6 +312,17 @@
   animation: tq-pop-out calc(var(--dur-2) * 0.7) var(--ease-out) forwards;
 }
 
+/* Bottom-left toasts start at the content column, not over the sidebar footer (Collapse, user menu). The widths are
+   those of components/layout/Sidebar.tsx: w-[232px] expanded, w-14 collapsed, shown from 768 px. */
+@media (min-width: 768px) {
+  body:has(aside > nav[aria-label='Main']) [data-sonner-toaster][data-x-position='left'] {
+    left: calc(var(--offset-left) + 232px);
+  }
+  body:has(aside.w-14 > nav[aria-label='Main']) [data-sonner-toaster][data-x-position='left'] {
+    left: calc(var(--offset-left) + 3.5rem);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

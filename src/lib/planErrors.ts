@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- this file reads untyped backend JSON envelopes */
+import { readApiError } from '@/lib/apiError';
+
 export type PlanErrorCode = 'QUOTA_EXCEEDED' | 'PLAN_REQUIRED' | 'TRIAL_EXPIRED';
 
 /** The server's 402 for a write after the trial (or a lapsed Pro); JournalAWSSetup src/app/billing/middleware.ts. */
@@ -43,4 +45,12 @@ export function classifyPlanError(status: number | undefined, body: unknown, kin
 export function emitPlanSignal(signal: PlanSignal): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent<PlanSignal>(PLAN_SIGNAL_EVENT, { detail: signal }));
+}
+
+/**
+ * A write the plan refused: store/api/baseApi.ts turns every 402 of a mutation into the upgrade dialog, so the place
+ * the action was taken shows nothing more (D.6: a failure is shown once).
+ */
+export function isPlanRefusal(err: unknown): boolean {
+  return readApiError(err).status === 402;
 }

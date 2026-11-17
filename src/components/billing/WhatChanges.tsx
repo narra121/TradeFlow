@@ -1,3 +1,5 @@
+import { keepReadOnly } from '@/components/billing/keepReadOnly';
+
 interface WhatChangesProps {
   /** `trial` = what will change when the trial ends; `ended` = what read-only means now. */
   mode: 'trial' | 'ended';
@@ -11,7 +13,7 @@ export function WhatChanges({ mode, moveDate }: WhatChangesProps) {
   const title = future ? `When your trial ends${moveDate ? ` on ${moveDate}` : ''}` : 'Your journal is read-only';
   return (
     <section aria-labelledby="what-changes-h" className="rounded-lg border border-border bg-card p-4">
-      <h3 id="what-changes-h" className="text-sm font-semibold">{title}</h3>
+      <h3 id="what-changes-h" className="text-sm font-semibold">{keepReadOnly(title)}</h3>
       <dl className="mt-3 grid gap-x-6 gap-y-2 text-13 sm:grid-cols-[110px_minmax(0,1fr)]">
         <dt className="text-muted-foreground">{future ? 'You keep' : 'You still can'}</dt>
         <dd>View every trade, the journal, calendar, dashboard, analytics, AI reports and chats, export your data and delete your account</dd>

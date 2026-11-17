@@ -83,7 +83,7 @@ export function SettingsView() {
   const ent = useEntitlements();
   const planHint = planRowText(toPlanFacts(ent))?.text.replace(/ · .*/, '');
   const current = SECTIONS.find((s) => pathname === `/app/settings/${s.path}`);
-  usePageChrome({ statement: current?.statement ?? 'Settings' });
+  usePageChrome({ statement: current?.statement ?? 'Settings — account, journal, data and billing' });
 
   return (
     <Routes>

@@ -30,7 +30,10 @@ export function UpgradeDialog() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const text = signal ? describePlanSignal(signal, { proEnded: !!ent.proEndedAt }) : null;
+  // The dialog fades out after `signal` is cleared; it keeps the last words until it is gone instead of emptying.
+  const last = useRef<PlanSignal | null>(null);
+  if (signal) last.current = signal;
+  const text = last.current ? describePlanSignal(last.current, { proEnded: !!ent.proEndedAt }) : null;
   const price = priceLine(ent.currency, readInterval());
 
   return (

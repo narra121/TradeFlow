@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NAME_MAX_LENGTH, useProfile, validateName } from '@/hooks/useProfile';
 import { readApiError } from '@/lib/apiError';
+import { isPlanRefusal } from '@/lib/planErrors';
 import { SectionHeading, SettingRow } from './layout';
 
 const SAVED_VISIBLE_MS = 5000;
@@ -37,6 +38,8 @@ export function ProfileSection() {
       timer.current = setTimeout(() => setJustSaved(false), SAVED_VISIBLE_MS);
     } catch (err) {
       setJustSaved(false);
+      // The upgrade dialog reports a refused save; the field goes back to the saved name, as the other settings do.
+      if (isPlanRefusal(err)) return setDraft(saved);
       setError(readApiError(err, "Couldn't save your name.").message);
     }
   };

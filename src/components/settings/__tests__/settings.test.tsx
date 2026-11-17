@@ -132,6 +132,13 @@ describe('OptionList', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Couldn\'t add "Range fade". A list can hold at most 50 entries.');
   });
 
+  it('an add the plan refused (402) shows nothing inline: the upgrade dialog reports it', async () => {
+    const p = setup({ onAdd: vi.fn().mockRejectedValue({ status: 402, data: { success: false, errorCode: 'TRIAL_EXPIRED', message: 'Your Pro plan has ended. Upgrade to Pro to add, edit or delete.' } }) });
+    await userEvent.type(screen.getByLabelText('Add a strategy'), 'Range fade{Enter}');
+    await vi.waitFor(() => expect(p.onAdd).toHaveBeenCalled());
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('a failure with no HTTP response shows the connection message, and a body-less one says Try again', async () => {
     setup({ onAdd: vi.fn().mockRejectedValueOnce({ status: 'FETCH_ERROR', error: 'TypeError: Failed to fetch' }).mockRejectedValueOnce({ status: 500 }) });
     await userEvent.type(screen.getByLabelText('Add a strategy'), 'Range fade{Enter}');
@@ -220,6 +227,15 @@ describe('PreferencesSection', () => {
     await userEvent.click(screen.getByRole('radio', { name: 'Blue / orange' }));
     expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't save. That palette is not available. The value was put back.");
     expect(screen.getByRole('radio', { name: 'Green / red' })).toBeChecked();
+  });
+
+  it('a save the plan refused (402) puts the control back with no inline error: the upgrade dialog reports it', async () => {
+    updatePrefs.mockRejectedValue({ status: 402, data: { success: false, errorCode: 'TRIAL_EXPIRED', message: 'Your Pro plan has ended. Upgrade to Pro to add, edit or delete.' } });
+    render(<PreferencesSection />);
+    await userEvent.click(screen.getByRole('radio', { name: 'Blue / orange' }));
+    await vi.waitFor(() => expect(screen.getByRole('radio', { name: 'Green / red' })).toBeChecked());
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText('All changes saved')).toBeNull();
   });
 
   it('a refused save with no message from the API keeps the plain sentence', async () => {

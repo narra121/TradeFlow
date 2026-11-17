@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PlansTable } from '@/components/billing/PlansTable';
 import { UsageMeter } from '@/components/billing/UsageMeter';
 import { WhatChanges } from '@/components/billing/WhatChanges';
+import { keepReadOnly } from '@/components/billing/keepReadOnly';
 import { formatDay, planState, toPlanFacts } from '@/components/billing/planState';
 import { readInterval, saveInterval, useUpgrade } from '@/components/billing/useUpgrade';
 import { useEntitlements, type EntitlementsView } from '@/hooks/useEntitlements';
@@ -138,7 +139,7 @@ export function BillingView() {
         aria-label="Your plan"
         className={cn('flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3', pastDue && 'border-l-2 border-l-error')}
       >
-        <p className="min-w-0 flex-1 text-sm font-medium">{state.sentence}</p>
+        <p className="min-w-0 flex-1 text-sm font-medium">{keepReadOnly(state.sentence)}</p>
         <Button type="button" variant={state.action === 'upgrade' ? 'accent' : state.action === 'update_card' ? 'default' : 'outline'} disabled={actionBusy || !!returned && returned !== 'slow'} onClick={onAction}>
           {actionBusy ? (state.action === 'upgrade' ? 'Opening checkout…' : 'Opening billing…') : actionLabel}
         </Button>

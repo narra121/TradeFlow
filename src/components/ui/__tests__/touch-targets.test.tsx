@@ -101,3 +101,12 @@ describe('DateTimeField placeholder (R-020)', () => {
     expect(screen.getByLabelText('Opened')).toHaveAttribute('placeholder', 'e.g. 4 Nov 2026, 14:30');
   });
 });
+
+describe('toasts beside the app sidebar', () => {
+  it('start at the content column on desktop, expanded (232 px) and collapsed (w-14), never over the sidebar footer', () => {
+    const css = readFileSync(resolve(__dirname, '../../../index.css'), 'utf8');
+    const flat = css.replace(/\s+/g, ' ');
+    expect(flat).toContain("body:has(aside > nav[aria-label='Main']) [data-sonner-toaster][data-x-position='left'] { left: calc(var(--offset-left) + 232px); }");
+    expect(flat).toContain("body:has(aside.w-14 > nav[aria-label='Main']) [data-sonner-toaster][data-x-position='left'] { left: calc(var(--offset-left) + 3.5rem); }");
+  });
+});

@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { readApiError } from '@/lib/apiError';
+import { isPlanRefusal } from '@/lib/planErrors';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { hasValue, isStarterList, ownEntries, type ListDef } from '@/components/settings/optionLists';
 
@@ -34,6 +35,7 @@ export function OptionList({ def, values, usage, saving, onAdd, onRemove, onRese
     try {
       await action();
     } catch (err) {
+      if (isPlanRefusal(err)) return;
       setMessage({ kind: 'error', text: `${failure} ${readApiError(err, 'Try again.').message}` });
     }
   };

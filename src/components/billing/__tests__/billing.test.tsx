@@ -161,7 +161,8 @@ describe('BillingView', () => {
     response = base({}, { broker_import: 4 });
     checkout.mockResolvedValue({ url: 'https://checkout.stripe.test/cs_test_1' });
     wrap();
-    expect(screen.getByText(/^Free trial: 9 days left, with every Pro feature\. No card on file; on \d+ \w+ your journal becomes read-only unless you upgrade\.$/)).toBeInTheDocument();
+    // 'read-only' sits in a nowrap span: match the paragraph's whole text.
+    expect(screen.getByText((_, el) => el?.tagName === 'P' && /^Free trial: 9 days left, with every Pro feature\. No card on file; on \d+ \w+ your journal becomes read-only unless you upgrade\.$/.test(el.textContent ?? ''))).toBeInTheDocument();
     const what = screen.getByRole('region', { name: /When your trial ends/ });
     expect(what).toHaveTextContent('Add, edit or delete trades');
     expect(screen.getByRole('region', { name: /Usage this month/ })).toHaveTextContent('4 of 200');
@@ -179,7 +180,10 @@ describe('BillingView', () => {
   it('read-only: the sentence names what still works, no usage meters, Upgrade to Pro', () => {
     response = readOnly();
     wrap();
-    expect(screen.getByText('Your free trial ended on 05 Nov 2026. Your journal is read-only: you can view and export, but not add, edit or delete.')).toBeInTheDocument();
+    // 'read-only' sits in its own nowrap span, so the sentence is read from the paragraph's whole text.
+    const sentence = screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Your free trial ended on 05 Nov 2026. Your journal is read-only: you can view and export, but not add, edit or delete.');
+    expect(within(sentence).getByText('read-only')).toHaveClass('whitespace-nowrap');
+    expect(within(screen.getByRole('heading', { name: 'Your journal is read-only' })).getByText('read-only')).toHaveClass('whitespace-nowrap');
     expect(screen.getByRole('region', { name: 'Your journal is read-only' })).toHaveTextContent('export your data');
     expect(screen.queryByRole('region', { name: /Usage this month/ })).toBeNull();
     expect(within(screen.getByRole('table')).getByRole('columnheader', { name: /Free trial/ })).toHaveTextContent('Ended');

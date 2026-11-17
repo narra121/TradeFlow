@@ -58,6 +58,19 @@ describe('ProfileSection', () => {
     expect(screen.getByLabelText('Name')).toHaveValue('Adax');
   });
 
+  it('a save the plan refused (402) is reported by the upgrade dialog alone: no inline error, the saved name comes back', async () => {
+    const saveName = vi.fn().mockRejectedValue({ status: 402, data: { success: false, errorCode: 'TRIAL_EXPIRED', message: 'Your Pro plan has ended. Upgrade to Pro to add, edit or delete.' } });
+    useProfile.mockReturnValue({ ...base, saveName });
+    const user = userEvent.setup();
+    render(<ProfileSection />);
+    await user.type(screen.getByLabelText('Name'), 'x');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(saveName).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue('Ada'));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText('Saved')).toBeNull();
+  });
+
   it('shows a loading skeleton and an error state with Retry', async () => {
     useProfile.mockReturnValue({ ...base, isLoading: true, saveName: vi.fn() });
     const { rerender } = render(<ProfileSection />);
