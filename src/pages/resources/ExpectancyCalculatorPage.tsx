@@ -148,6 +148,7 @@ export function ExpectancyCalculatorPage() {
     [winRateText, avgWinText, avgLoss, charges],
   );
 
+  const fieldError = (e: ExpectancyError) => (result.status === 'error' && result.error === e ? ERRORS[e] : null);
   const chargesInR = avgLoss > 0 ? charges / avgLoss : null;
   const checkRatio = parseDecimal(ratioText);
   const amount = (n: number) => (units === 'r' ? `${formatMoney(n, undefined, { sign: true })}R` : formatMoney(n, undefined, { sign: true }));
@@ -196,13 +197,13 @@ export function ExpectancyCalculatorPage() {
               <label htmlFor="win-rate" className={calcLabelClass}>
                 Win rate (%)
               </label>
-              <DecimalInput id="win-rate" value={winRateText} onChange={setWinRateText} />
+              <DecimalInput id="win-rate" value={winRateText} onChange={setWinRateText} error={fieldError('win-rate-range')} />
             </div>
             <div>
               <label htmlFor="avg-win" className={calcLabelClass}>
                 Average win{units === 'r' ? ' (R)' : ''}
               </label>
-              <DecimalInput id="avg-win" value={avgWinText} onChange={setAvgWinText} />
+              <DecimalInput id="avg-win" value={avgWinText} onChange={setAvgWinText} error={fieldError('negative-win')} />
             </div>
             <div>
               <label htmlFor="avg-loss" className={calcLabelClass}>
@@ -215,7 +216,7 @@ export function ExpectancyCalculatorPage() {
               <label htmlFor="charges" className={calcLabelClass}>
                 Charges per trade, round trip{units === 'r' ? ' (R)' : ''} (optional)
               </label>
-              <DecimalInput id="charges" value={chargesText} onChange={setChargesText} />
+              <DecimalInput id="charges" value={chargesText} onChange={setChargesText} error={fieldError('negative-charges')} />
               <p className="mt-1 text-xs text-muted-foreground">Commission and spread, or brokerage, STT and exchange charges.</p>
             </div>
           </>

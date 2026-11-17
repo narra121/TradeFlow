@@ -43,6 +43,14 @@ export function RiskRewardCalculatorPage() {
   }, [direction, entryPrice, stopLossPrice, takeProfitPrice]);
 
   const decimals = priceDecimals(entryText, stopText, targetText);
+  const stopError =
+    (direction === 'long' ? entryPrice - stopLossPrice : stopLossPrice - entryPrice) <= 0
+      ? `For a ${direction} trade the stop loss must be ${direction === 'long' ? 'below' : 'above'} the entry.`
+      : null;
+  const targetError =
+    (direction === 'long' ? takeProfitPrice - entryPrice : entryPrice - takeProfitPrice) <= 0
+      ? `For a ${direction} trade the take profit must be ${direction === 'long' ? 'above' : 'below'} the entry.`
+      : null;
 
   const summary = results.valid
     ? `Risk-reward 1 to ${results.ratio.toFixed(2)}, breakeven win rate ${results.breakevenWinRate.toFixed(1)} percent.`
@@ -89,13 +97,13 @@ export function RiskRewardCalculatorPage() {
               <label htmlFor="stop-loss-price" className={calcLabelClass}>
                 Stop loss price
               </label>
-              <DecimalInput id="stop-loss-price" value={stopText} onChange={setStopText} />
+              <DecimalInput id="stop-loss-price" value={stopText} onChange={setStopText} error={stopError} />
             </div>
             <div>
               <label htmlFor="take-profit-price" className={calcLabelClass}>
                 Take profit price
               </label>
-              <DecimalInput id="take-profit-price" value={targetText} onChange={setTargetText} />
+              <DecimalInput id="take-profit-price" value={targetText} onChange={setTargetText} error={targetError} />
             </div>
           </>
         }

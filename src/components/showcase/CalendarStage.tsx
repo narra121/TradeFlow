@@ -4,7 +4,7 @@ import { Stage } from './kit/stage';
 import type { Act } from './kit/act';
 import { Popover } from './kit/motion/Popover';
 import { Count } from './kit/motion/Count';
-import { formatCompactMoney } from '@/lib/format';
+import { formatCompactMoney, formatMoney } from '@/lib/format';
 import { sampleNet } from '@/components/public/tourFixture';
 import { SAMPLE_DAYS, SAMPLE_MONTH, SAMPLE_RULE_BREAK_DAYS, SAMPLE_WINS, dayTintStep, money, monthCells, plural, sampleStats } from './sampleJournal';
 import { SampleDataChip } from './SampleDataChip';
@@ -12,6 +12,13 @@ import './look.css';
 import './calendar-stage.css';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/**
+ * A day's net as the app calendar writes it (components/calendar/cellText.ts compactMoney: whole units under 1,000, compact
+ * above). Not imported from there: that module brings the calendar's date code into the landing and auth chunks.
+ */
+const cellMoney = (pnl: number) =>
+  Math.abs(pnl) < 1000 ? formatMoney(pnl, 'USD', { sign: true, decimals: 0 }) : formatCompactMoney(pnl, { sign: true, currency: 'USD' });
 
 /** `filled`: how many trading days are drawn so far (the fill-in intro); absent means the whole month. */
 type S = { open: number | null; filled?: number };
@@ -163,7 +170,7 @@ export function CalendarStage({ play = true, className = '', size = WIDE, fillIn
                         <span className="cs-day tq-num">{c.day}</span>
                         {c.broke && <b className="cs-mark">!</b>}
                         {c.data && (!compact || hosted) && (
-                          <span className={`cs-pnl tq-num ${c.data.pnl < 0 ? 'tq-neg' : 'tq-pos'}`}>{formatCompactMoney(c.data.pnl, { sign: true, currency: 'USD' })}</span>
+                          <span className={`cs-pnl tq-num ${c.data.pnl < 0 ? 'tq-neg' : 'tq-pos'}`}>{cellMoney(c.data.pnl)}</span>
                         )}
                         {c.data && !compact && <span className="cs-count">{plural(c.data.trades, 'trade')}</span>}
                       </div>

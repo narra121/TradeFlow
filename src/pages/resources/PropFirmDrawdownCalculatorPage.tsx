@@ -123,6 +123,10 @@ export function PropFirmDrawdownCalculatorPage() {
   const stop = parseDecimal(stopText);
   const lots = r.status === 'ok' ? lotsWithinRoom(r.room, stop, perLot) : 0;
   const money = (n: number) => formatMoney(n, currency);
+  // 'balances' is about the day's start unless that is filled in, then about equity now.
+  const balancesField = parseDecimal(dayStartText) > 0 ? 'current' : 'dayStart';
+  const fieldError = (e: DrawdownError, field?: 'dayStart' | 'current') =>
+    r.status === 'error' && r.error === e && (!field || field === balancesField) ? ERRORS[e] : null;
 
   const summary =
     r.status === 'error'
@@ -179,7 +183,7 @@ export function PropFirmDrawdownCalculatorPage() {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
                 <label htmlFor="dd-initial" className={calcLabelClass}>Account size at the start</label>
-                <DecimalInput id="dd-initial" value={initialText} onChange={setInitialText} />
+                <DecimalInput id="dd-initial" value={initialText} onChange={setInitialText} error={fieldError('initial')} />
               </div>
               <div>
                 <label htmlFor="dd-currency" className={calcLabelClass}>Account currency</label>
@@ -191,17 +195,17 @@ export function PropFirmDrawdownCalculatorPage() {
               </div>
               <div>
                 <label htmlFor="dd-daystart" className={calcLabelClass}>Balance at the start of today</label>
-                <DecimalInput id="dd-daystart" value={dayStartText} onChange={setDayStartText} />
+                <DecimalInput id="dd-daystart" value={dayStartText} onChange={setDayStartText} error={fieldError('balances', 'dayStart')} />
               </div>
               <div>
                 <label htmlFor="dd-current" className={calcLabelClass}>Equity now (balance plus open P&amp;L)</label>
-                <DecimalInput id="dd-current" value={currentText} onChange={setCurrentText} />
+                <DecimalInput id="dd-current" value={currentText} onChange={setCurrentText} error={fieldError('balances', 'current')} />
               </div>
             </div>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
                 <label htmlFor="dd-daily" className={calcLabelClass}>Daily loss limit (%)</label>
-                <DecimalInput id="dd-daily" value={dailyPctText} onChange={setDailyPctText} />
+                <DecimalInput id="dd-daily" value={dailyPctText} onChange={setDailyPctText} error={fieldError('daily-range')} />
               </div>
               <fieldset>
                 <legend className={calcLabelClass}>Daily limit is a % of</legend>
@@ -212,7 +216,7 @@ export function PropFirmDrawdownCalculatorPage() {
               </fieldset>
               <div>
                 <label htmlFor="dd-max" className={calcLabelClass}>Maximum loss (%)</label>
-                <DecimalInput id="dd-max" value={maxPctText} onChange={setMaxPctText} />
+                <DecimalInput id="dd-max" value={maxPctText} onChange={setMaxPctText} error={fieldError('max-range')} />
               </div>
               <fieldset>
                 <legend className={calcLabelClass}>Maximum loss is</legend>
@@ -229,7 +233,7 @@ export function PropFirmDrawdownCalculatorPage() {
                   <DecimalInput id="dd-peak" value={peakText} onChange={setPeakText} />
                 </div>
                 <label className="flex items-center gap-2 self-end pb-2 text-sm text-foreground">
-                  <input type="checkbox" checked={lock} onChange={(e) => setLock(e.target.checked)} className="h-4 w-4" />
+                  <input type="checkbox" checked={lock} onChange={(e) => setLock(e.target.checked)} className="h-4 w-4 accent-primary" />
                   Trail stops at the starting balance
                 </label>
               </div>
@@ -237,7 +241,7 @@ export function PropFirmDrawdownCalculatorPage() {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
               <div>
                 <label htmlFor="dd-target" className={calcLabelClass}>Profit target (%)</label>
-                <DecimalInput id="dd-target" value={targetText} onChange={setTargetText} />
+                <DecimalInput id="dd-target" value={targetText} onChange={setTargetText} error={fieldError('target-range')} />
               </div>
               <div>
                 <label htmlFor="dd-pair" className={calcLabelClass}>Pair</label>

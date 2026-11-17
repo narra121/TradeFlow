@@ -76,6 +76,7 @@ export function MarginCalculatorPage() {
   );
   const money = (n: number) => formatMoney(n, currency);
   const unitName = contractSizeOf(pair) === 100000 ? `units of ${pair.value.slice(0, 3)}` : 'oz';
+  const fieldError = (e: MarginError) => (r.status === 'error' && r.error === e ? ERRORS[e] : null);
   const lots = parseDecimal(lotsText);
   const summary = r.status === 'error' ? ERRORS[r.error] : `Margin ${money(r.margin)} for ${lots} ${lots === 1 ? 'lot' : 'lots'} of ${pair.value} at 1:${leverage}.`;
 
@@ -105,12 +106,12 @@ export function MarginCalculatorPage() {
             </div>
             <div>
               <label htmlFor="mg-price" className={calcLabelClass}>Price now ({pair.value})</label>
-              <DecimalInput id="mg-price" value={priceText} onChange={setPriceText} />
+              <DecimalInput id="mg-price" value={priceText} onChange={setPriceText} error={fieldError('price')} />
               <p className="mt-1 text-xs text-muted-foreground">Filled with an example price; type your platform&apos;s current price.</p>
             </div>
             <div>
               <label htmlFor="mg-lots" className={calcLabelClass}>Position size (lots)</label>
-              <DecimalInput id="mg-lots" value={lotsText} onChange={setLotsText} />
+              <DecimalInput id="mg-lots" value={lotsText} onChange={setLotsText} error={fieldError('lots')} />
             </div>
             <div>
               <label htmlFor="mg-leverage" className={calcLabelClass}>Leverage</label>
@@ -130,7 +131,7 @@ export function MarginCalculatorPage() {
             </div>
             <div>
               <label htmlFor="mg-balance" className={calcLabelClass}>Account balance (optional)</label>
-              <DecimalInput id="mg-balance" value={balanceText} onChange={setBalanceText} />
+              <DecimalInput id="mg-balance" value={balanceText} onChange={setBalanceText} error={fieldError('balance')} />
             </div>
           </>
         }

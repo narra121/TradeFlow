@@ -44,7 +44,7 @@ export const COMPETITORS: Competitor[] = [
       'The pricing page advertises no free plan and no free trial.',
       'Every plan lists "500+ broker and prop firm integrations", with trade import by auto-sync, upload or manual entry.',
       'Connected accounts: 1 active account on Essential, up to 50 on Pro, unlimited on Ultra.',
-      'Its help pages (read 15 November 2026) describe MT4 and MT5 auto-sync with an investor password and an MT4 HTML report upload; its MT4/MT5 guide gives automatic sync every 3 hours and manual sync every 30 minutes.',
+      'Its help pages (read 15 Nov 2026) describe MT4 and MT5 auto-sync with an investor password and an MT4 HTML report upload; its MT4/MT5 guide gives automatic sync every 3 hours and manual sync every 30 minutes.',
     ],
     strongerAt: [
       'Automatic broker sync across a very large list of brokers, MetaTrader included; TradeQut imports files today and automatic sync is planned.',
@@ -106,7 +106,7 @@ export const COMPETITORS: Competitor[] = [
       },
     ],
     unverified: [
-      "TraderSync's pages return HTTP 403 to automated requests, so they were read in a web browser on 15 November 2026. Not verified from them: whether the 7-day trial needs a card, the renewal price after the first annual year, and whether MetaTrader trades come in by file or by sync.",
+      "TraderSync's pages return HTTP 403 to automated requests, so they were read in a web browser on 15 Nov 2026. Not verified from them: whether the 7-day trial needs a card, the renewal price after the first annual year, and whether MetaTrader trades come in by file or by sync.",
     ],
     faq: [
       {
@@ -131,9 +131,9 @@ export const COMPETITORS: Competitor[] = [
     facts: [
       'A free plan ("Basic", free forever, no card): 3,000 executions per month, 1 trading account, stocks only, P&L-only calendar data.',
       'Paid plans on the INR price list: Pro ₹1,400/month (₹1,050/month billed yearly) and Platinum ₹2,300/month (₹1,708.33/month billed yearly), each with a 7-day free trial.',
-      'On 12 November 2026 the page showed a 30% promotion (code TVBF26, 12 to 30 November 2026): Pro ₹980/month or ₹735/month billed yearly, Platinum ₹1,610/month or ₹1,195.83/month billed yearly.',
+      'On 12 Nov 2026 the page showed a 30% promotion (code TVBF26, 12 to 30 Nov 2026): Pro ₹980/month or ₹735/month billed yearly, Platinum ₹1,610/month or ₹1,195.83/month billed yearly.',
       'India is listed among supported markets, and a TradesViz help page describes importing the Zerodha tradebook CSV for stocks and F&O, with re-imports not duplicating data.',
-      'For MetaTrader its pages (read 15 November 2026) describe MT4 and MT5 HTML import, MT4 sync by FTP and MT5 sync by investor password; forex needs a paid plan, as the free plan is stocks only.',
+      'For MetaTrader its pages (read 15 Nov 2026) describe MT4 and MT5 HTML import, MT4 sync by FTP and MT5 sync by investor password; forex needs a paid plan, as the free plan is stocks only.',
     ],
     strongerAt: [
       'Depth: charting, many broker importers and a mature analytics suite.',
@@ -180,7 +180,7 @@ export const COMPETITORS: Competitor[] = [
       'Rule tracking that records when you broke each rule and what the breaks cost.',
     ],
     unverified: [
-      'The pricing page read on 14 November 2026 does not describe the limits of the free plan, so they are not verified here. Check https://www.tradervue.com/site/pricing before comparing.',
+      'The pricing page read on 14 Nov 2026 does not describe the limits of the free plan, so they are not verified here. Check https://www.tradervue.com/site/pricing before comparing.',
     ],
     faq: [
       {
@@ -206,8 +206,8 @@ export const COMPETITORS: Competitor[] = [
       'One plan with full access to all features: $197 billed every 12 months, or $35 billed every month, with VAT calculated at checkout.',
       'A 14-day money-back guarantee. The pricing page mentions no free plan and no free trial.',
       'The page lists automated trade imports and unlimited trade imports.',
-      'On 14 November 2026 the page advertised a limited-time offer of four extra months.',
-      "An Edgewonk blog post (20 September 2024, read 15 November 2026) describes MT4/MT5 sync through MetaTrader's FTP report publishing; the pricing page lists forex among supported markets.",
+      'On 14 Nov 2026 the page advertised a limited-time offer of four extra months.',
+      "An Edgewonk blog post (20 Sep 2024, read 15 Nov 2026) describes MT4/MT5 sync through MetaTrader's FTP report publishing; the pricing page lists forex among supported markets.",
     ],
     strongerAt: [
       'A longer track record and a larger user base than TradeQut.',
@@ -256,7 +256,7 @@ export const COMPETITORS: Competitor[] = [
       'More platforms: cTrader, TradeLocker, Match-Trader, Oanda and DXtrade.',
     ],
     tradequtFits: [
-      "A journal around each trade: setup, session tag, mistakes, notes and screenshots, the rules you broke and what the breaks cost. We found no journal or notes feature in Myfxbook's help centre (searched 15 November 2026; not checked inside an account).",
+      "A journal around each trade: setup, session tag, mistakes, notes and screenshots, the rules you broke and what the breaks cost. We found no journal or notes feature in Myfxbook's help centre (searched 15 Nov 2026; not checked inside an account).",
       'No investor password, EA or broker login: upload the MT4 Detailed Report or the MT5 history report, which also works when a broker or prop firm does not allow third-party connections.',
       'Private by default: nothing is published.',
       `Indian F&O and stock accounts in the same journal, with estimated charges; ${usdMonth}/month or ${usdYear}/year after a 14-day free trial.`,

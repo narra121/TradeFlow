@@ -80,7 +80,7 @@ describe('TraderSync comparison', () => {
       expect(sources.querySelector(`a[href="${s.url}"]`)).not.toBeNull();
       expect(sources.textContent).toContain(`checked ${s.checked}`);
     }
-    expect(container.textContent).toMatch(/read in a web browser on 15 November 2026\. Not verified/);
+    expect(container.textContent).toMatch(/read in a web browser on 15 Nov 2026\. Not verified/);
   });
 });
 

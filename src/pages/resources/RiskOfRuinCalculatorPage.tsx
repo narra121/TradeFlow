@@ -79,6 +79,7 @@ export function RiskOfRuinCalculatorPage() {
   const within = simulated === null || r.status !== 'ok' ? simulated : Math.min(simulated, r.probability);
 
   const pct = (x: number) => (x > 0 && x < 0.0001 ? 'below 0.01%' : formatPercent(x * 100, x < 0.1 ? 2 : 1));
+  const fieldError = (e: RuinError) => (r.status === 'error' && r.error === e ? ERRORS[e] : null);
   const summary = r.status === 'error' ? ERRORS[r.error] : `Risk of ruin ${pct(r.probability)}; within ${trades} trades ${within === null ? 'n/a' : pct(within)}.`;
 
   return (
@@ -100,15 +101,15 @@ export function RiskOfRuinCalculatorPage() {
           <>
             <div>
               <label htmlFor="ror-win" className={calcLabelClass}>Win rate (%)</label>
-              <DecimalInput id="ror-win" value={winText} onChange={setWinText} />
+              <DecimalInput id="ror-win" value={winText} onChange={setWinText} error={fieldError('win-rate')} />
             </div>
             <div>
               <label htmlFor="ror-rr" className={calcLabelClass}>Average win ÷ average loss (reward:risk)</label>
-              <DecimalInput id="ror-rr" value={rrText} onChange={setRrText} />
+              <DecimalInput id="ror-rr" value={rrText} onChange={setRrText} error={fieldError('reward-risk')} />
             </div>
             <div>
               <label htmlFor="ror-risk" className={calcLabelClass}>Risk per trade (% of balance)</label>
-              <DecimalInput id="ror-risk" value={riskText} onChange={setRiskText} />
+              <DecimalInput id="ror-risk" value={riskText} onChange={setRiskText} error={fieldError('risk')} />
             </div>
             <fieldset>
               <legend className={calcLabelClass}>Risk is a % of</legend>
@@ -134,7 +135,7 @@ export function RiskOfRuinCalculatorPage() {
             </fieldset>
             <div>
               <label htmlFor="ror-ruin" className={calcLabelClass}>Ruin = a drawdown of (%)</label>
-              <DecimalInput id="ror-ruin" value={ruinText} onChange={setRuinText} />
+              <DecimalInput id="ror-ruin" value={ruinText} onChange={setRuinText} error={fieldError('ruin')} />
               <p className="mt-1 text-xs text-muted-foreground">A prop firm&apos;s maximum loss, or the point at which you would stop trading.</p>
             </div>
             <div>

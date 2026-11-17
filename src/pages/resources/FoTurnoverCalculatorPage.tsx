@@ -152,13 +152,8 @@ function AmountField({ id, label, hint, value, onChange, amount }: { id: string;
       <label htmlFor={id} className={calcLabelClass}>
         {label}
       </label>
-      <DecimalInput id={id} value={value} onChange={onChange} />
+      <DecimalInput id={id} value={value} onChange={onChange} error={error} />
       {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-      {error && (
-        <p role="alert" className="mt-1 text-xs text-loss">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

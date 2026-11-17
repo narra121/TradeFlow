@@ -45,6 +45,14 @@ describe('PricingTable', () => {
     }
   });
 
+  it('aligns the two plan header cells row for row: top-aligned, and on phones each period on its own line under the price', () => {
+    wrap(<PricingTable />);
+    const trial = screen.getByRole('columnheader', { name: /Free trial/ });
+    const pro = screen.getByRole('columnheader', { name: /Pro/ });
+    for (const th of [trial, pro]) expect(th).toHaveClass('align-top');
+    for (const text of [/\/ 14 days/, /\/ month/]) expect(screen.getByText(text)).toHaveClass('max-sm:block');
+  });
+
   it('renders one row per plan limit from product-facts', () => {
     wrap(<PricingTable />);
     const rows = screen.getAllByRole('row');

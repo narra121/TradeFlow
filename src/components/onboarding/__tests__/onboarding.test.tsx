@@ -85,6 +85,11 @@ describe('FirstRunPage', () => {
     expect(screen.getByText('Free trial: 14 days left. No card on file.')).toBeInTheDocument();
   });
 
+  it('sits the Choose files button on the line of the sentence it starts (vertical-align middle, not the icon baseline)', () => {
+    wrap(<FirstRunPage />);
+    expect(screen.getByRole('button', { name: 'Choose files' })).toHaveClass('align-middle');
+  });
+
   it('validates the account form inline', async () => {
     wrap(<FirstRunPage />);
     await userEvent.click(screen.getByRole('button', { name: 'Create account' }));

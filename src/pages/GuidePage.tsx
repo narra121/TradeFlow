@@ -180,9 +180,9 @@ function Content() {
           ]}
         />
         <GuideScreenshot
-          src="/guide/sidebar.png"
-          alt="Dashboard with the sidebar, top bar and scope bar"
-          caption="Sidebar groups: Journal (Dashboard, Trades, Calendar), Review (Analytics, Goals & rules, Insights), Data (Accounts, Import). Jump to… (Ctrl K) opens any page."
+          src="/guide/getting-started.png"
+          alt="A new journal: Set up your journal with its three steps, beside the sidebar"
+          caption="A new journal opens on Set up your journal: create the trading account, get your trades in, set a goal. Sidebar groups: Journal (Dashboard, Trades, Calendar), Review (Analytics, Goals & rules, Insights), Data (Accounts, Import). Jump to… (Ctrl K) opens any page."
         />
         <Note>
           Amounts in different currencies are never added together. With more than one currency, totals are shown per currency and
@@ -345,7 +345,7 @@ function Content() {
       <SectionWrapper id="settings" title="Settings, profile and billing" summary="Your details, journal options and plan.">
         <GuideScreenshot
           src="/guide/settings.png"
-          alt="Settings with the section list and the Profile section"
+          alt="Settings with the section list and Trade options, the lists the trade form offers"
           caption="Account (Profile, Sign-in & security), Journal (Preferences, Trade options, Notifications), Data & privacy, Plan & billing."
         />
         <Bullets

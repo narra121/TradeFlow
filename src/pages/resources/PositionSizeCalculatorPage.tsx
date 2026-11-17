@@ -33,14 +33,16 @@ export function PositionSizeCalculatorPage() {
     const risk = (accountBalance * riskPercent) / 100;
     return { risk, positionSize: risk / (stopLossPips * perLot), perLot };
   }, [accountBalance, riskPercent, stopLossPips, pair, accountCurrency]);
-  const inputError =
+  const invalid: { field: 'balance' | 'risk' | 'stop'; text: string } | null =
     accountBalance <= 0
-      ? 'Enter an account balance above 0.'
+      ? { field: 'balance', text: 'Enter an account balance above 0.' }
       : riskPercent <= 0
-        ? 'Enter a risk per trade above 0%.'
+        ? { field: 'risk', text: 'Enter a risk per trade above 0%.' }
         : stopLossPips <= 0
-          ? 'Enter a stop loss above 0 pips.'
+          ? { field: 'stop', text: 'Enter a stop loss above 0 pips.' }
           : null;
+  const inputError = invalid?.text ?? null;
+  const fieldError = (field: 'balance' | 'risk' | 'stop') => (invalid?.field === field ? invalid.text : null);
 
   const summary = inputError ?? `Position size ${results.positionSize.toFixed(2)} lots, risk ${formatMoney(results.risk, accountCurrency)}.`;
 
@@ -80,7 +82,7 @@ export function PositionSizeCalculatorPage() {
               <label htmlFor="account-balance" className={calcLabelClass}>
                 Account balance ({accountCurrency})
               </label>
-              <DecimalInput id="account-balance" value={balanceText} onChange={setBalanceText} />
+              <DecimalInput id="account-balance" value={balanceText} onChange={setBalanceText} error={fieldError('balance')} />
             </div>
             <div>
               <label htmlFor="account-currency" className={calcLabelClass}>
@@ -115,13 +117,13 @@ export function PositionSizeCalculatorPage() {
               <label htmlFor="risk-percent" className={calcLabelClass}>
                 Risk per trade (%)
               </label>
-              <DecimalInput id="risk-percent" value={riskText} onChange={setRiskText} />
+              <DecimalInput id="risk-percent" value={riskText} onChange={setRiskText} error={fieldError('risk')} />
             </div>
             <div>
               <label htmlFor="stop-loss-pips" className={calcLabelClass}>
                 Stop loss distance (pips)
               </label>
-              <DecimalInput id="stop-loss-pips" value={stopText} onChange={setStopText} />
+              <DecimalInput id="stop-loss-pips" value={stopText} onChange={setStopText} error={fieldError('stop')} />
             </div>
           </>
         }

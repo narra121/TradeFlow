@@ -70,6 +70,7 @@ export function CompoundingCalculatorPage() {
   const needed = requiredRatePct(start, target, periods);
   const yearly = rate > -100 ? yearlyEquivalentPct(rate, period) : null;
   const shown = r.status === 'ok' ? (r.rows.length <= 24 ? r.rows : r.rows.filter((x, i) => i % Math.ceil(r.rows.length / 24) === 0 || i === r.rows.length - 1)) : [];
+  const fieldError = (e: CompoundError) => (r.status === 'error' && r.error === e ? ERRORS[e] : null);
   const summary = r.status === 'error' ? ERRORS[r.error] : `Final balance ${formatMoney(r.final)} after ${periods} ${PERIOD_LABEL[period]}s.`;
 
   return (
@@ -90,12 +91,12 @@ export function CompoundingCalculatorPage() {
           <>
             <div>
               <label htmlFor="cp-start" className={calcLabelClass}>Starting balance</label>
-              <DecimalInput id="cp-start" value={startText} onChange={setStartText} />
+              <DecimalInput id="cp-start" value={startText} onChange={setStartText} error={fieldError('start')} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="cp-rate" className={calcLabelClass}>Return per period (%)</label>
-                <DecimalInput id="cp-rate" value={rateText} onChange={setRateText} />
+                <DecimalInput id="cp-rate" value={rateText} onChange={setRateText} error={fieldError('rate')} />
               </div>
               <div>
                 <label htmlFor="cp-period" className={calcLabelClass}>Period</label>
@@ -108,11 +109,11 @@ export function CompoundingCalculatorPage() {
             </div>
             <div>
               <label htmlFor="cp-periods" className={calcLabelClass}>Number of periods</label>
-              <DecimalInput id="cp-periods" value={periodsText} onChange={setPeriodsText} />
+              <DecimalInput id="cp-periods" value={periodsText} onChange={setPeriodsText} error={fieldError('periods')} />
             </div>
             <div>
               <label htmlFor="cp-deposit" className={calcLabelClass}>Deposit each period (optional)</label>
-              <DecimalInput id="cp-deposit" value={depositText} onChange={setDepositText} />
+              <DecimalInput id="cp-deposit" value={depositText} onChange={setDepositText} error={fieldError('deposit')} />
             </div>
             <div>
               <label htmlFor="cp-target" className={calcLabelClass}>Target balance (optional)</label>

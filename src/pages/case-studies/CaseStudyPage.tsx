@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { AuthorBox } from '@/components/content/AuthorBox';
 import { ShareButtons } from '@/components/content/ShareButtons';
+import { Crumbs } from '@/content/components/ArticleParts';
 import { caseStudySchema, pageTitle } from '@/config/seo';
 import { CASE_STUDIES } from '@/content/case-studies/studies';
 import { lazyContent } from '@/content/lazyContent';
@@ -28,6 +29,7 @@ export function CaseStudyPage() {
       publishedTime={study.publishedAt}
       modifiedTime={study.updatedAt ?? study.publishedAt}
     >
+      <Crumbs parent={{ path: '/case-studies', label: 'Journaling scenarios' }} current={study.title} />
       <header className="mb-8">
         <p className="mb-4 text-xs text-muted-foreground">
           {study.traderType} · {study.market}

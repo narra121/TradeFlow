@@ -87,18 +87,18 @@ export function PricingTable({ headingLevel = 2 }: { headingLevel?: 2 | 3 }) {
               <th scope="col" className="w-[34%] px-2 py-3 text-left font-semibold text-foreground sm:w-2/5 sm:px-4 lg:w-1/2">
                 <span className="sr-only">Feature</span>
               </th>
-              <th scope="col" className="w-[26%] px-2 py-3 text-left align-bottom sm:w-1/4 sm:px-4">
+              <th scope="col" className="w-[26%] px-2 py-3 text-left align-top sm:w-1/4 sm:px-4">
                 <Heading className="text-base font-semibold text-foreground">Free trial</Heading>
                 <p className="num mt-1 text-base font-semibold text-foreground sm:text-2xl">
                   {currency === 'INR' ? '₹0' : '$0'}
-                  {' '}<span className="whitespace-nowrap text-xs font-normal text-muted-foreground sm:text-sm">/ {TRIAL_DAYS} days</span>
+                  {' '}<span className="whitespace-nowrap text-xs font-normal max-sm:block text-muted-foreground sm:text-sm">/ {TRIAL_DAYS} days</span>
                 </p>
               </th>
-              <th scope="col" className="px-2 py-3 text-left align-bottom sm:px-4">
+              <th scope="col" className="px-2 py-3 text-left align-top sm:px-4">
                 <Heading className="text-base font-semibold text-foreground">Pro</Heading>
                 <p className="num mt-1 text-base font-semibold text-foreground sm:text-2xl">
                   {price.display}
-                  {' '}<span className="whitespace-nowrap text-xs font-normal text-muted-foreground sm:text-sm">/ {interval === 'month' ? 'month' : 'year'}</span>
+                  {' '}<span className="whitespace-nowrap text-xs font-normal max-sm:block text-muted-foreground sm:text-sm">/ {interval === 'month' ? 'month' : 'year'}</span>
                 </p>
               </th>
             </tr>

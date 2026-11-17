@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { glossarySchema } from '@/config/seo';
 import { GLOSSARY_TERMS } from '@/content/glossary/terms';
@@ -48,8 +48,18 @@ export function GlossaryPage() {
           placeholder="Search terms..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-10 max-md:h-11 w-full rounded-md border border-input bg-card pl-10 pr-3 text-foreground placeholder:text-muted-foreground"
+          className="h-10 max-md:h-11 w-full rounded-md border border-input bg-card pl-10 pr-11 text-foreground placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
         />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch('')}
+            aria-label="Clear search text"
+            className="absolute right-1 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground max-md:h-11 max-md:w-11"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        )}
       </div>
       <p role="status" className="mb-4 text-sm text-muted-foreground">
         {filtered.length} {filtered.length === 1 ? 'term' : 'terms'}

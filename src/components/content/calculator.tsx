@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 export const calcInputClass =
-  'h-10 max-md:h-11 w-full rounded-md border border-input bg-card px-3 text-foreground placeholder:text-muted-foreground';
+  'h-10 max-md:h-11 w-full rounded-md border border-input bg-card px-3 text-foreground placeholder:text-muted-foreground aria-[invalid=true]:border-error';
 export const calcLabelClass = 'mb-1.5 block text-sm font-medium text-foreground';
 
 /** Parses what a person types: spaces and thousands commas are ignored, "." is the decimal mark; anything else is 0. */
@@ -11,18 +11,31 @@ export function parseDecimal(text: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** A numeric field without spinner arrows: text input with the decimal keypad on phones. Holds the typed text, not a number. */
-export function DecimalInput({ id, value, onChange }: { id: string; value: string; onChange: (text: string) => void }) {
+/**
+ * A numeric field without spinner arrows: text input with the decimal keypad on phones. Holds the typed text, not a number.
+ * `error` marks the field and says what to fix under it, next to the value that caused it.
+ */
+export function DecimalInput({ id, value, onChange, error }: { id: string; value: string; onChange: (text: string) => void; error?: string | null }) {
+  const errorId = `${id}-error`;
   return (
-    <input
-      id={id}
-      type="text"
-      inputMode="decimal"
-      autoComplete="off"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={calcInputClass}
-    />
+    <>
+      <input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        autoComplete="off"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        className={calcInputClass}
+      />
+      {error && (
+        <p id={errorId} className="mt-1 text-xs text-error">
+          {error}
+        </p>
+      )}
+    </>
   );
 }
 

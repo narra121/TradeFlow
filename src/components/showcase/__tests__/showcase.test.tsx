@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { SAMPLE_DAYS, SAMPLE_RECENT, SAMPLE_TRADES, SAMPLE_WINS } from '@/components/public/tourFixture';
 import { DashboardWindow } from '../DashboardWindow';
+import { CalendarStage } from '../CalendarStage';
+import { compactMoney } from '@/components/calendar/cellText';
 import { SampleDataChip } from '../SampleDataChip';
 import { HEADLINE, HEADLINE_PARTS } from '../copy';
 import { DASHBOARD_ALT, dayTintStep, equitySeries, money, sampleStats } from '../sampleJournal';
@@ -77,6 +79,22 @@ describe('shared showcase pieces', () => {
     expect(container.querySelectorAll('a,button,input,select,textarea,[tabindex]')).toHaveLength(0);
     expect(DASHBOARD_ALT).toContain('+$370.50');
     expect(DASHBOARD_ALT).toContain('−$118.25');
+  });
+});
+
+describe('sample calendar cells (L21-018)', () => {
+  it('write each day like the app calendar: whole units under 1,000 (+$86, −$42), never +$85.5', () => {
+    globalThis.ResizeObserver ??= class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    // Host-driven with every day drawn: the layout that prints each day's figure at any width (jsdom measures 0 px).
+    const { container } = render(<CalendarStage play={false} filled={SAMPLE_DAYS.length} />);
+    const cells = [...container.querySelectorAll('.cs-pnl')].map((c) => c.textContent ?? '');
+    expect(cells.length).toBe(SAMPLE_DAYS.length);
+    expect(cells.filter((t) => /\.\d/.test(t))).toEqual([]);
+    expect(cells).toEqual(SAMPLE_DAYS.map((d) => compactMoney(d.pnl, 'USD')));
   });
 });
 

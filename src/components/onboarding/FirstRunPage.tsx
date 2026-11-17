@@ -189,7 +189,7 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
               onDrop={(e) => { e.preventDefault(); setDragging(false); takeFile(e.dataTransfer.files?.[0]); }}
               className={cn('rounded-md border border-dashed p-4 text-13', dragging ? 'border-primary bg-primary/5' : 'border-border-strong')}
             >
-              <button ref={dropZone} type="button" onClick={() => fileInput.current?.click()} className="inline-flex min-h-8 items-center gap-2 rounded-sm font-medium text-primary hover:underline max-md:min-h-11">
+              <button ref={dropZone} type="button" onClick={() => fileInput.current?.click()} className="inline-flex min-h-8 items-center gap-2 rounded-sm align-middle font-medium text-primary hover:underline max-md:min-h-11">
                 <Upload className="h-4 w-4" aria-hidden="true" /> Choose files
               </button>
               <span className="text-muted-foreground"> or drop a broker export or screenshots here</span>

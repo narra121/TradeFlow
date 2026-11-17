@@ -46,7 +46,6 @@ async function pickAccount(page) {
 /** [file, route, optional action(page)] */
 const SHOTS = [
   ['dashboard', '/app/dashboard', pickAccount],
-  ['sidebar', '/app/dashboard'],
   ['tradelog-table', '/app/tradelog'],
   ['column-toggle', '/app/tradelog', async (p) => p.getByRole('button', { name: /columns/i }).first().click({ timeout: 4000 })],
   ['add-trade', '/app/tradelog?trade=new'],

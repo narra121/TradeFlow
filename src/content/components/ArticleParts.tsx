@@ -98,9 +98,16 @@ export function A({ to, children }: { to: string; children: ReactNode }) {
 
 export function Table({ head, rows, caption }: { head: ReactNode[]; rows: ReactNode[][]; caption?: string }) {
   return (
-    <ScrollRegion label={caption ?? `Table: ${head.filter((h) => typeof h === 'string').join(', ')}`} className="mb-6 rounded-lg border border-border/60">
+    <div className="mb-6 overflow-hidden rounded-lg border border-border/60">
+      {/* The visible caption sits outside the scrolling box so a wide table never cuts it; the table keeps its name. */}
+      {caption && (
+        <p aria-hidden="true" className="text-left text-xs text-muted-foreground px-3 py-2">
+          {caption}
+        </p>
+      )}
+      <ScrollRegion label={caption ?? `Table: ${head.filter((h) => typeof h === 'string').join(', ')}`}>
       <table className="w-full text-sm">
-        {caption && <caption className="text-left text-xs text-muted-foreground px-3 py-2">{caption}</caption>}
+        {caption && <caption className="sr-only">{caption}</caption>}
         <thead className="bg-muted/40">
           <tr>
             {head.map((h, i) => (
@@ -122,7 +129,8 @@ export function Table({ head, rows, caption }: { head: ReactNode[]; rows: ReactN
           ))}
         </tbody>
       </table>
-    </ScrollRegion>
+      </ScrollRegion>
+    </div>
   );
 }
 

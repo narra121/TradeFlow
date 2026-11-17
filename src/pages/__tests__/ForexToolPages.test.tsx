@@ -141,10 +141,11 @@ describe('calculator results a trader can trust', () => {
   it('position size: a zero stop asks for a stop instead of showing 0.00 lots and $0.00 at risk', async () => {
     renderWithProviders(<PositionSizeCalculatorPage />);
     await fill('Stop loss distance (pips)', '0');
-    expect(screen.getByText('Enter a stop loss above 0 pips.')).toBeInTheDocument();
+    // Under the stop field and in the Result panel (L21-029).
+    expect(screen.getAllByText('Enter a stop loss above 0 pips.')).toHaveLength(2);
     expect(screen.queryByText('0.00 lots')).toBeNull();
     await fill('Risk per trade (%)', '0');
-    expect(screen.getByText('Enter a risk per trade above 0%.')).toBeInTheDocument();
+    expect(screen.getAllByText('Enter a risk per trade above 0%.')).toHaveLength(2);
   });
 
   it('pip value: each currency once (EUR/USD in a USD account is one $10.00, not three)', async () => {
