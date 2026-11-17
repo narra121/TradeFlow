@@ -139,7 +139,7 @@ function clockOf(value: string | Date | null | undefined): WallClock | null {
   return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), hour: d.getHours(), minute: d.getMinutes() };
 }
 
-/** `04 Nov` / `04 Nov 2026` (D.3: day first, two digits, here and in every date format). */
+/** `04 Nov` / `04 Nov 2026`: the table form (D.3, two-digit day); headers and sentences write `Tue 4 Nov 2026`. */
 export function formatDateShort(value: string | Date | null | undefined, withYear = false): string {
   const c = clockOf(value);
   if (!c) return '—';

@@ -23,7 +23,7 @@ describe('groupTrades', () => {
 
   it('groups by day keeping the incoming order and counts W / L', () => {
     const g = groupTrades([t('1'), t('2', { pnl: -4 }), t('3', { entryDate: '2026-11-03T10:00:00', exitDate: '2026-11-03T11:00:00' })], 'day', accounts);
-    expect(g.map((x) => x.label)).toEqual(['Wed 04 Nov 2026', 'Tue 03 Nov 2026']);
+    expect(g.map((x) => x.label)).toEqual(['Wed 4 Nov 2026', 'Tue 3 Nov 2026']);
     expect(g[0]).toMatchObject({ wins: 1, losses: 1 });
     expect(g[0].net).toEqual([{ currency: 'USD', value: 6 }]);
   });
@@ -62,8 +62,8 @@ describe('groupTrades', () => {
       expect(ny.label).toBe('Week of 26 Oct 2026');
       const kol = groupTrades([late('Asia/Kolkata')], 'week', accounts)[0];
       expect(kol.key).toBe('2026-11-02');
-      expect(groupTrades([late('America/New_York')], 'day', accounts)[0].label).toBe('Sun 01 Nov 2026');
-      expect(groupTrades([late('Asia/Kolkata')], 'day', accounts)[0].label).toBe('Mon 02 Nov 2026');
+      expect(groupTrades([late('America/New_York')], 'day', accounts)[0].label).toBe('Sun 1 Nov 2026');
+      expect(groupTrades([late('Asia/Kolkata')], 'day', accounts)[0].label).toBe('Mon 2 Nov 2026');
     });
 
     it('a trade near a month end changes month with the zone', () => {

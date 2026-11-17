@@ -207,7 +207,7 @@ describe('TradeLogView', () => {
     setup();
     const rows = dataRows();
     expect(rows[0]).toHaveTextContent('11:00');
-    expect(screen.getAllByRole('rowheader')[0]).toHaveTextContent('Mon 09 Nov 2026');
+    expect(screen.getAllByRole('rowheader')[0]).toHaveTextContent('Mon 9 Nov 2026');
     expect(screen.getByRole('columnheader', { name: /Date/ })).toHaveAttribute('aria-sort', 'descending');
   });
 

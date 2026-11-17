@@ -1,7 +1,7 @@
 import { format, startOfWeek } from 'date-fns';
 import { realisedR } from '@/lib/tradeFilters';
 import { tradeDayKey } from '@/lib/calendar';
-import { accountCurrency, formatDateShort, parseLocalDate } from '@/lib/format';
+import { accountCurrency, parseLocalDate } from '@/lib/format';
 import type { Trade, TradingAccount } from '@/types/trade';
 
 export type GroupBy = 'none' | 'day' | 'week' | 'month' | 'symbol' | 'side' | 'account' | 'asset' | 'outcome' | 'strategy' | 'session' | 'market';
@@ -40,14 +40,15 @@ function keyOf(t: Trade, by: GroupBy, accounts: Map<string, TradingAccount>): { 
   switch (by) {
     case 'day': {
       const k = tradeDayKey(t);
-      return { key: k, label: k ? `${format(parseLocalDate(k), 'EEE')} ${formatDateShort(k, true)}` : 'No date' };
+      // A header, not a table cell: `Tue 4 Nov 2026` (D.3); `k` is a day key, a calendar value already on the app clock.
+      return { key: k, label: k ? format(parseLocalDate(k), 'EEE d MMM yyyy') : 'No date' };
     }
     // Week and month follow the trade's day in the app time zone, like the day group.
     case 'week': {
       const day = tradeDayKey(t);
       if (!day) return { key: '', label: 'No date' };
       const w = startOfWeek(parseLocalDate(day), { weekStartsOn: 1 });
-      return { key: format(w, 'yyyy-MM-dd'), label: `Week of ${formatDateShort(w, true)}` };
+      return { key: format(w, 'yyyy-MM-dd'), label: `Week of ${format(w, 'd MMM yyyy')}` };
     }
     case 'month': {
       const day = tradeDayKey(t);
