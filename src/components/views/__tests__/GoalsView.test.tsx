@@ -26,7 +26,7 @@ vi.mock('@/components/goals/useGoalHistory', () => ({
 }));
 
 const progressArgs = vi.fn();
-let progress: { data?: unknown; isLoading: boolean; isError: boolean; error?: unknown } = { isLoading: false, isError: false };
+let progress: { data?: unknown; currentData?: unknown; isFetching?: boolean; isLoading: boolean; isError: boolean; error?: unknown } = { isLoading: false, isError: false };
 let rulesGoals: { data?: unknown; isLoading: boolean; isError: boolean; error?: unknown } = { isLoading: false, isError: false };
 let allRules: { data?: unknown; isLoading: boolean; isError: boolean } = { data: [], isLoading: false, isError: false };
 const refetch = vi.fn();
@@ -38,8 +38,9 @@ const deleteRule = vi.fn();
 const unwrap = (v: unknown) => ({ unwrap: () => Promise.resolve(v) });
 
 vi.mock('@/store/api/goalsRulesApi', () => ({
-  useGetGoalsProgressQuery: (args: unknown) => (progressArgs(args), { ...progress, refetch }),
-  useGetRulesAndGoalsQuery: () => ({ ...rulesGoals, refetch }),
+  // RTK: `currentData` is `data` unless a test sets it (another account or period still loading).
+  useGetGoalsProgressQuery: (args: unknown) => (progressArgs(args), { currentData: progress.data, ...progress, refetch }),
+  useGetRulesAndGoalsQuery: () => ({ currentData: rulesGoals.data, ...rulesGoals, refetch }),
   useGetRulesQuery: () => ({ ...allRules, refetch }),
   useCreateGoalMutation: () => [createGoal],
   useUpdateGoalMutation: () => [updateGoal],
@@ -119,6 +120,14 @@ describe('GoalsView', () => {
     expect(screen.getAllByRole('progressbar')).toHaveLength(4);
     expect(screen.getByRole('progressbar', { name: 'Profit target' })).toHaveAttribute('aria-valuetext', expect.stringContaining('$380.00 of $600.00'));
     expect(screen.getAllByText('Default — set your own')).toHaveLength(3);
+  });
+
+  it('while another account or period loads it shows none of the last one\'s goal figures', () => {
+    // RTK while the arguments change: `data` still holds the last account's progress, `currentData` is empty.
+    progress = { data: gp, currentData: undefined, isFetching: true, isLoading: false, isError: false };
+    setup();
+    expect(screen.queryByRole('progressbar', { name: 'Profit target' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/\$380\.00/)).not.toBeInTheDocument();
   });
 
   it('keys the request by the derived period and flags only the current one as current', () => {

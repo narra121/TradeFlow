@@ -108,7 +108,7 @@ export function GoalsView() {
   const allRulesQuery = useGetRulesQuery();
   const windowStart = previousPeriods(ref)[0].startDate;
   const trades = useScopeTrades({ accountId: scopeId, startDate: windowStart, endDate: ref.endDate }, { skip: accountsLoading || accounts.length === 0 });
-  const history = useGoalHistory({ accountId: scopeId, totalCapital, current: ref, enabled: !needAccount && !!progress.data });
+  const history = useGoalHistory({ accountId: scopeId, totalCapital, current: ref, enabled: !needAccount && !!progress.currentData });
 
   const [updateGoal] = useUpdateGoalMutation();
   const [createGoal] = useCreateGoalMutation();
@@ -117,8 +117,9 @@ export function GoalsView() {
   const [deleteRule] = useDeleteRuleMutation();
 
   const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
-  const gp = progress.data?.goalProgress;
-  const records = rulesGoals.data?.goals;
+  // `currentData`: while another account or period loads, `data` still holds the last one's goals and rules.
+  const gp = progress.currentData?.goalProgress;
+  const records = rulesGoals.currentData?.goals;
 
   /**
    * The record a goal type edits. An account's own goal overrides the default (accountId null) for that account; for all
@@ -162,7 +163,7 @@ export function GoalsView() {
 
   const allRules = useMemo(() => allRulesQuery.data ?? [], [allRulesQuery.data]);
   const idText = useMemo(() => ruleTextById(allRules), [allRules]);
-  const periodRules = useMemo(() => rulesGoals.data?.rules ?? [], [rulesGoals.data]);
+  const periodRules = useMemo(() => rulesGoals.currentData?.rules ?? [], [rulesGoals.currentData]);
   const periodTrades = useMemo(() => tradesInPeriod(trades.trades, ref), [trades.trades, ref]);
   const stats = useMemo(() => breaksByRule(periodTrades, idText, accountMap), [periodTrades, idText, accountMap]);
 
@@ -186,13 +187,13 @@ export function GoalsView() {
   const pullable = useMemo(() => {
     const own = new Set(ruleRows.map((r) => r.key));
     const seen = new Set<string>();
-    return (sibling.data?.rules ?? []).filter((r) => {
+    return (sibling.currentData?.rules ?? []).filter((r) => {
       const k = normaliseRule(r.rule);
       if (own.has(k) || seen.has(k)) return false;
       seen.add(k);
       return true;
     });
-  }, [sibling.data, ruleRows]);
+  }, [sibling.currentData, ruleRows]);
 
   const openTrades = (row: RuleRow) => {
     dispatch(setDateRangeFilter({ startDate: ref.startDate, endDate: ref.endDate, datePreset: 'custom' }));
@@ -201,7 +202,8 @@ export function GoalsView() {
   };
 
   const days = tradingDays(ref);
-  const loading = rulesGoals.isLoading || progress.isLoading || accountsLoading;
+  const rulesLoading = rulesGoals.isLoading || (rulesGoals.isFetching && !rulesGoals.currentData);
+  const loading = rulesLoading || progress.isLoading || (progress.isFetching && !progress.currentData) || accountsLoading;
   const failed = rulesGoals.isError || progress.isError || allRulesQuery.isError;
   const failure = progress.error ?? rulesGoals.error ?? allRulesQuery.error;
   const online = useOnline();
@@ -276,7 +278,7 @@ export function GoalsView() {
 
       {goalsBody()}
 
-      {rulesGoals.isLoading || allRulesQuery.isLoading ? (
+      {rulesLoading || allRulesQuery.isLoading ? (
         <Skeleton className="h-48 w-full" aria-busy="true" />
       ) : rulesGoals.isError ? (
         <ErrorState title="Couldn’t load your rules." description="Try again." error={rulesGoals.error} onRetry={retry} />
