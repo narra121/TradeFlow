@@ -286,6 +286,7 @@ export function ChatView() {
     <ChatSessions sessions={sessions} loading={sessionsLoading} activeId={sessionId} onSelect={select} onDelete={setConfirmDelete} accountName={(id) => accounts.find((a) => a.id === id)?.name} />
   );
 
+  const deleteTitle = sessions.find((s) => s.id === confirmDelete)?.title;
   const empty = messages.length === 0 && !turn && !messagesFetching;
   const stored: ChatMessage[] = messages;
   const userShown = turn && turn.status !== 'done' ? stored.length < turn.baseCount + 1 : false;
@@ -467,8 +468,11 @@ export function ChatView() {
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {sessions.find((s) => s.id === confirmDelete)?.title || 'this chat'}?</AlertDialogTitle>
-            <AlertDialogDescription>The conversation is removed. This cannot be undone.</AlertDialogDescription>
+            {/* A title is the chat's first question: it goes in quotes in the sentence, never into "Delete …?" (it ends with its own "?"). */}
+            <AlertDialogTitle>Delete this chat?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTitle ? `“${deleteTitle}” and its answers are removed. This cannot be undone.` : 'The conversation is removed. This cannot be undone.'}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel autoFocus>Cancel</AlertDialogCancel>

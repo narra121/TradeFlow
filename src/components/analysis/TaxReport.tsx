@@ -128,7 +128,7 @@ export function TaxReport() {
               <tbody>
                 {lines.filter((l) => l.bucket.trades > 0).map((l) => (
                   <tr key={l.label} className="h-10 border-b border-border/60">
-                    <th scope="row" className="px-4 text-left font-normal">
+                    <th scope="row" className="min-w-[10rem] px-4 text-left font-normal">
                       {l.label}
                       {l.note && <span className="block text-xs text-muted-foreground">{l.note}</span>}
                     </th>
@@ -149,6 +149,8 @@ export function TaxReport() {
             </table>
           </div>
         )}
+        {/* A phone shows Category, Trades and part of Gross P&L; Charges and Net P&L are one swipe away. */}
+        {isMobile && total.trades > 0 && <p className="border-t border-border/60 px-4 py-2 text-xs text-muted-foreground">Scroll the table sideways for Charges and Net P&amp;L.</p>}
       </Panel>
 
       {data.fno.trades > 0 && (

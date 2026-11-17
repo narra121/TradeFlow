@@ -24,7 +24,9 @@ export function MetricInfo({ metric, label, sample, className }: MetricInfoProps
       <PopoverTrigger
         type="button"
         className={cn(
-          'inline-flex max-w-full items-center truncate rounded-sm text-left underline [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 decoration-dotted decoration-border-strong underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          // Touch: padding of (44 px − one line) / 2 makes the target 44 px at any font size, and the equal negative margin keeps it
+          // out of the line height, so a term inside a sentence leaves the line spacing alone.
+          'inline-flex max-w-full items-center truncate rounded-sm text-left underline [@media(pointer:coarse)]:-mx-2 [@media(pointer:coarse)]:-my-[calc((2.75rem-1lh)/2)] [@media(pointer:coarse)]:min-w-11 [@media(pointer:coarse)]:px-2 [@media(pointer:coarse)]:py-[calc((2.75rem-1lh)/2)] decoration-dotted decoration-border-strong underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           className,
         )}
         aria-haspopup="dialog"

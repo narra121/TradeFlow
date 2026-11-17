@@ -395,7 +395,8 @@ describe('ChatView sessions', () => {
 
     await userEvent.click(within(nav).getByRole('button', { name: 'Delete chat Position sizing' }));
     const dialog = screen.getByRole('alertdialog');
-    expect(within(dialog).getByText('Delete Position sizing?')).toBeInTheDocument();
+    expect(within(dialog).getByText('Delete this chat?')).toBeInTheDocument();
+    expect(within(dialog).getByText('“Position sizing” and its answers are removed. This cannot be undone.')).toBeInTheDocument();
     deleteSession.mockReturnValue(call({}));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete chat' }));
     expect(deleteSession).toHaveBeenCalledWith('s0');

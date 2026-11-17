@@ -37,6 +37,14 @@ describe('MetricInfo', () => {
     wrap(<MetricInfo metric="plannedRR" label="Planned R:R" />);
     expect(screen.getByRole('button', { name: 'Planned R:R' })).toBeInTheDocument();
   });
+
+  it('inside a sentence its 44 px touch target does not grow the line (padding cancelled by margin, no min height)', () => {
+    wrap(<p>A note on <MetricInfo metric="expectancy" /> in a sentence.</p>);
+    const cls = screen.getByRole('button', { name: 'Expectancy' }).className;
+    expect(cls).toContain('[@media(pointer:coarse)]:py-[calc((2.75rem-1lh)/2)]');
+    expect(cls).toContain('[@media(pointer:coarse)]:-my-[calc((2.75rem-1lh)/2)]');
+    expect(cls).not.toContain('[@media(pointer:coarse)]:min-h-11');
+  });
 });
 
 describe('StatStrip', () => {

@@ -17,27 +17,25 @@ interface RowProps {
   value: React.ReactNode;
   delta?: React.ReactNode;
   wide?: boolean;
-  /** Line under the value, e.g. the sample behind it. */
-  note?: string;
   /** Sample text for the popover. */
   sample?: string;
 }
 
-function Row({ metric, label, value, delta, wide, note, sample }: RowProps) {
+function Row({ metric, label, value, delta, wide, sample }: RowProps) {
   return (
     <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3">
-      <dt className="truncate text-[13px] text-foreground-soft"><MetricInfo metric={metric} label={label} sample={sample} className="[@media(pointer:coarse)]:min-h-11" /></dt>
+      <dt className="truncate text-[13px] text-foreground-soft"><MetricInfo metric={metric} label={label} sample={sample} className="[@media(pointer:coarse)]:m-0 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:p-0" /></dt>
       {/* The change column is reserved only while a comparison is shown, so labels keep their room otherwise. */}
       <dd className={cn('grid items-baseline gap-x-3 text-right', !wide && delta !== undefined && 'sm:grid-cols-[7rem_7.5rem]')}>
         <span className={cn('font-mono text-[13px] font-medium tabular-nums', !wide && delta !== undefined && 'sm:col-start-1')}>{value}</span>
         {!wide && delta}
-        {note && <span className="col-span-full text-[11px] leading-4 text-muted-foreground">{note}</span>}
       </dd>
     </div>
   );
 }
 
-function Column({ title, children, collapsible, defaultOpen }: { title: string; children: React.ReactNode; collapsible: boolean; defaultOpen: boolean }) {
+/** `note`: a line under the column's rows, so no row grows taller than its neighbours in the other columns. */
+function Column({ title, children, collapsible, defaultOpen, note }: { title: string; children: React.ReactNode; collapsible: boolean; defaultOpen: boolean; note?: string }) {
   const [open, setOpen] = useState(defaultOpen);
   const shown = !collapsible || open;
   return (
@@ -53,6 +51,7 @@ function Column({ title, children, collapsible, defaultOpen }: { title: string; 
         )}
       </h3>
       {shown && <dl className="mt-2 space-y-0.5">{children}</dl>}
+      {shown && note && <p className="mt-1 text-right text-[11px] leading-4 text-muted-foreground">{note}</p>}
     </section>
   );
 }
@@ -98,12 +97,11 @@ export function StatementPanel({ ctx }: { ctx: AnalyticsContext }) {
             }
           />
         </Column>
-        <Column title="Risk" collapsible={mobile} defaultOpen={false}>
+        <Column title="Risk" collapsible={mobile} defaultOpen={false} note={rNoteLine(r)}>
           <Row
             metric={hasR ? 'avgR' : 'plannedRR'}
             value={hasR ? <RMultiple value={r.avgR} /> : r.planned !== null ? r.planned.toFixed(2) : '—'}
             delta={prev ? (hasR ? <Delta kind="r" current={r.avgR as number} previous={prevR} {...d} /> : <Delta kind="ratio" current={s.avgRiskReward} previous={prev.avgRiskReward} {...d} />) : undefined}
-            note={rNoteLine(r)}
             sample={r.sample || undefined}
           />
           <Row metric="maxDrawdown" value={noDrawdown ? '—' : formatPercent(s.maxDrawdown)} delta={!noDrawdown && prev ? <Delta kind="pts" current={s.maxDrawdown} previous={prev.maxDrawdown} lowerIsBetter {...d} /> : undefined} />

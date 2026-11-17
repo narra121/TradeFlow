@@ -155,6 +155,8 @@ describe('StatementPanel', () => {
     expect(screen.getByRole('button', { name: 'Planned R:R' }).className).toContain('[@media(pointer:coarse)]:min-h-11');
     // Short labels ("payoff", "Trades") still get a 44 px wide target on touch.
     expect(screen.getByRole('button', { name: 'Planned R:R' }).className).toContain('[@media(pointer:coarse)]:min-w-11');
+    // In a statement row the label keeps a full 44 px row: no negative margin pulling rows into each other.
+    expect(screen.getByRole('button', { name: 'Planned R:R' }).className).not.toContain('[@media(pointer:coarse)]:-my-');
   });
 
   it('says there is nothing to compare with when the previous period has no trades, and prints no change', () => {

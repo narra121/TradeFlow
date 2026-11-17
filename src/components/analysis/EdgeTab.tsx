@@ -95,6 +95,8 @@ export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
   // In the page, not the scope bar: two selects do not fit beside the account and period on narrow screens.
   const selects = (
     <div role="group" aria-label="Breakdown" className="flex flex-wrap items-center gap-x-2 gap-y-2 text-xs text-muted-foreground">
+      {/* Each label wraps together with its select, never onto a line of its own. */}
+      <span className="flex items-center gap-2">
         <span id="group-by-label">Group by</span>
         <Select value={by} onValueChange={(v) => setParam('by', v)}>
           <SelectTrigger aria-labelledby="group-by-label" className="h-7 w-44 text-[13px]">
@@ -109,7 +111,9 @@ export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
             ))}
           </SelectContent>
         </Select>
-        <span id="then-by-label" className="sm:ml-2">then by</span>
+      </span>
+      <span className="flex items-center gap-2 sm:ml-2">
+        <span id="then-by-label">then by</span>
         <Select value={then ?? NONE} onValueChange={(v) => setParam('then', v)}>
           <SelectTrigger aria-labelledby="then-by-label" className="h-7 w-44 text-[13px]">
             <SelectValue />
@@ -124,6 +128,7 @@ export function EdgeTab({ ctx }: { ctx: AnalyticsContext }) {
             ))}
           </SelectContent>
         </Select>
+      </span>
     </div>
   );
 

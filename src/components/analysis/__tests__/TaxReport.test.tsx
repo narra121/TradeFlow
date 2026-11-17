@@ -62,6 +62,14 @@ describe('TaxReport', () => {
     mobile = false;
   });
 
+  it('on a phone the category stays readable and the page says Net P&L is a swipe away (390: Net P&L was off the edge, unannounced)', () => {
+    mobile = true;
+    renderWithProviders(<TaxReport />);
+    expect(screen.getByText('Scroll the table sideways for Charges and Net P&L.')).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: /Futures and options/ }).className).toContain('min-w-[10rem]');
+    mobile = false;
+  });
+
   it('the table scrolls inside a named, focusable region, so a phone keyboard can scroll it (it has no links)', () => {
     renderWithProviders(<TaxReport />);
     const region = screen.getByRole('region', { name: 'Financial year 2026-27 by category' });

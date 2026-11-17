@@ -89,6 +89,16 @@ describe('Edge: the explorer from GET /analysis', () => {
     expect(screen.getByText(/in INR and USD\. Pick one account in the top bar to see evidence labels and the other breakdowns/)).toBeInTheDocument();
   });
 
+  it('each label wraps together with its select (390: "then by" sat on one line, its select on the next)', () => {
+    renderWithProviders(<EdgeTab ctx={ctx(st())} />, { route: '/app/analytics?tab=edge' });
+    const [by, then] = [screen.getByRole('combobox', { name: 'Group by' }), screen.getByRole('combobox', { name: 'then by' })];
+    expect(by.parentElement).toContainElement(screen.getByText('Group by', { selector: 'span' }));
+    expect(then.parentElement).toContainElement(screen.getByText('then by', { selector: 'span' }));
+    // Two separate wrap units: neither pair holds the other select.
+    expect(by.parentElement).not.toContainElement(then);
+    expect(then.parentElement).not.toContainElement(by);
+  });
+
   it('Compare: All time has no period before it, and it says so', async () => {
     renderWithProviders(<EdgeTab ctx={ctx(st())} />, { route: '/app/analytics?tab=edge', preloadedState: { trades: { filters: { accountId: QA_USD_ACCOUNT, datePreset: 'all', startDate: '2000-01-01', endDate: '2026-11-13' } } } as never });
     await userEvent.click(screen.getByRole('button', { name: /Compare with the period before/ }));

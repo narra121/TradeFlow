@@ -28,6 +28,8 @@ describe('realised R on the Overview statement (A-03)', () => {
     expect(within(risk).queryByRole('button', { name: 'Planned R:R' })).not.toBeInTheDocument();
     expect(within(risk).getByText('+0.22R')).toBeInTheDocument();
     expect(within(risk).getByText('45 trades with a stop · planned R:R 2.00')).toBeInTheDocument();
+    // Under the column, not inside the Avg R row: a taller first row put the Risk rows out of line with the other columns at 1440.
+    expect(within(risk).getByText('45 trades with a stop · planned R:R 2.00').closest('dl')).toBeNull();
   });
 
   it('compares with the previous period in R', () => {
