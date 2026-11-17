@@ -3,6 +3,8 @@ import { browserZone } from '@/components/settings/timeZones';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { patchUiState, readUiState, type UiState } from '@/hooks/useUiState';
 import { useGetProfileQuery, useUpdatePreferencesMutation } from '@/store/api/userApi';
+import { useAppDispatch } from '@/store/hooks';
+import { applyDefaultPeriod } from '@/store/slices/tradesSlice';
 
 /** What `GET /user/profile` returns under `preferences` that this app reads (BE-E4). */
 export interface ServerPreferences {
@@ -64,20 +66,28 @@ export function needsTimeZone(prefs: ServerPreferences | undefined, plan: { isLo
 }
 
 /**
- * Copies account-level preferences into the device copy once they are loaded, and saves the browser's zone once for
+ * Copies account-level preferences into the device copy once they are loaded, starts a session whose period nobody
+ * picked on the account's default period, and saves the browser's zone once for
  * an account that has none, so the screen and the server's day buckets (stats, reports) use one zone. Mount once inside the app shell.
  */
 export function useSyncServerPreferences(): void {
   const { prefs } = usePreferences();
   const ent = useEntitlements();
   const [update] = useUpdatePreferencesMutation();
+  const dispatch = useAppDispatch();
   const adopting = useRef(false);
+  const periodApplied = useRef(false);
   useEffect(() => {
     const patch = deviceFromServer(prefs);
     const current = readUiState();
     const changed = (Object.keys(patch) as (keyof UiState)[]).some((k) => current[k] !== patch[k]);
     if (changed) patchUiState(patch);
-  }, [prefs]);
+    // Default period = "the period a new session starts with": applied once per app load, so a later change in
+    // Settings waits for the next session.
+    if (!prefs || periodApplied.current) return;
+    periodApplied.current = true;
+    if (patch.defaultPeriod !== undefined) dispatch(applyDefaultPeriod(patch.defaultPeriod));
+  }, [prefs, dispatch]);
   useEffect(() => {
     if (adopting.current || !needsTimeZone(prefs, ent)) return;
     adopting.current = true;

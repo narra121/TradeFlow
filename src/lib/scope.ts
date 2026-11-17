@@ -73,6 +73,8 @@ export interface PersistedScope {
   datePreset: DatePreset;
   customFrom?: string;
   customTo?: string;
+  /** The period is still the default, not one the user picked (see `trades.filters.fromDefault`). */
+  fromDefault?: boolean;
 }
 
 export function loadScope(): PersistedScope | null {
@@ -85,6 +87,7 @@ export function loadScope(): PersistedScope | null {
       datePreset: (parsed.datePreset as DatePreset) ?? 'all',
       customFrom: parsed.customFrom,
       customTo: parsed.customTo,
+      ...(parsed.fromDefault === true ? { fromDefault: true } : {}),
     };
   } catch {
     return null;

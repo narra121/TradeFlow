@@ -5,6 +5,7 @@ import tradesReducer, {
   setAccountFilter,
   setDateRangeFilter,
   clearFilters,
+  applyDefaultPeriod,
   type TradesState,
 } from '../tradesSlice';
 
@@ -386,11 +387,11 @@ describe('tradesSlice', () => {
   });
 
   describe('initial state correctness', () => {
-    it('initial state filters object has exactly four keys', () => {
+    it('initial state filters object has exactly five keys (a fresh session is still on the default period)', () => {
       const state = getInitialState();
-      expect(Object.keys(state.filters)).toHaveLength(4);
+      expect(Object.keys(state.filters)).toHaveLength(5);
       expect(Object.keys(state.filters).sort()).toEqual(
-        ['accountId', 'datePreset', 'endDate', 'startDate']
+        ['accountId', 'datePreset', 'endDate', 'fromDefault', 'startDate']
       );
     });
 
@@ -442,6 +443,29 @@ describe('tradesSlice', () => {
         state = tradesReducer(state, setDateRangeFilter(range));
         expect(state.filters.accountId).toBe('sticky-account');
       }
+    });
+  });
+
+  describe('default period (Settings › Preferences: the period a new session starts with)', () => {
+    it('a fresh session is marked as still on the default, and applyDefaultPeriod moves it to the account default', () => {
+      const state = getInitialState();
+      expect(state.filters.fromDefault).toBe(true);
+      const next = tradesReducer(state, applyDefaultPeriod(7));
+      expect(next.filters.datePreset).toBe(7);
+      expect(next.filters.fromDefault).toBe(true);
+    });
+
+    it('a period the user picked is never replaced by the default', () => {
+      const picked = tradesReducer(getInitialState(), setDateRangeFilter({ startDate: '2025-03-01', endDate: '2025-03-31', datePreset: 'thisMonth' }));
+      expect(picked.filters.fromDefault).toBeUndefined();
+      expect(tradesReducer(picked, applyDefaultPeriod(7)).filters.datePreset).toBe('thisMonth');
+    });
+
+    it('the end of a session (clearFilters) starts the next one on the default again', () => {
+      const picked = tradesReducer(getInitialState(), setDateRangeFilter({ startDate: '2025-03-01', endDate: '2025-03-31', datePreset: 'custom' }));
+      const cleared = tradesReducer(picked, clearFilters());
+      expect(cleared.filters.fromDefault).toBe(true);
+      expect(tradesReducer(cleared, applyDefaultPeriod(30)).filters.datePreset).toBe(30);
     });
   });
 });

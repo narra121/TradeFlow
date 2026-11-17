@@ -10,6 +10,8 @@ export interface TradesState {
     datePreset: DatePreset;
     customFrom?: string;
     customTo?: string;
+    /** True until the user picks a period in this session: the account's default period (Settings) may still replace it. */
+    fromDefault?: boolean;
   };
 }
 
@@ -20,8 +22,9 @@ function buildFilters(accountId: string, preset: DatePreset, customFrom?: string
 
 function initialFilters(): TradesState['filters'] {
   const saved = loadScope();
-  if (!saved) return buildFilters('ALL', readUiState().defaultPeriod);
-  return buildFilters(saved.accountId || 'ALL', saved.datePreset, saved.customFrom, saved.customTo);
+  if (!saved) return { ...buildFilters('ALL', readUiState().defaultPeriod), fromDefault: true };
+  const filters = buildFilters(saved.accountId || 'ALL', saved.datePreset, saved.customFrom, saved.customTo);
+  return saved.fromDefault ? { ...filters, fromDefault: true } : filters;
 }
 
 const tradesSlice = createSlice({
@@ -40,6 +43,7 @@ const tradesSlice = createSlice({
     ) => {
       state.filters.startDate = action.payload.startDate;
       state.filters.endDate = action.payload.endDate;
+      delete state.filters.fromDefault;
       if (action.payload.datePreset !== undefined) {
         state.filters.datePreset = action.payload.datePreset;
         if (action.payload.datePreset === 'custom') {
@@ -58,10 +62,15 @@ const tradesSlice = createSlice({
       }
     },
     clearFilters: (state) => {
-      state.filters = buildFilters('ALL', 'all');
+      state.filters = { ...buildFilters('ALL', 'all'), fromDefault: true };
+    },
+    /** A new session starts on the account's default period once it is known; a period the user picked stays. */
+    applyDefaultPeriod: (state, action: PayloadAction<DatePreset>) => {
+      if (!state.filters.fromDefault || state.filters.datePreset === action.payload) return;
+      state.filters = { ...buildFilters(state.filters.accountId, action.payload), fromDefault: true };
     },
   },
 });
 
-export const { setFilters, setAccountFilter, setDateRangeFilter, rollDate, clearFilters } = tradesSlice.actions;
+export const { setFilters, setAccountFilter, setDateRangeFilter, rollDate, clearFilters, applyDefaultPeriod } = tradesSlice.actions;
 export default tradesSlice.reducer;

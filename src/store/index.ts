@@ -49,7 +49,7 @@ let lastScope = '';
 store.subscribe(() => {
   const { accounts, trades } = store.getState();
   const f = trades.filters;
-  const next = JSON.stringify([accounts.selectedAccountId, f.datePreset, f.customFrom, f.customTo]);
+  const next = JSON.stringify([accounts.selectedAccountId, f.datePreset, f.customFrom, f.customTo, f.fromDefault]);
   if (next === lastScope) return;
   lastScope = next;
   saveScope({
@@ -57,6 +57,7 @@ store.subscribe(() => {
     datePreset: f.datePreset,
     customFrom: f.customFrom,
     customTo: f.customTo,
+    ...(f.fromDefault ? { fromDefault: true } : {}),
   });
 });
 

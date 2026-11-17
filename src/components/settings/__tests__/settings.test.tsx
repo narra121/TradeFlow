@@ -34,6 +34,8 @@ import { MAIN_LISTS, MORE_LISTS, countUsage, hasValue, isStarterList, ownEntries
 import { browserZone } from '../timeZones';
 import { deviceFromServer, needsTimeZone, periodToServer, useSyncServerPreferences } from '../usePreferences';
 import { resetUiStateCache, patchUiState } from '@/hooks/useUiState';
+import { renderWithProviders } from '@/test/test-utils';
+import type { DatePreset } from '@/lib/scope';
 
 const strategies = MAIN_LISTS.find((l) => l.key === 'strategies')!;
 
@@ -299,7 +301,7 @@ describe('an account without a saved time zone takes the browser zone once (REQU
 
   it('saves the browser zone once through PUT /user/preferences when the profile has none', () => {
     profile = { name: 'Ann', email: 'ann@example.com', preferences: { notifications: { weeklyReport: true } } };
-    const { rerender } = render(<Sync />);
+    const { rerender } = renderWithProviders(<Sync />);
     rerender(<Sync />);
     expect(updatePrefs).toHaveBeenCalledTimes(1);
     expect(updatePrefs).toHaveBeenCalledWith({ timeZone: zone });
@@ -307,14 +309,42 @@ describe('an account without a saved time zone takes the browser zone once (REQU
 
   it('never overwrites a chosen zone, UTC included', () => {
     profile = { name: 'Ann', email: 'ann@example.com', preferences: { timeZone: 'UTC' } };
-    render(<Sync />);
+    renderWithProviders(<Sync />);
     expect(updatePrefs).not.toHaveBeenCalled();
   });
 
   it('a read-only plan does not try (the save would be refused with 402 and open the upgrade dialog)', () => {
     plan = 'free';
     profile = { name: 'Ann', email: 'ann@example.com', preferences: {} };
-    render(<Sync />);
+    renderWithProviders(<Sync />);
     expect(updatePrefs).not.toHaveBeenCalled();
+  });
+});
+
+describe('Default period: the period a new session starts with (Settings › Preferences)', () => {
+  const Sync = () => {
+    useSyncServerPreferences();
+    return null;
+  };
+  const filters = (preset: DatePreset, fromDefault?: boolean) => ({ accountId: 'ALL', startDate: '2000-01-01', endDate: '2026-11-17', datePreset: preset, ...(fromDefault ? { fromDefault } : {}) });
+
+  it('a session whose period nobody picked starts on the account default once the profile loads', () => {
+    profile = { name: 'Ann', email: 'ann@example.com', preferences: { timeZone: 'UTC', defaultPeriod: '7d' } };
+    const { store } = renderWithProviders(<Sync />, { preloadedState: { trades: { filters: filters('all', true) } } as never });
+    expect((store.getState() as { trades: { filters: { datePreset: DatePreset } } }).trades.filters.datePreset).toBe(7);
+  });
+
+  it('a period the user picked in this session stays', () => {
+    profile = { name: 'Ann', email: 'ann@example.com', preferences: { timeZone: 'UTC', defaultPeriod: '7d' } };
+    const { store } = renderWithProviders(<Sync />, { preloadedState: { trades: { filters: filters('thisMonth') } } as never });
+    expect((store.getState() as { trades: { filters: { datePreset: DatePreset } } }).trades.filters.datePreset).toBe('thisMonth');
+  });
+
+  it('a later change in Settings waits for the next session', () => {
+    profile = { name: 'Ann', email: 'ann@example.com', preferences: { timeZone: 'UTC', defaultPeriod: '7d' } };
+    const { store, rerender } = renderWithProviders(<Sync />, { preloadedState: { trades: { filters: filters('all', true) } } as never });
+    profile = { name: 'Ann', email: 'ann@example.com', preferences: { timeZone: 'UTC', defaultPeriod: '30d' } };
+    rerender(<Sync />);
+    expect((store.getState() as { trades: { filters: { datePreset: DatePreset } } }).trades.filters.datePreset).toBe(7);
   });
 });
