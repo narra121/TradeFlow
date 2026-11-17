@@ -91,7 +91,8 @@ export function InsightsView() {
   // A report adds its figures up, so it is made for one currency: choose an account first.
   const mixed = isMixedCurrency(accounts, selectedAccountId);
   // Trades in the report's range (all trades, open ones too): under the minimum the request cannot succeed.
-  const { data: scopeStats } = useGetStatsQuery({ accountId: selectedAccountId ?? 'ALL', startDate: range.from, endDate: range.to });
+  // `currentData`: while a new scope loads, `data` still holds the last scope's count.
+  const { currentData: scopeStats } = useGetStatsQuery({ accountId: selectedAccountId ?? 'ALL', startDate: range.from, endDate: range.to });
   const scopeTrades = scopeStats?.totalTrades;
   const tooFew = typeof scopeTrades === 'number' && scopeTrades < MIN_REPORT_TRADES;
   const tooFewText = tooFew ? `A report needs at least ${MIN_REPORT_TRADES} closed trades; this scope has ${plural(scopeTrades!, 'trade')}.` : null;

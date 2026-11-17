@@ -36,7 +36,7 @@ const ftmo = { id: 'f', currency: 'USD' };
 beforeEach(() => {
   entitlements.mockReset().mockReturnValue({ isLoading: false, isError: false, can: () => true, currency: 'INR' });
   capital.mockReset().mockReturnValue({ accounts: [zerodha], selectedAccountId: 'z' });
-  query.mockReset().mockReturnValue({ data: report, isLoading: false, isError: false, refetch: vi.fn() });
+  query.mockReset().mockReturnValue({ data: report, currentData: report, isLoading: false, isError: false, refetch: vi.fn() });
 });
 
 describe('TaxReport', () => {
@@ -99,30 +99,39 @@ describe('TaxReport', () => {
   });
 
   it('shows the API message of a failed load, and the connection message only without a response', () => {
-    query.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: { status: 422, data: { message: 'The financial year is not valid.' } }, refetch: vi.fn() });
+    query.mockReturnValue({ data: undefined, currentData: undefined, isLoading: false, isError: true, error: { status: 422, data: { message: 'The financial year is not valid.' } }, refetch: vi.fn() });
     const { unmount } = renderWithProviders(<TaxReport />);
     expect(screen.getByRole('alert')).toHaveTextContent('The financial year is not valid.');
     expect(screen.getByRole('alert')).not.toHaveTextContent(/internet connection/i);
     unmount();
-    query.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: { status: 'FETCH_ERROR' }, refetch: vi.fn() });
+    query.mockReturnValue({ data: undefined, currentData: undefined, isLoading: false, isError: true, error: { status: 'FETCH_ERROR' }, refetch: vi.fn() });
     renderWithProviders(<TaxReport />);
     expect(screen.getByRole('alert')).toHaveTextContent(/Check your internet connection/);
   });
 
   it('shows an error with Retry and a skeleton while loading', async () => {
     const refetch = vi.fn();
-    query.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch });
+    query.mockReturnValue({ data: undefined, currentData: undefined, isLoading: false, isError: true, refetch });
     const { unmount } = renderWithProviders(<TaxReport />);
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(refetch).toHaveBeenCalled();
     unmount();
-    query.mockReturnValue({ data: undefined, isLoading: true, isError: false, refetch });
+    query.mockReturnValue({ data: undefined, currentData: undefined, isLoading: true, isError: false, refetch });
     renderWithProviders(<TaxReport />);
     expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
   });
 
+  it('while another year or account loads it shows a skeleton, not the last report', () => {
+    // RTK while the arguments change: `data` still holds the last year's report, `currentData` is empty.
+    query.mockReturnValue({ data: report, currentData: undefined, isLoading: false, isFetching: true, isError: false, refetch: vi.fn() });
+    renderWithProviders(<TaxReport />);
+    expect(screen.queryByText(`Financial year ${report.fy}`)).not.toBeInTheDocument();
+    expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
+  });
+
   it('says there are no closed trades in an empty year', () => {
-    query.mockReturnValue({ data: { ...report, intradayEquity: bucket(0, 0, 0), fno: { ...report.fno, ...bucket(0, 0, 0) }, delivery: { shortTerm: bucket(0, 0, 0), longTerm: bucket(0, 0, 0) } }, isLoading: false, isError: false, refetch: vi.fn() });
+    const empty = { ...report, intradayEquity: bucket(0, 0, 0), fno: { ...report.fno, ...bucket(0, 0, 0) }, delivery: { shortTerm: bucket(0, 0, 0), longTerm: bucket(0, 0, 0) } };
+    query.mockReturnValue({ data: empty, currentData: empty, isLoading: false, isError: false, refetch: vi.fn() });
     renderWithProviders(<TaxReport />);
     expect(screen.getByText('No closed trades in this financial year.')).toBeInTheDocument();
   });

@@ -42,7 +42,14 @@ vi.mock('@/store/api/insightsApi', () => ({
 vi.mock('@/store/api/analysisApi', () => ({ useGetFocusRuleQuery: () => ({ data: null }) }));
 vi.mock('@/lib/analytics', () => ({ trackAiInsightGenerated: vi.fn() }));
 let scopeTrades: number | undefined;
-vi.mock('@/store/api/statsApi', () => ({ useGetStatsQuery: () => ({ data: scopeTrades === undefined ? undefined : { totalTrades: scopeTrades } }) }));
+let lastScopeTrades: number | undefined;
+vi.mock('@/store/api/statsApi', () => ({
+  useGetStatsQuery: () => {
+    const own = scopeTrades === undefined ? undefined : { totalTrades: scopeTrades };
+    // RTK while a new scope loads: `data` still holds the last scope's answer, `currentData` is empty.
+    return { data: own ?? (lastScopeTrades === undefined ? undefined : { totalTrades: lastScopeTrades }), currentData: own };
+  },
+}));
 
 const insight = (p: Partial<Insight> = {}): Insight => ({
   id: 'i1',
@@ -90,6 +97,7 @@ const renderView = (route = '/app/insights') => {
 
 beforeEach(() => {
   scopeTrades = undefined;
+  lastScopeTrades = undefined;
   readOnly = false;
   generate.mockReset();
   loadPage.mockReset();
@@ -314,6 +322,13 @@ describe('InsightsView with too few trades', () => {
     buttons.forEach((b) => expect(b).toBeDisabled());
     expect(screen.getByText('A report needs at least 5 closed trades; this scope has 0 trades.')).toBeInTheDocument();
     expect(generate).not.toHaveBeenCalled();
+  });
+
+  it('while a new scope loads it shows nothing of the last scope\'s count', () => {
+    insights = [];
+    lastScopeTrades = 2;
+    renderView();
+    expect(screen.queryByText(/this scope has 2 trades/)).not.toBeInTheDocument();
   });
 
   it('keeps Generate enabled from 5 trades', () => {

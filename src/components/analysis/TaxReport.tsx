@@ -56,7 +56,8 @@ export function TaxReport() {
   const pool = selectedAccountId ? accounts.filter((a) => a.id === selectedAccountId) : accounts.filter((a) => a.id && a.id !== '-1');
   const inr = pool.length > 0 && pool.every((a) => a.currency === CURRENCY);
   const allowed = ent.isError || ent.can('tax_report');
-  const { data, isLoading, isError, error, refetch } = useGetTaxReportQuery({ fy, accountId: selectedAccountId ?? undefined }, { skip: !allowed || !inr });
+  // `currentData`: while another year or account loads, `data` still holds the last one's report.
+  const { currentData: data, isLoading, isError, error, refetch } = useGetTaxReportQuery({ fy, accountId: selectedAccountId ?? undefined }, { skip: !allowed || !inr });
 
   const setFy = (next: string) => {
     const q = new URLSearchParams(params);
