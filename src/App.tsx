@@ -12,11 +12,10 @@ import { hasStoredSession, readStoredClaims } from '@/lib/auth/storedSession';
 import { AnalyticsRoot } from '@/components/analytics';
 import { ChunkErrorBoundary, PageLoadingFallback, ReloadGuardReset } from '@/appRoot/shared';
 import { LandingPage, NotFound, PublicRoutes } from '@/PublicRoutes';
+import { LoginPage, SignupPage } from '@/content/publicPages';
 import { useHashScroll } from '@/components/public/useHashScroll';
 
-// App and auth pages (the public pages live in PublicRoutes.tsx)
-const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
-const SignupPage = lazy(() => import('./pages/SignupPage').then(m => ({ default: m.SignupPage })));
+// App and auth pages (the public, login and signup pages live in content/publicPages.ts)
 const AppPage = lazy(() => import('./pages/AppPage').then(m => ({ default: m.AppPage })));
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 

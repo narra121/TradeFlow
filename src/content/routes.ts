@@ -1,4 +1,5 @@
-import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
+import type { ComponentType } from 'react';
+import { lazyPage, type LazyPage } from './lazyPage';
 
 type Loader = () => Promise<{ default: ComponentType }>;
 
@@ -36,7 +37,7 @@ export const UTILITY_PAGE_LOADERS: Record<string, Loader> = {
 };
 
 /** Routes for the SEO and utility pages. SEO paths must match SEO_PAGES in ./seo-pages (enforced by route-registry.test.ts). */
-export const CONTENT_ROUTES: { path: string; Component: LazyExoticComponent<ComponentType> }[] = Object.entries({
+export const CONTENT_ROUTES: { path: string; Component: LazyPage }[] = Object.entries({
   ...SEO_PAGE_LOADERS,
   ...UTILITY_PAGE_LOADERS,
-}).map(([path, load]) => ({ path, Component: lazy(load) }));
+}).map(([path, load]) => ({ path, Component: lazyPage(load) }));
