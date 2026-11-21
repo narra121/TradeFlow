@@ -40,6 +40,8 @@ vi.mock('lucide-react', () => ({
   Eye: () => <span data-testid="icon-eye" />,
   EyeOff: () => <span data-testid="icon-eye-off" />,
   RotateCcw: () => <span data-testid="icon-rotate" />,
+  ChevronLeft: () => <span data-testid="icon-chevron-left" />,
+  ChevronRight: () => <span data-testid="icon-chevron-right" />,
 }));
 
 describe('ImageViewerModal', () => {
@@ -237,5 +239,48 @@ describe('ImageViewerModal', () => {
     const notPrevented = fireEvent.wheel(area, { deltaY: -100 });
     expect(notPrevented).toBe(false);
     expect(screen.getByText('110%')).toBeInTheDocument();
+  });
+
+  describe("switching between a trade's screenshots", () => {
+    it('shows previous and next arrows and the position when there are several', () => {
+      render(<ImageViewerModal {...defaultProps} index={1} count={3} onNavigate={vi.fn()} />);
+      expect(screen.getByRole('button', { name: 'Previous screenshot' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Next screenshot' })).toBeInTheDocument();
+      expect(screen.getByText('2 / 3')).toBeInTheDocument();
+    });
+
+    it('shows no arrows for a single screenshot', () => {
+      render(<ImageViewerModal {...defaultProps} index={0} count={1} onNavigate={vi.fn()} />);
+      expect(screen.queryByRole('button', { name: 'Next screenshot' })).not.toBeInTheDocument();
+      expect(screen.queryByText('1 / 1')).not.toBeInTheDocument();
+    });
+
+    it('moves with the arrow buttons, wrapping at both ends', async () => {
+      const onNavigate = vi.fn();
+      const { rerender } = render(<ImageViewerModal {...defaultProps} index={2} count={3} onNavigate={onNavigate} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Next screenshot' }));
+      expect(onNavigate).toHaveBeenLastCalledWith(0);
+      rerender(<ImageViewerModal {...defaultProps} index={0} count={3} onNavigate={onNavigate} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Previous screenshot' }));
+      expect(onNavigate).toHaveBeenLastCalledWith(2);
+    });
+
+    it('moves with the left and right arrow keys', () => {
+      const onNavigate = vi.fn();
+      render(<ImageViewerModal {...defaultProps} index={1} count={3} onNavigate={onNavigate} />);
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      expect(onNavigate).toHaveBeenLastCalledWith(2);
+      fireEvent.keyDown(window, { key: 'ArrowLeft' });
+      expect(onNavigate).toHaveBeenLastCalledWith(0);
+    });
+
+    it('shows the new image at normal size when switching while zoomed in', async () => {
+      const { rerender } = render(<ImageViewerModal {...defaultProps} index={0} count={2} onNavigate={vi.fn()} />);
+      await userEvent.click(screen.getByLabelText('Zoom in'));
+      expect(screen.getByText('125%')).toBeInTheDocument();
+      rerender(<ImageViewerModal {...defaultProps} imageId="second-image-id" index={1} count={2} onNavigate={vi.fn()} />);
+      expect(screen.getByText('100%')).toBeInTheDocument();
+      expect(mockUseCachedImage).toHaveBeenLastCalledWith('second-image-id');
+    });
   });
 });

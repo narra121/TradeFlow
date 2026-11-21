@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCachedImage } from '@/hooks/useCachedImage';
 import { readApiError } from '@/lib/apiError';
-import { ZoomIn, ZoomOut, Minimize2, X, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { ZoomIn, ZoomOut, Minimize2, X, Eye, EyeOff, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ImageViewerModalProps {
   isOpen: boolean;
@@ -18,6 +18,10 @@ interface ImageViewerModalProps {
   imageId: string; // Changed from imageUrl to imageId
   timeframe?: string;
   description?: string;
+  /** Position of this image among the trade's screenshots; with `count` above 1 and `onNavigate`, arrows and ←/→ switch images (wrapping). */
+  index?: number;
+  count?: number;
+  onNavigate?: (index: number) => void;
 }
 
 export function ImageViewerModal({
@@ -26,6 +30,9 @@ export function ImageViewerModal({
   imageId,
   timeframe,
   description,
+  index = 0,
+  count = 1,
+  onNavigate,
 }: ImageViewerModalProps) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -51,14 +58,17 @@ export function ImageViewerModal({
     stopWheel.current = () => el.removeEventListener('wheel', onWheel);
   }, []);
 
-  // Reset state when modal opens
+  const canNavigate = !!onNavigate && count > 1;
+  const showImage = useCallback((step: number) => onNavigate?.((index + step + count) % count), [onNavigate, index, count]);
+
+  // Reset state when modal opens or another image is shown
   useEffect(() => {
     if (isOpen) {
       setScale(1);
       setPosition({ x: 0, y: 0 });
       setShowDescription(true);
     }
-  }, [isOpen]);
+  }, [isOpen, imageId]);
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 5));
@@ -99,11 +109,13 @@ export function ImageViewerModal({
         case '+': case '=': handleZoomIn(); break;
         case '-': handleZoomOut(); break;
         case 'r': case 'R': handleReset(); break;
+        case 'ArrowLeft': if (canNavigate) showImage(-1); break;
+        case 'ArrowRight': if (canNavigate) showImage(1); break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, canNavigate, showImage]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -116,6 +128,11 @@ export function ImageViewerModal({
               <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm text-xs">
                 {timeframe}
               </Badge>
+            )}
+            {canNavigate && (
+              <span className="text-xs font-mono text-foreground" aria-live="polite">
+                {index + 1} / {count}
+              </span>
             )}
           </div>
 
@@ -230,6 +247,29 @@ export function ImageViewerModal({
             />
           )}
         </div>
+
+        {canNavigate && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-2 top-1/2 z-20 h-11 w-11 -translate-y-1/2 rounded-full bg-background/95 border border-border/50 text-foreground shadow-lg hover:text-primary sm:left-4"
+              onClick={() => showImage(-1)}
+              aria-label="Previous screenshot"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 z-20 h-11 w-11 -translate-y-1/2 rounded-full bg-background/95 border border-border/50 text-foreground shadow-lg hover:text-primary sm:right-4"
+              onClick={() => showImage(1)}
+              aria-label="Next screenshot"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </>
+        )}
 
         {/* Description Panel */}
         {description && showDescription && (

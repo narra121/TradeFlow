@@ -21,6 +21,7 @@ vi.mock('@/hooks/useEntitlements', () => ({ useEntitlements: () => ({ readOnly: 
 const upgrade = vi.hoisted(() => vi.fn());
 vi.mock('@/components/billing/useUpgrade', () => ({ useUpgrade: () => ({ upgrade, manage: vi.fn(), busy: null, error: null, clearError: vi.fn() }) }));
 const api = vi.hoisted(() => ({ update: vi.fn(), debrief: vi.fn() }));
+vi.mock('@/hooks/useCachedImage', () => ({ useCachedImage: (id: string) => ({ src: `blob:${id}`, isLoading: false, error: null }) }));
 vi.mock('@/store/api', () => ({ useDeleteTradeMutation: () => [vi.fn(), { isLoading: false }], useBulkDeleteTradesMutation: () => [vi.fn()], useRestoreTradesMutation: () => [vi.fn()], useUpdateTradeMutation: () => [api.update], useGetTradeQuery: () => ({ currentData: undefined, isFetching: false }), useGetTradeDebriefQuery: (id: string) => api.debrief(id) }));
 
 import { TradePane } from '../TradePane';
@@ -136,5 +137,19 @@ describe('TradePane', () => {
       expect(param.close).toHaveBeenCalled();
       expect(screen.queryByRole('form')).toBeNull();
     });
+  });
+
+  it('switches between the screenshots of the open trade without closing the viewer', async () => {
+    trades[1] = mk('t2', { images: [{ id: 'img-a', timeframe: '15m', description: '' }, { id: 'img-b', timeframe: '1H', description: '' }] });
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: 'Open screenshot 1, 15m' }));
+    const shown = () => screen.getByRole('img', { name: 'Trade screenshot' }).getAttribute('src');
+    expect(shown()).toBe('blob:img-a');
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Next screenshot' }));
+    expect(shown()).toBe('blob:img-b');
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(shown()).toBe('blob:img-a');
   });
 });

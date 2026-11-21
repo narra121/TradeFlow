@@ -473,7 +473,7 @@ export const TradePane = forwardRef<TradePaneHandle, TradePaneProps>(function Tr
       {body}
 
       {viewerIndex !== null && trade?.images?.[viewerIndex] && (
-        <ImageViewerModal isOpen onClose={() => setViewerIndex(null)} imageId={trade.images[viewerIndex].id} timeframe={trade.images[viewerIndex].timeframe} description={trade.images[viewerIndex].description} />
+        <ImageViewerModal isOpen onClose={() => setViewerIndex(null)} imageId={trade.images[viewerIndex].id} timeframe={trade.images[viewerIndex].timeframe} description={trade.images[viewerIndex].description} index={viewerIndex} count={trade.images.length} onNavigate={setViewerIndex} />
       )}
 
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
