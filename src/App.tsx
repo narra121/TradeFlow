@@ -72,10 +72,10 @@ function AppRoutes() {
 
   useEffect(() => {
     if (!hasStoredSession() || authReady) return;
+    // A public page stays put, signed out; RequireAuth sends an app route to /login.
     const endSession = () => {
       discardSession();
       dispatch(clearAuth());
-      navigate('/login', { replace: true });
     };
     // No token means Amplify has no usable session (malformed, or refused by Cognito). An error is a failed refresh, e.g.
     // offline: the session stays and the next request retries.
@@ -85,12 +85,6 @@ function AppRoutes() {
   }, []);
 
   const { isAuthenticated } = useAppSelector((state) => state.auth);
-
-  // Authenticated users on public/app routes: show loading until auth is confirmed,
-  // then render the correct route. This prevents FOUC (flash of landing page).
-  if (!authReady && isAuthenticated) {
-    return <PageLoadingFallback />;
-  }
 
   return (
     <ChunkErrorBoundary>
@@ -103,11 +97,12 @@ function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/app/*" element={
+        {/* Only the app waits for the session check: a public page needs no token, and waiting there covers the prerendered page. */}
+        <Route path="/app/*" element={!authReady && isAuthenticated ? <PageLoadingFallback /> : (
           <RequireAuth>
             <AppPage />
           </RequireAuth>
-        } />
+        )} />
         {PublicRoutes}
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
