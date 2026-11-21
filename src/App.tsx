@@ -42,7 +42,10 @@ function AppRoutes() {
       
       isHandlingUnauthorized.current = true;
       dispatch(clearAuth());
-      navigate('/login', { replace: true, state: { from: location, reason: 'session-ended' } });
+      // A public page stays put, signed out; only the app needs the session.
+      if (/^\/app(\/|$)/.test(location.pathname)) {
+        navigate('/login', { replace: true, state: { from: location, reason: 'session-ended' } });
+      }
       // Clear what is stored too, or a reload would start the full app on the same unusable session. Not before the render
       // that clearAuth causes: RequireAuth would find no session and redirect over the state set above.
       window.setTimeout(discardSession, 0);

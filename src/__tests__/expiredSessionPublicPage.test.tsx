@@ -3,10 +3,15 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 
 let resolveToken: (token: string | null) => void;
+let endSession: () => void;
 
 vi.mock('@/lib/auth/authService', async (importActual) => ({
   ...(await importActual<typeof import('@/lib/auth/authService')>()),
   getIdToken: vi.fn(() => new Promise<string | null>((resolve) => (resolveToken = resolve))),
+  onSessionEnded: vi.fn((onEnd: () => void) => {
+    endSession = onEnd;
+    return () => {};
+  }),
 }));
 vi.mock('@/pages/AppPage', () => ({ AppPage: () => <p>app page</p> }));
 vi.mock('@/pages/LoginPage', () => ({ LoginPage: () => <p>login page</p> }));
@@ -59,6 +64,19 @@ describe('a signed-in visit with an expired ID token', () => {
     expect(screen.getByText('blog page')).toBeInTheDocument();
     expect(store.getState().auth.isAuthenticated).toBe(false);
     expect(cognitoKeys()).toEqual([]);
+  });
+
+  it.each([
+    ['Amplify ends the session (refused refresh, sign-out in another tab)', () => endSession()],
+    ['an API call answers 401', () => window.dispatchEvent(new Event('unauthorized'))],
+  ])('keeps a public page, signed out, when %s', async (_, end) => {
+    const { store } = await openSignedInWithExpiredToken('/blog');
+    await screen.findByText('blog page');
+    await act(async () => end());
+    await waitFor(() => expect(cognitoKeys()).toEqual([]));
+    expect(window.location.pathname).toBe('/blog');
+    expect(screen.getByText('blog page')).toBeInTheDocument();
+    expect(store.getState().auth.isAuthenticated).toBe(false);
   });
 
   it('holds the app on the loading screen until the session is renewed', async () => {
