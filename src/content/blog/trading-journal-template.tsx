@@ -66,7 +66,7 @@ export default function TradingJournalTemplate() {
               <td className="px-4 py-3 font-medium text-foreground">Outcome</td>
               <td className="px-4 py-3">Win / Loss / Breakeven</td>
               <td className="px-4 py-3">
-                <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
+                <Link to="/glossary/win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
                   Win rate
                 </Link>{' '}
                 calculation

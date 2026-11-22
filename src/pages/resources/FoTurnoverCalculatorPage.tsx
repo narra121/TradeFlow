@@ -46,6 +46,23 @@ const EXAMPLE: TurnoverInputs = {
 const EXAMPLE_RESULT = computeFoTurnover(EXAMPLE);
 const EXAMPLE_NET = EXAMPLE.futuresProfits - EXAMPLE.futuresLosses + EXAMPLE.optionsProfits - EXAMPLE.optionsLosses;
 
+/** Realised P&L of each squared-off trade, for the step-by-step example; it runs through the same parser as the paste mode. */
+const STEP_TRADES = { futures: [12_000, -8_000], options: [4_500, -2_500, -1_000], premium: 30_000 };
+const STEP_FUTURES = parsePnlList(STEP_TRADES.futures.join('\n'));
+const STEP_OPTIONS = parsePnlList(STEP_TRADES.options.join('\n'));
+const STEP_RESULT = computeFoTurnover({
+  futuresProfits: STEP_FUTURES.profits,
+  futuresLosses: STEP_FUTURES.losses,
+  optionsProfits: STEP_OPTIONS.profits,
+  optionsLosses: STEP_OPTIONS.losses,
+  premiumReceived: STEP_TRADES.premium,
+  otherTurnover: 0,
+});
+const STEP_NET = [...STEP_TRADES.futures, ...STEP_TRADES.options].reduce((sum, n) => sum + n, 0);
+const signedRupees = (n: number) => formatMoney(n, 'INR', { decimals: 0, sign: true });
+const wholeRupees = (n: number) => formatMoney(n, 'INR', { decimals: 0 });
+const absSum = (xs: number[]) => xs.map((n) => wholeRupees(Math.abs(n))).join(' + ');
+
 const FAQ: FaqItem[] = [
   {
     question: 'Is F&O turnover the contract value or the sum of profits and losses?',
@@ -495,6 +512,53 @@ export function FoTurnoverCalculatorPage() {
       />
 
       <div className="max-w-[72ch]">
+        <H2 id="how-to-calculate">How to calculate F&amp;O turnover</H2>
+        <P>By hand, following para 5.11(b) of the ICAI Guidance Note:</P>
+        <OL>
+          <li>
+            From your broker&apos;s tax P&amp;L or tradewise report, take the realised profit or loss of every squared-off futures and options transaction in the
+            financial year, from every account, on one basis (each trade or each contract) throughout. Include reverse trades (5.11(b)(iii)); a position still
+            open on 31 March goes into the year it is squared off (5.11(b)(iv)); leave out derivatives settled by delivery, which have their own rule
+            (5.11(b)(v)).
+          </li>
+          <li>Write every loss as a positive amount. Each transaction stands on its own, so profits and losses are never set off (5.11(a) and (b)(i)).</li>
+          <li>Add up the futures amounts, then the options amounts.</li>
+          <li>
+            Add the premium received on options you sold, unless your profit figures already include it (5.11(b)(ii)). The sentence can be read more than one
+            way, so work out both totals and ask your chartered accountant which applies.
+          </li>
+          <li>
+            Add turnover from any other business, then compare the total with the section 44AB(a) limits: {rupees(LIMIT_ONE_CRORE)}, or {rupees(LIMIT_TEN_CRORE)}{' '}
+            where cash receipts and cash payments are each 5% or less of the totals (para 3.1).
+          </li>
+        </OL>
+        <Table
+          caption="Step-by-step example: two futures trades and three options trades, made-up figures"
+          head={['Step', 'Working', 'Amount']}
+          rows={[
+            ['1. Futures trades', STEP_TRADES.futures.map(signedRupees).join(', '), ''],
+            ['1. Options trades', STEP_TRADES.options.map(signedRupees).join(', '), ''],
+            ['2 and 3. Futures turnover', absSum(STEP_TRADES.futures), rupees(STEP_RESULT.futures)],
+            ['2 and 3. Options profits and losses', absSum(STEP_TRADES.options), rupees(STEP_RESULT.optionsDifferences)],
+            ['4. Premium received on options sold', '', rupees(STEP_RESULT.premiumReceived)],
+            [
+              '4. Total, premium added',
+              `${wholeRupees(STEP_RESULT.futures)} + ${wholeRupees(STEP_RESULT.optionsDifferences)} + ${wholeRupees(STEP_RESULT.premiumReceived)}`,
+              rupees(STEP_RESULT.premiumAdded.total),
+            ],
+            [
+              '4. Total, premium not added separately',
+              `${wholeRupees(STEP_RESULT.futures)} + ${wholeRupees(STEP_RESULT.optionsDifferences)}`,
+              rupees(STEP_RESULT.premiumNotAdded.total),
+            ],
+          ]}
+        />
+        <P>
+          The five trades net to {formatMoney(STEP_NET, 'INR', { decimals: 2 })}, but the turnover is {rupees(STEP_RESULT.premiumNotAdded.total)} or{' '}
+          {rupees(STEP_RESULT.premiumAdded.total)}. Paste the same trades into the calculator&apos;s &ldquo;Paste a list&rdquo; mode, with the premium, and it
+          shows the same two totals.
+        </P>
+
         <H2>How the ICAI Guidance Note counts F&amp;O turnover</H2>
         <P>
           Para 5.11(b) of the Guidance Note on Tax Audit under section 44AB sets out the method for derivatives and says it is only for computing turnover for tax

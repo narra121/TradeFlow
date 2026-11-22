@@ -38,8 +38,8 @@ export default function TradingExpectancyFormula() {
       </Callout>
       <P>
         Include fees in each trade&apos;s R, or a thin positive expectancy can turn negative. Compare the number month by
-        month and look at which setups drag it down. The <A to="/glossary#expectancy">glossary entry</A> has the short
-        definition.
+        month and look at which setups drag it down. The <A to="/glossary/expectancy">expectancy glossary page</A> has the
+        short definition and a calculator.
       </P>
       <Disclaimer />
     </>

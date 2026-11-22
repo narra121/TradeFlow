@@ -1,10 +1,11 @@
 /**
- * Statutory charges on NSE equity futures and options (index and stock), by trade date. Every row is read from the
- * document named in it. Append a row when a rate changes; never edit an old one. Rates are percentages as printed in
- * the source: 0.0125 means 0.0125%. Amounts are rupees and are estimates: the contract note is authoritative.
+ * Statutory charges on NSE equity futures and options (index and stock), and STT on equity shares in the cash market,
+ * by trade date. Every row is read from the document named in it. Append a row when a rate changes; never edit an old
+ * one. Rates are percentages as printed in the source: 0.0125 means 0.0125%. Amounts are rupees and are estimates: the
+ * contract note is authoritative.
  */
 
-export const RATES_CHECKED_ON = '2026-11-15';
+export const RATES_CHECKED_ON = '2026-11-21';
 
 export interface RateSource {
   /** First trade date (YYYY-MM-DD) the row applies to. */
@@ -60,6 +61,41 @@ export const STT_ROWS: SttRow[] = [
     circular: 'NSE/FATAX/73524',
     circularDate: '2026-03-31',
     source: 'https://nsearchives.nseindia.com/content/circulars/FATAX73524.pdf',
+  },
+];
+
+export type CircularRef = Pick<RateSource, 'circular' | 'circularDate' | 'source'>;
+
+/** Equity shares bought or sold on a recognised stock exchange (the cash market). */
+export interface EquitySttRow extends RateSource {
+  /** Purchase settled by delivery, payable by the purchaser. */
+  deliveryBuy: number;
+  /** Sale settled by delivery, payable by the seller. */
+  deliverySell: number;
+  /** Sale settled otherwise than by delivery (squared off the same day), payable by the seller. The purchase has no STT line. */
+  intradaySell: number;
+  /** Later NSE STT circulars whose tables list the same three rates. */
+  restatedIn: CircularRef[];
+}
+
+export const EQUITY_STT_ROWS: EquitySttRow[] = [
+  {
+    effectiveFrom: '2012-07-01',
+    deliveryBuy: 0.1,
+    deliverySell: 0.1,
+    intradaySell: 0.025,
+    circular: 'NSE/FATAX/20990',
+    circularDate: '2012-06-12',
+    source: 'https://nsearchives.nseindia.com/content/circulars/FATAX20990.pdf',
+    note: 'Finance Act, 2012: delivery purchase and sale from 0.125% to 0.1%. The intraday sale rate of 0.025% did not change on this date; its start date is not in the sources read.',
+    restatedIn: [
+      { circular: 'NSE/FATAX/23500', circularDate: '2013-05-24', source: 'https://nsearchives.nseindia.com/content/circulars/FATAX23500.pdf' },
+      { circular: 'NSE/FATAX/27711', circularDate: '2014-09-29', source: 'https://nsearchives.nseindia.com/content/circulars/FATAX27711.pdf' },
+      { circular: 'NSE/FATAX/32385', circularDate: '2016-05-16', source: 'https://nsearchives.nseindia.com/content/circulars/FATAX32385.pdf' },
+      { circular: 'NSE/FATAX/56235', circularDate: '2023-04-01', source: 'https://nsearchives.nseindia.com/content/circulars/FATAX56235.pdf' },
+      { circular: 'NSE/FATAX/63809', circularDate: '2024-09-09', source: 'https://nsearchives.nseindia.com/content/circulars/FATAX63809.pdf' },
+      { circular: 'NSE/FATAX/73524', circularDate: '2026-03-31', source: 'https://nsearchives.nseindia.com/content/circulars/FATAX73524.pdf' },
+    ],
   },
 ];
 

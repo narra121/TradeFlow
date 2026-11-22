@@ -182,11 +182,11 @@ export const SEO_PAGES: SeoPageMeta[] = [
     path: '/alternatives/tradersync',
     title: 'TraderSync Alternative: Prices and Features | TradeQut',
     description:
-      'TraderSync vs TradeQut: prices read from the vendor page on 15 Nov 2026, forex and MetaTrader support, where TraderSync is stronger, and where TradeQut fits.',
+      'TraderSync vs TradeQut: prices read from the vendor page on 21 Nov 2026, forex and MetaTrader support, where TraderSync is stronger, and where TradeQut fits.',
     label: 'TraderSync alternative',
     parent: ALTERNATIVES,
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-15',
+    updatedAt: '2026-11-21',
   },
   {
     path: '/alternatives/tradesviz',
@@ -202,21 +202,21 @@ export const SEO_PAGES: SeoPageMeta[] = [
     path: '/alternatives/tradervue',
     title: 'Tradervue Alternative: Prices and Features | TradeQut',
     description:
-      'Tradervue vs TradeQut: prices read from the vendor page on 14 Nov 2026, where Tradervue is stronger, and where TradeQut may fit better.',
+      'Tradervue vs TradeQut: prices read from the vendor page on 21 Nov 2026, where Tradervue is stronger, and where TradeQut may fit better.',
     label: 'Tradervue alternative',
     parent: ALTERNATIVES,
     publishedAt: '2026-11-14',
-    updatedAt: '2026-11-15',
+    updatedAt: '2026-11-21',
   },
   {
     path: '/alternatives/edgewonk',
     title: 'Edgewonk Alternative: Prices and Features | TradeQut',
     description:
-      'Edgewonk vs TradeQut: prices read from the vendor page on 14 Nov 2026, where Edgewonk is stronger, and where TradeQut may fit better.',
+      'Edgewonk vs TradeQut: prices read from the vendor page on 21 Nov 2026, where Edgewonk is stronger, and where TradeQut may fit better.',
     label: 'Edgewonk alternative',
     parent: ALTERNATIVES,
     publishedAt: '2026-11-14',
-    updatedAt: '2026-11-15',
+    updatedAt: '2026-11-21',
   },
   {
     path: '/alternatives/myfxbook',
@@ -237,6 +237,16 @@ export const SEO_PAGES: SeoPageMeta[] = [
     parent: ALTERNATIVES,
     publishedAt: '2026-11-15',
     updatedAt: '2026-11-15',
+  },
+  {
+    path: '/trading-journal-pricing',
+    title: 'Trading Journal Pricing Compared (2026) | TradeQut',
+    description:
+      'TradeZella, Tradervue, TraderSync, Edgewonk, TradesViz and more: monthly and yearly list prices, free plans and trials, read from vendor pages 21 Nov 2026.',
+    label: 'Trading journal pricing compared',
+    parent: ALTERNATIVES,
+    publishedAt: '2026-11-21',
+    updatedAt: '2026-11-21',
   },
 ];
 

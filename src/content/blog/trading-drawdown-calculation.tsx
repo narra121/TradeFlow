@@ -47,8 +47,8 @@ export default function TradingDrawdownCalculation() {
       <P>
         Plot the equity curve, mark the peak and the low, and read the trades in between: which setups, hours and rule
         breaks sit inside the worst stretch? Set a rule for what you do at a given drawdown (for example, halve size until
-        a new peak) before you need it. More in <A to="/blog/track-reduce-drawdown">tracking and reducing drawdown</A> and
-        the <A to="/glossary#maximum-drawdown">glossary</A>.
+        a new peak) before you need it. More in <A to="/blog/track-reduce-drawdown">tracking and reducing drawdown</A>; the
+        formula with a calculator is on the <A to="/glossary/maximum-drawdown">maximum drawdown</A> page.
       </P>
       <Callout title="One number is not the story">
         Two accounts can have the same maximum drawdown with very different recovery times. Look at how long the drawdown

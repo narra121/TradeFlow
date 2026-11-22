@@ -6,6 +6,8 @@ export interface GlossaryTerm {
   example?: string;
   relatedTerms: string[];
   relatedArticles: string[];
+  /** The term's own page (definition, formula and calculator), when it has one. */
+  page?: string;
 }
 
 export const GLOSSARY_TERMS: GlossaryTerm[] = [
@@ -18,6 +20,14 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       'A stock consolidates between $48 and $50 for two weeks. When it closes above $50.20 on double the average volume, a breakout trader enters long with a stop just below $50.',
     relatedTerms: ['support-and-resistance', 'pullback', 'volatility', 'day-trading'],
     relatedArticles: [],
+  },
+  {
+    id: 'call-unwinding',
+    term: 'Call Unwinding',
+    definition:
+      'Call unwinding is a fall in open interest in call options, at one strike or across the option chain, as existing call positions are closed. Whether it is commonly read as bullish or bearish depends on who closed, call writers buying back or call buyers selling, which open interest alone does not show.',
+    relatedTerms: ['open-interest', 'put-unwinding', 'short-covering', 'long-unwinding'],
+    relatedArticles: ['long-buildup-short-covering-long-unwinding'],
   },
   {
     id: 'day-trading',
@@ -54,12 +64,13 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     id: 'expectancy',
     term: 'Expectancy',
     definition:
-      'Expectancy is the average amount a trader can expect to gain or lose per trade over a large sample. It combines win rate and the average sizes of wins and losses into a single number that predicts long-term profitability. A positive expectancy means the strategy is statistically profitable over time, while a negative expectancy guarantees eventual loss regardless of any individual winning streak.',
+      'Expectancy is the average profit or loss per trade over a set of closed trades, in money or in R (multiples of the amount risked). It combines win rate and the average sizes of wins and losses into one number: positive means the average trade in that sample made money, negative that it lost. It describes past trades, not the next ones.',
     formula: 'Expectancy = (Win Rate × Avg Win) − (Loss Rate × Avg Loss)',
     example:
       'With a 45% win rate, $300 average win, and $180 average loss, expectancy = (0.45 × $300) − (0.55 × $180) = $135 − $99 = $36 per trade.',
-    relatedTerms: ['win-rate', 'risk-reward-ratio', 'profit-factor'],
+    relatedTerms: ['win-rate', 'risk-reward-ratio', 'profit-factor', 'r-multiple'],
     relatedArticles: ['trading-metrics-that-matter', 'win-rate-vs-profit-factor'],
+    page: '/glossary/expectancy',
   },
   {
     id: 'funded-account',
@@ -93,6 +104,22 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     relatedArticles: [],
   },
   {
+    id: 'long-build-up',
+    term: 'Long Build-Up',
+    definition:
+      'A long build-up is a futures or options price rising while open interest rises over the same period, as new positions are opened. It is commonly read as fresh buying, and so as bullish, though open interest does not show who opened the positions.',
+    relatedTerms: ['open-interest', 'short-build-up', 'long-unwinding', 'short-covering'],
+    relatedArticles: ['long-buildup-short-covering-long-unwinding'],
+  },
+  {
+    id: 'long-unwinding',
+    term: 'Long Unwinding',
+    definition:
+      'Long unwinding is a futures or options price falling while open interest falls over the same period, as existing positions are closed. It is commonly read as holders of long positions selling to exit, and so as bearish.',
+    relatedTerms: ['open-interest', 'long-build-up', 'short-covering', 'call-unwinding'],
+    relatedArticles: ['long-buildup-short-covering-long-unwinding'],
+  },
+  {
     id: 'lot-size',
     term: 'Lot Size',
     definition:
@@ -117,12 +144,21 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     id: 'maximum-drawdown',
     term: 'Maximum Drawdown',
     definition:
-      'Maximum drawdown (Max DD) is the largest peak-to-trough decline in account equity over a specific period, representing the worst-case loss scenario historically experienced. It is the single most important risk metric for evaluating a trading strategy because it reveals the deepest valley a trader has had to endure. Prop firms and fund managers commonly set maximum drawdown limits, and exceeding them often results in account termination.',
+      'Maximum drawdown (Max DD) is the largest peak-to-trough decline in account equity over a specific period, the worst fall the account has actually been through. It is usually quoted as a percentage of the peak; some tools divide by the starting balance instead, so check which one a quoted figure uses.',
     formula: 'Max Drawdown = max(Peak[i] − Trough[i]) / Peak[i] × 100% for all i',
     example:
       'Over a year of trading, your account hit a high of $25,000 and dropped to $19,500 at its lowest point before recovering. Your maximum drawdown is ($25,000 − $19,500) / $25,000 = 22%.',
     relatedTerms: ['drawdown', 'equity-curve', 'funded-account', 'prop-trading'],
     relatedArticles: ['track-reduce-drawdown', 'prop-trading-challenges'],
+    page: '/glossary/maximum-drawdown',
+  },
+  {
+    id: 'open-interest',
+    term: 'Open Interest',
+    definition:
+      'Open interest is the number of futures or options contracts that are still open: entered into and not yet closed by an offsetting trade or settled. Unlike volume, which counts contracts traded, it falls when positions are closed, so its change over a period shows whether positions were added or closed.',
+    relatedTerms: ['long-build-up', 'short-build-up', 'long-unwinding', 'short-covering'],
+    relatedArticles: ['long-buildup-short-covering-long-unwinding'],
   },
   {
     id: 'pip',
@@ -161,12 +197,13 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     id: 'profit-factor',
     term: 'Profit Factor',
     definition:
-      'Profit factor is the ratio of total gross profits to total gross losses over a set of trades. A profit factor above 1.0 means the strategy is profitable overall, with values above 1.5 generally considered good and above 2.0 considered excellent. Unlike win rate alone, profit factor accounts for the magnitude of wins and losses, making it a more holistic measure of trading system quality.',
+      'Profit factor is the ratio of total gross profit to total gross loss over a set of closed trades. Above 1.0 the trades made money overall and below 1.0 they lost. Unlike win rate, it accounts for the size of wins and losses, but it says nothing about how far the account fell along the way, and with no losing trades it is not defined.',
     formula: 'Profit Factor = Gross Profits / Gross Losses',
     example:
       'Over 100 trades, your winners totaled $8,500 and your losers totaled $5,200. Profit factor = $8,500 / $5,200 = 1.63.',
     relatedTerms: ['win-rate', 'expectancy', 'pnl', 'risk-reward-ratio'],
     relatedArticles: ['win-rate-vs-profit-factor', 'trading-metrics-that-matter'],
+    page: '/glossary/profit-factor',
   },
   {
     id: 'prop-trading',
@@ -187,6 +224,25 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       'A stock in a strong uptrend rises from $60 to $68, pulls back to $65 near its 20-day moving average, then resumes climbing. A pullback trader enters at $65 with a stop at $63.',
     relatedTerms: ['breakout', 'support-and-resistance', 'swing-trading'],
     relatedArticles: [],
+  },
+  {
+    id: 'put-unwinding',
+    term: 'Put Unwinding',
+    definition:
+      'Put unwinding is a fall in open interest in put options, at one strike or across the option chain, as existing put positions are closed. Whether it is commonly read as bearish or bullish depends on who closed, put writers buying back or put buyers selling, which open interest alone does not show.',
+    relatedTerms: ['open-interest', 'call-unwinding', 'short-covering', 'long-unwinding'],
+    relatedArticles: ['long-buildup-short-covering-long-unwinding'],
+  },
+  {
+    id: 'r-multiple',
+    term: 'R-Multiple',
+    definition:
+      'An R-multiple is a trade\'s result divided by the amount risked on it: the distance from entry to the initial stop, times the position size. A trade closed at its planned stop is −1R and one that made twice its risk is +2R, so trades of different sizes and markets can be compared.',
+    formula: 'R-Multiple = (Exit Price − Entry Price) ÷ (Entry Price − Initial Stop)',
+    example: 'You buy at 200 with a stop at 195 and sell at 212. R = (212 − 200) ÷ (200 − 195) = 12 ÷ 5 = +2.4R.',
+    relatedTerms: ['risk-reward-ratio', 'expectancy', 'stop-loss', 'position-sizing'],
+    relatedArticles: ['r-multiple-explained'],
+    page: '/glossary/r-multiple',
   },
   {
     id: 'risk-reward-ratio',
@@ -219,6 +275,22 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       'Your strategy returns 24% annually with a 12% standard deviation, and the risk-free rate is 4%. Sharpe ratio = (24% − 4%) / 12% = 1.67.',
     relatedTerms: ['volatility', 'equity-curve', 'expectancy', 'drawdown'],
     relatedArticles: ['trading-metrics-that-matter'],
+  },
+  {
+    id: 'short-build-up',
+    term: 'Short Build-Up',
+    definition:
+      'A short build-up is a futures or options price falling while open interest rises over the same period, as new positions are opened. It is commonly read as fresh short selling, and so as bearish, though open interest does not show who opened the positions.',
+    relatedTerms: ['open-interest', 'long-build-up', 'short-covering', 'long-unwinding'],
+    relatedArticles: ['long-buildup-short-covering-long-unwinding'],
+  },
+  {
+    id: 'short-covering',
+    term: 'Short Covering',
+    definition:
+      'Short covering is buying back to close a short position; as an open-interest pattern it is a price rising while open interest falls over the same period. That combination is commonly read as short sellers buying to exit, and so as bullish.',
+    relatedTerms: ['open-interest', 'short-build-up', 'long-unwinding', 'call-unwinding'],
+    relatedArticles: ['long-buildup-short-covering-long-unwinding'],
   },
   {
     id: 'slippage',
@@ -321,5 +393,6 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       'Out of 50 trades in a month, 28 were profitable. Win rate = 28 / 50 × 100% = 56%.',
     relatedTerms: ['profit-factor', 'expectancy', 'risk-reward-ratio', 'pnl'],
     relatedArticles: ['win-rate-vs-profit-factor', 'trading-metrics-that-matter'],
+    page: '/glossary/win-rate',
   },
 ];

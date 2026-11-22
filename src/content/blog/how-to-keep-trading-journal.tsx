@@ -23,7 +23,7 @@ export default function HowToKeepTradingJournal() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         A journal replaces gut feeling with data. It turns vague impressions like "I think I trade
         better in the morning" into concrete metrics: your{' '}
-        <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
+        <Link to="/glossary/win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
           win rate
         </Link>{' '}
         between 9:30 and 11:00 AM is 62%, compared to 38% after 2:00 PM. That kind of insight is
@@ -182,7 +182,7 @@ export default function HowToKeepTradingJournal() {
         </Link>{' '}
         provides a ready-made journal with built-in analytics, chart screenshots, goal tracking,
         and{' '}
-        <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">
+        <Link to="/glossary/profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">
           profit factor
         </Link>{' '}
         calculations, covering everything in this guide. Every account starts with a 14-day free

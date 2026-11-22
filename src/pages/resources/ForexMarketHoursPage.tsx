@@ -16,6 +16,7 @@ import {
   offsetAt,
   sessionsNow,
   sessionsOnDay,
+  utcOffsetText,
   type SessionId,
 } from '@/lib/forex/sessions';
 import { cn } from '@/lib/utils';
@@ -100,13 +101,7 @@ function fmt(ms: number, zone: string, withDay: boolean): string {
   }
 }
 
-function offsetText(m: number): string {
-  const sign = m < 0 ? '−' : '+';
-  const a = Math.abs(m);
-  return `UTC${sign}${Math.floor(a / 60)}${a % 60 ? `:${String(a % 60).padStart(2, '0')}` : ''}`;
-}
-
-const offsetLabel = (ms: number, zone: string) => offsetText(offsetAt(ms, zone));
+const offsetLabel = (ms: number, zone: string) => utcOffsetText(offsetAt(ms, zone));
 
 const zoneName = (zone: string) => (zone === 'UTC' ? 'UTC' : zone.split('/').pop()!.replace(/_/g, ' '));
 
@@ -186,6 +181,11 @@ export function ForexMarketHoursPage() {
           New York 13:00-22:00 and 12:00-21:00, and they overlap 13:00-17:00 in winter and 12:00-16:00 in summer (18:30-22:30 and 17:30-21:30 in India).
           Pick your time zone below for today&apos;s times.
         </ShortAnswer>
+        <P>
+          Each session also has its own page with its open and close in the time zones people search for, in winter, in summer and in the weeks the
+          US and UK clocks disagree: the <A to={`${PATH}/new-york-session`}>New York session</A>, the <A to={`${PATH}/london-session`}>London session</A>,
+          the <A to={`${PATH}/asian-session`}>Asian (Tokyo) session</A> and the <A to={`${PATH}/london-new-york-overlap`}>London–New York overlap</A>.
+        </P>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:max-w-2xl">
@@ -315,7 +315,7 @@ export function ForexMarketHoursPage() {
           rows={changes.map((c) => [
             longDay(c.day),
             zoneName(c.zone),
-            `${c.toOffset > c.fromOffset ? 'Clocks forward' : 'Clocks back'}: ${offsetText(c.fromOffset)} to ${offsetText(c.toOffset)}`,
+            `${c.toOffset > c.fromOffset ? 'Clocks forward' : 'Clocks back'}: ${utcOffsetText(c.fromOffset)} to ${utcOffsetText(c.toOffset)}`,
           ])}
         />
 

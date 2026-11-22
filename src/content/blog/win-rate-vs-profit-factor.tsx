@@ -5,7 +5,7 @@ export default function WinRateVsProfitFactor() {
     <>
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">What Is Win Rate?</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">Win rate</Link> is the
+        <Link to="/glossary/win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">Win rate</Link> is the
         percentage of trades that end in profit. The formula is straightforward:
       </p>
       <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
@@ -24,7 +24,7 @@ export default function WinRateVsProfitFactor() {
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">What Is Profit Factor?</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">Profit factor</Link> measures
+        <Link to="/glossary/profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">Profit factor</Link> measures
         the ratio between the money you make and the money you lose. The formula is:
       </p>
       <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">

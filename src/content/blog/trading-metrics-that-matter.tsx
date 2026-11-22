@@ -5,7 +5,7 @@ export default function TradingMetricsThatMatter() {
     <>
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Beyond Win Rate — The Full Picture</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        Most traders check their <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">win rate</Link> and
+        Most traders check their <Link to="/glossary/win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">win rate</Link> and
         call it a day. But win rate alone is one of the least reliable indicators of trading performance.
         A 70% win rate means nothing if your average loss is three times your average win. Professional
         traders track a suite of metrics that together reveal whether a strategy has a genuine edge, how
@@ -34,7 +34,7 @@ export default function TradingMetricsThatMatter() {
 
       <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Profit Factor</h2>
       <p className="text-muted-foreground leading-relaxed mb-4">
-        <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">Profit factor</Link> is
+        <Link to="/glossary/profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">Profit factor</Link> is
         the ratio of gross profit to gross loss. A profit factor of 1.5 means you make $1.50 for every
         $1.00 you lose. Above 1.0 is profitable, below 1.0 is unprofitable, and anything above 2.0 is
         considered strong. For a detailed breakdown of how profit factor interacts with win rate, including

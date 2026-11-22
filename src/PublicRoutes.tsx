@@ -22,6 +22,16 @@ import {
   ExpectancyCalculatorPage,
   FoTurnoverCalculatorPage,
   FoChargesRatesPage,
+  EquityCurveSimulatorPage,
+  NewYorkSessionPage,
+  LondonSessionPage,
+  AsianSessionPage,
+  LondonNewYorkOverlapPage,
+  ProfitFactorTermPage,
+  ExpectancyTermPage,
+  RMultipleTermPage,
+  WinRateTermPage,
+  MaximumDrawdownTermPage,
   CaseStudiesIndexPage,
   CaseStudyPage,
   ChangelogPage,
@@ -53,6 +63,16 @@ export const PublicRoutes = (
         <Route path="/resources/expectancy-calculator" element={<ExpectancyCalculatorPage />} />
         <Route path="/resources/fo-turnover-calculator" element={<FoTurnoverCalculatorPage />} />
         <Route path="/resources/fo-charges-rates" element={<FoChargesRatesPage />} />
+        <Route path="/resources/equity-curve-simulator" element={<EquityCurveSimulatorPage />} />
+        <Route path="/resources/forex-market-hours/new-york-session" element={<NewYorkSessionPage />} />
+        <Route path="/resources/forex-market-hours/london-session" element={<LondonSessionPage />} />
+        <Route path="/resources/forex-market-hours/asian-session" element={<AsianSessionPage />} />
+        <Route path="/resources/forex-market-hours/london-new-york-overlap" element={<LondonNewYorkOverlapPage />} />
+        <Route path="/glossary/profit-factor" element={<ProfitFactorTermPage />} />
+        <Route path="/glossary/expectancy" element={<ExpectancyTermPage />} />
+        <Route path="/glossary/r-multiple" element={<RMultipleTermPage />} />
+        <Route path="/glossary/win-rate" element={<WinRateTermPage />} />
+        <Route path="/glossary/maximum-drawdown" element={<MaximumDrawdownTermPage />} />
         <Route path="/case-studies" element={<CaseStudiesIndexPage />} />
         <Route path="/case-studies/:slug" element={<CaseStudyPage />} />
         <Route path="/changelog" element={<ChangelogPage />} />

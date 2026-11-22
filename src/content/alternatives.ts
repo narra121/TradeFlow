@@ -1,3 +1,4 @@
+import { listPrice } from './journal-pricing';
 import { proPrice, type FaqItem } from './product-facts';
 
 const usdMonth = proPrice('USD', 'month').display;
@@ -38,7 +39,7 @@ export const COMPETITORS: Competitor[] = [
     checked: '2026-11-12',
     pricingUrl: 'https://www.tradezella.com/pricing',
     summary: 'A US-focused trading journal with broker auto-sync, in three paid tiers.',
-    table: { free: 'None advertised', price: 'From $35/month', connection: 'Automatic sync' },
+    table: { free: 'None advertised', price: `From ${listPrice('tradezella', 'Essential', 'month')}/month`, connection: 'Automatic sync' },
     facts: [
       'Paid plans only: Essential $35/month ($26/month billed $315 a year), Pro $59/month ($44/month billed $531 a year), Ultra $99/month ($74/month billed $891 a year).',
       'The pricing page advertises no free plan and no free trial.',
@@ -75,13 +76,17 @@ export const COMPETITORS: Competitor[] = [
   {
     id: 'tradersync',
     name: 'TraderSync',
-    checked: '2026-11-15',
+    checked: '2026-11-21',
     pricingUrl: 'https://tradersync.com/pricing/',
     summary: 'A US-focused trading journal with broker auto-sync, file import and a market-replay simulator, in three paid plans with a 7-day free trial.',
-    table: { free: 'No free plan; 7-day free trial', price: '$29.95/month (Pro), $49.95 (Premium), $79.95 (Elite)', connection: 'Auto-sync for supported brokers, or file upload' },
+    table: {
+      free: 'No free plan; 7-day free trial',
+      price: `${listPrice('tradersync', 'Pro', 'month')}/month (Pro), ${listPrice('tradersync', 'Premium', 'month')} (Premium), ${listPrice('tradersync', 'Elite', 'month')} (Elite)`,
+      connection: 'Auto-sync for supported brokers, or file upload',
+    },
     facts: [
       'Monthly prices on the pricing page: Pro $29.95, Premium $49.95 and Elite $79.95 a month, each with a 7-day free trial.',
-      'Annual plans were shown at first-year promotional prices ("up to 60% off on your 1st annual subscription"): $179.64, $269.64 and $383.76 for the first year.',
+      'On 21 Nov 2026 annual plans were shown only at first-year promotional prices ("Up to 70% off on your 1st annual subscription plan"): $143.76 (Pro), $209.76 (Premium) and $287.76 (Elite) for the first year.',
       'The billing policy says card payments only, and that payments are non-refundable.',
       'Forex support ("importing and analyzing forex trades with accurate multi-currency analytics") is marked on all three plans, and its broker list includes MetaTrader 4, MetaTrader 5 and cTrader.',
       'The pricing page lists auto-sync with "over 700 brokers and trading platforms", file import, notes on each trade, trade replay and a mobile app.',
@@ -99,20 +104,15 @@ export const COMPETITORS: Competitor[] = [
     extraSources: [
       { label: 'TraderSync billing, cancellation and refund policy', url: 'https://tradersync.com/billing-cancellation-and-refund-policy/', checked: '2026-11-15' },
       { label: 'TraderSync supported brokers', url: 'https://tradersync.com/supported-broker/', checked: '2026-11-15' },
-      {
-        label: 'Day Trading Toolkit: TraderSync pricing explained (third party, updated 27 Sep 2026; matches the monthly prices)',
-        url: 'https://daytradingtoolkit.com/trading-tools-tutorials/tradersync-pricing-explained',
-        checked: '2026-11-12',
-      },
     ],
     unverified: [
-      "TraderSync's pages return HTTP 403 to automated requests, so they were read in a web browser on 15 Nov 2026. Not verified from them: whether the 7-day trial needs a card, the renewal price after the first annual year, and whether MetaTrader trades come in by file or by sync.",
+      "TraderSync's pages return HTTP 403 to plain automated requests. The pricing page was read again in a web browser on 21 Nov 2026; the billing and broker pages were read in a web browser on 15 Nov 2026. Not verified from them: whether the 7-day trial needs a card, the renewal price after the first annual year, and whether MetaTrader trades come in by file or by sync.",
     ],
     faq: [
       {
         question: 'What does TraderSync cost?',
         answer:
-          `TraderSync's pricing page (read 15 November 2026) lists Pro at $29.95/month, Premium at $49.95/month and Elite at $79.95/month, each with a 7-day free trial; annual plans were shown at promotional first-year prices. TradeQut Pro is ${usdMonth}/month or ${usdYear}/year after a 14-day free trial with no card.`,
+          `TraderSync's pricing page (read 21 November 2026) lists Pro at $29.95/month, Premium at $49.95/month and Elite at $79.95/month, each with a 7-day free trial; annual plans were shown at promotional first-year prices. TradeQut Pro is ${usdMonth}/month or ${usdYear}/year after a 14-day free trial with no card.`,
       },
       {
         question: 'Does TraderSync support forex and MT4/MT5?',
@@ -127,7 +127,11 @@ export const COMPETITORS: Competitor[] = [
     checked: '2026-11-12',
     pricingUrl: 'https://www.tradesviz.com/pricing/',
     summary: 'A feature-rich trading journal with a free plan and India listed as a supported market.',
-    table: { free: 'Free plan (stocks only, 1 account)', price: 'From ₹1,400/month (₹980 in the promotion to 30 Nov 2026)', connection: 'See vendor page' },
+    table: {
+      free: 'Free plan (stocks only, 1 account)',
+      price: `From ${listPrice('tradesviz', 'Pro', 'month')}/month (₹980 in the promotion to 30 Nov 2026)`,
+      connection: 'See vendor page',
+    },
     facts: [
       'A free plan ("Basic", free forever, no card): 3,000 executions per month, 1 trading account, stocks only, P&L-only calendar data.',
       'Paid plans on the INR price list: Pro ₹1,400/month (₹1,050/month billed yearly) and Platinum ₹2,300/month (₹1,708.33/month billed yearly), each with a 7-day free trial.',
@@ -161,12 +165,17 @@ export const COMPETITORS: Competitor[] = [
   {
     id: 'tradervue',
     name: 'Tradervue',
-    checked: '2026-11-14',
+    checked: '2026-11-21',
     pricingUrl: 'https://www.tradervue.com/site/pricing',
-    summary: 'A long-running trading journal with broker sync, a free sign-up and two paid plans.',
-    table: { free: 'Free sign-up offered; its limits are not verified', price: 'Silver $29.95/month, Gold $49.95/month', connection: 'Broker sync and trade import' },
+    summary: 'A long-running trading journal with broker sync, a free plan and two paid plans.',
+    table: {
+      free: 'Free Basic plan (up to 30 trades a month)',
+      price: `Silver ${listPrice('tradervue', 'Silver', 'month')}/month, Gold ${listPrice('tradervue', 'Gold', 'month')}/month`,
+      connection: 'Broker sync and trade import',
+    },
     facts: [
       'Paid plans on the pricing page: Silver $29.95/month and Gold $49.95/month; Gold is labelled "Most popular".',
+      'A free Basic plan with up to 30 trades a month (basic journaling, reporting and sharing) is listed on the pricing page as served to phones; the desktop layout lists only Silver and Gold.',
       'Both paid plans list unlimited trade imports and broker sync.',
       'New users can start a trial of Silver or Gold; the page says the card is charged when the trial ends unless you switch to a free plan first.',
     ],
@@ -179,14 +188,19 @@ export const COMPETITORS: Competitor[] = [
       'MetaTrader 4/5 report import with commission and swap in the fees, plus Zerodha, Dhan, Upstox, Angel One and Groww files with estimated Indian charges per trade; pricing in USD or INR.',
       'Rule tracking that records when you broke each rule and what the breaks cost.',
     ],
-    unverified: [
-      'The pricing page read on 14 Nov 2026 does not describe the limits of the free plan, so they are not verified here. Check https://www.tradervue.com/site/pricing before comparing.',
+    unverified: ['The pricing page read on 21 Nov 2026 states no yearly price and not how long the Silver and Gold trial lasts.'],
+    extraSources: [
+      {
+        label: 'Tradervue pricing page as served to phones (lists the free Basic plan)',
+        url: 'https://www.tradervue.com/site/pricing-plans/',
+        checked: '2026-11-21',
+      },
     ],
     faq: [
       {
         question: 'Is TradeQut cheaper than Tradervue?',
         answer:
-          `On list prices checked on 14 November 2026, TradeQut Pro is ${usdMonth}/month or ${usdYear}/year after a 14-day free trial. Tradervue lists Silver at $29.95/month and Gold at $49.95/month, and offers a free sign-up whose limits we did not verify. Tradervue has broker sync, which TradeQut does not have yet.`,
+          `On list prices checked on 21 November 2026, TradeQut Pro is ${usdMonth}/month or ${usdYear}/year after a 14-day free trial. Tradervue lists Silver at $29.95/month and Gold at $49.95/month, and a free Basic plan with up to 30 trades a month. Tradervue has broker sync, which TradeQut does not have yet.`,
       },
       {
         question: 'Can I move my trades from Tradervue to TradeQut?',
@@ -198,15 +212,19 @@ export const COMPETITORS: Competitor[] = [
   {
     id: 'edgewonk',
     name: 'Edgewonk',
-    checked: '2026-11-14',
+    checked: '2026-11-21',
     pricingUrl: 'https://edgewonk.com/pricing',
     summary: 'A trading journal sold as one plan with every feature, billed yearly or monthly.',
-    table: { free: 'No free plan or trial on the pricing page; 14-day money-back guarantee', price: '$197 a year or $35 a month', connection: 'Automated trade imports (see vendor page)' },
+    table: {
+      free: 'No free plan or trial on the pricing page; 14-day money-back guarantee',
+      price: `${listPrice('edgewonk', 'One plan, every feature', 'year')} a year or ${listPrice('edgewonk', 'One plan, every feature', 'month')} a month`,
+      connection: 'Automated trade imports (see vendor page)',
+    },
     facts: [
       'One plan with full access to all features: $197 billed every 12 months, or $35 billed every month, with VAT calculated at checkout.',
       'A 14-day money-back guarantee. The pricing page mentions no free plan and no free trial.',
       'The page lists automated trade imports and unlimited trade imports.',
-      'On 14 Nov 2026 the page advertised a limited-time offer of four extra months.',
+      'On 21 Nov 2026 the page advertised a Black Friday offer for new customers: 25% off with code BF26 for the length of the subscription ($147.75 per 12 months or $26.25 a month, before VAT).',
       "An Edgewonk blog post (20 Sep 2024, read 15 Nov 2026) describes MT4/MT5 sync through MetaTrader's FTP report publishing; the pricing page lists forex among supported markets.",
     ],
     strongerAt: [
@@ -224,12 +242,12 @@ export const COMPETITORS: Competitor[] = [
       {
         question: 'Is TradeQut cheaper than Edgewonk?',
         answer:
-          `On list prices checked on 14 November 2026, TradeQut Pro is ${usdMonth}/month or ${usdYear}/year after a 14-day free trial. Edgewonk lists $197 a year or $35 a month, with a 14-day money-back guarantee.`,
+          `On list prices checked on 21 November 2026, TradeQut Pro is ${usdMonth}/month or ${usdYear}/year after a 14-day free trial. Edgewonk lists $197 a year or $35 a month, with a 14-day money-back guarantee.`,
       },
       {
         question: 'Does Edgewonk have a free trial?',
         answer:
-          'The Edgewonk pricing page read on 14 November 2026 mentions a 14-day money-back guarantee and no free trial or free plan. TradeQut starts with a 14-day free trial with every Pro feature and no card.',
+          'The Edgewonk pricing page read on 21 November 2026 mentions a 14-day money-back guarantee and no free trial or free plan. TradeQut starts with a 14-day free trial with every Pro feature and no card.',
       },
     ],
   },
@@ -240,7 +258,11 @@ export const COMPETITORS: Competitor[] = [
     pricingUrl: 'https://www.myfxbook.com/help/knowledge-base/metatrader-4-connection-methods/',
     pricingLabel: 'Myfxbook Help: MetaTrader 4 connection methods (Myfxbook has no pricing page)',
     summary: 'A free forex account-tracking and track-record site that connects MetaTrader accounts by investor password or an Expert Advisor.',
-    table: { free: 'Free, paid for by ads', price: 'Free; real-time Live Update $60 a year per account', connection: 'MT4/MT5 by investor password or an EA; cTrader and others' },
+    table: {
+      free: 'Free, paid for by ads',
+      price: `Free; real-time Live Update ${listPrice('myfxbook', 'Live Update (per account)', 'year')} a year per account`,
+      connection: 'MT4/MT5 by investor password or an EA; cTrader and others',
+    },
     facts: [
       "Myfxbook's FAQ says the service is free and paid for by ads, with no limit on the number of trading accounts.",
       "MT4 and MT5 connect in three ways: Auto Update with the account's read-only investor password (free), an EA Publisher that runs on your terminal and updates every 5 minutes (free, Windows only), or Live Update in real time (paid).",

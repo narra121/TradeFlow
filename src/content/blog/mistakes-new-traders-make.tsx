@@ -46,7 +46,7 @@ export default function MistakesNewTradersMake() {
       <p className="text-muted-foreground leading-relaxed mb-4">
         <strong className="text-foreground">How journaling fixes it:</strong> Your journal will show
         exactly how many trades you take per day and the{' '}
-        <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
+        <Link to="/glossary/win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
           win rate
         </Link>{' '}
         of those trades. Most overtraders discover that their first three trades of the day are

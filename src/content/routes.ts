@@ -27,6 +27,7 @@ export const SEO_PAGE_LOADERS: Record<string, Loader> = {
   '/alternatives/edgewonk': () => import('@/pages/seo/EdgewonkAlternativePage'),
   '/alternatives/myfxbook': () => import('@/pages/seo/MyfxbookAlternativePage'),
   '/alternatives/fxblue': () => import('@/pages/seo/FxBlueAlternativePage'),
+  '/trading-journal-pricing': () => import('@/pages/seo/JournalPricingPage'),
 };
 
 /** Utility pages: in the route registry (prerendered) but never in SEO_PAGES or the sitemap. */

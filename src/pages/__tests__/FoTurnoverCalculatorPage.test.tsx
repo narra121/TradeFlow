@@ -187,6 +187,32 @@ describe('F&O turnover calculator page', () => {
     expect(text).toMatch(/Para 5\.11\(b\)\(ii\) says premium received on sale of options is also included/);
   });
 
+  it('gives numbered steps to calculate F&O turnover by hand, with a per-trade example that the paste mode reproduces', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const heading = screen.getByRole('heading', { level: 2, name: 'How to calculate F&O turnover' });
+    const steps = heading.parentElement!.querySelector('ol')!;
+    expect(within(steps).getAllByRole('listitem')).toHaveLength(5);
+    expect(steps).toHaveTextContent(/Write every loss as a positive amount/);
+    expect(steps).toHaveTextContent(/5\.11\(b\)\(ii\)/);
+
+    const example = screen.getByRole('table', { name: /Step-by-step example/ });
+    const row = (name: RegExp) => within(example).getByRole('row', { name });
+    expect(row(/^1\. Futures trades/)).toHaveTextContent('+₹12,000, −₹8,000');
+    expect(row(/^2 and 3\. Futures turnover/)).toHaveTextContent('₹12,000 + ₹8,000₹20,000.00');
+    expect(row(/^2 and 3\. Options profits and losses/)).toHaveTextContent('₹4,500 + ₹2,500 + ₹1,000₹8,000.00');
+    expect(row(/^4\. Total, premium added/)).toHaveTextContent('₹58,000.00');
+    expect(row(/^4\. Total, premium not added separately/)).toHaveTextContent('₹28,000.00');
+    expect(screen.getByText(/The five trades net to ₹5,000\.00, but the turnover is ₹28,000\.00 or ₹58,000\.00/)).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Paste a list'));
+    fireEvent.change(screen.getByLabelText('Futures: one realised profit or loss per line'), { target: { value: '12000\n-8000' } });
+    fireEvent.change(screen.getByLabelText('Options: one realised profit or loss per line'), { target: { value: '4500\n-2500\n-1000' } });
+    await typeInto(user, 'Premium received on options sold (₹)', '30000');
+    expect(within(reading('Premium added to the differences')).getByText('Total').nextElementSibling).toHaveTextContent('₹58,000.00');
+    expect(within(reading('Premium not added separately')).getByText('Total').nextElementSibling).toHaveTextContent('₹28,000.00');
+  });
+
   it('states that TradeQut\'s tax report computes turnover differently instead of claiming a match', () => {
     const { container } = renderPage();
     const text = container.textContent ?? '';

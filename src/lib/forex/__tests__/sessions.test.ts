@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   addDays,
+  clockArrangements,
   clockChanges,
   hhmm,
   instantAt,
   isMarketOpen,
   londonNewYorkByPeriod,
+  londonNewYorkOn,
+  sessionOn,
   sessionsNow,
   sessionsOnDay,
+  utcOffsetText,
   weekdayOf,
 } from '../sessions';
 
@@ -129,5 +133,57 @@ describe('clock changes', () => {
       '2026-10-26..2026-10-30 12:00-17:00',
       '2026-11-02..2026-12-31 13:00-17:00',
     ]);
+  });
+});
+
+describe('daylight-saving arrangements of the year', () => {
+  const runs = (year: number) =>
+    Object.fromEntries(
+      clockArrangements(year).map((a) => [
+        `${a.dst.newYork ? 'NY' : 'ny'}${a.dst.london ? 'L' : 'l'}${a.dst.sydney ? 'S' : 's'}`,
+        { runs: a.runs.map((r) => `${r.from}..${r.to}`), sample: a.sample },
+      ]),
+    );
+
+  it('splits 2026 into winter, US-only, both-hemispheres and northern-summer weeks, each sampled on a Wednesday', () => {
+    expect(runs(2026)).toEqual({
+      nylS: { runs: ['2026-01-01..2026-03-07', '2026-11-01..2026-12-31'], sample: '2026-02-04' },
+      NYlS: { runs: ['2026-03-08..2026-03-28', '2026-10-25..2026-10-31'], sample: '2026-03-18' },
+      NYLS: { runs: ['2026-03-29..2026-04-04', '2026-10-04..2026-10-24'], sample: '2026-10-14' },
+      NYLs: { runs: ['2026-04-05..2026-10-03'], sample: '2026-07-08' },
+    });
+    for (const a of clockArrangements(2026)) expect(weekdayOf(a.sample)).toBe(3);
+  });
+
+  it('2027: the US-only weeks match the windows BabyPips publishes (14-27 March, 31 October-6 November)', () => {
+    expect(runs(2027).NYlS.runs).toEqual(['2027-03-14..2027-03-27', '2027-10-31..2027-11-06']);
+  });
+
+  it('Central Europe changes with London, Chicago and Los Angeles with New York', () => {
+    const days = (z: string) => clockChanges(2026, z).map((c) => c.day);
+    expect(days('Europe/Berlin')).toEqual(days('Europe/London'));
+    expect(days('America/Chicago')).toEqual(days('America/New_York'));
+    expect(days('America/Los_Angeles')).toEqual(days('America/New_York'));
+  });
+});
+
+describe('a session on its city day', () => {
+  it('New York 08:00-17:00 local is 13:00-22:00 UTC in January and 12:00-21:00 in July', () => {
+    expect(sessionOn('newYork', '2026-01-14')).toEqual({ start: utc('2026-01-14T13:00:00'), end: utc('2026-01-14T22:00:00') });
+    expect(sessionOn('newYork', '2026-07-15')).toEqual({ start: utc('2026-07-15T12:00:00'), end: utc('2026-07-15T21:00:00') });
+  });
+
+  it('Sydney opens the evening before in UTC', () => {
+    expect(sessionOn('sydney', '2026-01-14').start).toBe(utc('2026-01-13T20:00:00'));
+  });
+
+  it('the London-New York overlap is four hours, five in the US-only weeks', () => {
+    expect(londonNewYorkOn('2026-01-14')).toEqual({ start: utc('2026-01-14T13:00:00'), end: utc('2026-01-14T17:00:00') });
+    expect(londonNewYorkOn('2026-03-18')).toEqual({ start: utc('2026-03-18T12:00:00'), end: utc('2026-03-18T17:00:00') });
+    expect(londonNewYorkOn('2026-07-15')).toEqual({ start: utc('2026-07-15T12:00:00'), end: utc('2026-07-15T16:00:00') });
+  });
+
+  it('writes offsets with a true minus sign', () => {
+    expect([utcOffsetText(330), utcOffsetText(-300), utcOffsetText(0), utcOffsetText(-570)]).toEqual(['UTC+5:30', 'UTC−5', 'UTC+0', 'UTC−9:30']);
   });
 });

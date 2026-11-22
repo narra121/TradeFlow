@@ -40,7 +40,7 @@ export default function RMultipleExplained() {
       <UL>
         <li>Record the planned stop before entry; without it you cannot compute R honestly afterwards.</li>
         <li>
-          Average the R of all trades to get <A to="/glossary#expectancy">expectancy</A>; see{' '}
+          Average the R of all trades to get <A to="/glossary/expectancy">expectancy</A>; see{' '}
           <A to="/blog/trading-expectancy-formula">the expectancy formula</A>, or enter your averages in the{' '}
           <A to="/resources/expectancy-calculator">expectancy calculator</A> in R mode.
         </li>

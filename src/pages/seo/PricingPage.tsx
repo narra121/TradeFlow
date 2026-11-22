@@ -78,7 +78,8 @@ export default function PricingPage() {
             {i < COMPETITORS.length - 1 ? ', ' : '. '}
           </span>
         ))}
-        Trading forex? See the <A to="/forex-trading-journal">forex trading journal</A>; in India, the{' '}
+        Their list prices are on one page: <A to="/trading-journal-pricing">trading journal pricing compared</A>. Trading
+        forex? See the <A to="/forex-trading-journal">forex trading journal</A>; in India, the{' '}
         <A to="/trading-journal-india">journal for Indian traders</A>.
       </P>
       <Faq items={[...PRODUCT_FAQ, ...BILLING_FAQ]} />

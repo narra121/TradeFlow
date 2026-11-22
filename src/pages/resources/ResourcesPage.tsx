@@ -2,7 +2,7 @@ import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { CalculatorCard } from '@/components/content/CalculatorCard';
 import { RESOURCES_SCHEMA } from '@/config/seo';
 import { A, H2, P } from '@/content/components/ArticleParts';
-import { Crosshair, Scale, DollarSign, Sigma, Receipt, Landmark, FileSpreadsheet, BarChart3, Clock, ShieldAlert, Gauge, TrendingDown, TrendingUp } from 'lucide-react';
+import { Crosshair, Scale, DollarSign, Sigma, Receipt, Landmark, FileSpreadsheet, BarChart3, Clock, ShieldAlert, Gauge, TrendingDown, TrendingUp, LineChart } from 'lucide-react';
 
 export function ResourcesPage() {
   return (
@@ -23,13 +23,13 @@ export function ResourcesPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <CalculatorCard
           title="Position size calculator"
-          description="Calculate the right position size based on your account balance, risk tolerance, and stop loss distance."
+          description="Lots for forex and gold, shares for stocks, lots for futures and options: the size that keeps a loss at your stop within the risk you set."
           href="/resources/position-size"
           icon={Crosshair}
         />
         <CalculatorCard
           title="Risk-reward calculator"
-          description="Determine your risk-reward ratio, potential profit and loss, and the breakeven win rate for any trade."
+          description="Determine your risk-reward ratio and the break-even win rate for a long or short trade, from entry, stop loss and take profit."
           href="/resources/risk-reward"
           icon={Scale}
         />
@@ -57,6 +57,13 @@ export function ResourcesPage() {
           href="/resources/compounding-calculator"
           icon={TrendingUp}
         />
+        <CalculatorCard
+          title="Equity curve simulator"
+          description="A Monte Carlo simulation of your win rate, reward:risk and risk per trade: the range of equity curves, drawdowns and losing streaks."
+          href="/resources/equity-curve-simulator"
+          icon={LineChart}
+          cta="Run the simulation"
+        />
       </div>
 
       <H2>Forex and prop-firm tools</H2>
@@ -81,6 +88,13 @@ export function ResourcesPage() {
           icon={Gauge}
         />
       </div>
+      <P>
+        Session times in your own time zone, with this year&apos;s daylight-saving dates: the{' '}
+        <A to="/resources/forex-market-hours/new-york-session">New York session</A>, the{' '}
+        <A to="/resources/forex-market-hours/london-session">London session</A>, the{' '}
+        <A to="/resources/forex-market-hours/asian-session">Asian session</A> and the{' '}
+        <A to="/resources/forex-market-hours/london-new-york-overlap">London and New York overlap</A>.
+      </P>
 
       <H2>India F&amp;O tools and data</H2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -91,8 +105,8 @@ export function ResourcesPage() {
           icon={Landmark}
         />
         <CalculatorCard
-          title="F&O charges and STT rates"
-          description="STT, exchange charge, SEBI fee, stamp duty and GST for a trade date, with every rate change and its circular."
+          title="STT rates and F&O charges"
+          description="STT on delivery, intraday, futures and options by date, and the exchange charge, SEBI fee, stamp duty and GST on an F&O trade, each with its circular."
           href="/resources/fo-charges-rates"
           icon={Receipt}
         />
@@ -122,7 +136,10 @@ export function ResourcesPage() {
         Use the <A to="/resources/risk-reward">risk-reward calculator</A> to check a setup: it gives the ratio and the
         win rate you need to break even at that ratio. Background reading:{' '}
         <A to="/blog/risk-reward-ratio-guide">the risk-reward guide</A>, <A to="/blog/r-multiple-explained">R multiples</A>{' '}
-        and <A to="/blog/trading-expectancy-formula">the expectancy formula</A>.
+        and <A to="/blog/trading-expectancy-formula">the expectancy formula</A>. To see what those numbers can do over a
+        few hundred trades, losing streaks included, run them through the{' '}
+        <A to="/resources/equity-curve-simulator">equity curve simulator</A> or the{' '}
+        <A to="/resources/compounding-calculator">compounding calculator</A>.
       </P>
       <P>
         Forex traders can value a pip in their account currency with the{' '}
@@ -132,8 +149,12 @@ export function ResourcesPage() {
         <A to="/resources/prop-firm-drawdown-calculator">drawdown calculator</A> gives today&apos;s room under the limits and
         the <A to="/resources/risk-of-ruin-calculator">risk of ruin calculator</A> how likely a losing run is to end it. See
         also the <A to="/forex-trading-journal">forex trading journal</A>; Indian F&amp;O traders, the{' '}
-        <A to="/trading-journal-india">journal for Indian traders</A>. Terms such as drawdown, expectancy and R multiple are
-        defined in the <A to="/glossary">glossary</A>. A calculator plans one trade; a journal shows whether you followed
+        <A to="/trading-journal-india">journal for Indian traders</A>, the{' '}
+        <A to="/resources/fo-charges-rates">STT and F&amp;O charge rates by date</A> and{' '}
+        <A to="/sebi-fo-study">SEBI&apos;s F&amp;O study</A>. Terms such as{' '}
+        <A to="/glossary/maximum-drawdown">drawdown</A>, <A to="/glossary/expectancy">expectancy</A>,{' '}
+        <A to="/glossary/profit-factor">profit factor</A>, <A to="/glossary/win-rate">win rate</A> and{' '}
+        <A to="/glossary/r-multiple">R multiple</A> are defined in the <A to="/glossary">glossary</A>. A calculator plans one trade; a journal shows whether you followed
         the plan, which is what <A to="/pricing">TradeQut</A> is for.
       </P>
     </ContentPageShell>

@@ -174,26 +174,47 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'risk-reward-ratio-guide',
-    title: 'Understanding risk-reward ratio: a practical guide',
+    title: 'Risk-reward ratio: formula and how to calculate it',
     description:
-      'How to calculate R:R, why 1:2 is the minimum, breakeven win rates per ratio, and real trade examples.',
+      'What the risk-reward ratio is, the formula for long and short trades, how to calculate it step by step, and the win rate each ratio from 1:0.5 to 1:5 needs to break even.',
     tags: ['analytics', 'risk-management', 'intermediate'],
     publishedAt: '2026-04-26',
-    readingTime: 7,
+    updatedAt: '2026-11-21',
+    readingTime: 6,
     summary:
-      'The risk-reward ratio compares the distance to your stop with the distance to your target. It sets the win rate you need to break even: at 1:2 you need about 33% winners, at 1:1 about 50%, before fees and slippage.',
+      'The risk-reward ratio compares what a trade loses at its stop loss with what it makes at its take profit: risk = entry − stop, reward = target − entry, written 1 : (reward ÷ risk). Risking 5 to make 15 is 1 : 3, which breaks even when 1 ÷ (1 + 3) = 25% of trades win, before costs.',
     faq: [
       {
-        question: 'How do I calculate risk-reward ratio?',
+        question: 'What is the risk-reward ratio in trading?',
         answer:
-          'Divide the distance from entry to target by the distance from entry to stop loss. A stop 10 points away and a target 20 points away is 1:2.',
+          'The comparison between what a trade loses if the stop loss is hit and what it makes if the take profit is hit, written risk : reward with the risk as 1. A stop 10 points from the entry and a target 20 points away is 1 : 2.',
       },
       {
-        question: 'What is the breakeven win rate for a given risk-reward ratio?',
+        question: 'What is the formula for risk-reward ratio?',
         answer:
-          'It is risk divided by risk plus reward: 1 / (1 + 2) = 33% for 1:2, and 1 / (1 + 3) = 25% for 1:3, before fees.',
+          'For a long trade, risk = entry − stop loss and reward = take profit − entry; for a short, both are reversed. The ratio is risk : reward = 1 : (reward ÷ risk). Buying at 250 with a stop at 242 and a target at 270 gives 8 : 20, or 1 : 2.5.',
+      },
+      {
+        question: 'What win rate do you need for a 1:2 risk-reward ratio?',
+        answer:
+          'More than 33.3% before costs, because the break-even win rate is 1 ÷ (1 + reward ÷ risk) = 1 ÷ 3. At 1:1 it is 50%, at 1:3 it is 25% and at 1:5 it is 16.7%; costs push each one higher.',
+      },
+      {
+        question: 'Is a higher risk-reward ratio always better?',
+        answer:
+          'No. A target further away raises the ratio but is reached less often. If price moved randomly with no drift, the chance of reaching the target first would equal the break-even win rate at every ratio, so the ratio alone adds nothing; what matters is a win rate above the break-even for the ratio traded.',
       },
     ],
+    howTo: {
+      name: 'Calculate a risk-reward ratio',
+      steps: [
+        { name: 'Measure the risk', text: 'Subtract the stop loss from the entry for a long trade, or the entry from the stop loss for a short: 250 − 242 = 8.' },
+        { name: 'Measure the reward', text: 'Subtract the entry from the take profit for a long trade, or the take profit from the entry for a short: 270 − 250 = 20.' },
+        { name: 'Divide the reward by the risk', text: '20 ÷ 8 = 2.5, so the risk-reward ratio is 1 : 2.5.' },
+        { name: 'Find the break-even win rate', text: '1 ÷ (1 + 2.5) = 28.6%: trades like this pay for their losses when more than 28.6% of them reach the target, before costs.' },
+        { name: 'Convert it to money', text: 'Multiply the risk and the reward by the position size: 100 units risk 800 to make 2,000.' },
+      ],
+    },
     content: () => import('./risk-reward-ratio-guide'),
   },
   {
@@ -448,20 +469,25 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: 'fo-trading-charges-india',
-    title: 'F&O charges in India: STT, GST and a worked example',
+    title: 'F&O charges in India: the new STT, GST and a worked example',
     description:
-      'Every charge on an F&O trade in India, rates from Zerodha as of November 2026, the STT change of 1 April 2026, and a worked net P&L example.',
+      'Every charge on an F&O trade in India: the new STT rates from 1 April 2026 against the old, rates from Zerodha as of November 2026, and a worked net P&L example.',
     tags: ['india', 'charges', 'options', 'futures'],
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-14',
-    readingTime: 7,
+    updatedAt: '2026-11-21',
+    readingTime: 8,
     summary:
-      'An F&O trade pays brokerage, STT, exchange charges, a SEBI fee, GST and stamp duty. On a hypothetical option trade with a ₹1,000 gross gain, charges at Zerodha rates came to ₹72.83, leaving ₹927.17. STT on derivatives rose on 1 April 2026.',
+      'An F&O trade pays brokerage, STT, exchange charges, a SEBI fee, GST and stamp duty. From 1 April 2026 STT is 0.05% on a futures sale (was 0.02%), 0.15% on an option sale (was 0.10%) and 0.15% on an exercised option (was 0.125%); delivery and intraday STT did not change. On a hypothetical option trade with a ₹1,000 gross gain, charges at Zerodha rates came to ₹72.83, leaving ₹927.17.',
     faq: [
       {
         question: 'What is the STT rate on options in 2026?',
         answer:
-          'Zerodha lists STT on options at 0.15% on the sell side, on premium, and 0.15% of intrinsic value for options bought and exercised, as read on 11 November 2026. This follows the increase effective 1 April 2026; check your contract notes for the rate applied to your trade.',
+          'For trades executed on or after 1 April 2026, STT is 0.15% of the premium on an option sold, payable by the seller, and 0.15% of the intrinsic value on an option exercised, payable by the purchaser (NSE/FATAX/73524, 31 March 2026). Before that the rates were 0.10% and 0.125%. Check your contract notes for the rate applied to your trade.',
+      },
+      {
+        question: 'Did STT on delivery and intraday trades change in 2026?',
+        answer:
+          'No. NSE/FATAX/73524 lists STT on equity shares as no change: 0.1% on the purchase and 0.1% on the sale of shares settled by delivery, and 0.025% on the sale of shares not settled by delivery (intraday), payable by the seller. The Finance Act, 2026 raised only the futures and options rates.',
       },
       {
         question: 'Is GST charged on STT?',
@@ -766,6 +792,106 @@ export const BLOG_ARTICLES: BlogArticle[] = [
       ],
     },
     content: () => import('./mtm-vs-realised-pnl-futures-options'),
+  },
+  {
+    slug: 'gtt-order-charges',
+    title: 'GTT order charges by broker: fees, validity and limits',
+    description:
+      'What Zerodha, Groww, Upstox, Angel One, Kotak Neo, ICICI Direct, Fyers, mStock, Dhan and 5paisa charge to place a GTT, what applies when it triggers, and its validity, from each broker’s pages.',
+    tags: ['india', 'charges'],
+    publishedAt: '2026-11-21',
+    updatedAt: '2026-11-21',
+    readingTime: 10,
+    summary:
+      'A GTT (good till triggered) order is held by your broker until the price reaches your trigger, then sent to the exchange as an order; it lasts up to a year at all ten brokers checked. Seven of the ten say placing one costs nothing extra (Angel One “usually”, ICICI Direct “typically”) and that their standard charges apply when it executes; Kotak Neo adds a ₹10 minimum for dealer-placed GTTs executed from T+1, and Dhan and 5paisa do not state charges.',
+    faq: [
+      {
+        question: 'Is GTT free in Groww?',
+        answer:
+          'Placing one is. Groww’s help page says there are no extra charges for placing a GTT order. If it executes, Groww charges what a regular order pays: brokerage, STT, stamp duty, exchange transaction charges, SEBI turnover charges, the Investor Protection Fund Trust charge, DP charges on sells and GST.',
+      },
+      {
+        question: 'What is a 1 year GTT order?',
+        answer:
+          'A GTT that waits up to a year for its trigger. Zerodha, Groww, Upstox, Angel One, Kotak Neo, ICICI Direct and Fyers keep a stock GTT for one year or 365 days and end an F&O GTT when the contract expires. If the trigger is not reached in that time, the GTT expires and you place a new one.',
+      },
+      {
+        question: 'What is the GTT limit price?',
+        answer:
+          'The price of the limit order the broker sends when your trigger is reached: the trigger decides when the order goes to the exchange, the limit sets the worst price it can fill at. Zerodha suggests a limit above the trigger for a buy GTT and below it for a sell GTT; at Groww the limit is optional and without it a market order is placed; Angel One accepts limit orders only.',
+      },
+      {
+        question: 'Which is better, AMO or GTT?',
+        answer:
+          'Neither in general; they do different jobs. An AMO is an order placed outside market hours that goes to the exchange at the next open. A GTT waits, for up to a year at the brokers checked, and sends an order only if the price reaches your trigger. The difference is whether you are waiting for the market to open or for a price.',
+      },
+      {
+        question: 'Are there charges if a GTT never triggers?',
+        answer:
+          'None of the ten brokers’ pages read on 21 Nov 2026 describes one. The charges they list apply to the order a GTT sends once it triggers and executes, and a FYERS Team reply says there is no charge for the GTT itself before or after it triggers.',
+      },
+      {
+        question: 'Does Kotak Neo charge for GTT orders?',
+        answer:
+          'Kotak Neo’s page says that from 18 Apr 2026 a GTT placed in the app or on the website pays your plan’s brokerage when it executes, without the earlier ₹49 minimum, and a GTT placed by a dealer and executed from T+1 pays at least ₹10. It does not mention a fee for placing one.',
+      },
+    ],
+    content: () => import('./gtt-order-charges'),
+  },
+  {
+    slug: 'long-buildup-short-covering-long-unwinding',
+    title: 'Long build-up, short covering and long unwinding explained',
+    description:
+      'Price and open interest together: long build-up, short build-up, long unwinding and short covering in one table, the option-chain versions, worked examples and what each one cannot tell you.',
+    tags: ['india', 'futures', 'options'],
+    publishedAt: '2026-11-22',
+    updatedAt: '2026-11-22',
+    readingTime: 11,
+    summary:
+      'Long build-up, short build-up, long unwinding and short covering describe how a contract’s price and open interest moved together over the same period: price up with open interest up is a long build-up, price down with it up a short build-up, price down with it down long unwinding, and price up with it down short covering. They say which positions opened or closed, not what the price does next, and in an option chain the same four labels apply to each strike’s own premium.',
+    faq: [
+      {
+        question: 'Is long build-up bullish or bearish?',
+        answer:
+          'It is commonly read as bullish, because the price rose while new contracts were opened. It describes one period, not a forecast: every new long has a new short against it, and a build-up today says nothing on its own about tomorrow.',
+      },
+      {
+        question: 'Is short covering bullish or bearish?',
+        answer:
+          'Commonly read as bullish but weaker than a long build-up: the price rose while positions were closed, which is read as short sellers buying back. The buying stops when they have closed, and the same fall in open interest also closed long positions.',
+      },
+      {
+        question: 'Is long unwinding bullish or bearish?',
+        answer:
+          'Commonly read as bearish, or as a rally losing support: the price fell while positions were closed. Profit-taking, rollover and expiry also close longs without any new view, so it does not mean the fall continues.',
+      },
+      {
+        question: 'Is short build-up bullish or bearish?',
+        answer:
+          'Commonly read as bearish: the price fell while new contracts were opened. As many new longs were added, a short can be a hedge, and in options put writing is a short build-up in the put that is commonly read as bullish for the underlying.',
+      },
+      {
+        question: 'What is the difference between long build-up and short covering?',
+        answer:
+          'Both have a rising price. In a long build-up open interest rises, so new positions are opening; in short covering it falls, so positions are closing. A price chart alone cannot tell them apart.',
+      },
+      {
+        question: 'What does call unwinding mean in the option chain?',
+        answer:
+          'Call open interest at a strike fell. If the call’s premium rose, the four-way table calls it short covering in the call, writers buying back; if the premium fell, it is long unwinding, call holders selling. Some sources use the term for any fall in call open interest, so check the premium.',
+      },
+      {
+        question: 'What do call writing and put writing mean in the option chain?',
+        answer:
+          'Writing means selling an option. On an option chain it usually means open interest at a strike rose while that option’s premium fell, a short build-up in the option. Call writing is commonly read as a ceiling and put writing as a floor, but premiums also fall with time alone, so the reading can mislead.',
+      },
+      {
+        question: 'Where can I see open interest data?',
+        answer:
+          'On NSE’s option chain, in NSE Clearing’s daily open interest files, or in your broker’s option chain, which can only show what the exchange disseminates. Dhan’s help page says the exchange does not provide live open interest and updates it at intervals during the day.',
+      },
+    ],
+    content: () => import('./long-buildup-short-covering-long-unwinding'),
   },
 ];
 

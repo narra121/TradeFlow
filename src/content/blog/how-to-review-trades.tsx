@@ -45,7 +45,7 @@ export default function HowToReviewTrades() {
         <li>
           <strong className="text-foreground">Check your numbers.</strong> Open your journal and look
           at the week's summary:{' '}
-          <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
+          <Link to="/glossary/win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">
             win rate
           </Link>
           , total P&L, number of trades, and average{' '}
@@ -140,7 +140,7 @@ export default function HowToReviewTrades() {
       </p>
       <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
         <li>Is my overall{' '}
-          <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">
+          <Link to="/glossary/profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">
             profit factor
           </Link>{' '}
           improving, declining, or flat month over month?

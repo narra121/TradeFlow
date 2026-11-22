@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  EQUITY_STT_ROWS,
   EXCHANGE_ROWS,
   GST_ROWS,
   RATES_CHECKED_ON,
@@ -17,6 +18,7 @@ import {
 
 const SERIES: [string, readonly RateSource[]][] = [
   ['STT', STT_ROWS],
+  ['equity STT', EQUITY_STT_ROWS],
   ['exchange', EXCHANGE_ROWS],
   ['SEBI fee', SEBI_ROWS],
   ['stamp duty', STAMP_ROWS],
@@ -57,6 +59,28 @@ describe('rate tables', () => {
     expect([at('2024-10-01').futuresSell, at('2024-10-01').optionsSell]).toEqual([0.02, 0.1]);
     expect([at('2026-03-31').futuresSell, at('2026-03-31').optionsSell, at('2026-03-31').optionsExercised]).toEqual([0.02, 0.1, 0.125]);
     expect([at('2026-04-01').futuresSell, at('2026-04-01').optionsSell, at('2026-04-01').optionsExercised]).toEqual([0.05, 0.15, 0.15]);
+  });
+
+  it('equity STT: delivery 0.1% each side and intraday sale 0.025% from 1 Jul 2012, unchanged by the 1 April 2026 circular', () => {
+    expect(rowOn(EQUITY_STT_ROWS, '2012-06-30')).toBeUndefined();
+    for (const d of ['2012-07-01', '2023-04-01', '2024-10-01', '2026-03-31', '2026-04-01', '2026-11-21']) {
+      const r = rowOn(EQUITY_STT_ROWS, d)!;
+      expect([r.deliveryBuy, r.deliverySell, r.intradaySell], d).toEqual([0.1, 0.1, 0.025]);
+    }
+    expect(EQUITY_STT_ROWS[0].circular).toBe('NSE/FATAX/20990');
+  });
+
+  it('equity STT restatements are dated after the row, sorted, sourced, and include the 1 April 2026 STT circular', () => {
+    for (const row of EQUITY_STT_ROWS) {
+      row.restatedIn.forEach((c, i) => {
+        expect(c.circularDate > row.circularDate, c.circular).toBe(true);
+        expect(c.circularDate <= RATES_CHECKED_ON, c.circular).toBe(true);
+        expect(c.source, c.circular).toMatch(/^https:\/\/nsearchives\.nseindia\.com\//);
+        if (i > 0) expect(c.circularDate > row.restatedIn[i - 1].circularDate, c.circular).toBe(true);
+      });
+    }
+    const last = EQUITY_STT_ROWS[EQUITY_STT_ROWS.length - 1].restatedIn;
+    expect(last.map((c) => c.circular)).toContain(STT_ROWS[STT_ROWS.length - 1].circular);
   });
 
   it('exchange charge: volume slabs until 30 Sep 2024, flat from 1 Oct 2024, the March 2026 split keeps the total', () => {

@@ -28,7 +28,7 @@ export function GlossaryPage() {
   return (
     <ContentPageShell
       title="Trading Glossary - Key Terms & Definitions | TradeQut"
-      description="Glossary of trading terms: win rate, profit factor, drawdown, pip, leverage and more. Clear definitions with formulas and examples."
+      description="Trading terms defined: win rate, profit factor, R-multiple, drawdown, pip, leverage, open interest and long build-up, with formulas and examples."
       path="/glossary"
       jsonLd={glossarySchema(GLOSSARY_TERMS)}
     >
@@ -107,6 +107,13 @@ export function GlossaryPage() {
                     <p className="leading-relaxed text-foreground-soft">{term.definition}</p>
                     {term.formula && <p className="num my-3 rounded bg-card px-3 py-2 text-sm text-foreground">{term.formula}</p>}
                     {term.example && <p className="mt-2 text-sm italic text-muted-foreground">{term.example}</p>}
+                    {term.page && (
+                      <p className="mt-2 text-sm">
+                        <Link to={term.page} className="inline-flex min-h-6 max-md:min-h-11 items-center font-medium text-primary underline underline-offset-4 hover:text-primary/80">
+                          {term.term}: formula, worked example and calculator
+                        </Link>
+                      </p>
+                    )}
                     <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                       {term.relatedTerms.length > 0 && <span className="text-muted-foreground">See also:</span>}
                       {term.relatedTerms.map((rt) => (

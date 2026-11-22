@@ -58,7 +58,7 @@ describe('calculators', () => {
   it('risk-reward: default long trade is 1 : 3.00 with a 25.0% breakeven win rate', () => {
     renderWithProviders(<RiskRewardCalculatorPage />);
     expect(screen.getByText('1 : 3.00')).toBeInTheDocument();
-    expect(screen.getByText('25.0%')).toBeInTheDocument();
+    expect(screen.getByTestId('rr-result')).toHaveTextContent('25.0%');
   });
   it('risk-reward: a forex short shows risk and reward per unit at the price precision, not rounded to 0.01', async () => {
     const user = userEvent.setup();

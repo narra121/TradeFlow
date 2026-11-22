@@ -3,7 +3,7 @@ import { cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders, screen } from '@/test/test-utils';
 import { getPublicRoutes } from '@/content/route-registry';
-import { STT_ROWS } from '@/lib/charges/foRateHistory';
+import { EQUITY_STT_ROWS, STT_ROWS } from '@/lib/charges/foRateHistory';
 import { FoChargesRatesPage } from '../resources/FoChargesRatesPage';
 
 const FORBIDDEN = [
@@ -41,10 +41,56 @@ describe('F&O charges and STT rates page', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-16T06:00:00'));
     const { container } = renderPage();
-    expect(screen.getByRole('heading', { level: 1, name: 'F&O charges and STT rates by trade date' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'STT rates 2026: F&O, intraday and delivery, by date' })).toBeInTheDocument();
     expect(screen.getByLabelText('Trade date')).toHaveValue('2026-11-16');
-    expect(container.textContent).toContain('Sources checked 15 Nov 2026.');
+    expect(container.textContent).toContain('Sources checked 21 Nov 2026.');
     expect(screen.getByText('Estimates only: your contract note is authoritative')).toBeInTheDocument();
+  });
+
+  it('answers first with STT on delivery, intraday, futures and options, each with its payer and whether 1 April 2026 changed it', () => {
+    const { container } = renderPage();
+    expect(container.textContent).toContain(
+      'From 1 Apr 2026, STT is 0.1% on both the purchase and the sale of an equity share settled by delivery, 0.025% on the sale of an intraday trade, 0.05% of the traded value of a futures contract sold and 0.15% of the premium of an option sold',
+    );
+    const now = screen.getByRole('table', { name: 'STT in force from 1 Apr 2026, by transaction' });
+    const row = (name: RegExp) => within(now).getByRole('row', { name });
+    expect(row(/^Equity share bought, settled by delivery/)).toHaveTextContent('0.1%PurchaserNo');
+    expect(row(/^Equity share sold, settled by delivery/)).toHaveTextContent('0.1%SellerNo');
+    expect(row(/^Equity share sold intraday/)).toHaveTextContent('0.025%SellerNo');
+    expect(row(/^Futures sold/)).toHaveTextContent('0.05%SellerYes, from 0.02%');
+    expect(row(/^Option sold/)).toHaveTextContent('0.15%SellerYes, from 0.1%');
+    expect(row(/^Option exercised/)).toHaveTextContent('0.15%PurchaserYes, from 0.125%');
+    expect(container.textContent).toContain('does not take equity trades');
+  });
+
+  it('lists equity delivery and intraday STT by effective date with its circular and every circular that restates it', () => {
+    renderPage();
+    const equity = screen.getByRole('table', { name: /STT on equity shares: delivery and intraday/ });
+    expect(within(equity).getAllByRole('row')).toHaveLength(EQUITY_STT_ROWS.length + 1);
+    expect(within(equity).getByRole('row', { name: /^1 Jul 2012/ })).toHaveTextContent(/^1 Jul 20120\.1%0\.1%0\.025%/);
+    for (const row of EQUITY_STT_ROWS) expect(within(equity).getByRole('link', { name: row.circular })).toHaveAttribute('href', row.source);
+    const restated = screen.getByText(/Each later STT circular read lists the same three equity rates:/);
+    for (const c of EQUITY_STT_ROWS[EQUITY_STT_ROWS.length - 1].restatedIn) {
+      expect(within(restated).getByRole('link', { name: c.circular })).toHaveAttribute('href', c.source);
+    }
+    expect(
+      screen.getByText(/neither did STT on equity delivery and intraday: NSE\/FATAX\/56235, NSE\/FATAX\/63809, NSE\/FATAX\/73524 list it as no change/),
+    ).toBeInTheDocument();
+  });
+
+  it('works an intraday and delivery example by the NSE/CMTR/5588 method', () => {
+    renderPage();
+    expect(screen.getByRole('heading', { level: 2, name: 'How NSE works out STT on delivery and intraday' })).toHaveAttribute('id', 'equity-method');
+    expect(screen.getByRole('link', { name: 'how NSE works out STT on delivery and intraday' })).toHaveAttribute('href', '#equity-method');
+    const example = screen.getByRole('table', { name: /^Example: 100 shares bought at ₹500 and 60 sold at ₹510/ });
+    const row = (name: RegExp) => within(example).getByRole('row', { name });
+    expect(row(/^Average price/)).toHaveTextContent('(₹50,000.00 + ₹30,600.00) ÷ 160₹503.75');
+    expect(row(/^Intraday quantity/)).toHaveTextContent('lower of 100 and 6060');
+    expect(row(/^Delivery quantity/)).toHaveTextContent('100 − 6040');
+    expect(row(/^STT on the intraday sale/)).toHaveTextContent('0.025% × ₹30,225.00₹7.56');
+    expect(row(/^STT on the delivery purchase/)).toHaveTextContent('0.1% × ₹20,150.00₹20.15');
+    expect(row(/^STT for the day/)).toHaveTextContent("₹27.71, rounded to the nearest rupee if this is the client's only trade that day₹28");
+    expect(screen.getByRole('link', { name: 'NSE/CMTR/5588' })).toHaveAttribute('href', 'https://nsearchives.nseindia.com/content/circulars/cmtr5588.htm');
   });
 
   it('options sold on 15 Nov 2026: every component of the default premium, with the circular and the total', () => {
@@ -138,7 +184,7 @@ describe('F&O charges and STT rates page', () => {
   it('warns when the date is after the day the sources were checked', () => {
     renderPage();
     setDate('2027-01-05');
-    expect(within(resultPanel()).getByText(/after 15 Nov 2026, when the sources were last checked/)).toBeInTheDocument();
+    expect(within(resultPanel()).getByText(/after 21 Nov 2026, when the sources were last checked/)).toBeInTheDocument();
   });
 
   it('uses text inputs with the decimal keypad, never spinner number inputs', () => {
@@ -153,7 +199,7 @@ describe('F&O charges and STT rates page', () => {
     expect(within(stt).getAllByRole('row')).toHaveLength(STT_ROWS.length + 1);
     for (const row of STT_ROWS) expect(within(stt).getByRole('link', { name: row.circular })).toHaveAttribute('href', row.source);
 
-    const changes = screen.getByRole('table', { name: /Every change to a rate on this page from 1 January 2023 to 15 Nov 2026/ });
+    const changes = screen.getByRole('table', { name: /Every change to a rate on this page from 1 January 2023 to 21 Nov 2026/ });
     expect(within(changes).getAllByRole('row')).toHaveLength(7 + 1);
     expect(within(changes).getByText('futures sale 0.05%, options sale 0.15%, options exercised 0.15%')).toBeInTheDocument();
     expect(container.textContent).toContain('0.03503%');
@@ -180,6 +226,7 @@ describe('F&O charges and STT rates page', () => {
     expect(questions.length).toBeGreaterThanOrEqual(6);
     for (const q of questions) expect(q.endsWith('?'), q).toBe(true);
     expect(questions).toContain('Which is right for NSE options, 0.03503% or 0.03553%?');
+    expect(questions).toContain('What is the STT rate on delivery and intraday trades in 2026?');
 
     let graph: { '@type': string; mainEntity?: { name: string; acceptedAnswer: { text: string } }[]; url?: string }[] = [];
     await waitFor(() => {

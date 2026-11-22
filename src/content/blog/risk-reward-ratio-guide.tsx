@@ -1,141 +1,145 @@
-import { Link } from 'react-router-dom';
+import { formatPercent, formatR } from '@/lib/format';
+import { RATIO_TABLE, breakEvenAtRatioPct, resultPerTradeR } from '@/lib/riskReward';
+import { A, Disclaimer, H2, OL, P, Table, UL } from '../components/ArticleParts';
+
+const CALCULATOR = '/resources/risk-reward';
+const WIN_RATES = [30, 40, 50] as const;
 
 export default function RiskRewardRatioGuide() {
   return (
     <>
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">What Is Risk-Reward Ratio?</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        The <Link to="/glossary#risk-reward-ratio" className="text-primary underline underline-offset-4 hover:text-primary/80">risk-reward ratio</Link> (R:R)
-        compares how much you stand to lose on a trade versus how much you stand to gain. It is expressed
-        as a ratio of risk to reward. The formula is:
-      </p>
-      <div className="bg-card rounded-lg border border-border/50 p-4 mb-6">
-        <p className="text-foreground font-mono text-center">
-          Risk-Reward Ratio = (Entry Price − Stop Loss) / (Take Profit − Entry Price)
+      <H2>What is the risk-reward ratio?</H2>
+      <P>
+        The risk-reward ratio compares what a trade loses if its stop loss is hit with what it makes if its take profit is hit. It is written risk :
+        reward with the risk counted as 1, so a trade that risks 5 to make 15 has a risk-reward ratio of 1 : 3.
+      </P>
+      <div className="mb-6 space-y-1 rounded-lg border border-border bg-card p-4 text-center font-mono text-sm text-foreground">
+        <p>
+          Long: <span className="whitespace-nowrap">risk = entry − stop loss,</span> <span className="whitespace-nowrap">reward = take profit − entry</span>
+        </p>
+        <p>
+          Short: <span className="whitespace-nowrap">risk = stop loss − entry,</span> <span className="whitespace-nowrap">reward = entry − take profit</span>
+        </p>
+        <p>
+          Risk-reward ratio = <span className="whitespace-nowrap">risk : reward</span> <span className="whitespace-nowrap">= 1 : (reward ÷ risk)</span>
         </p>
       </div>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        For example, you buy a stock at $100 with a stop-loss at $95 and a profit target of $115. Your
-        risk is $5 per share and your potential reward is $15 per share. That gives you a risk-reward
-        ratio of 1:3, meaning you risk $1 to make $3. This ratio is the foundation of professional
-        risk management because it forces you to evaluate each trade objectively before entering. A trade
-        might look compelling on a chart, but if the nearest logical stop is $10 away and the target is
-        only $5 away, the 2:1 risk-to-reward is unfavorable no matter how good the setup looks.
-      </p>
+      <P>
+        The <A to={CALCULATOR}>risk-reward calculator</A> does this from three prices, for a long or a short trade, and shows the win rate the ratio needs
+        to break even.
+      </P>
+      <P>
+        Risk to reward, reward to risk, R:R and RRR all name the same comparison. 1 : 3 risk to reward is 3 : 1 reward to risk, and a 3R target makes
+        three times the amount at risk. Quoted as a single number it can go either way: risk ÷ reward = 0.33, where a smaller number means more reward for
+        each unit of risk, or reward ÷ risk = 3, where a larger one does. Check which way round a ratio is written before comparing two.
+      </P>
 
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">The 1:2 Minimum Rule</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        Most professional traders will not enter a trade unless the potential reward is at least twice the
-        risk, a 1:2 ratio. The reason is mathematical: with a 1:2 risk-reward, you only need to win 33.3%
-        of your trades to break even. Any <Link to="/glossary#win-rate" className="text-primary underline underline-offset-4 hover:text-primary/80">win rate</Link> above
-        that threshold produces profit.
-      </p>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        Here is the breakeven calculation. If you risk $100 per trade and target $200, then one win recovers
-        the cost of two losses. Over 100 trades, you need at least 34 winners (34 × $200 = $6,800) to
-        offset 66 losers (66 × $100 = $6,600). The remaining margin is your profit. This mathematical
-        cushion is why the 1:2 minimum exists. It gives your strategy room to survive losing streaks while
-        remaining profitable over a large sample of trades.
-      </p>
-
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Breakeven Win Rate Table</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        The following table shows the win rate you need just to break even at various risk-reward ratios.
-        The lower the required win rate, the more forgiving the strategy is during losing streaks.
-      </p>
-      <div className="bg-card rounded-lg border border-border/50 overflow-hidden mb-6">
-        <div className="grid grid-cols-3 bg-muted/50 border-b border-border/50">
-          <div className="px-4 py-3 font-semibold text-foreground text-sm">Risk:Reward</div>
-          <div className="px-4 py-3 font-semibold text-foreground text-sm">Example ($100 risk)</div>
-          <div className="px-4 py-3 font-semibold text-foreground text-sm">Breakeven Win Rate</div>
-        </div>
-        {[
-          ['1:1', '$100 target', '50.0%'],
-          ['1:1.5', '$150 target', '40.0%'],
-          ['1:2', '$200 target', '33.3%'],
-          ['1:3', '$300 target', '25.0%'],
-          ['1:4', '$400 target', '20.0%'],
-          ['1:5', '$500 target', '16.7%'],
-        ].map(([ratio, example, winRate], i) => (
-          <div key={i} className={`grid grid-cols-3 ${i % 2 === 0 ? 'bg-card' : 'bg-muted/20'} ${i < 5 ? 'border-b border-border/30' : ''}`}>
-            <div className="px-4 py-3 text-foreground font-mono text-sm">{ratio}</div>
-            <div className="px-4 py-3 text-muted-foreground text-sm">{example}</div>
-            <div className="px-4 py-3 text-foreground font-semibold text-sm">{winRate}</div>
-          </div>
-        ))}
-      </div>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        Notice how a 1:3 ratio only requires a 25% win rate to break even. This is why trend followers
-        can be profitable despite losing on most trades. Their winners are large enough that a handful of
-        successful trades covers many small losses. Read more about this dynamic in our article on{' '}
-        <Link to="/blog/win-rate-vs-profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">win rate versus profit factor</Link>.
-      </p>
-
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">R:R and Position Sizing</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        Risk-reward ratio directly determines how you size your positions. The standard approach is to risk
-        a fixed percentage of your account on each trade, typically 1-2%. Your R:R then determines the
-        position size. Consider this example with a $50,000 account risking 1% per trade ($500 risk):
-      </p>
-      <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
-        <li>Stock at $100, stop at $95 (risk = $5/share). Position size: $500 / $5 = 100 shares ($10,000 position)</li>
-        <li>Stock at $100, stop at $98 (risk = $2/share). Position size: $500 / $2 = 250 shares ($25,000 position)</li>
-        <li>Stock at $100, stop at $90 (risk = $10/share). Position size: $500 / $10 = 50 shares ($5,000 position)</li>
-      </ul>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        A tighter stop allows a larger position (more shares) while keeping the dollar risk constant. A
-        wider stop requires a smaller position. This is how professionals keep their risk consistent across
-        different setups. The risk-reward ratio determines the target, and the stop distance determines the
-        position size. Together, they define the complete trade plan before you enter.
-      </p>
-
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Common R:R Mistakes</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        Even traders who understand risk-reward ratios make errors that erode their edge over time.
-        These are the most frequent mistakes:
-      </p>
-      <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-6">
+      <H2>How to calculate risk-reward ratio</H2>
+      <P>A hypothetical long trade: buy 100 units at 250, stop loss at 242, take profit at 270.</P>
+      <OL>
         <li>
-          <strong className="text-foreground">Moving your stop-loss further away.</strong> When a trade moves against you,
-          the temptation is to widen the stop to avoid being taken out. This destroys your planned R:R. If
-          you entered with a 1:3 ratio and then doubled your stop distance, your actual R:R is now 2:3 and
-          you need a much higher win rate to be profitable.
+          <strong className="text-foreground">Measure the risk.</strong> Entry − stop loss = 250 − 242 = 8 per unit. For a short trade it is stop loss −
+          entry.
         </li>
         <li>
-          <strong className="text-foreground">Taking profit too early.</strong> You planned a 1:3 target but close at 1:1.5
-          because you are afraid of giving back gains. Over hundreds of trades, this habit cuts your average
-          win in half and significantly reduces your{' '}
-          <Link to="/glossary#profit-factor" className="text-primary underline underline-offset-4 hover:text-primary/80">profit factor</Link>.
+          <strong className="text-foreground">Measure the reward.</strong> Take profit − entry = 270 − 250 = 20 per unit. For a short trade it is entry −
+          take profit.
         </li>
         <li>
-          <strong className="text-foreground">Ignoring commissions and slippage.</strong> A 1:1.5 ratio looks profitable on
-          paper, but after commissions, exchange fees, and slippage on entry and exit, the real ratio might
-          be closer to 1:1.2, requiring a much higher win rate than you planned for.
+          <strong className="text-foreground">Divide the reward by the risk.</strong> 20 ÷ 8 = 2.5, so the risk-reward ratio is 1 : 2.5.
         </li>
         <li>
-          <strong className="text-foreground">Using arbitrary stop levels.</strong> Placing your stop exactly $1 below entry
-          because it looks clean, instead of placing it at a structural level like below support. Arbitrary stops
-          get hit by normal price noise, turning a viable 1:3 trade into a wasted loss.
+          <strong className="text-foreground">Find the break-even win rate.</strong> 1 ÷ (1 + 2.5) = 28.6%: trades like this pay for their losses when more
+          than 28.6% of them reach the target, before costs.
         </li>
-      </ul>
+        <li>
+          <strong className="text-foreground">Convert it to money.</strong> Multiply both distances by the position size: 100 units risk 800 to make
+          2,000. The ratio stays 1 : 2.5 at any size.
+        </li>
+      </OL>
+      <P>
+        A short works the same way with the levels flipped. Sell EUR/USD at 1.2650 with a stop at 1.2700 and a target at 1.2500: the risk is 1.2700 −
+        1.2650 = 0.0050, the reward 1.2650 − 1.2500 = 0.0150, and the ratio 1 : 3. To try your own prices, enter them in the{' '}
+        <A to={CALCULATOR}>risk-reward calculator</A>.
+      </P>
 
-      <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">Tracking R:R in Your Journal</h2>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        The most valuable habit you can build is logging both your planned risk-reward ratio and your actual
-        risk-reward ratio for every trade. The planned R:R is what you intended when you entered. The actual
-        R:R is what happened when you exited. The gap between these two numbers reveals your execution
-        discipline. If you consistently plan 1:3 trades but your actual average is 1:1.8, you know you are
-        cutting winners short or moving stops.
-      </p>
-      <p className="text-muted-foreground leading-relaxed mb-4">
-        TradeQut calculates your actual R:R from your entry, exit, and stop-loss data. You can filter by
-        date range, account, or instrument to identify which setups deliver the best actual risk-reward.
-        Over time, this data helps you eliminate low-R:R setups from your playbook and focus on the patterns
-        where you consistently achieve 1:2 or better. Combine this with{' '}
-        <Link to="/blog/track-reduce-drawdown" className="text-primary underline underline-offset-4 hover:text-primary/80">drawdown tracking</Link> to
-        ensure that even your losing trades stay within your risk parameters. Together, R:R discipline and
-        drawdown management form the backbone of sustainable trading performance.
-      </p>
+      <H2>Risk-reward ratio and win rate</H2>
+      <P>
+        The ratio alone does not say whether trades make money; the win rate decides that. At 1 : 2 one win pays for two losses, so trades break even
+        when one in three wins. Over 100 trades risking 100 each, 34 winners make 34 × 200 = 6,800 and 66 losers cost 66 × 100 = 6,600.
+      </P>
+      <P>
+        In general the break-even win rate is risk ÷ (risk + reward), which is 1 ÷ (1 + reward ÷ risk). The table gives it from 1 : 0.5 to 1 : 5, with the
+        average result per trade in R (multiples of the amount at risk) at three win rates: win rate × reward ÷ risk − loss rate.
+      </P>
+      <Table
+        caption="Break-even win rate, and result per trade in R at three win rates, by risk-reward ratio, before costs"
+        head={['Risk : reward', 'Win rate to break even', ...WIN_RATES.map((w) => `At ${w}% wins`)]}
+        rows={RATIO_TABLE.map((rr) => [`1 : ${rr}`, formatPercent(breakEvenAtRatioPct(rr), 1), ...WIN_RATES.map((w) => formatR(resultPerTradeR(rr, w)))])}
+      />
+      <P>
+        Along a row the same ratio loses at one win rate and makes money at another: 1 : 2 loses 0.10R a trade at 30% wins and makes 0.20R at 40%. Which
+        combination a strategy has comes from its own closed trades. <A to="/blog/win-rate-vs-profit-factor">Win rate vs profit factor</A> explains why
+        neither number means much alone, and the <A to="/resources/expectancy-calculator">expectancy calculator</A> adds costs.
+      </P>
+
+      <H2 id="probability">Risk-reward ratio and probability</H2>
+      <P>
+        A target further away raises the ratio, but price has further to travel to reach it, so fewer trades get there. The ratio and the chance of
+        reaching the target move together. In a simple model where price moves randomly with no drift, each trade&apos;s expected result is zero, so
+        p × reward − (1 − p) × risk = 0, and the chance p of reaching the target before the stop is risk ÷ (risk + reward): exactly the break-even win
+        rate. In that model every ratio breaks even before costs, and costs make every ratio lose.
+      </P>
+      <P>
+        So a ratio does not create an edge; a win rate above the break-even for the ratio traded does. A 1 : 5 target reached on 15% of trades loses
+        0.10R a trade, because it needs 16.7%, while a 1 : 1 target reached on 55% of trades makes 0.10R a trade, both before costs.
+      </P>
+
+      <H2>Risk-reward ratio and position size</H2>
+      <P>
+        The ratio is per unit of price, so it does not change with size; the money at risk does. Fixed-risk sizing chooses the money first and works back
+        to the size. With a 50,000 account and 1% (500) at risk on a trade, as an example, a stop 5 away allows 500 ÷ 5 = 100 units and a stop 2 away
+        allows 500 ÷ 2 = 250. The stop distance sets the size; the target sets the ratio. The{' '}
+        <A to="/resources/position-size">position size calculator</A> works out the size, and{' '}
+        <A to="/blog/position-sizing-fixed-risk">fixed-risk position sizing</A> explains the method.
+      </P>
+
+      <H2>Common risk-reward mistakes</H2>
+      <UL>
+        <li>
+          <strong className="text-foreground">Moving the stop further away.</strong> Doubling the stop distance on a 1 : 3 trade makes it 1 : 1.5, and the
+          break-even win rate rises from 25% to 40%.
+        </li>
+        <li>
+          <strong className="text-foreground">Taking profit early.</strong> Closing a planned 1 : 3 trade at 1 : 1.5 halves the win. Done often, it cuts
+          the average win and the <A to="/glossary/profit-factor">profit factor</A> with it.
+        </li>
+        <li>
+          <strong className="text-foreground">Leaving out costs.</strong> With a risk of 100, a reward of 150 and 10 of costs a round trip, a win nets 140
+          and a loss costs 110. That is 1 : 1.27 after costs, and the break-even rises from 40% to (100 + 10) ÷ (150 + 100) = 44%.
+        </li>
+        <li>
+          <strong className="text-foreground">Quoting a target the market seldom reaches.</strong> A far target makes the ratio look good on paper; what
+          counts is how often trades like it get there.
+        </li>
+        <li>
+          <strong className="text-foreground">Losses past the stop.</strong> A gap or slippage through the stop turns a planned −1R into −1.3R or worse,
+          and the real ratio with it. <A to="/blog/r-multiple-explained">R multiples</A> show it trade by trade.
+        </li>
+      </UL>
+
+      <H2>Tracking planned and actual risk-reward</H2>
+      <P>
+        Record the planned ratio before the entry and the result at the exit. The planned ratio comes from the stop and the target; the actual one from
+        where the trade closed. If trades planned at 1 : 3 average +1.8R when they win, winners are being closed early; losses beyond −1R mean the stop
+        was moved, gapped through or slipped.
+      </P>
+      <P>
+        In TradeQut the trade list shows the R each trade realised, from its entry, exit and stop, and can add a Planned R:R column from its stop and
+        target. The Risk tab in Analytics compares the planned R of winning trades with the R they captured, counts how many reached the target, and
+        lists losing trades that ended past the stop. <A to="/blog/track-reduce-drawdown">Drawdown tracking</A> shows what the losing runs cost.
+      </P>
+      <Disclaimer />
     </>
   );
 }

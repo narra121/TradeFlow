@@ -42,6 +42,10 @@ export default function AlternativesIndexPage() {
           </li>
         ))}
       </ul>
+      <P>
+        Every plan and list price in one table, with the date each vendor page was read:{' '}
+        <A to="/trading-journal-pricing">trading journal pricing compared</A>.
+      </P>
 
       <H2>Where TradeQut sits</H2>
       <P>

@@ -97,7 +97,8 @@ export function AlternativePage({ id }: { id: Competitor['id'] }) {
 
       <P>
         Not sure? <A to="/signup">Start a free TradeQut journal</A>, import your own broker file and compare the result
-        with what you use today. More on <A to="/pricing">TradeQut pricing</A> and{' '}
+        with what you use today. More on <A to="/pricing">TradeQut pricing</A>, the{' '}
+        <A to="/trading-journal-pricing">journal prices side by side</A> and{' '}
         <A to="/alternatives">other alternatives</A>:{' '}
         {COMPETITORS.filter((o) => o.id !== id).map((o, i, all) => (
           <span key={o.id}>

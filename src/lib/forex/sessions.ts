@@ -237,3 +237,72 @@ export function londonNewYorkByPeriod(year: number): OverlapPeriod[] {
 
 /** `HH:MM` for minutes after midnight. */
 export const hhmm = (minutes: number): string => `${pad(Math.floor(minutes / 60) % 24)}:${pad(minutes % 60)}`;
+
+/** `UTC+5:30`, `UTC−5` (true minus sign) for an offset in minutes. */
+export function utcOffsetText(minutes: number): string {
+  const sign = minutes < 0 ? '−' : '+';
+  const a = Math.abs(minutes);
+  return `UTC${sign}${Math.floor(a / 60)}${a % 60 ? `:${pad(a % 60)}` : ''}`;
+}
+
+/** Where a session opens and closes on `day` of its own city, before the weekly market is applied. */
+export function sessionOn(id: SessionId, day: string): Interval {
+  const s = SESSIONS.find((x) => x.id === id)!;
+  return { start: instantAt(day, s.open, s.zone), end: instantAt(day, s.close, s.zone) };
+}
+
+/** The London-New York overlap on `day` (the same calendar day in both cities); null when they do not meet. */
+export function londonNewYorkOn(day: string): Interval | null {
+  return clip(sessionOn('london', day), sessionOn('newYork', day));
+}
+
+export const DST_CITIES = { newYork: 'America/New_York', london: 'Europe/London', sydney: 'Australia/Sydney' } as const;
+
+export type DstCity = keyof typeof DST_CITIES;
+
+export interface DayRun {
+  /** First and last UTC calendar day, both included. */
+  from: string;
+  to: string;
+}
+
+export interface Arrangement {
+  /** Which cities are on daylight time. */
+  dst: Record<DstCity, boolean>;
+  runs: DayRun[];
+  /** A Wednesday inside the arrangement's longest run, the day its session times are read on. */
+  sample: string;
+}
+
+/**
+ * `year` split by which of New York, London and Sydney are on daylight time, in order of first appearance (four
+ * arrangements under the current US, UK and New South Wales rules). Each day is read at 12:00 UTC, so a change made
+ * overnight on a Sunday counts from that Sunday.
+ */
+export function clockArrangements(year: number): Arrangement[] {
+  const cities = Object.keys(DST_CITIES) as DstCity[];
+  const standard = Object.fromEntries(
+    cities.map((c) => [c, Math.min(offsetAt(Date.UTC(year, 0, 15, 12), DST_CITIES[c]), offsetAt(Date.UTC(year, 6, 15, 12), DST_CITIES[c]))]),
+  ) as Record<DstCity, number>;
+  const byKey = new Map<string, Arrangement>();
+  let previous = '';
+  for (let day = `${year}-01-01`; day < `${year + 1}-01-01`; day = addDays(day, 1)) {
+    const noon = Date.UTC(Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1, Number(day.slice(8, 10)), 12);
+    const dst = Object.fromEntries(cities.map((c) => [c, offsetAt(noon, DST_CITIES[c]) > standard[c]])) as Record<DstCity, boolean>;
+    const key = cities.map((c) => (dst[c] ? 1 : 0)).join('');
+    let a = byKey.get(key);
+    if (!a) byKey.set(key, (a = { dst, runs: [], sample: '' }));
+    if (key === previous) a.runs[a.runs.length - 1].to = day;
+    else a.runs.push({ from: day, to: day });
+    previous = key;
+  }
+  for (const a of byKey.values()) {
+    const longest = a.runs.reduce((x, y) => (daysBetween(y) > daysBetween(x) ? y : x));
+    const wednesdays: string[] = [];
+    for (let d = longest.from; d <= longest.to; d = addDays(d, 1)) if (weekdayOf(d) === 3) wednesdays.push(d);
+    a.sample = wednesdays[Math.floor(wednesdays.length / 2)];
+  }
+  return [...byKey.values()];
+}
+
+const daysBetween = (r: DayRun) => Math.round((Date.parse(`${r.to}T00:00:00Z`) - Date.parse(`${r.from}T00:00:00Z`)) / DAY);

@@ -30,7 +30,7 @@ describe('ResourcesPage', () => {
 
   it('links the forex and prop-firm tools', () => {
     renderWithProviders(<ResourcesPage />);
-    for (const href of ['/resources/forex-market-hours', '/resources/prop-firm-drawdown-calculator', '/resources/margin-calculator', '/resources/risk-of-ruin-calculator', '/resources/compounding-calculator']) {
+    for (const href of ['/resources/forex-market-hours', '/resources/prop-firm-drawdown-calculator', '/resources/margin-calculator', '/resources/risk-of-ruin-calculator', '/resources/compounding-calculator', '/resources/equity-curve-simulator', '/resources/forex-market-hours/new-york-session', '/resources/forex-market-hours/london-session', '/resources/forex-market-hours/asian-session', '/resources/forex-market-hours/london-new-york-overlap']) {
       expect(document.querySelector(`a[href="${href}"]`), href).not.toBeNull();
     }
   });
@@ -38,7 +38,7 @@ describe('ResourcesPage', () => {
   it('renders calculator descriptions', () => {
     renderWithProviders(<ResourcesPage />);
     expect(
-      screen.getByText(/Calculate the right position size based on your account balance/)
+      screen.getByText(/Lots for forex and gold, shares for stocks, lots for futures and options/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/Determine your risk-reward ratio/)
