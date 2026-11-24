@@ -246,7 +246,7 @@ function AppFrame() {
         <NoticeSlot tradesWithoutAccount={tradesWithoutAccount} gettingStarted={gettingStarted} />
         <PaneHost>
           {/* Chat fills the visible pane so its conversation log, not the page, scrolls (ChatView.tsx). */}
-          <main id="main" tabIndex={-1} className={cn('mx-auto w-full max-w-[1440px] p-3 outline-none md:p-6', location.pathname === '/app/chat' && 'flex h-full flex-col')}>
+          <main id="main" tabIndex={-1} className={cn('mx-auto w-full max-w-[1440px] p-3 outline-none md:p-6', /^\/app\/chat\/?$/.test(location.pathname) && 'flex h-full flex-col')}>
             <RouteErrorBoundary resetKey={location.pathname}>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
