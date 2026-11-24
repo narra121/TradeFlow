@@ -28,10 +28,10 @@ export const IMPORT_SOURCES = [
   { id: 'mt4', name: 'MetaTrader 4', file: 'Detailed Report from Account History (HTML)' },
   { id: 'mt5', name: 'MetaTrader 5', file: 'History report, Positions table (HTML or XLSX)' },
   { id: 'zerodha', name: 'Zerodha', file: 'Console tradebook (CSV/XLSX)' },
-  { id: 'dhan', name: 'Dhan', file: 'Trade history export' },
-  { id: 'upstox', name: 'Upstox', file: 'Trade report export' },
-  { id: 'angelone', name: 'Angel One', file: 'Trade history export' },
-  { id: 'groww', name: 'Groww', file: 'Order/trade history export' },
+  { id: 'dhan', name: 'Dhan', file: 'Global Transaction Report (CSV)' },
+  { id: 'upstox', name: 'Upstox', file: 'Trade report (XLSX)' },
+  { id: 'angelone', name: 'Angel One', file: 'Trade history from Trades and charges (XLSX)' },
+  { id: 'groww', name: 'Groww', file: 'Order history (XLSX)' },
   { id: 'generic_csv', name: 'Any broker', file: 'Generic CSV with column mapping' },
 ] as const;
 

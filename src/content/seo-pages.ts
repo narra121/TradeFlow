@@ -118,7 +118,7 @@ export const SEO_PAGES: SeoPageMeta[] = [
     label: 'Upstox trading journal',
     parent: INDIA,
     publishedAt: '2026-11-14',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-24',
   },
   {
     path: '/groww-trading-journal',
@@ -138,17 +138,17 @@ export const SEO_PAGES: SeoPageMeta[] = [
     label: 'Angel One trading journal',
     parent: INDIA,
     publishedAt: '2026-11-14',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-24',
   },
   {
     path: '/dhan-trading-journal',
-    title: 'Dhan Trading Journal: Import Your Trade History | TradeQut',
+    title: 'Dhan Trading Journal: Import Global Transactions | TradeQut',
     description:
-      'Import the Dhan trade history into TradeQut and add what a statement cannot: setups, mistakes, the rules you broke and what each one cost, net of charges.',
+      'Import the Dhan Global Transaction Report into TradeQut and add what a statement cannot: setups, mistakes, broken rules and what each one cost, net of charges.',
     label: 'Dhan trading journal',
     parent: INDIA,
     publishedAt: '2026-11-14',
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-24',
   },
   {
     path: '/import-trades-from-screenshot',

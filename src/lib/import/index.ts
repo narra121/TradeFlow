@@ -9,11 +9,20 @@ export const SAVE_CHUNK_SIZE = 50;
 
 export class ImportFileError extends Error {}
 
-/** File → base64 for POST /import/parse. Rejects files the backend would refuse anyway. */
+/** UTF-16 text with a byte-order mark (MetaTrader 5 saves its HTML reports so) → UTF-8, which halves an ASCII report. */
+function utf16ToUtf8(bytes: Uint8Array): Uint8Array {
+  const le = bytes[0] === 0xff && bytes[1] === 0xfe;
+  if (!le && !(bytes[0] === 0xfe && bytes[1] === 0xff)) return bytes;
+  return new TextEncoder().encode(new TextDecoder(le ? 'utf-16le' : 'utf-16be').decode(bytes));
+}
+
+/** File → base64 for POST /import/parse. Rejects files the backend would refuse anyway (the limit applies after UTF-16 → UTF-8). */
 export async function fileToBase64(file: Blob): Promise<string> {
-  if (file.size > MAX_IMPORT_FILE_BYTES) throw new ImportFileError('The file is larger than 4 MB. Export a shorter date range.');
+  const tooLarge = () => new ImportFileError('The file is larger than 4 MB. Export a shorter date range.');
+  if (file.size > 2 * MAX_IMPORT_FILE_BYTES) throw tooLarge();
   if (file.size === 0) throw new ImportFileError('The file is empty.');
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  const bytes = utf16ToUtf8(new Uint8Array(await file.arrayBuffer()));
+  if (bytes.length > MAX_IMPORT_FILE_BYTES) throw tooLarge();
   let binary = '';
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(binary);

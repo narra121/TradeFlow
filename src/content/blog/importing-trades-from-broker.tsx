@@ -21,9 +21,9 @@ export default function ImportingTradesFromBroker() {
         rows={[
           ['Zerodha', 'Console tradebook, CSV or XLSX', 'Console → Reports → Tradebook → segment and date range (at most 365 days per download)'],
           ['Zerodha', 'Console P&L statement, XLSX or CSV', 'Console → Reports → P&L. A per-symbol summary without trade times; the tradebook gives full trades'],
-          ['Dhan', 'Trade history, CSV or XLSX', 'Dhan web → Reports → Trade History → date range'],
-          ['Upstox', 'Trade report, CSV or XLSX', 'Reports → Trade Report (Tradebook) → segment and date range'],
-          ['Angel One', 'Trade history, CSV or XLSX', 'Reports → Trade History (or Tradebook) → date range'],
+          ['Dhan', 'Global Transaction Report, CSV', 'Journal → Global Transactions → period. One row per contract per day, so trades are dated by day at average prices'],
+          ['Upstox', 'Trade report, XLSX', 'Upstox web → Reports → Trade → segment and period'],
+          ['Angel One', 'Trade history, XLSX', 'App → Account → Trades and charges → Download trade history. Dates only, no times of day'],
           ['Groww', 'Order history, XLSX or CSV', 'Profile → Reports → Order History (Stocks or F&O) → date range'],
           ['MetaTrader 4', 'Detailed report, HTML', 'Account History tab → right-click → Save as Detailed Report'],
           ['MetaTrader 5', 'History report, HTML or XLSX', 'Toolbox → History → right-click → Report'],
@@ -53,13 +53,13 @@ export default function ImportingTradesFromBroker() {
 
       <H3>Charges for Indian brokers</H3>
       <P>
-        Tradebooks list fills, not the charges on them. For Zerodha, Dhan, Upstox, Angel One and Groww files, TradeQut estimates
+        Tradebooks list fills, not the charges on them. For Zerodha, Upstox, Angel One and Groww files, TradeQut estimates
         brokerage from the broker&apos;s standard plan, and STT, the NSE transaction charge and IPFT contribution, SEBI fee, stamp
         duty and GST from a dated table of rates, and records the total as the trade&apos;s fees, so P&amp;L is net. For NSE trades
         from 1 October 2024 those statutory charges use the rates in force on the trade date; for older trades the transaction
         charge is an approximation, because NSE then charged it by each broker&apos;s monthly volume, and small differences in
         the SEBI fee and GST are possible. STT on an option exercised at expiry is not included. Your contract note is the authoritative
-        figure. Why these charges matter is explained in <A to="/blog/fo-trading-charges-india">F&amp;O charges in India</A>.
+        figure. Dhan&apos;s Global Transaction Report lists each day&apos;s charges, and TradeQut uses those instead of an estimate. Why these charges matter is explained in <A to="/blog/fo-trading-charges-india">F&amp;O charges in India</A>.
       </P>
 
       <H3>MetaTrader times and costs</H3>

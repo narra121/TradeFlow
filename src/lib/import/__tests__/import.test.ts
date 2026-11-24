@@ -59,7 +59,21 @@ describe('fileToBase64', () => {
 
   it('rejects empty and oversized files with a readable error', async () => {
     await expect(fileToBase64(new Blob([]))).rejects.toBeInstanceOf(ImportFileError);
-    await expect(fileToBase64({ size: MAX_IMPORT_FILE_BYTES + 1 } as Blob)).rejects.toThrow(/4 MB/);
+    await expect(fileToBase64(new Blob([new Uint8Array(MAX_IMPORT_FILE_BYTES + 1)]))).rejects.toThrow(/4 MB/);
+    await expect(fileToBase64({ size: 2 * MAX_IMPORT_FILE_BYTES + 1 } as Blob)).rejects.toThrow(/4 MB/);
+  });
+
+  it('sends UTF-16 text as UTF-8, so a MetaTrader 5 report over 4 MB fits', async () => {
+    const text = '<table><tr><td>Position</td><td>€</td></tr></table>'.repeat(50_000);
+    const le = new Uint8Array(2 + text.length * 2);
+    le.set([0xff, 0xfe]);
+    for (let i = 0; i < text.length; i++) new DataView(le.buffer).setUint16(2 + i * 2, text.charCodeAt(i), true);
+    expect(le.length).toBeGreaterThan(MAX_IMPORT_FILE_BYTES);
+    const utf8 = new TextEncoder().encode(text);
+    expect(await fileToBase64(new Blob([le]))).toBe(btoa(Array.from(utf8, (b) => String.fromCharCode(b)).join('')));
+    const be = new Uint8Array(le.length);
+    for (let i = 0; i < le.length; i += 2) [be[i], be[i + 1]] = [le[i + 1], le[i]];
+    expect(await fileToBase64(new Blob([be]))).toBe(await fileToBase64(new Blob([le])));
   });
 });
 

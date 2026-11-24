@@ -445,7 +445,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     tags: ['tradequt', 'import', 'practical'],
     publishedAt: '2026-05-06',
     readingTime: 5,
-    updatedAt: '2026-11-14',
+    updatedAt: '2026-11-24',
     summary:
       'TradeQut imports trade files from Zerodha, Dhan, Upstox, Angel One, Groww, MetaTrader 4 and MetaTrader 5, or any CSV or Excel file with column matching, and reads screenshots with AI when there is no file. Every trade is reviewed before saving, duplicates are skipped, and Indian broker trades get estimated charges.',
     faq: [

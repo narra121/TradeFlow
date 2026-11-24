@@ -117,22 +117,22 @@ export const BROKER_PAGES: BrokerPage[] = [
     fileName: 'trade report',
     h1: 'Upstox trading journal: import your trade report',
     shortAnswer:
-      'Download the Trade Report from the Reports section of Upstox and upload it to TradeQut. Each buy and sell is paired into a trade, charges are estimated per trade, and the journal shows net P&L by strategy, weekday and hour, with the rules you broke and what they cost.',
+      'Download the Trade report from the Reports section of Upstox and upload it to TradeQut. Each buy and sell is paired into a trade, charges are estimated per trade, and the journal shows net P&L by strategy, weekday and hour, with the rules you broke and what they cost.',
     exportSteps: [
-      'Open Upstox on the web or in the app and go to Reports.',
-      'Open Trade Report (Tradebook).',
-      'Choose the segment and the date range.',
-      'Download the report as CSV or XLSX.',
+      'Sign in to Upstox on the web (account.upstox.com) and go to Reports.',
+      'Open Trade.',
+      'Choose the segment and the period.',
+      'Download the report as Excel (XLSX).',
     ],
-    exportNotes: ['Menu names can differ between the app and the website and change between versions; look for the report that lists one row per executed trade with a trade number.'],
-    columns: ['Scrip Name', 'Symbol', 'Trade Num', 'Trade Date', 'Trade Time', 'Exchange', 'Segment', 'Side', 'Qty', 'Price', 'Order Num'],
+    exportNotes: ['Menu names can differ between the app and the website and change between versions; look for the report that lists one row per executed trade with a Trade Num and a Trade Time.'],
+    columns: ['Date', 'Company', 'Amount', 'Exchange', 'Segment', 'Scrip Code', 'Instrument Type', 'Strike Price', 'Expiry', 'Trade Num', 'Trade Time', 'Side', 'Quantity', 'Price'],
     ownTools:
       'Upstox has a free Trading Insights tool: you upload an F&O profit-and-loss statement with at least 20 trades, from any broker, and it reports profit factor, results by index, calls against puts, risk-to-reward and signs of overtrading. It is a one-off report on a statement. A journal keeps every trade with your own setup, mistake and rule notes, so the same questions can be asked again next month.',
     faq: [
       {
         question: 'Which Upstox file does TradeQut read?',
         answer:
-          'The Trade Report (Tradebook) from the Reports section, as CSV or XLSX. TradeQut recognises it by its Trade Num and Scrip Name columns and reads the symbol, side, quantity, price, date and time of each execution.',
+          'The Trade report from the Reports section of Upstox web, as XLSX. TradeQut recognises it by its Trade Num, Trade Time, Scrip Code and Instrument Type columns, reads the side, quantity, price, date and time of each execution, and builds each option or future from its Scrip Code, Instrument Type, Strike Price and Expiry.',
       },
       {
         question: 'Are Upstox charges included in the P&L?',
@@ -162,7 +162,7 @@ export const BROKER_PAGES: BrokerPage[] = [
       'The Groww file is a list of orders, so it can include orders that never traded. TradeQut skips rows whose status is rejected, cancelled, pending, open, expired or failed.',
       'The file gives the value of each order; when there is no price column TradeQut divides the value by the quantity to get the price.',
     ],
-    columns: ['Stock name', 'Symbol', 'ISIN', 'Type', 'Quantity', 'Value', 'Exchange', 'Exchange Order Id', 'Executed date and time', 'Order status'],
+    columns: ['Stock name', 'Symbol', 'ISIN', 'Type', 'Quantity', 'Value', 'Exchange', 'Exchange Order Id', 'Execution date and time', 'Order status'],
     faq: [
       {
         question: 'Does TradeQut import cancelled or rejected Groww orders?',
@@ -186,25 +186,28 @@ export const BROKER_PAGES: BrokerPage[] = [
     fileName: 'trade history',
     h1: 'Angel One trading journal: import your trade history',
     shortAnswer:
-      'Download the Trade History (Tradebook) report from Angel One on the web and upload it to TradeQut. The executions are paired into trades, charges are estimated per trade, and the journal shows net P&L by strategy, weekday and hour, with the cost of each mistake and broken rule.',
+      'Download the trade history from Trades and charges in the Angel One app and upload it to TradeQut. The executions are paired into trades, charges are estimated per trade, and the journal shows net P&L by strategy, weekday and hour, with the cost of each mistake and broken rule.',
     exportSteps: [
-      'Sign in to Angel One on the web and open Reports.',
-      'Open Trade History (some versions call it Tradebook).',
+      'Open the Angel One app and go to Account.',
+      'Open Trades and charges.',
       'Choose the date range.',
-      'Download the report as CSV or XLSX.',
+      'Choose Download trade history (an Excel file).',
     ],
-    exportNotes: ['Menu names can change between versions; look for the report with one row per executed trade, a Trade No and a Transaction Type column.'],
-    columns: ['Trade No', 'Order No', 'Symbol', 'Exchange', 'Segment', 'Transaction Type', 'Quantity', 'Trade Price', 'Trade Date', 'Trade Time'],
+    exportNotes: [
+      'Menu names can change between versions; look for the file with one row per executed trade and Scrip/Contract, Buy/Sell, Order ID and Trade ID columns.',
+      'The file has trade dates but no times of day, so each trade is placed at the start of its day and the fills of one day are taken in trade-number order.',
+    ],
+    columns: ['Scrip/Contract', 'Buy/Sell', 'Buy Price', 'Sell Price', 'Quantity', 'Brokerage', 'Order Type', 'Segment', 'Exchange', 'Order ID', 'Trade ID', 'Date'],
     faq: [
       {
         question: 'Which Angel One report does TradeQut read?',
         answer:
-          'The Trade History (Tradebook) report as CSV or XLSX. TradeQut recognises it by its Trade No, Transaction Type and Trade Price columns and reads the symbol, quantity, price, date and time of each execution.',
+          'The trade history from Account → Trades and charges, as XLSX (a CSV saved from it also works). TradeQut recognises it by its Scrip/Contract, Buy/Sell, Order ID and Trade ID columns and reads the contract, side, quantity, price and date of each execution; the file has no time of day.',
       },
       {
         question: 'Are Angel One brokerage and taxes included?',
         answer:
-          "The report lists executions, not charges. For each trade TradeQut estimates brokerage from the broker's standard plan, and STT, the NSE transaction charge and IPFT contribution, SEBI fee, stamp duty and GST from a dated table of rates. For NSE trades from 1 October 2024 those statutory charges use the rates in force on the trade date; for older trades the transaction charge is an approximation, because NSE then charged it by each broker's monthly volume, and small differences in the SEBI fee and GST are possible. STT on an option exercised at expiry is not included. Your contract note is the authoritative figure.",
+          "Yes, as estimates. For each trade TradeQut estimates brokerage from the broker's standard plan, and STT, the NSE transaction charge and IPFT contribution, SEBI fee, stamp duty and GST from a dated table of rates. For NSE trades from 1 October 2024 those statutory charges use the rates in force on the trade date; for older trades the transaction charge is an approximation, because NSE then charged it by each broker's monthly volume, and small differences in the SEBI fee and GST are possible. STT on an option exercised at expiry is not included. Your contract note is the authoritative figure.",
       },
       noPassword('Angel One', 'your Angel One account'),
     ],
@@ -215,13 +218,15 @@ export const BROKER_PAGES: BrokerPage[] = [
     importId: 'dhan',
     name: 'Dhan',
     path: '/dhan-trading-journal',
-    fileName: 'trade history',
-    h1: 'Dhan trading journal: import your trade history',
+    fileName: 'global transaction report',
+    h1: 'Dhan trading journal: import your Global Transaction Report',
     shortAnswer:
-      'Download the Trade History report from Dhan on the web and upload it to TradeQut. The executions are paired into trades, charges are estimated per trade, and the journal adds what a statement cannot: your setup, your mistakes, the rules you broke and what each one cost.',
-    exportSteps: ['Sign in to Dhan on the web and open Reports.', 'Open Trade History.', 'Choose the date range.', 'Download the report as CSV or XLSX.'],
-    exportNotes: ['Look for the report with one row per executed trade, with Trade No, Buy/Sell and Trade Price columns.'],
-    columns: ['Date', 'Time', 'Name', 'Buy/Sell', 'Exchange', 'Segment', 'Quantity/Lot', 'Trade Price', 'Order No', 'Trade No'],
+      'Download the Global Transactions report from the Journal section of Dhan and upload it to TradeQut. Each day’s buys and sells of a contract are paired into trades with the charges Dhan lists, and the journal adds what a statement cannot: your setup, your mistakes, the rules you broke and what each one cost.',
+    exportSteps: ['Sign in to Dhan and open Journal.', 'Open Global Transactions.', 'Choose the period.', 'Download the report as CSV.'],
+    exportNotes: [
+      'Dhan does not offer a download of individual trades: Past Trades can only be viewed. The Global Transaction Report has one row per contract per day with that day’s buy and sell totals, so TradeQut records trades by day, at average prices and without times of day.',
+    ],
+    columns: ['Date', 'Scrip Name', 'Exchange', 'Bill No.', 'Buy Qty.', 'Buy Value', 'Sell Qty.', 'Sell Value', 'Brokerage', 'GST', 'STT', 'SEBI Fees', 'Stamp Duty', 'Txn. Charges', 'Oth. Charges', 'Gross Amount'],
     ownTools:
       'Dhan has its own Trader’s Diary, which Dhan describes as a way to track past trades and monitor profit and loss. It shows buy value, sell value, realised P&L, charges and net realised P&L by day, by month or for a custom range of up to three months. If that answers your questions, you may not need anything else. A separate journal helps when you trade with more than one broker, want a longer history in one view, or want to record setups, mistakes and rules against each trade.',
     faq: [
@@ -233,7 +238,7 @@ export const BROKER_PAGES: BrokerPage[] = [
       {
         question: 'Which Dhan file does TradeQut read?',
         answer:
-          'The Trade History report from Reports on Dhan web, as CSV or XLSX. TradeQut recognises it by its Name, Buy/Sell, Trade Price and Trade No columns.',
+          'The Global Transaction Report from Journal → Global Transactions, as CSV. TradeQut recognises it by its Scrip Name, Bill No., Buy Qty., Buy Value, Sell Qty. and Sell Value columns, and takes the brokerage, STT, GST and other charges from the report itself.',
       },
       noPassword('Dhan', 'your Dhan account'),
     ],
