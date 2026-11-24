@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { GoalsPanel, type Track } from '@/components/goals/GoalsPanel';
 import { RulesPanel, type RuleRow } from '@/components/goals/RulesPanel';
 import { useGoalHistory } from '@/components/goals/useGoalHistory';
-import { DEFAULT_TARGETS, GOAL_ORDER, STARTER_RULES, isCurrentPeriod, periodLabel, periodNoun, periodOf, previousPeriods, shiftPeriod, tradingDays, type GoalPeriod, type GoalType } from '@/components/goals/goalMath';
+import { DEFAULT_TARGETS, GOAL_ORDER, STARTER_RULES, isCurrentPeriod, periodLabel, periodNoun, periodOf, shiftPeriod, tradingDays, type GoalPeriod, type GoalType } from '@/components/goals/goalMath';
+import { goalsAnchor, goalsPeriodType, goalsQueries, goalsScope } from '@/components/goals/goalsQueries';
 import { breaksByRule, compliance, normaliseRule, ruleHistory, ruleTextById, tradesInPeriod } from '@/components/goals/ruleMath';
 import { ScopeSlot } from '@/components/calendar/ScopeSlot';
 import { usePeriodKeys } from '@/components/calendar/usePeriodKeys';
@@ -36,10 +37,6 @@ import { useAppDispatch } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { readApiError } from '@/lib/apiError';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
-import { appToday } from '@/lib/appTimeZone';
-import { parseLocalDate } from '@/lib/format';
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function GoalsView() {
   const [params, setParams] = useSearchParams();
@@ -65,14 +62,12 @@ export function GoalsView() {
   }, [addRuleParam, setParams]);
 
   // The period unit and the anchor date are the only period state; key, range and the current flag derive from them.
-  const periodType: GoalPeriod = params.get('period') === 'month' ? 'monthly' : 'weekly';
+  const periodType = goalsPeriodType(params.get('period'));
   const anchorParam = params.get('on');
   // Memoised: a fresh `new Date()` on every render would recompute everything below that depends on the period.
-  const anchor = useMemo(() => (anchorParam && ISO_DATE.test(anchorParam) ? parseLocalDate(anchorParam) : appToday()), [anchorParam]);
+  const anchor = useMemo(() => goalsAnchor(anchorParam), [anchorParam]);
   const ref = useMemo(() => periodOf(periodType, anchor), [periodType, anchor.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
-  const live = isCurrentPeriod(ref);
   const noun = periodNoun(periodType);
-  const siblingRef = useMemo(() => periodOf(periodType === 'weekly' ? 'monthly' : 'weekly', ref.start), [periodType, ref]);
 
   const setPeriod = (next: { period?: GoalPeriod; on?: Date | null }, replace = true) => {
     const p = new URLSearchParams(params);
@@ -91,23 +86,18 @@ export function GoalsView() {
 
   usePageChrome({ ownPeriod: true });
 
-  const activeAccounts = useMemo(() => accounts.filter((a) => a.status === 'active'), [accounts]);
-  const currencies = useMemo(() => [...new Set((selectedAccount ? [selectedAccount] : activeAccounts).map((a) => a.currency || 'USD'))], [selectedAccount, activeAccounts]);
+  const scope = useMemo(() => goalsScope(accounts, selectedAccount), [accounts, selectedAccount]);
+  const { activeAccounts, currencies, needAccount, scopeId, totalCapital } = scope;
   const currency = currencies.length === 1 ? currencies[0] : undefined;
-  const needAccount = !selectedAccount && currencies.length > 1;
-  const scopeId = selectedAccount ? selectedAccount.id : 'ALL';
   const basis = useMemo(() => drawdownBasis(selectedAccount ? [selectedAccount] : activeAccounts), [selectedAccount, activeAccounts]);
-  const totalCapital = useMemo(() => (selectedAccount ? selectedAccount.initialBalance || 0 : activeAccounts.reduce((sum, a) => sum + (a.initialBalance || 0), 0)), [selectedAccount, activeAccounts]);
 
-  const rulesGoals = useGetRulesAndGoalsQuery({ periodKey: ref.key, currentPeriod: live });
-  const progress = useGetGoalsProgressQuery(
-    { accountId: scopeId, startDate: ref.startDate, endDate: ref.endDate, period: ref.period, periodKey: ref.key, currentPeriod: live, totalCapital },
-    { skip: accountsLoading || needAccount || accounts.length === 0 },
-  );
-  const sibling = useGetRulesAndGoalsQuery({ periodKey: siblingRef.key, currentPeriod: false });
+  const queries = useMemo(() => goalsQueries(ref, scope, accountsLoading || accounts.length === 0), [ref, scope, accountsLoading, accounts.length]);
+  const { live } = queries;
+  const rulesGoals = useGetRulesAndGoalsQuery(queries.rulesGoals);
+  const progress = useGetGoalsProgressQuery(queries.progress, { skip: queries.progressSkip });
+  const sibling = useGetRulesAndGoalsQuery(queries.sibling);
   const allRulesQuery = useGetRulesQuery();
-  const windowStart = previousPeriods(ref)[0].startDate;
-  const trades = useScopeTrades({ accountId: scopeId, startDate: windowStart, endDate: ref.endDate }, { skip: accountsLoading || accounts.length === 0 });
+  const trades = useScopeTrades(queries.trades, { skip: queries.tradesSkip });
   const history = useGoalHistory({ accountId: scopeId, totalCapital, current: ref, enabled: !needAccount && !!progress.currentData });
 
   const [updateGoal] = useUpdateGoalMutation();

@@ -6,6 +6,7 @@ import { useAppSelector } from '@/store/hooks';
 import { useScopeCapital } from '@/components/stats/useScopeCapital';
 import { useTradeParam } from '@/hooks/useTradeParam';
 import type { Analysis } from '@/types/analysis';
+import type { RootState } from '@/store';
 
 export interface AnalysisState {
   data?: Analysis;
@@ -27,24 +28,37 @@ export function mixedCurrencies(error: unknown): string[] | null {
 }
 
 type StatsArgs = { accountId?: string; startDate?: string; endDate?: string } | undefined;
+type StatsCurrencies = string[] | null | 'unknown';
 
 /**
  * The currencies of All accounts in the period from the `/stats` answer for the same scope, which every page that
  * shows the analysis (Analytics, Dashboard) requests: null until it arrives, 'unknown' when it failed. Trades without
  * an account ('UNKNOWN') are not counted, as on the server.
  */
-function useStatsCurrencies(scope: AnalysisScope, active: boolean): string[] | null | 'unknown' {
-  return useAppSelector((state) => {
-    if (!active) return 'unknown';
-    let failed = false;
-    for (const args of statsApi.util.selectCachedArgsForQuery(state, 'getStats') as StatsArgs[]) {
-      if ((args?.accountId || 'ALL') !== 'ALL' || args?.startDate !== scope.from || args?.endDate !== scope.to) continue;
-      const r = statsApi.endpoints.getStats.select(args)(state);
-      if (r.isSuccess) return (r.data as { currencies?: string[] }).currencies ?? [];
-      if (r.isError) failed = true;
-    }
-    return failed ? 'unknown' : null;
-  });
+export function statsCurrencies(state: RootState, scope: AnalysisScope, active: boolean): StatsCurrencies {
+  if (!active) return 'unknown';
+  let failed = false;
+  for (const args of statsApi.util.selectCachedArgsForQuery(state, 'getStats') as StatsArgs[]) {
+    if ((args?.accountId || 'ALL') !== 'ALL' || args?.startDate !== scope.from || args?.endDate !== scope.to) continue;
+    const r = statsApi.endpoints.getStats.select(args)(state);
+    if (r.isSuccess) return (r.data as { currencies?: string[] }).currencies ?? [];
+    if (r.isError) failed = true;
+  }
+  return failed ? 'unknown' : null;
+}
+
+function knownMixed(known: StatsCurrencies): string[] | null {
+  const list = Array.isArray(known) ? known.filter((c) => c !== 'UNKNOWN') : [];
+  return list.length > 1 ? [...list].sort() : null;
+}
+
+export function analysisScope(accountId: string, startDate: string, endDate: string): AnalysisScope {
+  return { accountId: accountId || 'ALL', from: startDate, to: endDate };
+}
+
+/** The request of useAnalysis; shell/prefetchPage.ts makes the same one before a visit. */
+export function analysisArgs(scope: AnalysisScope, known: StatsCurrencies, accountsReady: boolean, skip: boolean) {
+  return accountsReady && !skip && known !== null && !knownMixed(known) ? scope : skipToken;
 }
 
 /**
@@ -54,18 +68,15 @@ function useStatsCurrencies(scope: AnalysisScope, active: boolean): string[] | n
 export function useAnalysis({ skip = false }: { skip?: boolean } = {}): AnalysisState {
   const filters = useAppSelector((s) => s.trades.filters);
   const { accountsReady } = useScopeCapital();
-  const scope = useMemo<AnalysisScope>(() => ({ accountId: filters.accountId || 'ALL', from: filters.startDate, to: filters.endDate }), [filters.accountId, filters.startDate, filters.endDate]);
-  const known = useStatsCurrencies(scope, !skip && scope.accountId === 'ALL');
-  const knownMixed = useMemo(() => {
-    const list = Array.isArray(known) ? known.filter((c) => c !== 'UNKNOWN') : [];
-    return list.length > 1 ? [...list].sort() : null;
-  }, [known]);
+  const scope = useMemo(() => analysisScope(filters.accountId, filters.startDate, filters.endDate), [filters.accountId, filters.startDate, filters.endDate]);
+  const known = useAppSelector((state) => statsCurrencies(state, scope, !skip && scope.accountId === 'ALL'));
+  const mixedKnown = useMemo(() => knownMixed(known), [known]);
   const waiting = known === null;
-  const q = useGetAnalysisQuery(accountsReady && !skip && !waiting && !knownMixed ? scope : skipToken);
-  const mixed = knownMixed ?? (q.isError ? mixedCurrencies(q.error) : null);
+  const q = useGetAnalysisQuery(analysisArgs(scope, known, accountsReady, skip));
+  const mixed = mixedKnown ?? (q.isError ? mixedCurrencies(q.error) : null);
   // currentData, not data: after a scope change the previous account's figures (and currency) must not show.
   return {
-    data: q.isError || knownMixed ? undefined : q.currentData,
+    data: q.isError || mixedKnown ? undefined : q.currentData,
     scope,
     isLoading: !skip && !mixed && !q.isError && (!accountsReady || waiting || !q.currentData),
     isError: q.isError && mixed === null,

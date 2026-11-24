@@ -16,15 +16,16 @@ export function drawdownBasis(pool: Pick<TradingAccount, 'currency' | 'initialBa
   return 'ok';
 }
 
-/** Starting balance of the accounts in scope: the denominator of the drawdown percentage. */
+/** The accounts in scope (the selected one, else every account) and their starting balance: the denominator of the drawdown percentage. */
+export function scopeCapital(accounts: TradingAccount[], selectedAccountId: string | null) {
+  const pool = selectedAccountId ? accounts.filter((a) => a.id === selectedAccountId) : accounts.filter((a) => a.id && a.id !== '-1');
+  return { pool, totalCapital: pool.reduce((sum, a) => sum + (a.initialBalance || 0), 0) };
+}
+
 export function useScopeCapital() {
   const { accounts, selectedAccountId } = useAccounts();
   const { isLoading: accountsLoading, isError: accountsError, error: accountsErrorDetail } = useGetAccountsQuery();
-  const pool = useMemo(
-    () => (selectedAccountId ? accounts.filter((a) => a.id === selectedAccountId) : accounts.filter((a) => a.id && a.id !== '-1')),
-    [accounts, selectedAccountId],
-  );
-  const totalCapital = useMemo(() => pool.reduce((sum, a) => sum + (a.initialBalance || 0), 0), [pool]);
+  const { pool, totalCapital } = useMemo(() => scopeCapital(accounts, selectedAccountId), [accounts, selectedAccountId]);
   const basis = useMemo(() => drawdownBasis(pool), [pool]);
   return { accounts, selectedAccountId, totalCapital, drawdownBasis: basis, accountsReady: accounts.length > 0, accountsLoading, accountsError, accountsErrorDetail };
 }

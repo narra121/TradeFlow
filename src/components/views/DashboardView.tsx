@@ -25,7 +25,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setDateRangeFilter } from '@/store/slices/tradesSlice';
 import { appToday, appTodayKey } from '@/lib/appTimeZone';
-import { equitySeries, needsAttention, todaySummary } from '@/lib/dashboard';
+import { equitySeries, needsAttention, todayScopeArgs, todaySummary } from '@/lib/dashboard';
 import { formatLocalDateOnly } from '@/lib/dateUtils';
 import { formatPercent, formatProfitFactor, parseLocalDate, formatDayText } from '@/lib/format';
 import { getDateRangeFromPreset } from '@/lib/scope';
@@ -64,7 +64,7 @@ export function DashboardView(_props: DashboardViewProps = {}) {
   const { stats, prev, prevRange } = ps;
 
   const todayKey = appTodayKey();
-  const todayScope = useScopeTrades({ accountId: filters.accountId, startDate: todayKey, endDate: todayKey });
+  const todayScope = useScopeTrades(todayScopeArgs(filters.accountId, todayKey));
   const week = useWeekGoals();
   const isMobile = useIsMobile();
 

@@ -212,6 +212,11 @@ export function weekGoals(progress: Record<'profit' | 'winRate' | 'maxDrawdown' 
 }
 
 /** Monday-start current week: the date range and `week#YYYY-MM-DD` key the goals endpoint takes. */
+/** The dashboard's Today strip request; shell/prefetchPage.ts makes the same one before a visit. */
+export function todayScopeArgs(accountId: string, todayKey: string) {
+  return { accountId, startDate: todayKey, endDate: todayKey };
+}
+
 export function currentWeek(now: Date = new Date()): { start: string; end: string; periodKey: string } {
   const today = appToday(now);
   const monday = addDays(today, -((today.getDay() + 6) % 7));

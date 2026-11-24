@@ -17,14 +17,19 @@ export interface WeekGoalsState {
   hasRules: boolean;
 }
 
+/** The request of useWeekGoals; shell/prefetchPage.ts makes the same one before a visit. */
+export function weekGoalsArgs(selectedAccountId: string | null, totalCapital: number, accountsReady: boolean, week = currentWeek()) {
+  return accountsReady
+    ? { accountId: selectedAccountId || 'ALL', startDate: week.start, endDate: week.end, period: 'weekly' as const, periodKey: week.periodKey, currentPeriod: true, totalCapital }
+    : skipToken;
+}
+
 /** Current-week goal progress for the account in scope (the dashboard's Today strip and Goals panel). */
 export function useWeekGoals(): WeekGoalsState {
   const { selectedAccountId, totalCapital, accountsReady, drawdownBasis } = useScopeCapital();
   const todayKey = appTodayKey();
   const week = useMemo(() => currentWeek(), [todayKey]); // eslint-disable-line react-hooks/exhaustive-deps -- the week changes only when the day does
-  const q = useGetGoalsProgressQuery(
-    accountsReady ? { accountId: selectedAccountId || 'ALL', startDate: week.start, endDate: week.end, period: 'weekly', periodKey: week.periodKey, currentPeriod: true, totalCapital } : skipToken,
-  );
+  const q = useGetGoalsProgressQuery(weekGoalsArgs(selectedAccountId, totalCapital, accountsReady, week));
   return useMemo(() => {
     // `currentData`: while another account loads, `data` still holds the last account's progress.
     const data = q.currentData;

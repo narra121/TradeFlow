@@ -4,7 +4,8 @@ const KEY = 'tq.compare';
 const listeners = new Set<() => void>();
 let memory: boolean | null = null;
 
-function read(): boolean {
+/** The preference outside React. */
+export function readCompare(): boolean {
   if (memory !== null) return memory;
   try {
     return localStorage.getItem(KEY) !== 'off';
@@ -25,7 +26,7 @@ function subscribe(cb: () => void) {
 
 /** The `Compare: previous period` preference, one value for Dashboard and Analytics; on by default (E-024). */
 export function useCompare(): [boolean, (on: boolean) => void] {
-  const on = useSyncExternalStore(subscribe, read, () => true);
+  const on = useSyncExternalStore(subscribe, readCompare, () => true);
   const set = useCallback((next: boolean) => {
     memory = next;
     try {

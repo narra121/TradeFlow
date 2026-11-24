@@ -30,6 +30,13 @@ describe('lazyPage', () => {
     expect(await screen.findByRole('heading', { name: 'Real page' })).toBeInTheDocument();
   });
 
+  it('passes its props to the page', async () => {
+    const Page = lazyPage((): Promise<{ default: (p: { name: string }) => JSX.Element }> => Promise.resolve({ default: ({ name }) => <h1>{name}</h1> }));
+    await Page.preload();
+    render(<Page name="Dashboard" />);
+    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+  });
+
   it('retries the import after a failed load', async () => {
     let calls = 0;
     const Page = lazyPage(() => (++calls === 1 ? Promise.reject(new Error('offline')) : page()));

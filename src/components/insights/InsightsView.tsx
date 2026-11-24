@@ -16,7 +16,7 @@ import { useAppSelector } from '@/store/hooks';
 import { useGenerateInsightMutation, useGetInsightSettingsQuery, useLazyListInsightsQuery, useListInsightsQuery } from '@/store/api/insightsApi';
 import { useGetStatsQuery } from '@/store/api/statsApi';
 import { plural } from '@/lib/evidence';
-import { clampedLabel, isMixedCurrency, periodLabel, reportAsText, reportRange, tradesInMessage } from '@/lib/ai/insightFormat';
+import { clampedLabel, isMixedCurrency, periodLabel, reportAsText, tradesInMessage } from '@/lib/ai/insightFormat';
 import { formatDateShort } from '@/lib/format';
 import { readApiError } from '@/lib/apiError';
 import { emitPlanSignal } from '@/lib/planErrors';
@@ -24,10 +24,10 @@ import { openTrialExpired } from '@/components/billing/readOnly';
 import { trackAiInsightGenerated } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import type { Insight } from '@/types/insights';
+import { REPORT_PAGE, insightsQueries } from './insightsQueries';
 import { NotesSwitch } from './NotesSwitch';
 import { ReportBody } from './ReportBody';
 
-const REPORT_PAGE = 50;
 /** Closed trades a report needs (the server's NOT_ENOUGH_TRADES rule, JournalAWSSetup insights/metrics.ts MIN_TRADES). */
 const MIN_REPORT_TRADES = 5;
 
@@ -47,7 +47,12 @@ export function InsightsView() {
   const filters = useAppSelector((s) => s.trades.filters);
   const trade = useTradeParam();
   const [params, setParams] = useSearchParams();
-  const { data, isLoading, isError, error, refetch } = useListInsightsQuery({ limit: REPORT_PAGE });
+  const queries = useMemo(
+    () => insightsQueries(filters, selectedAccountId),
+    [filters, selectedAccountId],
+  );
+  const { range } = queries;
+  const { data, isLoading, isError, error, refetch } = useListInsightsQuery(queries.list);
   const [loadPage, { isFetching: loadingMore }] = useLazyListInsightsQuery();
   const [older, setOlder] = useState<Insight[]>([]);
   // undefined: no older page loaded yet, so the cursor is the first page's.
@@ -82,17 +87,12 @@ export function InsightsView() {
     id ? accounts.find((a) => a.id === id)?.name ?? 'Account' : currency && isMixedCurrency(accounts, null) ? `All ${currency} accounts` : 'All accounts';
   // Reports made before the weekly review carry no currency: an all-accounts one may add currencies together.
   const insightCurrency = (i: Insight) => i.currency ?? i.review?.currency ?? accounts.find((a) => a.id === i.accountId)?.currency;
-  // "All time" has no real start and the API takes at most 366 days: longer scopes send their last 366 days, and the button says so.
-  const range = useMemo(
-    () => reportRange(filters.datePreset, filters.startDate, filters.endDate),
-    [filters.datePreset, filters.startDate, filters.endDate],
-  );
   const scopeLabel = range.clamped ? clampedLabel(range.to) : periodLabel(range.from, range.to);
   // A report adds its figures up, so it is made for one currency: choose an account first.
   const mixed = isMixedCurrency(accounts, selectedAccountId);
   // Trades in the report's range (all trades, open ones too): under the minimum the request cannot succeed.
   // `currentData`: while a new scope loads, `data` still holds the last scope's count.
-  const { currentData: scopeStats } = useGetStatsQuery({ accountId: selectedAccountId ?? 'ALL', startDate: range.from, endDate: range.to });
+  const { currentData: scopeStats } = useGetStatsQuery(queries.stats);
   const scopeTrades = scopeStats?.totalTrades;
   const tooFew = typeof scopeTrades === 'number' && scopeTrades < MIN_REPORT_TRADES;
   const tooFewText = tooFew ? `A report needs at least ${MIN_REPORT_TRADES} closed trades; this scope has ${plural(scopeTrades!, 'trade')}.` : null;

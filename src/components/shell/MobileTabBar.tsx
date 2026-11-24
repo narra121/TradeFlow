@@ -62,6 +62,7 @@ export function MobileTabBar({ onAddTrade }: MobileTabBarProps) {
               <li key={to}>
                 <button
                   type="button"
+                  data-prefetch={to}
                   onClick={() => {
                     setMoreOpen(false);
                     navigate(to);
@@ -77,6 +78,7 @@ export function MobileTabBar({ onAddTrade }: MobileTabBarProps) {
             <li>
               <button
                 type="button"
+                data-prefetch="/app/settings/profile"
                 onClick={() => {
                   setMoreOpen(false);
                   navigate('/app/settings/profile');
