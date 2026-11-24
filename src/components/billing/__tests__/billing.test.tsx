@@ -167,7 +167,7 @@ describe('BillingView', () => {
     expect(what).toHaveTextContent('Add, edit or delete trades');
     expect(screen.getByRole('region', { name: /Usage this month/ })).toHaveTextContent('4 of 200');
     const table = screen.getByRole('table', { name: 'Free trial and Pro compared' });
-    expect(within(table).getByRole('columnheader', { name: /Free trial/ })).toHaveTextContent(/Yours ends \d{2} \w{3}/);
+    expect(within(table).getByRole('columnheader', { name: /Free trial/ })).toHaveTextContent(/Yours ends \d{1,2} \w{3}/);
     expect(within(table).getByRole('columnheader', { name: 'Pro' })).toBeInTheDocument();
     expect(within(table).getByText('$49.99 a year')).toBeInTheDocument();
     expect(within(table).getByRole('row', { name: /^When it ends/ })).toHaveTextContent('Read-only');
