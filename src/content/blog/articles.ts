@@ -637,7 +637,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
       'Export the MetaTrader 5 history report, check server time, commission and swap, and journal forex and prop-firm trades with the right fields.',
     tags: ['forex', 'mt5', 'prop-trading', 'import'],
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-15',
+    updatedAt: '2026-11-24',
     readingTime: 5,
     summary:
       "In MetaTrader 5 open the Toolbox History tab, choose a period, right-click and pick Report. Report times are in broker server time, and commission and swap are separate columns. Journal pair, stop, risk in money, session and your firm's loss limits.",

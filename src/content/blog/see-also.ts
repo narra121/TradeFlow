@@ -45,6 +45,7 @@ const L = {
   journalPricing: { to: '/trading-journal-pricing', label: 'Trading journal pricing compared' },
   sebi: { to: '/sebi-fo-study', label: "SEBI's F&O study: the figures, sourced" },
   gtt: { to: '/blog/gtt-order-charges', label: 'GTT order charges by broker' },
+  mt5Export: { to: '/blog/mt5-trading-journal', label: 'How to export MT5 trade history for a journal' },
   oi: { to: '/blog/long-buildup-short-covering-long-unwinding', label: 'Long build-up, short covering and long unwinding explained' },
 } satisfies Record<string, SeeAlsoLink>;
 
@@ -60,7 +61,7 @@ export const SEE_ALSO: Record<string, SeeAlsoLink[]> = {
   'track-reduce-drawdown': [L.drawdown, L.maxDrawdown, L.ruin, L.equity, L.size, L.compounding, L.glossary],
   'trading-metrics-that-matter': [L.profitFactor, L.expectancyTerm, L.winRate, L.rMultiple, L.maxDrawdown, L.rr, L.glossary],
   'build-trading-plan': [L.size, L.rr, L.hours, L.overlap, L.equity],
-  'forex-trading-journal': [L.forex, L.mt5, L.hours, L.nySession, L.londonSession, L.pip, L.size, L.margin, L.compounding],
+  'forex-trading-journal': [L.forex, L.mt5, L.mt5Export, L.hours, L.nySession, L.londonSession, L.pip, L.size, L.margin, L.compounding],
   'day-trading-journal': [L.forex, L.fo, L.india, L.size, L.margin, L.overlap],
   'prop-trading-challenges': [L.prop, L.drawdown, L.ruin, L.equity, L.margin, L.compounding, L.screenshot, L.size],
   'importing-trades-from-broker': [L.mt5, L.mt4, L.zerodha, L.upstox, L.groww, L.angel, L.dhan, L.screenshot],

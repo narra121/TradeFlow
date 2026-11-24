@@ -49,7 +49,7 @@ export const SEO_PAGES: SeoPageMeta[] = [
     label: 'MT5 trading journal',
     parent: FOREX,
     publishedAt: '2026-11-15',
-    updatedAt: '2026-11-15',
+    updatedAt: '2026-11-24',
   },
   {
     path: '/mt4-trading-journal',

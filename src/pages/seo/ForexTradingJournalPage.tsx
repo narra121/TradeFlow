@@ -77,6 +77,10 @@ export default function ForexTradingJournalPage() {
         ))}
       </UL>
       <P>
+        Not saved a report before? <A to="/blog/mt5-trading-journal">How to export MT5 trade history for a journal</A> walks through it and what to check
+        in the file.
+      </P>
+      <P>
         Other platforms, such as cTrader, have no dedicated importer: export the trade history as CSV or Excel and match the columns, including the profit
         column (see <A to="/blog/importing-trades-from-broker">importing trades from your broker</A>). When a broker or prop firm offers no export at all,{' '}
         <A to="/import-trades-from-screenshot">import trades from a screenshot</A> of the trade list and check each row before saving.

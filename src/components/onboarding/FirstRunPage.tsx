@@ -151,7 +151,7 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
 
       <ol className="divide-y divide-border rounded-lg border border-border bg-card">
         <li className="space-y-3 p-4">
-          <StepHeading n={1} title="Create your trading account" done={gs.hasAccount} hint={gs.hasAccount ? undefined : 'Broker and type can be added later in Accounts.'} />
+          <StepHeading n={1} title="Create your trading account" done={gs.hasAccount} hint={gs.hasAccount ? undefined : 'A name and a starting balance are enough (0 is fine). Broker and type can be added later in Accounts.'} />
           {!gs.hasAccount && (
             <form ref={formRef} onSubmit={submitAccount} noValidate className={cn('space-y-3 pl-8', heldFile && 'rounded-md ring-1 ring-primary')}>
               {heldFile && <p role="status" className="text-13">Create an account first — your file is kept.</p>}
@@ -181,7 +181,7 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
         </li>
 
         <li className="space-y-3 p-4">
-          <StepHeading n={2} title="Get your trades in" done={gs.hasTrade} hint={gs.hasAccount ? undefined : 'Available after step 1'} />
+          <StepHeading n={2} title="Get your trades in" done={gs.hasTrade} hint={gs.hasAccount ? undefined : 'Drop a file now and it is kept until step 1 is done.'} />
           <div className="grid gap-3 pl-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
             <div
               onDragOver={(e) => { e.preventDefault(); setDragging(true); }}

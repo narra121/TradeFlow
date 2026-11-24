@@ -30,6 +30,7 @@ export function BrokerJournalPage({ id }: { id: BrokerPage['id'] }) {
       {b.exportNotes.map((n) => (
         <P key={n}>{n}</P>
       ))}
+      <SignupCta />
 
       <H2>What the {b.name} file contains</H2>
       <P>
@@ -47,6 +48,15 @@ export function BrokerJournalPage({ id }: { id: BrokerPage['id'] }) {
       </P>
 
       <H2>What TradeQut does with it</H2>
+      <img
+        src="/guide/import-trades.png"
+        alt="TradeQut Import page with account, source, drop zone and broker export guides. Sample data."
+        loading="lazy"
+        decoding="async"
+        width={1440}
+        height={900}
+        className="my-4 h-auto w-full rounded-lg border border-border"
+      />
       <OL>
         <li>
           Leave <em>Source</em> on <em>Auto-detect</em> or pick {b.name}, then drop the file on the Import page (CSV or

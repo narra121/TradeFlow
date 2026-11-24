@@ -76,7 +76,7 @@ export default function PropFirmTradingJournalPage() {
           minutes of a loss&quot;.
         </li>
         <li>
-          Import the trades: the <A to="/mt5-trading-journal">MT5 report</A> or <A to="/mt4-trading-journal">MT4 report</A> from the firm&apos;s terminal,
+          Import the trades: the <A to="/mt5-trading-journal">MT5 report</A> or <A to="/mt4-trading-journal">MT4 report</A> from the firm&apos;s terminal (<A to="/blog/mt5-trading-journal">how to export it</A>),
           or <A to="/import-trades-from-screenshot">screenshots</A> when the firm offers no export. Re-importing an overlapping period does not duplicate
           trades.
         </li>

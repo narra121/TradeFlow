@@ -100,6 +100,25 @@ export const DATA_FACTS = [
   'AI features describe your own past trades with figures calculated by code; they never give buy/sell recommendations.',
 ];
 
+export const VIDEO_LINKS = {
+  demo: 'https://www.youtube.com/watch?v=0iEfLqKpjJY',
+  mt5Import: 'https://www.youtube.com/watch?v=cU9EMW33ecQ',
+} as const;
+
+/**
+ * TradeQut's own public profiles. Every `url` is emitted as Organization `sameAs`; rows with a `label` are also linked
+ * from the public footer. List a profile only once its page is public.
+ */
+export const PROFILE_LINKS: { url: string; label?: string }[] = [
+  { url: 'https://www.youtube.com/@tradequt', label: 'YouTube' },
+  { url: 'https://x.com/tradequt', label: 'X' },
+  { url: 'https://github.com/tradequt', label: 'GitHub' },
+  { url: 'https://www.crunchbase.com/organization/tradequt' },
+  { url: 'https://www.indiehackers.com/product/tradequt' },
+  { url: 'https://wellfound.com/company/tradequt' },
+  { url: 'https://www.saashub.com/tradequt' },
+];
+
 export const COMPANY_FACTS = {
   name: PRODUCT_NAME,
   url: SITE_URL,
@@ -107,8 +126,8 @@ export const COMPANY_FACTS = {
   country: 'India',
   founded: '2026',
   logo: `${SITE_URL}/favicon-512.png`,
-  /** TradeQut's own public profile URLs (LinkedIn, X, YouTube, ...), emitted as Organization `sameAs`. Empty = nothing emitted. */
-  profiles: [] as string[],
+  /** Emitted as Organization `sameAs`. Empty = nothing emitted. */
+  profiles: PROFILE_LINKS.map((p) => p.url),
   /** Legal name shown on the contact block. */
   business: 'TradeQutJournal',
   /** `e164` for `tel:` links and JSON-LD, `display` for the page. */

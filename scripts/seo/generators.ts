@@ -84,7 +84,9 @@ export function buildLlmsFullTxt(): string {
   const lines: string[] = [];
   lines.push(`# ${PRODUCT_NAME} - full facts`, '', `> ${PRODUCT_DEFINITION}`, '');
   lines.push('## Overview', `- Website: ${SITE_URL}`, `- Contact: ${COMPANY_FACTS.email}`, `- Based in: ${COMPANY_FACTS.country}`, `- Platform: ${PLATFORM}`);
-  lines.push(`- Markets: ${MARKETS.join(', ')}`, `- Audiences: ${AUDIENCES.join('; ')}`, '');
+  lines.push(`- Markets: ${MARKETS.join(', ')}`, `- Audiences: ${AUDIENCES.join('; ')}`);
+  if (COMPANY_FACTS.profiles.length) lines.push(`- Official profiles: ${COMPANY_FACTS.profiles.join(', ')}`);
+  lines.push('');
   lines.push('## Pricing');
   lines.push(`- Every account starts with a ${TRIAL_DAYS}-day free trial with every Pro feature, no card required.`);
   lines.push(...priceLines().map((l) => `- ${l}`));

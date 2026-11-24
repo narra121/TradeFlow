@@ -80,7 +80,7 @@ describe('FirstRunPage', () => {
     const steps = screen.getAllByRole('listitem').filter((li) => li.parentElement?.tagName === 'OL');
     expect(steps).toHaveLength(3);
     expect(screen.getByText(/Step 1 of 3, not done/)).toBeInTheDocument();
-    expect(screen.getByText('Available after step 1')).toBeInTheDocument();
+    expect(screen.getByText('Drop a file now and it is kept until step 1 is done.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add a trade manually' })).toBeDisabled();
     expect(screen.getByText('Free trial: 14 days left. No card on file.')).toBeInTheDocument();
   });

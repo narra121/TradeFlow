@@ -98,6 +98,12 @@ the automatic revert.
 - Bing Webmaster Tools: import from Search Console or add the site; `VITE_BING_VERIFICATION` renders the verification tag.
 - IndexNow: the key file lives in `public/<key>.txt`; `scripts/seo/indexnow.mjs --since-days 14` pings changed URLs.
 - Analytics: set `VITE_GA_MEASUREMENT_ID` (empty = analytics off). Consent defaults to denied in EEA, UK and Switzerland.
+- Prod values for the three public variables above live in `TradeQut-Research/release/fe-prod-public.env`; the prod deploy script appends
+  every non-empty line to `.env.production`.
+- Traffic without an analytics tag: CloudFront standard logs for the prod distribution land in
+  `s3://tradequt-cf-logs-675016865482-us-east-1/prod/` (kept 90 days). `python TradeQut-Research/seo/tracking/cf_traffic.py --days 7`
+  reports human sessions by source, landing pages, the pricing/signup/app funnel and crawler hits. Outreach links carry `?ref=<channel>` so the
+  report can attribute them.
 - Ads are off at launch; they load only when `VITE_ADS_ENABLED=true` and never inside `/app`.
 
 ## 5a. Status and incidents

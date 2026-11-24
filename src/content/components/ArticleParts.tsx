@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import type { FaqItem } from '../product-facts';
+import { TRIAL_DAYS, type FaqItem } from '../product-facts';
 import { ScrollRegion } from '@/components/content/ScrollRegion';
 
 /** Building blocks for articles and SEO pages; class names match the existing article styling. */
@@ -199,7 +199,10 @@ export function Disclaimer({ children }: { children?: ReactNode }) {
 export function SignupCta({ text = 'Start free' }: { text?: string }) {
   return (
     <div className="signed-out-only mt-10 rounded-lg border border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <p className="text-foreground">Log your trades, see net P&amp;L after charges and find the rules you break most.</p>
+      <p className="text-foreground">
+        Import your MetaTrader or broker file and see net P&amp;L after charges and what each broken rule cost. {TRIAL_DAYS}-day free trial with every Pro
+        feature, no card.
+      </p>
       <Link
         to="/signup"
         className="inline-flex h-10 max-md:h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"

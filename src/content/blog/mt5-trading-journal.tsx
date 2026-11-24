@@ -1,8 +1,17 @@
 import { A, Callout, Disclaimer, H2, OL, P, Sources, UL } from '../components/ArticleParts';
+import { getMetaTraderPage } from '../forex-platforms';
+import { VIDEO_LINKS } from '../product-facts';
+
+const mt5 = getMetaTraderPage('mt5');
 
 export default function Mt5TradingJournal() {
   return (
     <>
+      <Callout title="Import the report instead of retyping it">
+        TradeQut reads this report as it is, {mt5.fileTypes}, and turns every closed position into a journal entry with net P&amp;L after
+        commission and swap. The <A to={mt5.path}>MT5 trading journal</A> page lists each column it reads, and{' '}
+        <A to={VIDEO_LINKS.mt5Import}>a 28-second video</A> shows it.
+      </Callout>
       <H2>Get your history out of MetaTrader</H2>
       <OL>
         <li>Open the terminal&apos;s Toolbox (View &rarr; Toolbox, or Ctrl+T) and go to the History tab.</li>

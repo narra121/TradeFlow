@@ -4,6 +4,7 @@ import { SEO } from '@/components/SEO';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { GUIDE_ALIASES } from '@/content/guideAnchors';
 import { GUIDE_ARTICLE_SCHEMA } from '@/config/seo';
+import { VIDEO_LINKS } from '@/content/product-facts';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { X } from 'lucide-react';
@@ -383,6 +384,13 @@ export function GuidePage() {
               <p className="max-w-2xl text-base text-foreground-soft">
                 A step-by-step guide to adding accounts, logging and importing trades, and reading your results. Screenshots show
                 sample data.
+              </p>
+              <p className="mt-3 max-w-2xl text-base text-foreground-soft">
+                Prefer to watch?{' '}
+                <a href={VIDEO_LINKS.demo} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4 hover:text-primary/80">
+                  See the 2-minute demo on YouTube
+                </a>
+                .
               </p>
             </div>
           </section>

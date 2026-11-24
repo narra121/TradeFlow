@@ -2,7 +2,7 @@ import { ContentPageShell } from '@/components/content/ContentPageShell';
 import { ANALYTICS_TABS } from '@/components/public/AnalyticsContents';
 import { A, Callout, Crumbs, Disclaimer, Faq, H2, OL, P, ShortAnswer, SignupCta, Sources, Table, UL } from '@/content/components/ArticleParts';
 import { METATRADER_PAGES, getMetaTraderPage, type MetaTraderPage } from '@/content/forex-platforms';
-import { PLAN_LIMITS, TRIAL_DAYS, proPrice } from '@/content/product-facts';
+import { PLAN_LIMITS, TRIAL_DAYS, VIDEO_LINKS, proPrice } from '@/content/product-facts';
 import { getSeoPage } from '@/content/seo-pages';
 import { seoPageSchema } from '@/config/seo';
 
@@ -31,6 +31,14 @@ export function MetaTraderJournalPage({ id }: { id: MetaTraderPage['id'] }) {
       {m.exportNotes.map((n) => (
         <P key={n}>{n}</P>
       ))}
+      {m.id === 'mt5' && (
+        <P>
+          What to check in the file before you import it (server time, commission and swap, partial closes) is covered in{' '}
+          <A to="/blog/mt5-trading-journal">how to export MT5 trade history for a journal</A>. <A to={VIDEO_LINKS.mt5Import}>A 28-second video</A> shows
+          the import.
+        </P>
+      )}
+      <SignupCta />
 
       <H2>What TradeQut reads from the report</H2>
       <P>
@@ -49,6 +57,15 @@ export function MetaTraderJournalPage({ id }: { id: MetaTraderPage['id'] }) {
       </P>
 
       <H2>What happens on import</H2>
+      <img
+        src="/guide/import-trades.png"
+        alt="TradeQut Import page with account, source, drop zone and broker export guides. Sample data."
+        loading="lazy"
+        decoding="async"
+        width={1440}
+        height={900}
+        className="my-4 h-auto w-full rounded-lg border border-border"
+      />
       <OL>
         <li>
           Drop the file on the Import page and choose the trading account it belongs to. TradeQut detects the {m.short} layout and lists every closed

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { PROFILE_LINKS } from '@/content/product-facts';
 import { openConsentSettings } from '@/lib/analytics';
 import { FOOTER_GROUPS } from './nav';
 
@@ -18,6 +19,19 @@ export function PublicFooter() {
                     </Link>
                   </li>
                 ))}
+                {g.title === 'Company' &&
+                  PROFILE_LINKS.filter((p) => p.label).map((p) => (
+                    <li key={p.url}>
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-6 max-md:min-h-11 items-center text-sm text-foreground-soft hover:text-foreground"
+                      >
+                        {p.label}
+                      </a>
+                    </li>
+                  ))}
                 {g.title === 'Legal' && (
                   <li>
                     <button
