@@ -24,6 +24,7 @@ import { chatTableText, chatTableView } from '@/lib/ai/chatTable';
 import { isMixedCurrency } from '@/lib/ai/insightFormat';
 import { citedTradeIds, renderAnswer } from '@/lib/ai/markdown';
 import { formatDayText } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { emitPlanSignal } from '@/lib/planErrors';
 import { openTrialExpired } from '@/components/billing/readOnly';
 import type { ChatMessage, QueryResult } from '@/types/chat';
@@ -305,10 +306,10 @@ export function ChatView() {
   );
 
   return (
-    <div className="grid min-h-[60vh] gap-0 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
+    <div className={cn('grid min-h-0 flex-1 gap-0 lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]', isMobile ? 'grid-rows-[minmax(0,1fr)]' : 'grid-rows-[auto_minmax(0,1fr)]')}>
       {!isMobile && (
-        <aside aria-label="Chats" className="border-r border-border">
-          <div className="p-3">
+        <aside aria-label="Chats" className="min-h-0 overflow-y-auto border-r border-border max-lg:max-h-[30vh]">
+          <div className="sticky top-0 z-10 bg-background p-3">
             <Button type="button" variant="outline" size="sm" className="w-full" onClick={newChat}>
               <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" /> New chat
             </Button>
@@ -317,7 +318,7 @@ export function ChatView() {
         </aside>
       )}
 
-      <section aria-label="Conversation" className="flex min-h-0 min-w-0 flex-col pb-16 md:pb-0 lg:px-6">
+      <section aria-label="Conversation" className="flex min-h-0 min-w-0 flex-col lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-2 py-2">
           {linkedId ? (
             <p className="text-xs text-muted-foreground">Answers use the report’s period and account.</p>
@@ -349,7 +350,7 @@ export function ChatView() {
           </p>
         )}
 
-        <div ref={scroller} onScroll={onScroll} role="log" aria-label="Conversation" aria-busy={turn?.status === 'streaming'} className="relative max-h-[calc(100vh-17rem)] min-h-[40vh] flex-1 overflow-y-auto">
+        <div ref={scroller} onScroll={onScroll} role="log" aria-label="Conversation" aria-busy={turn?.status === 'streaming'} className="relative min-h-32 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[760px] space-y-4 py-2">
             {sessionId && messagesFetching && stored.length === 0 && !turn ? (
               <Skeleton className="h-24" />
