@@ -8,8 +8,9 @@ How the public site is served, indexed and kept honest. Owner of the process: wh
 src/content/route-registry.ts  (the one list of public routes; lastmod comes from content)
    |-- scripts/seo/manifest.ts      -> dist/_seo/routes.json
    |-- scripts/prerender-routes.js  -> dist/<path>/index.html   (Playwright; waits for the page's own canonical)
+   |-- scripts/generate-og-image.js -> dist/og-image.png
    |-- scripts/seo/postbuild.ts     -> sitemap.xml, llms.txt, llms-full.txt, then verify-dist
-   |-- scripts/seo/cf-router.ts     -> infra/cloudfront/router.js (CloudFront Function, generated)
+   |-- scripts/seo/cf-router.ts     -> infra/cloudfront/router.js (CloudFront Function, generated; deployed by scripts/infra/cf-router.mjs)
 ```
 
 - `bun run build` runs all of it; `bun run build:dev` does the same with `noindex` on every page.
@@ -35,11 +36,14 @@ src/content/route-registry.ts  (the one list of public routes; lastmod comes fro
 ## 2. Add a page or an article
 
 Article (see `ARTICLE-TEMPLATE.md`): add `src/content/blog/<slug>.tsx`, add its entry to `BLOG_ARTICLES`
-(title, description <= 200 chars, tags, `summary`, `faq`, optional `howTo`), run `bun run test` and `bun run build`.
+(`slug`, title, description <= 200 chars, tags, `publishedAt`, `readingTime`, `summary`, `faq`, optional `updatedAt` and `howTo`,
+`content`), run `bun run test` and `bun run build`.
 Stand-alone page (pricing, comparison, landing for a topic): add an entry to `SEO_PAGES` in `src/content/seo-pages.ts`, a
 component in `src/pages/seo/`, and its loader in `SEO_PAGE_LOADERS` in `src/content/routes.ts` (a test fails if the two
-lists differ). Utility pages that must not be indexed (`/goodbye`, `/status`) go in `UTILITY_PAGE_LOADERS` and in the
-registry with `noindex: true`.
+lists differ). Utility pages that must not be indexed (`/goodbye`, `/status`, `/security`) go in `UTILITY_PAGE_LOADERS` and in
+`STATIC_ROUTES` of `route-registry.ts` with `noindex: true`. A page with its own `<Route>` (legal, hubs, calculators) needs a
+`lazyPage` export and a `PAGE_AT` entry in `src/content/publicPages.ts`, a `<Route>` in `src/PublicRoutes.tsx`, and a
+`STATIC_ROUTES` entry; `preloadRoute.test.ts` fails if a registered route has no preload loader.
 
 Rules: one `h1`; the short answer first; every number linked to a primary source with the date checked; no performance claims;
 product claims only from `src/content/product-facts.ts`.
@@ -47,10 +51,12 @@ product claims only from `src/content/product-facts.ts`.
 ## 3. Deploy and verify
 
 1. `bun run build` (production) must end with `verify-dist OK`.
-2. Deploy `dist/` to the bucket (the deploy workflows do this), then invalidate CloudFront. A new environment needs the CloudFront Function applied **after** this step (section 4).
+2. Deploy `dist/` to the bucket, then invalidate CloudFront: dev with `TradeQut-Research/release/deploy-fe-dev.sh`, prod with
+   `TradeQut-Research/release/deploy-fe-prod.ps1` (the GitHub deploy workflows do the same but deploys are run locally). A new environment needs the CloudFront Function applied **after** this step (section 4).
 3. Check three URLs: a new article returns 200 with its own title; `/definitely-missing` returns 404; `/app/dashboard` returns 200.
 4. In Search Console, request indexing for new URLs the first time; the sitemap is read automatically.
-5. Production only: the IndexNow ping step in `deploy-prod.yml` submits URLs changed in the last 14 days to Bing.
+5. Production only: `deploy-prod.yml` runs `node scripts/seo/indexnow.mjs --since-days 14` after deploying. `deploy-fe-prod.ps1`
+   does not, so run that command yourself in a checkout that has `dist/sitemap.xml` (add `--dry-run` to only count the URLs).
 
 ## 4. CloudFront Function: apply and revert
 
@@ -62,7 +68,7 @@ files yet (a first deploy, or an environment that never received this build), ev
 ```
 node scripts/infra/cf-router.mjs --env dev                    # dry run: the plan, plus the bucket preflight (reads only)
 node scripts/infra/cf-router.mjs --env dev --apply            # preflight, backup, test, publish, associate, wait, verify
-node scripts/infra/cf-router.mjs --env dev --revert <backup>  # restore the saved config, delete the function
+node scripts/infra/cf-router.mjs --env dev --revert <backup>  # restore the saved config and the previous function code
 node scripts/infra/cf-router.mjs --env prod --apply --confirm-prod   # owner only, after dev passes and dist/ is deployed
 ```
 
@@ -78,8 +84,8 @@ What `--apply` does, in order:
 4. Publish, associate (viewer-request and viewer-response), set the error responses, wait for the deployment.
 5. **Verify** against the live site: own pages, a real 404, `/app/dashboard` and `/auth/callback` answer 200 with the shell,
    `/blog/` redirects, the home page carries HSTS, `frame-ancestors` and the Report-Only CSP, dev sends `noindex`.
-6. **Automatic revert**: if verify fails, the saved config is restored (and the function deleted) and the command exits
-   non-zero. If that revert also fails, the message names the exact `--revert "<backup>"` command to run by hand.
+6. **Automatic revert**: if verify fails, the saved config is restored, the function's previous LIVE code is published again (or the
+   function is deleted when it did not exist before), and the command exits non-zero. If that revert also fails, the message names the exact `--revert "<backup>"` command to run by hand.
 
 The logic lives in `scripts/infra/cf-router-lib.mjs` with every side effect injected; `src/content/__tests__/cf-router-apply.test.ts`
 runs it against a mocked S3 and CloudFront (using the real `router.js`), including the refusal when an object is missing and
@@ -109,8 +115,8 @@ The shape is deliberately small; align it with the in-app incident bar when that
   errors, overflow, one `h1`, names and labels, text and target sizes, no blur or gradient, radii in {0, 2, 4, 6}, at most 6
   type sizes, focus never entirely under the sticky header, and a forced-colors smoke test (CI job `public-site`).
 - Budgets: `node scripts/perf/budget.mjs` measures gzip JS and CSS, fonts, LCP and CLS on four public routes against the
-  targets in `scripts/perf/budgets.json`. The baseline is a ratchet: a metric may not get worse than its baseline; lower the
-  baseline with `--record-baseline` after an improvement. Reports are written to `--out`.
+  targets in `scripts/perf/budgets.json`. The baseline is a ratchet: a metric that is over its target may not exceed its baseline
+  by more than 5%; lower the baseline with `--record-baseline` after an improvement. Reports are written to `--out`.
 - Import template: `public/import-template.csv` (three sample rows) is the file users download on the Import page; it parses
   through the backend's generic importer ("Other broker").
 
@@ -134,7 +140,13 @@ rules and Google policy).
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Build fails with `title duplicates ...` | two pages share a title | give each its own title in the registry/page |
-| Prerender times out on one route | the route is missing from `App.tsx` (it renders NotFound) or throws | add the route (`CONTENT_ROUTES` for SEO pages); check the page in `vite preview` |
+| Prerender times out on one route | the route has no `<Route>` (it renders NotFound, so the canonical never matches) or the page throws | add the route (`CONTENT_ROUTES` via `routes.ts` for SEO pages, `PublicRoutes.tsx` for others); check the page in `vite preview` |
 | `cf-router.test` fails | `route-registry.ts` changed | `bun scripts/seo/cf-router.ts --write` |
 | Dev page serves the home page | the function is not associated or the bucket is stale | re-run `--apply`; deploy the new `dist/` |
 | Page not indexed after weeks | thin or duplicate content, or blocked | Search Console URL Inspection; improve the page; check `robots` and canonical |
+
+## 9. Making changes
+
+1. New page or article: section 2 above, and [ARCHITECTURE.md](../ARCHITECTURE.md) section 13(b) for the ordered file list.
+2. Changed routes, hosts, `SPA_PREFIXES` or the `index.html` inline script: `bun scripts/seo/cf-router.ts --write`, then `bun run test` (`cf-router.test`), deploy `dist/`, then section 4 (`cf-router.mjs` dev, then prod).
+3. Before deploy: `bun run test`, `bun run build` (ends with `verify-dist OK`), optionally `node scripts/seo/audit-public.mjs --out <dir>` and `node scripts/perf/budget.mjs --out <dir>`.

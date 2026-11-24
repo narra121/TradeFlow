@@ -1,139 +1,101 @@
-# TradeQut Frontend
+# TradeFlow (TradeQut frontend)
 
-React + TypeScript trading journal frontend. Deployed to CloudFront + S3.
+The web frontend of TradeQut (tradequt.com), a trading journal. React 18, TypeScript, Vite, Tailwind CSS with shadcn/ui (Radix), Redux Toolkit with RTK Query, React Router 6, AWS Amplify Auth (Cognito), Recharts. One build produces a prerendered public site (marketing, SEO, calculators, blog) and the signed-in app under `/app`.
 
-## Tech Stack
+| Environment | Site | API | Backend stack |
+|---|---|---|---|
+| dev | https://dev.tradequt.com | https://api-dev.tradequt.com | `tradequt-dev` |
+| prod | https://tradequt.com | https://api.tradequt.com | `tradequt-prod` |
 
-React 18, TypeScript, Vite, Redux Toolkit (RTK Query), shadcn/ui, Tailwind CSS, Recharts, React Router, Axios, Zod.
+Backend: `../JournalAWSSetup` (see its [README](../JournalAWSSetup/README.md)). Deploy scripts and ops notes: `../TradeQut-Research/release/`.
 
-## Local Development
+## Docs
 
-### Against remote dev API (default)
+| Doc | Read it for |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the app is structured, where each thing lives, deploy, and step-by-step recipes for changes |
+| [docs/UI-STYLING.md](docs/UI-STYLING.md) | Design tokens, components and styling rules |
+| [docs/growth/SEO-RUNBOOK.md](docs/growth/SEO-RUNBOOK.md) | Prerender, sitemap, CloudFront router, indexing, audit and budgets |
+| [JournalAWSSetup/README.md](../JournalAWSSetup/README.md) | Backend API, including the "Error contract" |
 
-```powershell
-bun install
-cp .env.example .env.development   # fill in values from deployed backend
-bun run dev                         # http://localhost:8080 -> remote AWS dev API
-```
+## Prerequisites
 
-### Against local backend (full stack)
+- [Bun](https://bun.sh) (CI uses 1.3.12) for installs and scripts; Node for the `node scripts/...` steps.
+- Chromium for Playwright (`bunx playwright install chromium`): needed by `bun run build` (prerender, OG image) and `bun run test:e2e`.
+- To deploy: AWS CLI with the `personal` profile (region `us-east-1`).
 
-Requires Docker Desktop running + backend SAM local (see JournalAWSSetup README).
+## Quick start (against the dev API)
 
-**Terminal 1 - Backend:**
-```powershell
-cd ..\JournalAWSSetup
-sam build --parallel --cached
-sam local start-api --port 3001 --env-vars env-local.json
-```
+1. `bun install`
+2. Create `.env.development.local` from `.env.example` with the dev backend's values (next section). The file is git-ignored.
+3. `bun run dev` and open http://localhost:8080. In this mode the app calls `/v1` on its own origin and Vite proxies it to the dev API (the dev API allows only its own CORS origins).
+4. Sign in with a dev account, or sign up.
 
-**Terminal 2 - Frontend:**
-```powershell
-bun run dev:local                   # http://localhost:8080 -> proxied to localhost:3001
-```
+Checks before you hand work over: `bunx tsc -p tsconfig.app.json --noEmit`, `bun run lint`, `bun run test` (details in [ARCHITECTURE.md](docs/ARCHITECTURE.md), section 11).
 
-`dev:local` uses `.env.localdev` which sets `VITE_API_URL=/v1`. Vite proxies `/v1/*` requests to `http://127.0.0.1:3001` to avoid CORS issues.
+## Environment variables
 
-### Environment Variables
+Vite reads `.env`, `.env.local`, `.env.<mode>` and `.env.<mode>.local`. `dev` and `build:dev` use mode `development`; `build` uses `production`. The build stops if a required variable is missing. Never commit values.
 
-Copy `.env.example` and fill in values from the backend stack outputs:
+| Variable | Required | Where the value comes from |
+|---|---|---|
+| `VITE_API_URL` | yes | Backend stack output `ApiBaseUrl` (includes the `/v1` stage) |
+| `VITE_COGNITO_USER_POOL_ID` | yes | Stack output `UserPoolId` |
+| `VITE_COGNITO_CLIENT_ID` | yes | Stack output `UserPoolClientId` |
+| `VITE_COGNITO_DOMAIN` | no | Stack output `CognitoDomain`; empty hides Google sign-in |
+| `VITE_GA_MEASUREMENT_ID` | no | GA4 property; empty turns analytics off |
+| `VITE_ADS_ENABLED` | no | `true` turns ads on (public content pages only) |
+| `VITE_GSC_VERIFICATION`, `VITE_BING_VERIFICATION` | no | Search Console and Bing verification tags |
+| `VITE_FEEDBACK_API` | no | `true` enables the in-app feedback request |
 
-```bash
-# Get values from deployed backend
-aws cloudformation describe-stacks --stack-name tradequt-dev \
-  --query "Stacks[0].Outputs" --output table
-```
+Read the stack outputs with: `aws cloudformation describe-stacks --stack-name tradequt-dev --query "Stacks[0].Outputs" --profile personal --region us-east-1`.
 
-| Variable | Source |
-|----------|--------|
-| `VITE_API_URL` | Backend stack output `ApiBaseUrl` |
-| `VITE_AWS_REGION` | AWS region (e.g. `us-east-1`) |
-| `VITE_COGNITO_USER_POOL_ID` | Backend stack output `UserPoolId` |
-| `VITE_COGNITO_CLIENT_ID` | Backend stack output `UserPoolClientId` |
-| `VITE_COGNITO_DOMAIN` | Cognito hosted UI domain (e.g. `auth-tradequt-dev.tradequt.com`) |
+## Scripts
 
-## Build
+From `package.json`:
 
-```bash
-bun run build     # production build -> dist/
-bun run preview   # preview production build locally
-```
+| Script | What it does |
+|---|---|
+| `bun run dev` | Vite dev server on port 8080, mode development, proxies `/v1` to the dev API |
+| `bun run dev:local` | Dev server in mode `localdev`: reads `.env.localdev` (create it yourself) and proxies `/v1` to `127.0.0.1:3001` |
+| `bun run build` | Production build: Vite, route manifest, prerender, OG image, sitemap and `llms.txt`, verify-dist |
+| `bun run build:dev` | Same in development mode: every page is `noindex` |
+| `bun run preview` | Serves `dist/` with `vite preview` |
+| `bun run lint` | ESLint |
+| `bun run test` | Vitest, one run |
+| `bun run test:watch` | Vitest watch mode |
+| `bun run test:coverage` | Vitest with v8 coverage |
+| `bun run test:ui` | `vitest --ui`; needs `@vitest/ui`, which is not in `devDependencies` |
+| `bun run test:e2e` | Playwright end-to-end tests (starts the dev server itself) |
+| `bun run test:e2e:ui`, `bun run test:e2e:headed` | Playwright UI mode and headed mode |
+| `bun run deploy:dev`, `deploy:prod`, `infra:setup` | Broken: they call `deploy-frontend-dev.ps1`, `deploy-frontend-prod.ps1` and `infra/setup-cloudfront.ps1`, which are not in the repo. Use the deploy steps below |
 
-## Deploy to CloudFront + S3
+There is no typecheck script: use `bunx tsc -p tsconfig.app.json --noEmit`.
 
-Deployment is automated via GitHub Actions on push to `main` (dev) or manual dispatch (prod).
+## Deploy
 
-### Dev (automatic on push to main)
+Order: backend, then frontend, then (only if it changed) the CloudFront router. Details, rollback and the router steps: [ARCHITECTURE.md](docs/ARCHITECTURE.md), section 12.
 
-```bash
-bun run build:dev
-aws s3 sync dist/ s3://tradequt.com-dev --delete
-aws cloudfront create-invalidation --distribution-id $CF_DISTRIBUTION_ID_DEV --paths "/*"
-```
+- **Dev**: `bun run build:dev`, then `bash C:/Users/narpra1/Work/Personal/TradeQut-Research/release/deploy-fe-dev.sh` (backs up the bucket, syncs to `tradequt.com-dev`, sets cache headers, invalidates CloudFront).
+- **Prod**: `powershell C:/Users/narpra1/Work/Personal/TradeQut-Research/release/deploy-fe-prod.ps1 [-Ref <git ref>]`. It builds from a clean temporary worktree of the ref (default `origin/main`), backs up the bucket, syncs to `tradequt.com-prod` and invalidates CloudFront. Only committed code is deployed: pass `-Ref <branch or commit>` when the work is not on `origin/main`. Analytics and verification tags are off in this build (see `docs/ARCHITECTURE.md` section 12).
+- **CloudFront router**: `node scripts/infra/cf-router.mjs --env dev|prod [--apply]` (prod also needs `--confirm-prod`).
+- `.github/workflows` has `test.yml` (push and pull request to `main`/`develop`), `deploy.yml` (dev, after Tests pass on `main` or manual) and `deploy-prod.yml` (manual). Work is done on local branches and deploys are run locally.
 
-### Prod (manual trigger in GitHub Actions)
+## Making changes
 
-Go to Actions -> "Deploy to Production" -> Run workflow.
+Full ordered file lists are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), section 13.
 
-### GitHub Secrets
+| Change | Recipe |
+|---|---|
+| New app screen or tab | 13(a): view, `AppPage.tsx`, `navItems.ts`, palette keywords, prefetch, e2e route list |
+| New public page or article | 13(b) and [ARTICLE-TEMPLATE](docs/growth/ARTICLE-TEMPLATE.md): page, `seo-pages.ts` + `routes.ts` (or `publicPages.ts` + `PublicRoutes.tsx` + `route-registry.ts`) |
+| New backend endpoint | 13(c): types, RTK Query endpoint with tags, error handling |
+| New trade field, setting, shortcut or stat card | 13(d), 13(f), 13(g), 13(h) |
+| Prices or plan limits on the site | 13(e): edit `src/content/product-facts.ts` only |
 
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-- `VITE_API_URL_DEV` / `_PROD`, `VITE_COGNITO_DOMAIN_DEV` / `_PROD`
-- `VITE_COGNITO_CLIENT_ID_DEV` / `_PROD`, `VITE_COGNITO_USER_POOL_ID_DEV` / `_PROD`
-- `CF_DISTRIBUTION_ID_DEV` / `_PROD`
-- Optional: `VITE_GA_MEASUREMENT_ID_DEV` / `_PROD`, `VITE_GSC_VERIFICATION`, `VITE_BING_VERIFICATION`
+After every change run:
 
-### Build Pipeline
-
-`bun run build` (production) and `bun run build:dev` (every page `noindex`) run, in order:
-
-```bash
-vite build                          # app bundle
-bun scripts/seo/manifest.ts         # route registry -> dist/_seo/routes.json
-node scripts/prerender-routes.js    # prerender every public route to dist/<path>/index.html
-node scripts/generate-og-image.js   # OG image (1200x630)
-bun scripts/seo/postbuild.ts        # sitemap.xml, llms.txt, llms-full.txt, then verify-dist (fails the build on a bad page)
-```
-
-The public routes live in `src/content/route-registry.ts`. Serving (CloudFront Function, 404s, indexing, IndexNow) is
-documented in `docs/growth/SEO-RUNBOOK.md`. Optional secrets: `VITE_GA_MEASUREMENT_ID_DEV` / `_PROD`,
-`VITE_GSC_VERIFICATION`, `VITE_BING_VERIFICATION` (empty = off).
-
-## Project Structure
-
-```
-src/
-  components/
-    views/       # Page views (Dashboard, TradeLog, Analytics, Goals, etc.)
-    ui/          # shadcn/ui primitives
-    trade/       # Trade-specific components
-    account/     # Account components
-    dashboard/   # Dashboard components
-  store/
-    api/         # RTK Query endpoints
-    slices/      # Redux slices (auth, accounts, trades)
-  lib/
-    api/         # Type definitions + extractTrades API
-    api.ts       # Axios client with token refresh
-    cache/       # IndexedDB trade cache (sync, crypto, proactive)
-  hooks/         # Custom React hooks
-  types/         # TypeScript interfaces
-```
-
-## Trade Cache (IndexedDB)
-
-Encrypted per-user cache for the Insights page. Uses `POST /v1/trades/sync` for efficient sync:
-
-1. Sends local day hashes to server, server compares and returns only stale trades
-2. Stores in IndexedDB with AES-GCM encryption (per-user key derived from userId)
-3. Always reads from IndexedDB (single source of truth for Insights/Chat)
-
-Key files in `src/lib/cache/`:
-
-| File | Purpose |
-|------|---------|
-| `sync.ts` | Orchestrates hash-based sync with `/v1/trades/sync` endpoint |
-| `trade-cache.ts` | IndexedDB read/write operations |
-| `crypto.ts` | AES-GCM encryption/decryption for cached trades |
-| `proactive-cache.ts` | Background sync triggered after trade mutations |
-| `hash.ts` | Day-level hash computation for change detection |
+1. `bunx tsc -p tsconfig.app.json --noEmit`
+2. `bun run lint`
+3. `bun run test`
+4. For public pages or content: `bun run build`, which must end with `verify-dist OK`.

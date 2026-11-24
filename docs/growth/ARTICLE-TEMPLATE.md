@@ -40,12 +40,11 @@ Parts available from `ArticleParts`: `ShortAnswer`, `H2`, `H3`, `P`, `UL`, `OL`,
 ```ts
 {
   slug: '<slug>',
-  title: '<<= 70 characters, primary keyword first>',
+  title: '<60 characters or fewer, primary keyword first>',
   description: '<<= 200 characters; what the reader gets>',
   tags: ['<tag>', '<tag>'],
   publishedAt: '<YYYY-MM-DD>',
   readingTime: <minutes>,
-  featured: false,
   summary: '<2-3 sentence short answer that stands alone>',
   faq: [
     { question: '<question ending with ?>', answer: '<answer of at least one full sentence>' },
@@ -62,4 +61,3 @@ Parts available from `ArticleParts`: `ShortAnswer`, `H2`, `H3`, `P`, `UL`, `OL`,
 - [ ] One `h1` (the page supplies it), headings in order, tables have captions and header cells.
 - [ ] Links to 2-3 related articles, a glossary term or calculator where one exists.
 - [ ] `bun run test` passes; `bun run build` ends with `verify-dist OK`.
-- [ ] Added to `docs/growth/CONTENT-CALENDAR.md` as published.
