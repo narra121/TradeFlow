@@ -117,6 +117,8 @@ export const PROFILE_LINKS: { url: string; label?: string }[] = [
   { url: 'https://www.indiehackers.com/product/tradequt' },
   { url: 'https://wellfound.com/company/tradequt' },
   { url: 'https://www.saashub.com/tradequt' },
+  { url: 'https://www.f6s.com/tradequt' },
+  { url: 'https://sourceforge.net/software/product/TradeQut/' },
 ];
 
 export const COMPANY_FACTS = {
