@@ -7,12 +7,12 @@ import { readApiError } from '@/lib/apiError';
 
 const INTERVAL_KEY = 'tq.billing.interval';
 
-/** The interval chosen on Plan & billing, default yearly; every upgrade entry reuses it (D.11). */
+/** The interval chosen on Plan & billing, default monthly; every upgrade entry reuses it (D.11). */
 export function readInterval(): Interval {
   try {
-    return localStorage.getItem(INTERVAL_KEY) === 'month' ? 'month' : 'year';
+    return localStorage.getItem(INTERVAL_KEY) === 'year' ? 'year' : 'month';
   } catch {
-    return 'year';
+    return 'month';
   }
 }
 

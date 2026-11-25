@@ -157,7 +157,7 @@ describe('yearlySavingPercent', () => {
 });
 
 describe('BillingView', () => {
-  it('trial: the sentence, what changes when it ends, usage and the Free trial vs Pro table; Upgrade opens checkout yearly', async () => {
+  it('trial: the sentence, what changes when it ends, usage and the Free trial vs Pro table; Upgrade opens checkout monthly', async () => {
     response = base({}, { broker_import: 4 });
     checkout.mockResolvedValue({ url: 'https://checkout.stripe.test/cs_test_1' });
     wrap();
@@ -169,11 +169,11 @@ describe('BillingView', () => {
     const table = screen.getByRole('table', { name: 'Free trial and Pro compared' });
     expect(within(table).getByRole('columnheader', { name: /Free trial/ })).toHaveTextContent(/Yours ends \d{1,2} \w{3}/);
     expect(within(table).getByRole('columnheader', { name: 'Pro' })).toBeInTheDocument();
-    expect(within(table).getByText('$49.99 a year')).toBeInTheDocument();
+    expect(within(table).getByText('$4.99 a month')).toBeInTheDocument();
     expect(within(table).getByRole('row', { name: /^When it ends/ })).toHaveTextContent('Read-only');
     expect(document.body.textContent).not.toMatch(/Free plan|on Free|move to Free/);
     await userEvent.click(screen.getAllByRole('button', { name: 'Upgrade to Pro' })[0]);
-    expect(checkout).toHaveBeenCalledWith({ interval: 'year' });
+    expect(checkout).toHaveBeenCalledWith({ interval: 'month' });
     await vi.waitFor(() => expect(assign).toHaveBeenCalledWith('https://checkout.stripe.test/cs_test_1'));
   });
 
@@ -191,19 +191,19 @@ describe('BillingView', () => {
     expect(document.body.textContent).not.toMatch(/Free plan|on Free/);
   });
 
-  it('switching to monthly changes the price and is remembered for the next upgrade entry', async () => {
+  it('switching to yearly changes the price and is remembered for the next upgrade entry', async () => {
     response = base();
     wrap();
-    await userEvent.click(screen.getByRole('radio', { name: /Monthly/ }));
-    expect(within(screen.getByRole('table')).getByText('$4.99 a month')).toBeInTheDocument();
-    expect(localStorage.getItem('tq.billing.interval')).toBe('month');
+    await userEvent.click(screen.getByRole('radio', { name: /Yearly/ }));
+    expect(within(screen.getByRole('table')).getByText('$49.99 a year')).toBeInTheDocument();
+    expect(localStorage.getItem('tq.billing.interval')).toBe('year');
   });
 
   it('the Free trial column prints $0 for 14 days and the usage row is AI reports', () => {
     response = base();
     wrap();
     const row = within(screen.getByRole('table')).getByRole('row', { name: /^Price/ });
-    expect(row.textContent).toMatch(/^Price\$0 for 14 days\$49\.99/);
+    expect(row.textContent).toMatch(/^Price\$0 for 14 days\$4\.99 a month/);
     expect(screen.getByText('AI reports')).toBeInTheDocument();
   });
 
@@ -221,6 +221,7 @@ describe('BillingView', () => {
   });
 
   it('the phone Pro card states the yearly price with its monthly equivalent, as the desktop table does', () => {
+    localStorage.setItem('tq.billing.interval', 'year');
     wrap();
     const card = screen.getByRole('region', { name: 'Pro plan' });
     expect(within(card).getByRole('heading', { level: 4 }).textContent).toBe('Pro $49.99 a year ($4.17 a month)');
@@ -229,7 +230,7 @@ describe('BillingView', () => {
   it('shows INR prices for an INR billing currency', () => {
     response = base({}, {}, { billingCurrency: 'INR' });
     wrap();
-    expect(within(screen.getByRole('table')).getByText('₹4,999 a year')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('₹499 a month')).toBeInTheDocument();
   });
 
   it('writes prices as the pricing page does: ₹499 a month, not ₹499.00', () => {
