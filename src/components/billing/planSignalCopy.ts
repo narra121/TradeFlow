@@ -14,7 +14,6 @@ const QUOTA_FEATURES: Record<string, { noun: string; row: string }> = {
 const PLAN_FEATURES: Record<string, { name: string; answers: string }> = {
   advanced_analytics: { name: 'Advanced analytics', answers: 'See results by setup, session, mistake cost and time of day.' },
   tax_report: { name: 'The tax report', answers: 'See charges and tax P&L in one report.' },
-  auto_sync: { name: 'Automatic broker sync', answers: 'Pull trades from your broker without files.' },
 };
 
 function proIncludes(row: string): string {
