@@ -70,7 +70,7 @@ Lazy loading and chunk errors:
 | `components/trade/`, `components/tradelog/` | Trade form and pane (`TradeForm`, `TradePane`, `PaneHost`, `tradeFormState.ts`), trade table, bulk bar, filters | Anything on a single trade or the trade list |
 | `components/dashboard/`, `calendar/`, `analysis/`, `goals/`, `insights/`, `chat/`, `import/`, `account/`, `settings/`, `profile/`, `onboarding/`, `help/` | Pieces of one screen or feature, named after it | The piece belongs to that feature only |
 | `components/stats/` | Shared statistic parts: `StatStrip`/`StatCell`, `MetricInfo`, `metricDefs.ts` (label, definition, formula per metric), period/compare/currency hooks | A figure shown on more than one screen |
-| `components/billing/` | Plan UI: `PlanCard`, `PlansTable`, `UpgradeDialog`, `ProGate` (locked previews), `BillingView`, `useUpgrade` | Plan, quota or upgrade UI |
+| `components/billing/` | Plan UI: `PlanCard`, `PlansTable`, `UpgradeDialog`, `ProGate` (locked previews), `BillingView`, `useUpgrade` (the billing interval every upgrade entry opens with: monthly, or yearly once the user picked it on Plan & billing; kept in `localStorage` `tq.billing.interval`) | Plan, quota or upgrade UI |
 | `components/auth/` | Auth screens and helpers: `AuthPage`, `RequireAuth`, `useLogout`, Google button, `loggingOut.ts` | Login, signup, reset flows |
 | `components/public/` | Public frame: `PublicLayout`, header, footer, `nav.ts` (link lists), `PricingTable` | Public header or footer |
 | `components/content/` | Building blocks of public content pages: `ContentPageShell`, article card/TOC/share, calculator frame | Shared by several public pages |
@@ -103,14 +103,14 @@ Important parts of `lib/`:
 | `lib/forex/*` | Calculators for public pages: margin, compounding, prop drawdown, risk of ruin, sessions engine |
 | `lib/positionSize.ts`, `riskReward.ts`, `expectancy.ts`, `equityCurve.ts`, `glossaryCalc.ts` | Public calculator maths |
 | `lib/import/*` | Import flow helpers: mapping memory, row editing, screenshot limits, skipped-line recovery, conversion to create payloads (`toCreateItems`) |
-| `lib/importFlowStore.ts` | Small module store for the import-in-progress state |
+| `lib/importFlowStore.ts` | Small module store for the import-in-progress state; `importFlow.queue(files)` hands files to the import page (section 5) |
 | `lib/tradeColumns.ts`, `tradeFilters.ts`, `tradeGroups.ts`, `savedViews.ts`, `stickyRows.ts` | Trade list: columns, filters and sort, grouping, saved views |
 | `lib/tradePreview.ts` | Asset-class inference, lot sizes, quantity labels for the form |
 | `lib/patchTrade.ts`, `bulkPatch.ts` | Partial trade updates and bulk edit operations |
 | `lib/exportCsv.ts` | CSV export (fixed 32-column schema) |
 | `lib/calendar.ts`, `dashboard.ts`, `analyticsRows.ts`, `drillDown.ts`, `evidence.ts` | Calendar month model, dashboard tallies and equity series, analytics breakdown rows, drill-down links, evidence thresholds (mirrors the backend) |
 | `lib/ai/*` | Chat streaming (`chatStream.ts`, `sse.ts`), safe markdown (`markdown.tsx`), chat/insight/review text formatting |
-| `lib/analytics/*` | GA4 loader, consent, web vitals |
+| `lib/analytics/*` | GA4 loader, consent, web vitals. `initAnalytics()` turns the tag's own page view off and gives it a sanitized `page_location` through a global `gtag('set', ...)` made before the tag loads, because the Google tag ignores both as on-page `config` parameters. `trackPageView()` sends the one page view per route and sets the location again. `sanitizeLocation()` keeps only campaign parameters (`utm_*`, `gclid`, `gbraid`, `wbraid`, `msclkid`), so an OAuth `code` or a Stripe `session_id` never reaches GA |
 | `lib/keymap.ts`, `regions.ts`, `paletteRecent.ts` | Keyboard map, F6 landmarks, recent palette items |
 | `lib/errorReporter.ts`, `incident.ts` | Browser error reports to the API; status banner parsing |
 | `lib/cache/trade-cache.ts` | Only `clearDatabase()`: removes the retired IndexedDB trade cache on logout |
@@ -179,7 +179,7 @@ Rules the code follows:
 | `hooks/useFormDraft.ts` | `sessionStorage`, key set by the caller | Unsaved trade form (keys starting `tq.draft.` are what `lib/scope.ts` `hasTradeDrafts()` counts) |
 | `hooks/useTradeParam.ts` | URL query | Trade pane state: `?trade=<id or new>&edit=1&pane=full` |
 | `lib/savedViews.ts`, `lib/tradeColumns.ts` | `localStorage` | Saved trade list views, column choice |
-| `lib/importFlowStore.ts` | memory | Import in progress |
+| `lib/importFlowStore.ts` | memory | Import in progress, and files another screen hands to the import page. The first-run page (`components/onboarding/FirstRunPage.tsx`) keeps a dropped or chosen file, fills in the account form (name `My trading account`, balance 0, only where nothing was typed) and labels its button "Create account and import"; once the account exists it queues the file and opens `/app/import`, where `ImportCenter` reads `queued` |
 
 **Scope (account + period).** The scope decides which trades every scoped screen shows.
 
@@ -312,7 +312,7 @@ In `bun run dev` (development, serve) the app calls `/v1` on its own origin and 
 1. `bun run build:dev` (must end with `verify-dist OK`).
 2. `bash C:/Users/narpra1/Work/Personal/TradeQut-Research/release/deploy-fe-dev.sh`. It checks `dist/index.html` and `_spa.html`, backs up the bucket `tradequt.com-dev` to `TradeQut-Research/build/backups/nodecision-20261113/s3_tradequt.com-dev_<timestamp>/` (and writes a `.REVERT.txt` with the exact revert command), syncs `dist/` with `--delete`, sets cache headers (HTML no-cache, `assets/*.js|css` immutable, txt/xml 1 h), and invalidates distribution `E2YV3RSX90ESV4`.
 
-**Prod frontend**: `powershell TradeQut-Research/release/deploy-fe-prod.ps1 [-Ref <git ref>]` (default `origin/main`). It fetches, creates a clean temporary git worktree at the ref, writes `.env.production` there (public values, API `https://api.tradequt.com/v1`), `bun install`, `bun run build`, refuses a dist that references `lambda-url`, `api-dev.tradequt` or `execute-api`, or lacks `_spa.html`/`error.html`, backs up the bucket to disk and to the artifacts bucket, syncs to `tradequt.com-prod` with the same cache headers, invalidates `E1HW3I3EQVZLRD`, prints a `REVERT:` line, and removes the worktree. It deploys only what is committed at the ref: commit first, and pass `-Ref <branch or commit>` while the work is not on `origin/main` (for example `-Ref feat/ux-redesign`). The script writes only the API and Cognito values, so `VITE_GA_MEASUREMENT_ID`, `VITE_GSC_VERIFICATION` and `VITE_BING_VERIFICATION` (which `.github/workflows/deploy-prod.yml` fills from GitHub secrets) are empty: analytics and the verification meta tags are off in a script-built prod. It does not run IndexNow: after a prod deploy run `node scripts/seo/indexnow.mjs --since-days 14` in a checkout that has `dist/sitemap.xml`. Run `TradeQut-Research/release/preflight.ps1` (read-only AWS checks) before a first cut-over and `browser-smoke.mjs` (loads prod pages, reports console errors) after.
+**Prod frontend**: `pwsh -NoProfile -File TradeQut-Research/release/deploy-fe-prod.ps1 [-Ref <git ref>]` (default `origin/main`; PowerShell 7, because under Windows PowerShell 5.1 the run stops when bun writes to stderr). It fetches, creates a clean temporary git worktree at the ref, writes `.env.production` there (public values, API `https://api.tradequt.com/v1`), `bun install`, `bun run build`, refuses a dist that references `lambda-url`, `api-dev.tradequt` or `execute-api`, or lacks `_spa.html`/`error.html`, backs up the bucket to disk and to the artifacts bucket, syncs to `tradequt.com-prod` with the same cache headers, invalidates `E1HW3I3EQVZLRD`, prints a `REVERT:` line, and removes the worktree. It deploys only what is committed at the ref: commit first, and pass `-Ref <branch or commit>` while the work is not on `origin/main` (for example `-Ref feat/ux-redesign`). The script does not compare the ref with what is live: a ref that is already live is built and uploaded again as a new deploy. Before a deploy, compare `git rev-parse --short <ref>` with the `DEPLOYED` line of the newest `TradeQut-Research/release/fe-deploy-N.log` and read `git show --name-status <ref>`, and run the public-site audit and the budgets of section 11 on a fresh install (CI runs them on `origin/main`). It does not keep the PC awake either: if Windows sleeps during a run, the script pauses and goes on after the wake. Besides the API and Cognito values the script copies the public page values from `fe-prod-public.env` beside it (`VITE_GA_MEASUREMENT_ID`, `VITE_GSC_VERIFICATION`, `VITE_BING_VERIFICATION`; `.github/workflows/deploy-prod.yml` fills the same names from GitHub secrets). A line with an empty value is skipped, which leaves that feature off; today only the GA4 measurement ID is set. It does not run IndexNow: after a prod deploy run `node scripts/seo/indexnow.mjs --since-days 14` in a checkout that has `dist/sitemap.xml`. Run `TradeQut-Research/release/preflight.ps1` (read-only AWS checks) before a first cut-over and `browser-smoke.mjs` (loads prod pages, reports console errors) after.
 
 **CloudFront router** (only when `route-registry.ts` hosts or SPA prefixes, or the `index.html` inline script, changed, or on a new environment):
 
@@ -410,7 +410,7 @@ Account-wide (saved on the server):
 
 1. Backend field first (`JournalAWSSetup` user preferences).
 2. `src/components/settings/usePreferences.ts`: add to `ServerPreferences`, and to `deviceFromServer` if a device copy exists.
-3. `PreferencesSection.tsx`: use `changeAccount(devicePatch, serverPatch)` (saves through `userApi.updatePreferences` and reverts the device value on failure). Notification toggles live in `NotificationsSection.tsx`.
+3. `PreferencesSection.tsx`: use `changeAccount(devicePatch, serverPatch)` (saves through `userApi.updatePreferences` and reverts the device value on failure). Notification toggles live in `NotificationsSection.tsx`. Its "Getting-started emails" switch saves `notifications.tradeReminders` (on by default, on every plan); the backend's daily job skips the day 1, 3 and 7 mails while it is `false` (`JournalAWSSetup/src/handlers/lifecycle-emails/app.ts`).
 4. Tests: `src/components/settings/__tests__` and `hooks/__tests__`.
 
 New dropdown list for the trade form instead: `SavedOptions` in `types/trade.ts`, `hooks/useSavedOptions.ts`, `components/settings/optionLists.ts` and the backend.
