@@ -26,7 +26,7 @@ export function PublicFooter() {
                         href={p.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex min-h-6 max-md:min-h-11 items-center text-sm text-foreground-soft hover:text-foreground"
+                        className="inline-flex min-h-6 max-md:min-h-11 min-w-6 items-center text-sm text-foreground-soft hover:text-foreground"
                       >
                         {p.label}
                       </a>
