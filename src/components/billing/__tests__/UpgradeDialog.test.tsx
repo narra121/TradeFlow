@@ -126,14 +126,19 @@ describe('UpgradeDialog', () => {
 describe('UpgradeDialog while it closes', () => {
   it('keeps its title and body during the exit animation instead of fading out empty', async () => {
     // jsdom runs no CSS animation; report one on exit so Radix keeps the closing dialog mounted, as a browser does.
+    // The style stays live like a browser's: newer Radix Presence reads animationName on close from the object it got at mount.
     const real = window.getComputedStyle.bind(window);
     const spy = vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) => {
       const style = real(el, pseudo);
-      const state = (el as HTMLElement).dataset?.state;
-      if (el instanceof HTMLElement && el.getAttribute('role') === 'dialog' && state) {
-        return { ...style, animationName: state === 'closed' ? 'exit' : 'enter', display: 'grid', getPropertyValue: style.getPropertyValue.bind(style) } as CSSStyleDeclaration;
-      }
-      return style;
+      if (!(el instanceof HTMLElement) || el.getAttribute('role') !== 'dialog') return style;
+      return new Proxy(style, {
+        get(target, key) {
+          if (key === 'animationName') return el.dataset.state === 'closed' ? 'exit' : 'enter';
+          if (key === 'display') return 'grid';
+          const v = Reflect.get(target, key, target);
+          return typeof v === 'function' ? v.bind(target) : v;
+        },
+      });
     });
     try {
       const user = userEvent.setup();
