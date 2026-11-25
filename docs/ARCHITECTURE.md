@@ -102,7 +102,7 @@ Important parts of `lib/`:
 | `lib/charges/*`, `lib/tax/*` | Indian statutory charge rate history (`foRateHistory.ts`), F&O turnover for tax audit (`foTurnover.ts`) |
 | `lib/forex/*` | Calculators for public pages: margin, compounding, prop drawdown, risk of ruin, sessions engine |
 | `lib/positionSize.ts`, `riskReward.ts`, `expectancy.ts`, `equityCurve.ts`, `glossaryCalc.ts` | Public calculator maths |
-| `lib/import/*` | Import flow helpers: mapping memory, row editing, screenshot limits, skipped-line recovery, conversion to create payloads (`toCreateItems`) |
+| `lib/import/*` | Import flow helpers: file reading (`fileToBase64` sends UTF-16 reports such as MT5 HTML as UTF-8, then checks `MAX_IMPORT_FILE_BYTES`), mapping memory, row editing, screenshot limits, skipped-line recovery, conversion to create payloads (`toCreateItems`) |
 | `lib/importFlowStore.ts` | Small module store for the import-in-progress state; `importFlow.queue(files)` hands files to the import page (section 5) |
 | `lib/tradeColumns.ts`, `tradeFilters.ts`, `tradeGroups.ts`, `savedViews.ts`, `stickyRows.ts` | Trade list: columns, filters and sort, grouping, saved views |
 | `lib/tradePreview.ts` | Asset-class inference, lot sizes, quantity labels for the form |
