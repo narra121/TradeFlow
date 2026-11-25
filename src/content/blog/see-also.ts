@@ -1,7 +1,11 @@
+import { CASE_STUDIES } from '../case-studies/studies';
+
 interface SeeAlsoLink {
   to: string;
   label: string;
 }
+
+const scenario = (slug: string): SeeAlsoLink => ({ to: `/case-studies/${slug}`, label: CASE_STUDIES.find((c) => c.slug === slug)!.title });
 
 const L = {
   forex: { to: '/forex-trading-journal', label: 'Forex trading journal: MT4 and MT5 import' },
@@ -47,23 +51,28 @@ const L = {
   gtt: { to: '/blog/gtt-order-charges', label: 'GTT order charges by broker' },
   mt5Export: { to: '/blog/mt5-trading-journal', label: 'How to export MT5 trade history for a journal' },
   oi: { to: '/blog/long-buildup-short-covering-long-unwinding', label: 'Long build-up, short covering and long unwinding explained' },
+  scenarioHours: scenario('day-trader-win-rate'),
+  scenarioProp: scenario('ftmo-challenge-journal'),
+  scenarioRevenge: scenario('revenge-trading-to-discipline'),
+  scenarioAccounts: scenario('multi-account-management'),
+  scenarioSessions: scenario('forex-session-edge'),
 } satisfies Record<string, SeeAlsoLink>;
 
-/** Product pages and calculators shown under an article, keyed by article slug. Every `to` must be a registry path (see-also.test.ts). */
+/** Product pages, calculators and worked scenarios shown under an article, keyed by article slug. Every `to` must be a registry path (see-also.test.ts). */
 export const SEE_ALSO: Record<string, SeeAlsoLink[]> = {
   'how-to-keep-trading-journal': [L.forex, L.india, L.screenshot, L.alternatives, L.journalPricing],
   'trading-journal-template': [L.forex, L.india, L.alternatives, L.journalPricing],
-  'mistakes-new-traders-make': [L.size, L.rr, L.ruin],
-  'how-to-review-trades': [L.rr, L.winRate, L.profitFactor, L.glossary],
-  'getting-started-tradequt': [L.pricing, L.screenshot],
-  'win-rate-vs-profit-factor': [L.profitFactor, L.winRate, L.expectancy, L.ruin, L.rr, L.equity, L.glossary],
+  'mistakes-new-traders-make': [L.size, L.rr, L.ruin, L.scenarioRevenge],
+  'how-to-review-trades': [L.rr, L.winRate, L.profitFactor, L.glossary, L.scenarioRevenge],
+  'getting-started-tradequt': [L.pricing, L.screenshot, L.scenarioAccounts],
+  'win-rate-vs-profit-factor': [L.profitFactor, L.winRate, L.expectancy, L.ruin, L.rr, L.equity, L.glossary, L.scenarioHours],
   'risk-reward-ratio-guide': [L.rr, L.expectancy, L.size, L.ruin, L.winRate],
-  'track-reduce-drawdown': [L.drawdown, L.maxDrawdown, L.ruin, L.equity, L.size, L.compounding, L.glossary],
+  'track-reduce-drawdown': [L.drawdown, L.maxDrawdown, L.ruin, L.equity, L.size, L.compounding, L.glossary, L.scenarioProp],
   'trading-metrics-that-matter': [L.profitFactor, L.expectancyTerm, L.winRate, L.rMultiple, L.maxDrawdown, L.rr, L.glossary],
-  'build-trading-plan': [L.size, L.rr, L.hours, L.overlap, L.equity],
-  'forex-trading-journal': [L.forex, L.mt5, L.mt5Export, L.hours, L.nySession, L.londonSession, L.pip, L.size, L.margin, L.compounding],
-  'day-trading-journal': [L.forex, L.fo, L.india, L.size, L.margin, L.overlap],
-  'prop-trading-challenges': [L.prop, L.drawdown, L.ruin, L.equity, L.margin, L.compounding, L.screenshot, L.size],
+  'build-trading-plan': [L.size, L.rr, L.hours, L.overlap, L.equity, L.scenarioSessions],
+  'forex-trading-journal': [L.forex, L.mt5, L.mt5Export, L.hours, L.nySession, L.londonSession, L.pip, L.size, L.margin, L.compounding, L.scenarioSessions],
+  'day-trading-journal': [L.forex, L.fo, L.india, L.size, L.margin, L.overlap, L.scenarioHours],
+  'prop-trading-challenges': [L.prop, L.drawdown, L.ruin, L.equity, L.margin, L.compounding, L.screenshot, L.size, L.scenarioProp, L.scenarioAccounts],
   'importing-trades-from-broker': [L.mt5, L.mt4, L.zerodha, L.upstox, L.groww, L.angel, L.dhan, L.screenshot],
   'fo-trading-charges-india': [L.charges, L.turnover, L.gtt, L.oi, L.sebi, L.fo, L.zerodha, L.india],
   'zerodha-tradebook-pnl': [L.zerodha, L.fo, L.india, L.turnover, L.charges, L.gtt],

@@ -102,7 +102,8 @@ export default function ForexTradingJournalPage() {
       />
       <P>
         More on the fields, with examples, in <A to="/blog/forex-trading-journal">what forex traders should track</A>. Sessions move with daylight saving;
-        the <A to="/resources/forex-market-hours">forex market hours clock</A> shows them in your time zone for any date.
+        the <A to="/resources/forex-market-hours">forex market hours clock</A> shows them in your time zone for any date. A scenario with made-up data shows{' '}
+        <A to="/case-studies/forex-session-edge">comparing forex sessions with hourly analytics</A>.
       </P>
 
       <H2>What you see once the trades are in</H2>

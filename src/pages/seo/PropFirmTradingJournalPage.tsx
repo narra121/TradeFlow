@@ -119,7 +119,9 @@ export default function PropFirmTradingJournalPage() {
         <A to="/alternatives/myfxbook">Myfxbook</A> and <A to="/alternatives/tradezella">TradeZella</A> pages. TradeQut fits traders who want a private,
         upload-based journal focused on rules and review, at {usdMonth} a month after a {TRIAL_DAYS}-day trial. See <A to="/pricing">pricing</A>, the{' '}
         <A to="/forex-trading-journal">forex trading journal</A> page, and <A to="/blog/prop-trading-challenges">how to pass a prop challenge with a
-        journal</A>.
+        journal</A>. Two scenarios with made-up data show the method:{' '}
+        <A to="/case-studies/ftmo-challenge-journal">tracking prop-firm loss limits in a journal</A> and{' '}
+        <A to="/case-studies/multi-account-management">keeping several accounts separate</A>.
       </P>
 
       <Faq items={FAQ} />
