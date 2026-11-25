@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { currencyOptions } from '@/components/account/currencies';
 import { usePageChrome } from '@/components/shell/chrome';
 import { fallbackName } from '@/components/auth/passwordRules';
-import { setPendingImportFile } from '@/components/onboarding/pendingImport';
 import { useGettingStarted } from '@/components/onboarding/useGettingStarted';
 import { useEntitlements } from '@/hooks/useEntitlements';
 import { useTradeParam } from '@/hooks/useTradeParam';
@@ -85,9 +84,9 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
   const needsName = !nameSaved && !profile.isLoading && !!profile.email && (!profile.hasName || profile.name === fallbackName(profile.email));
   const firstAccount = accounts.data?.accounts[0];
 
-  const handOff = (file: File | null, accountId?: string) => {
+  const handOff = (file: File, accountId?: string) => {
     if (accountId) importFlow.set({ accountId });
-    setPendingImportFile(file);
+    importFlow.queue([file]);
     navigate('/app/import');
   };
 

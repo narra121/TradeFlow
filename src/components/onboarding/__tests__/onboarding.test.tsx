@@ -26,7 +26,6 @@ vi.mock('react-router-dom', async () => ({ ...(await vi.importActual<object>('re
 import { FirstRunPage } from '../FirstRunPage';
 import { ActivationPanel } from '../ActivationPanel';
 import { useGettingStarted, userSetItems } from '../useGettingStarted';
-import { takePendingImportFile } from '../pendingImport';
 import { importFlow } from '@/lib/importFlowStore';
 
 const wrap = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
@@ -38,7 +37,7 @@ beforeEach(() => {
   profile = { name: 'Ann', email: 'ann@example.com', hasName: true, isLoading: false, isSaving: false };
   [createAccount, navigate, openNew, saveName].forEach((m) => m.mockReset());
   importFlow.reset();
-  takePendingImportFile();
+  importFlow.set({ queued: [] });
 });
 
 describe('userSetItems', () => {
@@ -162,7 +161,7 @@ describe('FirstRunPage', () => {
     expect(createAccount).toHaveBeenCalledWith(expect.objectContaining({ name: 'My trading account', balance: 0, initialBalance: 0 }));
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/app/import'));
     expect(importFlow.get().accountId).toBe('new1');
-    expect(takePendingImportFile()).toBe(file);
+    expect(importFlow.get().queued).toEqual([file]);
   });
 
   it('a dropped file does not replace a name or a balance the user already typed', async () => {
@@ -182,8 +181,8 @@ describe('FirstRunPage', () => {
     fireEvent.drop(screen.getByRole('button', { name: /Choose files/ }).parentElement as HTMLElement, { dataTransfer: { files: [file] } });
     expect(navigate).toHaveBeenCalledWith('/app/import');
     expect(importFlow.get().accountId).toBe('a1');
-    expect(takePendingImportFile()).toBe(file);
-    expect(takePendingImportFile()).toBeNull();
+    // The import page reads `queued` (ImportCenter); any other hand-off loses the file.
+    expect(importFlow.get().queued).toEqual([file]);
   });
 
   it('Add a trade manually opens the new-trade pane once an account exists', async () => {
