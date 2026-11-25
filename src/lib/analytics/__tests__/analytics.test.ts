@@ -93,6 +93,16 @@ describe('loading', () => {
     expect(dataLayerCalls().find((c) => c[0] === 'config')).toEqual(['config', 'G-TEST123456', { send_page_view: false }]);
   });
 
+  it('sets no automatic page view and the sanitized URL globally, before gtag.js starts', () => {
+    window.history.replaceState({}, '', '/auth/callback?code=secret&utm_source=ad');
+    initAnalytics();
+    const calls = dataLayerCalls();
+    const set = calls.findIndex((c) => c[0] === 'set');
+    expect(calls[set]).toEqual(['set', { send_page_view: false, page_location: 'https://tradequt.com/auth/callback?utm_source=ad' }]);
+    expect(set).toBeLessThan(calls.findIndex((c) => c[0] === 'js'));
+    window.history.replaceState({}, '', '/');
+  });
+
   it('stays off without a measurement id or in a webdriver (prerender) browser', () => {
     vi.stubEnv('VITE_GA_MEASUREMENT_ID', '');
     expect(initAnalytics()).toBe(false);
@@ -120,6 +130,7 @@ describe('events', () => {
       page_path: '/app/profile',
       page_title: 'Profile',
     });
+    expect(dataLayerCalls().filter((c) => c[0] === 'set').at(-1)).toEqual(['set', { page_location: 'https://tradequt.com/app/profile' }]);
   });
 
   it('sends sign_up with the method', () => {

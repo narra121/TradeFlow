@@ -53,6 +53,8 @@ export function initAnalytics(): boolean {
   if (!id || !isRealVisitor()) return false;
   bootConsent();
   const gtag = ensureGtag();
+  // The Google tag reads these only from a global `set` made before it loads; it ignores the parameters of an on-page `config`.
+  gtag('set', { send_page_view: false, page_location: sanitizeLocation(window.location.href) });
   gtag('js', new Date());
   gtag('config', id, { send_page_view: false });
   injectScript(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`);
@@ -92,6 +94,8 @@ export function trackWebVital(v: { name: string; value: number; rating: string; 
 
 export function trackPageView(href: string, title: string): boolean {
   const location = sanitizeLocation(href);
+  // gtag.js stamps the events it sends itself (scroll, outbound click, engagement time) with the last location set globally.
+  if (gaReady && window.gtag) window.gtag('set', { page_location: location });
   return track('page_view', { page_location: location, page_path: new URL(location).pathname, page_title: title });
 }
 
