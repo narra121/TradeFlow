@@ -28,6 +28,8 @@ const ACCEPT = '.csv,.xlsx,.xls,.html,.htm,.png,.jpg,.jpeg,.webp';
 
 const sourceNames = IMPORT_SOURCES.filter((s) => s.id !== 'generic_csv').map((s) => s.name);
 
+const DEFAULT_ACCOUNT_NAME = 'My trading account';
+
 function StepHeading({ n, title, done, hint }: { n: number; title: string; done: boolean; hint?: string }) {
   return (
     <div className="flex items-start gap-3">
@@ -112,7 +114,9 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
     if (!file) return;
     if (!gs.hasAccount) {
       setHeldFile(file);
-      formRef.current?.querySelector('input')?.focus();
+      if (!name.trim()) setName(DEFAULT_ACCOUNT_NAME);
+      if (!balance.trim()) setBalance('0');
+      window.setTimeout(() => formRef.current?.querySelector<HTMLButtonElement>('button[type="submit"]')?.focus(), 0);
       return;
     }
     handOff(file, firstAccount?.id);
@@ -154,7 +158,7 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
           <StepHeading n={1} title="Create your trading account" done={gs.hasAccount} hint={gs.hasAccount ? undefined : 'A name and a starting balance are enough (0 is fine). Broker and type can be added later in Accounts.'} />
           {!gs.hasAccount && (
             <form ref={formRef} onSubmit={submitAccount} noValidate className={cn('space-y-3 pl-8', heldFile && 'rounded-md ring-1 ring-primary')}>
-              {heldFile && <p role="status" className="text-13">Create an account first — your file is kept.</p>}
+              {heldFile && <p role="status" className="text-13">Your file is kept. Create the account to import it; you can change the name, currency and balance later in Accounts.</p>}
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_110px_minmax(0,160px)_auto] sm:items-start">
                 <Field label="Name" error={errors.name} required>
                   {(a) => <Input {...a} value={name} onChange={(e) => setName(e.target.value)} placeholder="FTMO 100K" autoComplete="off" className="[@media(pointer:coarse)]:h-11" />}
@@ -172,7 +176,7 @@ export function FirstRunPage({ tradeCount = 0 }: FirstRunPageProps) {
                 </Field>
                 <Button type="submit" disabled={creating} className="sm:mt-[22px] [@media(pointer:coarse)]:h-11">
                   {creating && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                  Create account
+                  {heldFile ? 'Create account and import' : 'Create account'}
                 </Button>
               </div>
               {errors.form && <p role="alert" className="text-13 text-error">{errors.form}</p>}

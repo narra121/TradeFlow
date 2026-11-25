@@ -148,12 +148,30 @@ describe('FirstRunPage', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent("Couldn't create the account."));
   });
 
-  it('a file dropped before step 1 is kept and the form says so', () => {
+  it('a file dropped before step 1 is kept, and the account form is filled in so one click is left', async () => {
     wrap(<FirstRunPage />);
     const file = new File(['a,b'], 'trades.csv', { type: 'text/csv' });
     fireEvent.drop(screen.getByRole('button', { name: /Choose files/ }).parentElement as HTMLElement, { dataTransfer: { files: [file] } });
-    expect(screen.getByText('Create an account first — your file is kept.')).toBeInTheDocument();
+    expect(screen.getByText(/Your file is kept\. Create the account to import it/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Name/)).toHaveValue('My trading account');
+    expect(screen.getByLabelText(/Starting balance/)).toHaveValue('0');
     expect(navigate).not.toHaveBeenCalled();
+
+    createAccount.mockResolvedValueOnce({ id: 'new1' });
+    await userEvent.click(screen.getByRole('button', { name: 'Create account and import' }));
+    expect(createAccount).toHaveBeenCalledWith(expect.objectContaining({ name: 'My trading account', balance: 0, initialBalance: 0 }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/app/import'));
+    expect(importFlow.get().accountId).toBe('new1');
+    expect(takePendingImportFile()).toBe(file);
+  });
+
+  it('a dropped file does not replace a name or a balance the user already typed', async () => {
+    wrap(<FirstRunPage />);
+    await userEvent.type(screen.getByLabelText(/Name/), 'FTMO 100K');
+    await userEvent.type(screen.getByLabelText(/Starting balance/), '100000');
+    fireEvent.drop(screen.getByRole('button', { name: /Choose files/ }).parentElement as HTMLElement, { dataTransfer: { files: [new File(['a,b'], 'trades.csv', { type: 'text/csv' })] } });
+    expect(screen.getByLabelText(/Name/)).toHaveValue('FTMO 100K');
+    expect(screen.getByLabelText(/Starting balance/)).toHaveValue('100000');
   });
 
   it('with an account, a dropped file goes to the import page with the account preselected and the file queued', () => {
