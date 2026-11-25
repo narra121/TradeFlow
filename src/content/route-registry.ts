@@ -43,7 +43,7 @@ const STATIC_ROUTES: PublicRoute[] = [
   { path: '/guide', kind: 'static', label: 'User guide', lastmod: '2026-11-15', inSitemap: true },
   { path: '/about', kind: 'static', label: 'About', lastmod: '2026-11-15', inSitemap: true },
   { path: '/contact', kind: 'static', label: 'Contact', lastmod: '2026-11-11', inSitemap: true },
-  { path: '/privacy', kind: 'legal', label: 'Privacy policy', lastmod: '2026-11-11', inSitemap: true },
+  { path: '/privacy', kind: 'legal', label: 'Privacy policy', lastmod: '2026-11-25', inSitemap: true },
   { path: '/terms', kind: 'legal', label: 'Terms of service', lastmod: '2026-11-11', inSitemap: true },
   { path: '/refund', kind: 'legal', label: 'Refund policy', lastmod: '2026-11-11', inSitemap: true },
   { path: '/login', kind: 'auth', label: 'Log in', lastmod: '2026-11-11', inSitemap: false },

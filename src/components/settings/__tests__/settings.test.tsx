@@ -271,7 +271,7 @@ describe('PreferencesSection', () => {
 });
 
 describe('NotificationsSection', () => {
-  it('states that account emails are always on and toggles only the weekly report', async () => {
+  it('states that account emails are always on and saves the weekly report switch', async () => {
     render(<NotificationsSection />);
     expect(screen.getByText('Always on')).toBeInTheDocument();
     expect(screen.queryByText(/Trade reminders/)).toBeNull();
@@ -284,6 +284,26 @@ describe('NotificationsSection', () => {
     render(<NotificationsSection />);
     expect(screen.getByRole('switch', { name: 'Weekly report' })).toBeDisabled();
     expect(screen.getByText('The weekly report is part of Pro.')).toBeInTheDocument();
+  });
+
+  it('the getting-started emails are on until switched off, and the switch saves tradeReminders', async () => {
+    render(<NotificationsSection />);
+    const sw = screen.getByRole('switch', { name: 'Getting-started emails' });
+    expect(sw).toBeChecked();
+    await userEvent.click(sw);
+    expect(updateNotifs).toHaveBeenCalledWith({ tradeReminders: false });
+    expect(sw).not.toBeChecked();
+  });
+
+  it('the getting-started switch shows the saved choice and works without Pro', async () => {
+    plan = 'free';
+    profile = { name: 'Ann', email: 'ann@example.com', preferences: { notifications: { weeklyReport: true, tradeReminders: false } } };
+    render(<NotificationsSection />);
+    const sw = screen.getByRole('switch', { name: 'Getting-started emails' });
+    expect(sw).not.toBeChecked();
+    expect(sw).toBeEnabled();
+    await userEvent.click(sw);
+    expect(updateNotifs).toHaveBeenCalledWith({ tradeReminders: true });
   });
 
   it('reverts when the save fails', async () => {

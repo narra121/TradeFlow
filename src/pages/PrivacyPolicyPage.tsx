@@ -45,6 +45,7 @@ const SECTIONS: LegalSection[] = [
         <li>To provide the Service, create your account and compute your analytics and reports.</li>
         <li>To process subscriptions and prevent fraud or abuse.</li>
         <li>To answer support requests and send service messages.</li>
+        <li>To send a few getting-started emails in your first week. You can turn them off in Settings, under Notifications.</li>
         <li>To understand how the public pages and the app are used, and improve them (analytics, with your consent where the law requires it).</li>
       </ul>
     ),
@@ -186,7 +187,7 @@ export function PrivacyPolicyPage() {
       title="Privacy Policy"
       description="What TradeQut collects, who processes it (AWS, Stripe, OpenRouter, OpenAI, Google), how AI features and cookies work, and your choices."
       path="/privacy"
-      updated="2026-11-13"
+      updated="2026-11-25"
       sections={SECTIONS}
     />
   );
